@@ -1,0 +1,41 @@
+{
+  "framework": "nextjs",
+  "functions": {
+    "pages/api/**/*.ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url-secret",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key-secret",
+      "NEXT_PUBLIC_WEBAPP_URL": "@webapp-url"
+    }
+  },
+  "env": {
+    "TELEGRAM_TOKEN": "@telegram-token-secret"
+  },
+  "routes": [
+    {
+      "src": "/sprite.gif",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "headers": {
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "strict-origin-when-cross-origin"
+      }
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/_next/:path*",
+      "destination": "/api/:path*"
+    }
+  ]
+}
