@@ -1,46 +1,40 @@
-import { motion } from 'framer-motion';
+import React from 'react';
 import type { Question } from '@/types';
 
 interface QuestionCardProps {
   question: Question;
+  index: number;
+  isAnswered: boolean;
   onAnswer: (isPositive: boolean) => void;
-  disabled?: boolean;
 }
 
-export const QuestionCard: React.FC<QuestionCardProps> = ({ 
-  question, 
-  onAnswer, 
-  disabled = false 
+export const QuestionCard: React.FC<QuestionCardProps> = ({
+  question,
+  index,
+  isAnswered,
+  onAnswer
 }) => {
   return (
-    <motion.div
-      className="question-card"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3 }}
-    >
+    <div className="question-card">
       <h3 className="question-text">{question.text}</h3>
+
       <div className="answer-buttons">
-        <motion.button
+        <button
           className="answer-btn negative"
           onClick={() => onAnswer(false)}
-          disabled={disabled}
-          whileHover={{ scale: disabled ? 1 : 1.02 }}
-          whileTap={{ scale: disabled ? 1 : 0.98 }}
+          disabled={isAnswered}
         >
           {question.negative_answer}
-        </motion.button>
-        <motion.button
+        </button>
+
+        <button
           className="answer-btn positive"
           onClick={() => onAnswer(true)}
-          disabled={disabled}
-          whileHover={{ scale: disabled ? 1 : 1.02 }}
-          whileTap={{ scale: disabled ? 1 : 0.98 }}
+          disabled={isAnswered}
         >
           {question.positive_answer}
-        </motion.button>
+        </button>
       </div>
-    </motion.div>
+    </div>
   );
 };

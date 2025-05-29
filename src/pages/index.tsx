@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+// import { motion, AnimatePresence } from 'framer-motion'; // Removed framer-motion
 import { useTelegram } from '@/hooks/useTelegram';
 import { api } from '@/lib/api';
 import { Loader } from '@/components/Loader';
@@ -89,7 +88,7 @@ export default function Home() {
     try {
       const positiveCount = surveyAnswers.filter(answer => answer).length;
       const delta = positiveCount - (questions.length - positiveCount);
-      
+
       if (user) {
         await api.updateBurnout(user.id.toString(), delta);
         const response = await api.getUserData(user.id.toString());
@@ -123,17 +122,17 @@ export default function Home() {
   return (
     <div className="container">
       <BurnoutProgress level={burnoutLevel} sprite="/sprite.gif" />
-      
+
       <div className="content">
-        <AnimatePresence mode="wait">
+        {/* <AnimatePresence mode="wait"> */}
           {!canTakeSurvey ? (
-            <motion.div
+            <div
               key="completed"
               className="time-message"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.5 }}
+              // initial={{ opacity: 0, scale: 0.8 }}
+              // animate={{ opacity: 1, scale: 1 }}
+              // exit={{ opacity: 0, scale: 0.8 }}
+              // transition={{ duration: 0.5 }}
             >
               <div className="info-message">
                 ✅ Опрос завершен! Следующий опрос будет доступен завтра.
@@ -141,24 +140,24 @@ export default function Home() {
                 <br />
                 Уровень выгорания: {burnoutLevel}/10
               </div>
-              
-              <motion.button
+
+              <button
                 className="answer-btn positive"
                 onClick={resetSurvey}
                 style={{ marginTop: '15px' }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                // whileHover={{ scale: 1.05 }}
+                // whileTap={{ scale: 0.95 }}
               >
                 🔄 Пройти еще раз (для демо)
-              </motion.button>
-            </motion.div>
+              </button>
+            </div>
           ) : (
-            <motion.div
+            <div
               key="survey"
               className="questions"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              // initial={{ opacity: 0 }}
+              // animate={{ opacity: 1 }}
+              // exit={{ opacity: 0 }}
             >
               {questions.map((question, index) => (
                 <QuestionCard
@@ -171,46 +170,46 @@ export default function Home() {
                   index={index}
                 />
               ))}
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
+        {/* </AnimatePresence> */}
       </div>
 
-      <motion.div 
+      <div 
         className="menu"
-        initial={{ y: 100 }}
-        animate={{ y: 0 }}
-        transition={{ delay: 1, duration: 0.5 }}
+        // initial={{ y: 100 }}
+        // animate={{ y: 0 }}
+        // transition={{ delay: 1, duration: 0.5 }}
       >
-        <motion.button 
+        <button 
           className="menu-btn"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          // whileHover={{ scale: 1.1 }}
+          // whileTap={{ scale: 0.9 }}
         >
           📊
-        </motion.button>
-        <motion.button 
+        </button>
+        <button 
           className="menu-btn"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          // whileHover={{ scale: 1.1 }}
+          // whileTap={{ scale: 0.9 }}
         >
           📝
-        </motion.button>
-        <motion.button 
+        </button>
+        <button 
           className="menu-btn"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          // whileHover={{ scale: 1.1 }}
+          // whileTap={{ scale: 0.9 }}
         >
           ⚙️
-        </motion.button>
-        <motion.button 
+        </button>
+        <button 
           className="menu-btn"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          // whileHover={{ scale: 1.1 }}
+          // whileTap={{ scale: 0.9 }}
         >
           ❓
-        </motion.button>
-      </motion.div>
+        </button>
+      </div>
     </div>
   );
 }
