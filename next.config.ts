@@ -1,8 +1,29 @@
+
 import type { NextConfig } from "next";
-import { env } from "process";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: [env.REPLIT_DOMAINS.split(",")[0]],
+  reactStrictMode: true,
+  swcMinify: true,
+  experimental: {
+    optimizePackageImports: ['framer-motion']
+  },
+  images: {
+    domains: [],
+    unoptimized: true
+  },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'ALLOWALL'
+          }
+        ]
+      }
+    ];
+  }
 };
 
-module.exports = nextConfig;
+export default nextConfig;
