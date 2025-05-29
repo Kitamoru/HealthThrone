@@ -1,12 +1,4 @@
 
-export interface User {
-  user_id: string;
-  username?: string;
-  first_name?: string;
-  burnout_level: number;
-  last_survey_date?: string;
-}
-
 export interface Question {
   id: number;
   text: string;
@@ -14,18 +6,25 @@ export interface Question {
   negative_answer: string;
 }
 
-export interface SurveyAnswer {
+export interface UserData {
+  id: number;
+  telegram_id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  burnout_level: number;
+  last_survey_date?: string;
+  avatar_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SurveyResponse {
   question_id: number;
-  answer: boolean; // true for positive, false for negative
+  is_positive: boolean;
 }
 
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
-
-export interface BurnoutUpdateResponse {
-  status: string;
-  burnout_level?: number;
+export interface ApiError {
+  message: string;
+  code?: string;
 }

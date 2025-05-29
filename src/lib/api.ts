@@ -1,29 +1,61 @@
 
-import type { User, BurnoutUpdateResponse, ApiResponse } from '@/types';
+interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
 
-const API_BASE = '/api';
+class Api {
+  private baseUrl = '/api';
 
-export const api = {
-  async init(initData: string): Promise<ApiResponse<{ burnout_level: number }>> {
-    const response = await fetch(`${API_BASE}/init`, {
+  async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+    try {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        ...options,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: data.message || 'Something went wrong'
+        };
+      }
+
+      return {
+        success: true,
+        data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Network error'
+      };
+    }
+  }
+
+  async getUserData(userId: number) {
+    return this.request(`/data?userId=${userId}`);
+  }
+
+  async updateBurnoutLevel(userId: number, level: number) {
+    return this.request('/update', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, burnoutLevel: level })
+    });
+  }
+
+  async initUser(initData: string) {
+    return this.request('/init', {
+      method: 'POST',
       body: JSON.stringify({ initData })
     });
-    return response.json();
-  },
-
-  async getUserData(userId: string): Promise<ApiResponse<{ burnout_level: number }>> {
-    const response = await fetch(`${API_BASE}/data?user_id=${userId}`);
-    return response.json();
-  },
-
-  async updateBurnout(userId: string, delta: number): Promise<ApiResponse<BurnoutUpdateResponse>> {
-    const response = await fetch(`${API_BASE}/update`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId, delta })
-    });
-    return response.json();
   }
-};
+}
+
+export const api = new Api();

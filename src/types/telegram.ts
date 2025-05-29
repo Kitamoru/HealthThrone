@@ -1,3 +1,31 @@
+export interface TelegramUser {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  language_code?: string;
+  is_premium?: boolean;
+  photo_url?: string;
+}
+
+export interface TelegramInitData {
+  user?: TelegramUser;
+  chat_instance?: string;
+  chat_type?: string;
+  start_param?: string;
+  auth_date: number;
+  hash: string;
+}
+
+export interface TelegramWebAppTheme {
+  bg_color?: string;
+  text_color?: string;
+  hint_color?: string;
+  link_color?: string;
+  button_color?: string;
+  button_text_color?: string;
+  secondary_bg_color?: string;
+}
 
 export interface TelegramWebApp {
   initData: string;
@@ -29,16 +57,6 @@ export interface TelegramWebApp {
   close: () => void;
   MainButton: TelegramMainButton;
   HapticFeedback: TelegramHapticFeedback;
-}
-
-export interface TelegramUser {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  language_code?: string;
-  is_premium?: boolean;
-  photo_url?: string;
 }
 
 export interface TelegramMainButton {

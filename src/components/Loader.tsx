@@ -13,13 +13,7 @@ export const Loader: React.FC = () => {
           ease: "linear"
         }}
       />
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-      >
-        Загрузка...
-      </motion.p>
+      <p>Загрузка...</p>
     </div>
   );
 };
