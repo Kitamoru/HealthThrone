@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-// import { motion, AnimatePresence } from 'framer-motion'; // Removed framer-motion
 import { useTelegram } from '@/hooks/useTelegram';
 import { api } from '@/lib/api';
 import { Loader } from '@/components/Loader';
@@ -7,112 +6,84 @@ import { BurnoutProgress } from '@/components/BurnoutProgress';
 import { QuestionCard } from '@/components/QuestionCard';
 import type { Question } from '@/types';
 
-const questions: Question[] = [
+// Примеры вопросов для тестирования
+const sampleQuestions: Question[] = [
   {
     id: 1,
-    text: "Чувствуете ли вы эмоциональное истощение на работе?",
-    positive_answer: "😔 Да",
-    negative_answer: "😊 Нет"
+    text: "Чувствуете ли вы усталость даже после отдыха?",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 2
   },
   {
     id: 2,
-    text: "Трудно ли вам сосредоточиться на задачах?",
-    positive_answer: "😵 Да",
-    negative_answer: "🎯 Нет"
+    text: "Часто ли у вас возникает раздражительность на работе?",
+    positive_answer: "Часто",
+    negative_answer: "Редко",
+    weight: 3
   },
   {
     id: 3,
-    text: "Чувствуете ли вы раздражительность или злость?",
-    positive_answer: "😠 Да",
-    negative_answer: "😌 Нет"
+    text: "Трудно ли вам концентрироваться на задачах?",
+    positive_answer: "Трудно",
+    negative_answer: "Легко",
+    weight: 2
   },
   {
     id: 4,
-    text: "Испытываете ли вы физическую усталость?",
-    positive_answer: "🥱 Да",
-    negative_answer: "💪 Нет"
+    text: "Испытываете ли вы стресс от рабочих задач?",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 1
   },
   {
     id: 5,
-    text: "Снизилась ли ваша мотивация к работе?",
-    positive_answer: "📉 Да",
-    negative_answer: "📈 Нет"
+    text: "Чувствуете ли вы себя перегруженным обязанностями?",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 3
   }
 ];
 
 export default function Home() {
-  const { user, isReady, initData, webApp } = useTelegram();
-  const [burnoutLevel, setBurnoutLevel] = useState<number>(5);
+  const { user, isReady } = useTelegram();
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [answers, setAnswers] = useState<Record<number, boolean>>({});
+  const [burnoutLevel, setBurnoutLevel] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [surveyCompleted, setSurveyCompleted] = useState(false);
-  const [canTakeSurvey, setCanTakeSurvey] = useState(true);
-  const [answers, setAnswers] = useState<boolean[]>([]);
 
   useEffect(() => {
-    if (isReady) {
-      initializeApp();
-    }
+    const initializeApp = async () => {
+      if (!isReady) return;
+
+      try {
+        // Используем примеры вопросов вместо API
+        setQuestions(sampleQuestions);
+        setLoading(false);
+      } catch (error) {
+        console.error('Initialization error:', error);
+        // Fallback to sample questions
+        setQuestions(sampleQuestions);
+        setLoading(false);
+      }
+    };
+
+    initializeApp();
   }, [isReady, user]);
 
-  const initializeApp = async () => {
-    try {
-      if (user && initData) {
-        const response = await api.init(initData);
-        if (response.success && response.data) {
-          setBurnoutLevel(response.data.burnout_level);
-        }
-      } else {
-        // Development mode
-        setBurnoutLevel(5);
-      }
-    } catch (error) {
-      console.error('Initialization error:', error);
-      webApp?.HapticFeedback.notificationOccurred('error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAnswer = (questionIndex: number, isPositive: boolean) => {
-    const newAnswers = [...answers];
-    newAnswers[questionIndex] = isPositive;
+  const handleAnswer = (questionId: number, isPositive: boolean) => {
+    const newAnswers = { ...answers, [questionId]: isPositive };
     setAnswers(newAnswers);
 
-    // Auto-submit when all questions are answered
-    if (newAnswers.length === questions.length && !newAnswers.includes(undefined)) {
-      submitSurvey(newAnswers);
-    }
-  };
+    // Подсчет уровня выгорания
+    const totalWeight = questions.reduce((sum, q) => sum + q.weight, 0);
+    const currentScore = questions.reduce((score, question) => {
+      const answer = newAnswers[question.id];
+      return score + (answer ? question.weight : 0);
+    }, 0);
 
-  const submitSurvey = async (surveyAnswers: boolean[]) => {
-    try {
-      const positiveCount = surveyAnswers.filter(answer => answer).length;
-      const delta = positiveCount - (questions.length - positiveCount);
-
-      if (user) {
-        await api.updateBurnout(user.id.toString(), delta);
-        const response = await api.getUserData(user.id.toString());
-        if (response.success && response.data) {
-          setBurnoutLevel(response.data.burnout_level);
-        }
-      } else {
-        // Development mode
-        setBurnoutLevel(prev => Math.max(0, Math.min(10, prev + delta)));
-      }
-
-      setSurveyCompleted(true);
-      setCanTakeSurvey(false);
-      webApp?.HapticFeedback.notificationOccurred('success');
-    } catch (error) {
-      console.error('Survey submission error:', error);
-      webApp?.HapticFeedback.notificationOccurred('error');
-    }
-  };
-
-  const resetSurvey = () => {
-    setAnswers([]);
-    setSurveyCompleted(false);
-    setCanTakeSurvey(true);
+    const level = Math.round((currentScore / totalWeight) * 100);
+    setBurnoutLevel(level);
   };
 
   if (loading) {
@@ -121,94 +92,35 @@ export default function Home() {
 
   return (
     <div className="container">
-      <BurnoutProgress level={burnoutLevel} sprite="/sprite.gif" />
+      <BurnoutProgress level={burnoutLevel} />
 
       <div className="content">
-        {/* <AnimatePresence mode="wait"> */}
-          {!canTakeSurvey ? (
-            <div
-              key="completed"
-              className="time-message"
-              // initial={{ opacity: 0, scale: 0.8 }}
-              // animate={{ opacity: 1, scale: 1 }}
-              // exit={{ opacity: 0, scale: 0.8 }}
-              // transition={{ duration: 0.5 }}
-            >
-              <div className="info-message">
-                ✅ Опрос завершен! Следующий опрос будет доступен завтра.
-                <br />
-                <br />
-                Уровень выгорания: {burnoutLevel}/10
-              </div>
+        <div className="questions">
+          {questions.map((question, index) => (
+            <QuestionCard
+              key={question.id}
+              question={question}
+              index={index}
+              isAnswered={question.id in answers}
+              onAnswer={(isPositive) => handleAnswer(question.id, isPositive)}
+            />
+          ))}
+        </div>
 
-              <button
-                className="answer-btn positive"
-                onClick={resetSurvey}
-                style={{ marginTop: '15px' }}
-                // whileHover={{ scale: 1.05 }}
-                // whileTap={{ scale: 0.95 }}
-              >
-                🔄 Пройти еще раз (для демо)
-              </button>
+        {Object.keys(answers).length === questions.length && (
+          <div className="time-message">
+            <div className="info-message">
+              Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
             </div>
-          ) : (
-            <div
-              key="survey"
-              className="questions"
-              // initial={{ opacity: 0 }}
-              // animate={{ opacity: 1 }}
-              // exit={{ opacity: 0 }}
-            >
-              {questions.map((question, index) => (
-                <QuestionCard
-                  key={question.id}
-                  question={question.text}
-                  positiveAnswer={question.positive_answer}
-                  negativeAnswer={question.negative_answer}
-                  onAnswer={(isPositive) => handleAnswer(index, isPositive)}
-                  disabled={answers[index] !== undefined}
-                  index={index}
-                />
-              ))}
-            </div>
-          )}
-        {/* </AnimatePresence> */}
+          </div>
+        )}
       </div>
 
-      <div 
-        className="menu"
-        // initial={{ y: 100 }}
-        // animate={{ y: 0 }}
-        // transition={{ delay: 1, duration: 0.5 }}
-      >
-        <button 
-          className="menu-btn"
-          // whileHover={{ scale: 1.1 }}
-          // whileTap={{ scale: 0.9 }}
-        >
-          📊
-        </button>
-        <button 
-          className="menu-btn"
-          // whileHover={{ scale: 1.1 }}
-          // whileTap={{ scale: 0.9 }}
-        >
-          📝
-        </button>
-        <button 
-          className="menu-btn"
-          // whileHover={{ scale: 1.1 }}
-          // whileTap={{ scale: 0.9 }}
-        >
-          ⚙️
-        </button>
-        <button 
-          className="menu-btn"
-          // whileHover={{ scale: 1.1 }}
-          // whileTap={{ scale: 0.9 }}
-        >
-          ❓
-        </button>
+      <div className="menu">
+        <button className="menu-btn">📊</button>
+        <button className="menu-btn">📝</button>
+        <button className="menu-btn">⚙️</button>
+        <button className="menu-btn">❓</button>
       </div>
     </div>
   );

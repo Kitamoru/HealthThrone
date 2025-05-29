@@ -1,30 +1,19 @@
-
 export interface Question {
   id: number;
   text: string;
   positive_answer: string;
   negative_answer: string;
+  weight: number;
 }
 
-export interface UserData {
-  id: number;
-  telegram_id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  burnout_level: number;
-  last_survey_date?: string;
-  avatar_url?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface SurveyResponse {
+export interface UserAnswer {
   question_id: number;
   is_positive: boolean;
+  timestamp: string;
 }
 
-export interface ApiError {
-  message: string;
-  code?: string;
+export interface BurnoutResult {
+  level: number;
+  timestamp: string;
+  answers: UserAnswer[];
 }
