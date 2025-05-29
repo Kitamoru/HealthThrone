@@ -119,9 +119,40 @@ body {
   transform: scale(1.1);
 }
 
+.burnout-section {
+  background: var(--tg-secondary);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid var(--tg-border);
+}
+
+.level-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.level-label {
+  font-size: 14px;
+  color: var(--tg-hint);
+  font-weight: 500;
+}
+
+.level-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--tg-text);
+  padding: 6px 12px;
+  background: linear-gradient(135deg, var(--tg-accent), #4a7bc8);
+  border-radius: 8px;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
 .progress-wrapper {
   width: 100%;
-  margin-top: 5px;
 }
 
 .burnout-bar {
