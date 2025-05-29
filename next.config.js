@@ -20,8 +20,7 @@ const nextConfig = {
         ]
       }
     ];
-  },
-  allowedDevOrigins: ['replit.dev', 'replit.co']
+  }
 };
 
 module.exports = nextConfig;
