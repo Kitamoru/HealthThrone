@@ -22,7 +22,8 @@ const nextConfig: NextConfig = {
         ]
       }
     ];
-  }
+  },
+  allowedDevOrigins: ['replit.dev', 'replit.co']
 };
 
 export default nextConfig;
