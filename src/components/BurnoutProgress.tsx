@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { motion } from 'framer-motion';
 
 interface BurnoutProgressProps {
   level: number;
@@ -12,22 +13,28 @@ export const BurnoutProgress: React.FC<BurnoutProgressProps> = ({ level, sprite 
   return (
     <div className="header">
       <div className="sprite-container">
-        {sprite ? (
-          <img src={sprite} alt="Avatar" className="sprite" />
-        ) : (
-          <div className="sprite">😊</div>
-        )}
+        <img 
+          src="/sprite.gif" 
+          alt="Red Panda Avatar" 
+          className="sprite"
+        />
       </div>
       
-      <div className="pentagon">
+      <motion.div 
+        className="pentagon"
+        animate={{ rotate: level > 7 ? [0, 10, -10, 0] : 0 }}
+        transition={{ duration: 0.5, repeat: level > 7 ? Infinity : 0 }}
+      >
         🔥
-      </div>
+      </motion.div>
       
       <div className="progress-wrapper">
         <div className="burnout-bar">
-          <div
+          <motion.div
             className="burnout-progress"
-            style={{ width: `${progressWidth}%` }}
+            initial={{ width: 0 }}
+            animate={{ width: `${progressWidth}%` }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
           />
         </div>
       </div>
