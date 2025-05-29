@@ -67,6 +67,75 @@ export default async function handler(
       return res.status(400).json({ error: 'Invalid user data' });
     }
 
+    // Проверяем, существует ли пользователь
+    const { data: existingUser, error: fetchError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('telegram_id', user_id)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('Database fetch error:', fetchError);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    let userData;
+
+    if (existingUser) {
+      // Обновляем данные существующего пользователя
+      const { data: updatedUser, error: updateError } = await supabase
+        .from('users')
+        .update({
+          first_name: user.first_name,
+          last_name: user.last_name || null,
+          username: user.username || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('telegram_id', user_id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('User update error:', updateError);
+        return res.status(500).json({ error: 'Failed to update user' });
+      }
+
+      userData = updatedUser;
+    } else {
+      // Создаем нового пользователя
+      const { data: newUser, error: insertError } = await supabase
+        .from('users')
+        .insert({
+          telegram_id: user_id,
+          first_name: user.first_name,
+          last_name: user.last_name || null,
+          username: user.username || null,
+          burnout_level: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('User creation error:', insertError);
+        return res.status(500).json({ error: 'Failed to create user' });
+      }
+
+      userData = newUser;
+    }
+
+    res.status(200).json({
+      success: true,
+      user: userData
+    });
+
+  } catch (error) {
+    console.error('API error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
     const { error: upsertError } = await supabase
       .from('users')
       .upsert({
