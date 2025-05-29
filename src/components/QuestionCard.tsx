@@ -1,38 +1,44 @@
+
 import React from 'react';
-import type { Question } from '@/types';
+
+interface Question {
+  id: number;
+  text: string;
+  positive_answer: string;
+  negative_answer: string;
+  weight: number;
+}
 
 interface QuestionCardProps {
   question: Question;
-  index: number;
-  isAnswered: boolean;
-  onAnswer: (isPositive: boolean) => void;
+  onAnswer: (questionId: number, isPositive: boolean) => void;
+  answered: boolean;
 }
 
 export const QuestionCard: React.FC<QuestionCardProps> = ({
   question,
-  index,
-  isAnswered,
-  onAnswer
+  onAnswer,
+  answered
 }) => {
   return (
-    <div className={`question-card ${isAnswered ? 'answered' : ''}`}>
-      <h3 className="question-text">{question.text}</h3>
-
+    <div className={`question-card ${answered ? 'answered' : ''}`}>
+      <p className="question-text">{question.text}</p>
+      
       <div className="answer-buttons">
         <button
           className="answer-btn negative"
-          onClick={() => onAnswer(false)}
-          disabled={isAnswered}
+          onClick={() => onAnswer(question.id, false)}
+          disabled={answered}
         >
-          {question.negative_answer} {isAnswered ? '✓' : ''}
+          {question.negative_answer}
         </button>
-
+        
         <button
           className="answer-btn positive"
-          onClick={() => onAnswer(true)}
-          disabled={isAnswered}
+          onClick={() => onAnswer(question.id, true)}
+          disabled={answered}
         >
-          {question.positive_answer} {isAnswered ? '✓' : ''}
+          {question.positive_answer}
         </button>
       </div>
     </div>

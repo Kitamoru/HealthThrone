@@ -1,9 +1,6 @@
 
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    optimizePackageImports: ['framer-motion']
-  },
   images: {
     domains: [],
     unoptimized: true

@@ -1,68 +1,74 @@
-import { useState, useEffect } from 'react';
-import { useTelegram } from '@/hooks/useTelegram';
-import { api } from '@/lib/api';
-import { Loader } from '@/components/Loader';
-import { BurnoutProgress } from '@/components/BurnoutProgress';
-import { QuestionCard } from '@/components/QuestionCard';
-import type { Question } from '@/types';
 
-// Примеры вопросов для тестирования
-const sampleQuestions: Question[] = [
+import React, { useState, useEffect } from 'react';
+import { useTelegram } from '../hooks/useTelegram';
+import { BurnoutProgress } from '../components/BurnoutProgress';
+import { QuestionCard } from '../components/QuestionCard';
+import { Loader } from '../components/Loader';
+
+interface Question {
+  id: number;
+  text: string;
+  positive_answer: string;
+  negative_answer: string;
+  weight: number;
+}
+
+const QUESTIONS: Question[] = [
   {
     id: 1,
-    text: "Чувствуете ли вы усталость даже после отдыха?",
+    text: "Я чувствую усталость даже после отдыха",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 3
+  },
+  {
+    id: 2,
+    text: "Мне трудно сосредоточиться на работе",
     positive_answer: "Да",
     negative_answer: "Нет",
     weight: 2
   },
   {
-    id: 2,
-    text: "Часто ли у вас возникает раздражительность на работе?",
-    positive_answer: "Часто",
-    negative_answer: "Редко",
-    weight: 3
-  },
-  {
     id: 3,
-    text: "Трудно ли вам концентрироваться на задачах?",
-    positive_answer: "Трудно",
-    negative_answer: "Легко",
+    text: "Я часто чувствую раздражение",
+    positive_answer: "Да",
+    negative_answer: "Нет",
     weight: 2
   },
   {
     id: 4,
-    text: "Испытываете ли вы стресс от рабочих задач?",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: 1
-  },
-  {
-    id: 5,
-    text: "Чувствуете ли вы себя перегруженным обязанностями?",
+    text: "У меня снизилась мотивация к работе",
     positive_answer: "Да",
     negative_answer: "Нет",
     weight: 3
   },
   {
-    id: 6,
-    text: "Я чувствую себя энергичным",
+    id: 5,
+    text: "Я испытываю физическое напряжение",
     positive_answer: "Да",
     negative_answer: "Нет",
-    weight: -2
+    weight: 2
+  },
+  {
+    id: 6,
+    text: "Мне сложно расслабиться",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 2
   },
   {
     id: 7,
-    text: "Мне легко концентрироваться",
+    text: "Я чувствую себя эмоционально истощенным",
     positive_answer: "Да",
     negative_answer: "Нет",
-    weight: -2
+    weight: 3
   },
   {
     id: 8,
-    text: "Я получаю удовольствие от работы",
+    text: "У меня есть проблемы со сном",
     positive_answer: "Да",
     negative_answer: "Нет",
-    weight: -3
+    weight: 2
   },
   {
     id: 9,
@@ -100,12 +106,28 @@ export default function Home() {
 
       try {
         // Симуляция загрузки для лучшего UX
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setQuestions(sampleQuestions);
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        // Загружаем вопросы
+        setQuestions(QUESTIONS);
+        
+        // Загружаем данные пользователя если есть
+        if (user?.id) {
+          try {
+            const response = await fetch(`/api/data?userId=${user.id}`);
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+              setBurnoutLevel(data.data.burnout_level || 0);
+            }
+          } catch (error) {
+            console.log('Не удалось загрузить данные пользователя');
+          }
+        }
+        
         setLoading(false);
       } catch (error) {
-        console.error('Initialization error:', error);
-        setQuestions(sampleQuestions);
+        console.error('Ошибка инициализации:', error);
         setLoading(false);
       }
     };
@@ -113,78 +135,79 @@ export default function Home() {
     initializeApp();
   }, [isReady, user]);
 
-  const handleAnswer = (questionId: number, isPositive: boolean) => {
-    const newAnswers = { ...answers, [questionId]: isPositive };
-    setAnswers(newAnswers);
+  const handleAnswer = async (questionId: number, isPositive: boolean) => {
+    const question = questions.find(q => q.id === questionId);
+    if (!question) return;
 
-    // Подсчет уровня выгорания
-    const answeredQuestions = questions.filter(q => q.id in newAnswers);
-    const maxPossibleScore = questions.reduce((sum, q) => sum + Math.abs(q.weight), 0);
+    // Обновляем локальные ответы
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: isPositive
+    }));
+
+    // Рассчитываем изменение уровня выгорания
+    const delta = isPositive ? question.weight : 0;
+    const newLevel = Math.max(0, Math.min(100, burnoutLevel + delta));
     
-    const currentScore = answeredQuestions.reduce((score, question) => {
-      const answer = newAnswers[question.id];
-      const weight = question.weight;
-      
-      if (weight > 0) {
-        // Негативные вопросы: "Да" увеличивает выгорание
-        return score + (answer ? weight : 0);
-      } else {
-        // Позитивные вопросы: "Нет" увеличивает выгорание
-        return score + (answer ? 0 : Math.abs(weight));
-      }
-    }, 0);
+    setBurnoutLevel(newLevel);
 
-    const level = Math.min(100, Math.max(0, Math.round((currentScore / maxPossibleScore) * 100)));
-    setBurnoutLevel(level);
+    // Отправляем данные на сервер если есть пользователь
+    if (user?.id) {
+      try {
+        await fetch('/api/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            burnoutLevel: newLevel
+          })
+        });
+      } catch (error) {
+        console.log('Не удалось сохранить данные');
+      }
+    }
   };
 
   if (loading) {
     return <Loader />;
   }
 
+  const allAnswered = questions.every(q => q.id in answers);
+
   return (
     <div className="container">
       <BurnoutProgress level={burnoutLevel} />
-
+      
       <div className="content">
-        <div className="questions">
-          {questions.map((question, index) => (
-            <div 
-              key={question.id}
-              style={{
-                animation: `fadeInUp 0.5s ease ${index * 0.1}s both`
-              }}
-            >
-              <QuestionCard
-                question={question}
-                index={index}
-                isAnswered={question.id in answers}
-                onAnswer={(isPositive) => handleAnswer(question.id, isPositive)}
-              />
-            </div>
-          ))}
-        </div>
-
-        {Object.keys(answers).length === questions.length && (
+        {allAnswered ? (
           <div className="time-message">
             <div className="info-message">
-              🎉 Тест завершен! 
+              🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
               <br />
-              Уровень выгорания: {burnoutLevel}%
-              <br />
-              {burnoutLevel < 30 && "💚 Отличное состояние!"}
-              {burnoutLevel >= 30 && burnoutLevel < 60 && "⚠️ Умеренное выгорание"}
-              {burnoutLevel >= 60 && "🚨 Высокий уровень выгорания"}
+              Попробуйте снова завтра для отслеживания динамики.
             </div>
+          </div>
+        ) : (
+          <div className="questions">
+            {questions.map((question) => (
+              <QuestionCard
+                key={question.id}
+                question={question}
+                onAnswer={handleAnswer}
+                answered={question.id in answers}
+              />
+            ))}
           </div>
         )}
       </div>
 
       <div className="menu">
         <button className="menu-btn">📊</button>
-        <button className="menu-btn">📝</button>
+        <button className="menu-btn">📈</button>
         <button className="menu-btn">⚙️</button>
-        <button className="menu-btn">❓</button>
+        <button className="menu-btn">ℹ️</button>
       </div>
     </div>
   );
