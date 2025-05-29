@@ -1,52 +1,66 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_KEY!,
-  {
-    auth: { persistSession: false }
-  }
-);
-
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+/**
+ * API-роут для настройки вебхука Telegram-бота.
+ * @param req - Next.js API Request
+ * @param res - Next.js API Response
+ */
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Only POST allowed' });
   }
 
   try {
-    const { userId, burnoutLevel } = req.body;
+    const token = process.env.TOKEN;
+    const webappUrl = process.env.WEBAPPURL;
 
-    if (!userId || burnoutLevel === undefined) {
-      return res.status(400).json({ error: 'userId and burnoutLevel required' });
+    // Проверка переменных окружения
+    if (!token || !webappUrl) {
+      console.error('Missing environment variables: TOKEN or WEBAPPURL');
+      return res.status(500).json({ error: 'Server configuration error' });
     }
 
-    const { data: updatedUser, error } = await supabase
-      .from('users')
-      .update({
-        burnout_level: burnoutLevel,
-        last_survey_date: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('telegram_id', userId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Database error:', error);
-      return res.status(500).json({ error: 'Database error' });
+    // Проверка HTTPS
+    if (!webappUrl.startsWith('https://')) {
+      console.error('Webhook URL must use HTTPS');
+      return res.status(400).json({ error: 'Webhook URL must use HTTPS' });
     }
 
-    res.status(200).json({
-      success: true,
-      data: updatedUser
+    // Формирование URL вебхука
+    const webhookUrl = `${webappUrl.replace(/\/$/, '')}/api/webhook`;
+    const telegramUrl = `https://api.telegram.org/bot${token}/setWebhook`;
+
+    console.log('Setting webhook:', { telegramUrl, webhookUrl });
+
+    // Параметры вебхука
+    const webhookParams = {
+      url: webhookUrl,
+      droppendingupdates: true,
+      allowedupdates: process.env.ALLOWEDUPDATES ? JSON.parse(process.env.ALLOWEDUPDATES) : undefined,
+      secrettoken: process.env.WEBHOOKSECRETTOKEN || undefined,
+    };
+
+    // Отправка запроса к Telegram API
+    const response = await fetch(telegramUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(webhookParams),
+      signal: AbortSignal.timeout(5000), // Таймаут 5 секунд
     });
 
-  } catch (error) {
-    console.error('API error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    const data = await response.json();
+
+    // Проверка ответа Telegram API
+    if (!data.ok) {
+      console.error('Telegram API error:', data);
+      return res.status(500).json({ error: 'Failed to set webhook', details: data.description });
+    }
+
+    console.log('Webhook set successfully:', data);
+    return res.status(200).json(data);
+  } catch (error: any) {
+    console.error('Error setting webhook:', error);
+    return res.status(500).json({
+      error: 'Failed to set webhook',
+      details: error.message || 'Unknown error occurred',
+    });
   }
 }
