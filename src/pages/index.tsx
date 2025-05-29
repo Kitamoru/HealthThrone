@@ -99,12 +99,12 @@ export default function Home() {
       if (!isReady) return;
 
       try {
-        // Используем примеры вопросов вместо API
+        // Симуляция загрузки для лучшего UX
+        await new Promise(resolve => setTimeout(resolve, 1000));
         setQuestions(sampleQuestions);
         setLoading(false);
       } catch (error) {
         console.error('Initialization error:', error);
-        // Fallback to sample questions
         setQuestions(sampleQuestions);
         setLoading(false);
       }
@@ -149,20 +149,32 @@ export default function Home() {
       <div className="content">
         <div className="questions">
           {questions.map((question, index) => (
-            <QuestionCard
+            <div 
               key={question.id}
-              question={question}
-              index={index}
-              isAnswered={question.id in answers}
-              onAnswer={(isPositive) => handleAnswer(question.id, isPositive)}
-            />
+              style={{
+                animation: `fadeInUp 0.5s ease ${index * 0.1}s both`
+              }}
+            >
+              <QuestionCard
+                question={question}
+                index={index}
+                isAnswered={question.id in answers}
+                onAnswer={(isPositive) => handleAnswer(question.id, isPositive)}
+              />
+            </div>
           ))}
         </div>
 
         {Object.keys(answers).length === questions.length && (
           <div className="time-message">
             <div className="info-message">
-              Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
+              🎉 Тест завершен! 
+              <br />
+              Уровень выгорания: {burnoutLevel}%
+              <br />
+              {burnoutLevel < 30 && "💚 Отличное состояние!"}
+              {burnoutLevel >= 30 && burnoutLevel < 60 && "⚠️ Умеренное выгорание"}
+              {burnoutLevel >= 60 && "🚨 Высокий уровень выгорания"}
             </div>
           </div>
         )}

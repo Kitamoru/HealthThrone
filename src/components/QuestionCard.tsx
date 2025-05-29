@@ -15,7 +15,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   onAnswer
 }) => {
   return (
-    <div className="question-card">
+    <div className={`question-card ${isAnswered ? 'answered' : ''}`}>
       <h3 className="question-text">{question.text}</h3>
 
       <div className="answer-buttons">
@@ -24,7 +24,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           onClick={() => onAnswer(false)}
           disabled={isAnswered}
         >
-          {question.negative_answer}
+          {question.negative_answer} {isAnswered ? '✓' : ''}
         </button>
 
         <button
@@ -32,7 +32,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           onClick={() => onAnswer(true)}
           disabled={isAnswered}
         >
-          {question.positive_answer}
+          {question.positive_answer} {isAnswered ? '✓' : ''}
         </button>
       </div>
     </div>
