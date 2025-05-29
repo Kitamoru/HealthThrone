@@ -42,6 +42,48 @@ const sampleQuestions: Question[] = [
     positive_answer: "Да",
     negative_answer: "Нет",
     weight: 3
+  },
+  {
+    id: 6,
+    text: "Я чувствую себя энергичным",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: -2
+  },
+  {
+    id: 7,
+    text: "Мне легко концентрироваться",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: -2
+  },
+  {
+    id: 8,
+    text: "Я получаю удовольствие от работы",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: -3
+  },
+  {
+    id: 9,
+    text: "Я хорошо сплю",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: -2
+  },
+  {
+    id: 10,
+    text: "Я чувствую себя мотивированным",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: -2
+  },
+  {
+    id: 11,
+    text: "У меня хороший аппетит",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: -1
   }
 ];
 
@@ -76,13 +118,23 @@ export default function Home() {
     setAnswers(newAnswers);
 
     // Подсчет уровня выгорания
-    const totalWeight = questions.reduce((sum, q) => sum + q.weight, 0);
-    const currentScore = questions.reduce((score, question) => {
+    const answeredQuestions = questions.filter(q => q.id in newAnswers);
+    const maxPossibleScore = questions.reduce((sum, q) => sum + Math.abs(q.weight), 0);
+    
+    const currentScore = answeredQuestions.reduce((score, question) => {
       const answer = newAnswers[question.id];
-      return score + (answer ? question.weight : 0);
+      const weight = question.weight;
+      
+      if (weight > 0) {
+        // Негативные вопросы: "Да" увеличивает выгорание
+        return score + (answer ? weight : 0);
+      } else {
+        // Позитивные вопросы: "Нет" увеличивает выгорание
+        return score + (answer ? 0 : Math.abs(weight));
+      }
     }, 0);
 
-    const level = Math.round((currentScore / totalWeight) * 100);
+    const level = Math.min(100, Math.max(0, Math.round((currentScore / maxPossibleScore) * 100)));
     setBurnoutLevel(level);
   };
 

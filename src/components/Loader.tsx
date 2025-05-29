@@ -1,18 +1,10 @@
 
-import { motion } from 'framer-motion';
+import React from 'react';
 
 export const Loader: React.FC = () => {
   return (
-    <div className="loader">
-      <motion.div
-        className="loader-spinner"
-        animate={{ rotate: 360 }}
-        transition={{
-          duration: 1,
-          repeat: Infinity,
-          ease: "linear"
-        }}
-      />
+    <div className="loader-container">
+      <div className="loader-spinner"></div>
       <p>Загрузка...</p>
     </div>
   );
