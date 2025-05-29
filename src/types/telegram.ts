@@ -37,15 +37,7 @@ export interface TelegramWebApp {
   version: string;
   platform: string;
   colorScheme: 'light' | 'dark';
-  themeParams: {
-    bg_color?: string;
-    text_color?: string;
-    hint_color?: string;
-    link_color?: string;
-    button_color?: string;
-    button_text_color?: string;
-    secondary_bg_color?: string;
-  };
+  themeParams: TelegramWebAppTheme;
   isExpanded: boolean;
   viewportHeight: number;
   viewportStableHeight: number;
@@ -90,6 +82,7 @@ export interface TelegramHapticFeedback {
   selectionChanged: () => void;
 }
 
+// Используем объявление модуля для глобальных расширений
 declare global {
   interface Window {
     Telegram?: {
