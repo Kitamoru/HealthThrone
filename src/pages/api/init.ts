@@ -1,4 +1,3 @@
-
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
@@ -6,9 +5,7 @@ import crypto from 'crypto';
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_KEY!,
-  {
-    auth: { persistSession: false }
-  }
+  { auth: { persistSession: false } }
 );
 
 const verifyTelegramData = (initData: string): boolean => {
@@ -61,13 +58,13 @@ export default async function handler(
 
     const params = new URLSearchParams(initData);
     const user = JSON.parse(params.get('user') || '{}');
-    const user_id = user?.id;
+    const user_id = user?.id; // Объявлена здесь
 
     if (!user_id) {
       return res.status(400).json({ error: 'Invalid user data' });
     }
 
-    // Проверяем, существует ли пользователь
+    // Проверяем существование пользователя
     const { data: existingUser, error: fetchError } = await supabase
       .from('users')
       .select('*')
@@ -82,7 +79,7 @@ export default async function handler(
     let userData;
 
     if (existingUser) {
-      // Обновляем данные существующего пользователя
+      // Обновляем данные
       const { data: updatedUser, error: updateError } = await supabase
         .from('users')
         .update({
@@ -125,6 +122,7 @@ export default async function handler(
       userData = newUser;
     }
 
+    // Возвращаем успешный ответ
     res.status(200).json({
       success: true,
       user: userData
@@ -133,44 +131,5 @@ export default async function handler(
   } catch (error) {
     console.error('API error:', error);
     res.status(500).json({ error: 'Internal server error' });
-  }
-}
-
-    const { error: upsertError } = await supabase
-      .from('users')
-      .upsert({
-        user_id,
-        username: user?.username,
-        first_name: user?.first_name,
-        burnout_level: 5
-      }, {
-        onConflict: 'user_id'
-      });
-
-    if (upsertError) {
-      throw new Error(`Upsert error: ${upsertError.message}`);
-    }
-
-    const { data, error: selectError } = await supabase
-      .from('users')
-      .select('burnout_level')
-      .eq('user_id', user_id)
-      .single();
-
-    if (selectError) {
-      throw new Error(`Select error: ${selectError.message}`);
-    }
-
-    res.json({
-      success: true,
-      data: { burnout_level: data?.burnout_level || 5 }
-    });
-
-  } catch (err: any) {
-    console.error('Init error:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
   }
 }
