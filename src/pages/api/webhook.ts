@@ -19,21 +19,33 @@ if (missingVars.length > 0) {
 const bot = new Telegraf(process.env.TOKEN!);
 const webAppUrl = process.env.WEBAPPURL!;
 
+// Функция для безопасного извлечения свойств ошибки
+const getErrorDetails = (err: unknown) => {
+  if (err instanceof Error) {
+    return {
+      message: err.message,
+      stack: err.stack,
+      raw: err
+    };
+  }
+  return {
+    message: String(err),
+    stack: undefined,
+    raw: err
+  };
+};
+
 // Улучшенный глобальный обработчик ошибок
 bot.catch((err, ctx) => {
-  const errorDetails = {
+  const errorDetails = getErrorDetails(err);
+  
+  console.error(`[BOT GLOBAL ERROR]`, {
     updateId: ctx.update.update_id,
     updateType: Object.keys(ctx.update).find(key => key !== 'update_id') || 'unknown',
     userId: ctx.from?.id,
     chatId: ctx.chat?.id,
-    error: {
-      message: err.message,
-      stack: err.stack,
-      raw: err
-    }
-  };
-  
-  console.error(`[BOT GLOBAL ERROR]`, errorDetails);
+    error: errorDetails
+  });
   
   try {
     if (ctx.updateType === 'callback_query') {
@@ -43,7 +55,7 @@ bot.catch((err, ctx) => {
       ctx.reply('❌ Произошла внутренняя ошибка. Мы уже работаем над её устранением.');
     }
   } catch (sendError) {
-    console.error('Failed to send error notification:', sendError);
+    console.error('Failed to send error notification:', getErrorDetails(sendError));
   }
 });
 
@@ -82,19 +94,16 @@ bot.command('start', async (ctx) => {
     
     console.log(`Successfully handled /start for user: ${ctx.from.id}`);
   } catch (err) {
+    const errorDetails = getErrorDetails(err);
     console.error('[START COMMAND ERROR]', {
       userId: ctx.from?.id,
-      error: err instanceof Error ? {
-        message: err.message,
-        stack: err.stack
-      } : err
+      error: errorDetails
     });
     
     try {
       await ctx.reply('❌ Не удалось обработать команду. Попробуйте ещё раз.');
-      await ctx.answerCbQuery();
     } catch (sendError) {
-      console.error('Failed to send error notification:', sendError);
+      console.error('Failed to send error notification:', getErrorDetails(sendError));
     }
     
     // Пробрасываем ошибку для глобального обработчика
@@ -110,18 +119,16 @@ bot.action('stats', async (ctx) => {
     await ctx.answerCbQuery();
     console.log(`Successfully handled stats for user: ${ctx.from.id}`);
   } catch (err) {
+    const errorDetails = getErrorDetails(err);
     console.error('[STATS ACTION ERROR]', {
       userId: ctx.from?.id,
-      error: err instanceof Error ? {
-        message: err.message,
-        stack: err.stack
-      } : err
+      error: errorDetails
     });
     
     try {
       await ctx.answerCbQuery('❌ Ошибка при загрузке статистики');
     } catch (answerError) {
-      console.error('Failed to answer callback:', answerError);
+      console.error('Failed to answer callback:', getErrorDetails(answerError));
     }
     
     // Пробрасываем ошибку для глобального обработчика
@@ -187,19 +194,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ ok: true });
     
   } catch (err) {
+    const errorDetails = getErrorDetails(err);
     // Детальное логирование ошибки
-    const errorDetails = {
+    console.error('[WEBHOOK PROCESSING ERROR]', {
       updateId: req.body.update_id,
       updateType: Object.keys(req.body).find(key => key !== 'update_id') || 'unknown',
-      error: err instanceof Error ? {
-        message: err.message,
-        stack: err.stack
-      } : err,
-      // Логируем только ключи тела для экономии места
+      error: errorDetails,
       bodyKeys: Object.keys(req.body)
-    };
-    
-    console.error('[WEBHOOK PROCESSING ERROR]', errorDetails);
+    });
     
     // Всегда возвращаем 200 OK для Telegram
     return res.status(200).json({ 
@@ -215,12 +217,11 @@ process.on('SIGTERM', () => {
 
 // Логирование необработанных исключений
 process.on('uncaughtException', (error) => {
-  console.error('[UNCAUGHT EXCEPTION]', error);
+  console.error('[UNCAUGHT EXCEPTION]', getErrorDetails(error));
 });
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason) => {
   console.error('[UNHANDLED REJECTION]', {
-    reason,
-    promise
+    reason: getErrorDetails(reason)
   });
 });
