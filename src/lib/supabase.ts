@@ -1,5 +1,8 @@
-
 import { createClient } from '@supabase/supabase-js';
+
+console.log("[Supabase] Initializing Supabase client");
+console.log("[Supabase] URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "***" + process.env.NEXT_PUBLIC_SUPABASE_URL.slice(-8) : "MISSING");
+console.log("[Supabase] Key:", process.env.NEXT_PUBLIC_SUPABASE_KEY ? "***" + process.env.NEXT_PUBLIC_SUPABASE_KEY.slice(-5) : "MISSING");
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY!;
