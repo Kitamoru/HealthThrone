@@ -1,11 +1,14 @@
 import React from 'react';
+import './loader.css'; // Подключаем стили
 
 export const Loader: React.FC = () => {
   return (
     <div className="loader-container">
-      <div className="loader" />
-      <div className="loader-spinner">🚀</div>
-      <p>Загружаем данные...</p>
+      <div className="loader-spinner">
+        <div className="pulse-circle"></div>
+        <span className="loader-emoji">🚀</span>
+      </div>
+      <p className="loader-text">Загружаем данные...</p>
     </div>
   );
 };
