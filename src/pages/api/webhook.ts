@@ -73,22 +73,17 @@ bot.command('start', async (ctx) => {
       throw new Error(`Invalid WEBAPPURL: ${webAppUrl}`);
     }
     
-    // Создаем клавиатуру с дополнительными проверками
+    // Создаем клавиатуру
     const keyboard = Markup.inlineKeyboard([
       Markup.button.webApp('🌐 Открыть приложение', webAppUrl),
       Markup.button.callback('📊 Статистика', 'stats')
     ]);
 
-    // Проверяем структуру клавиатуры перед отправкой
-    if (!keyboard || !keyboard.reply_markup) {
-      throw new Error('Keyboard creation failed');
-    }
-
-    // Отправляем сообщение с дополнительными параметрами
+    // Отправляем сообщение с корректными параметрами
     await ctx.reply('🔥 Добро пожаловать!', {
       reply_markup: keyboard.reply_markup,
       parse_mode: 'MarkdownV2',
-      disable_web_page_preview: true
+      link_preview_options: { is_disabled: true } // Исправленный параметр
     });
     
     console.log(`Successfully handled /start for user: ${ctx.from.id}`);
@@ -100,7 +95,6 @@ bot.command('start', async (ctx) => {
       error: errorDetails
     });
     
-    // Отправляем ОДНО сообщение об ошибке
     try {
       await ctx.reply('❌ Не удалось обработать команду. Попробуйте ещё раз.');
     } catch (sendError) {
@@ -133,10 +127,84 @@ bot.action('stats', async (ctx) => {
 
 // Обработчик вебхука
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // ... (без изменений, оставить как в предыдущей версии)
+  // Разрешаем только POST-запросы
+  if (req.method !== 'POST') {
+    console.warn(`Rejected non-POST request: ${req.method}`);
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Проверка секретного токена
+  const secretToken = req.headers['x-telegram-bot-api-secret-token'];
+  
+  // Безопасное сравнение токенов
+  const safeCompare = (a: string, b: string) => {
+    try {
+      const aBuf = Buffer.from(a);
+      const bBuf = Buffer.from(b);
+      return crypto.timingSafeEqual(aBuf, bBuf);
+    } catch (e) {
+      return false;
+    }
+  };
+
+  if (
+    !secretToken || 
+    typeof secretToken !== 'string' ||
+    !safeCompare(secretToken, process.env.WEBHOOKSECRETTOKEN!)
+  ) {
+    console.error('INVALID SECRET TOKEN', {
+      received: secretToken || 'MISSING',
+      expected: process.env.WEBHOOKSECRETTOKEN ? 
+        '***' + process.env.WEBHOOKSECRETTOKEN.slice(-5) : 'MISSING',
+      headers: req.headers
+    });
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+
+  // Проверка наличия тела запроса
+  if (!req.body || Object.keys(req.body).length === 0) {
+    console.error('EMPTY REQUEST BODY', {
+      headers: req.headers
+    });
+    return res.status(400).json({ error: 'Empty body' });
+  }
+
+  try {
+    console.log(`[PROCESSING UPDATE] ${req.body.update_id}`);
+    
+    // Логирование типа обновления
+    const updateType = Object.keys(req.body).find(key => key !== 'update_id') || 'unknown';
+    console.log(`Update type: ${updateType}`);
+    
+    // Обработка обновления
+    await bot.handleUpdate(req.body);
+    
+    console.log(`[SUCCESS] Processed update ${req.body.update_id}`);
+    return res.status(200).json({ ok: true });
+    
+  } catch (err) {
+    const errorDetails = getErrorDetails(err);
+    // Детальное логирование ошибки
+    console.error('[WEBHOOK PROCESSING ERROR]', {
+      updateId: req.body.update_id,
+      updateType: Object.keys(req.body).find(key => key !== 'update_id') || 'unknown',
+      error: errorDetails,
+      bodyKeys: Object.keys(req.body)
+    });
+    
+    // Всегда возвращаем 200 OK для Telegram
+    return res.status(200).json({ 
+      error: 'Webhook processing failed but acknowledged'
+    });
+  }
 }
 
-// Обработчики ошибок процесса
+// Фикс для работы на Vercel
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Keeping alive for Vercel.');
+});
+
+// Логирование необработанных исключений
 process.on('uncaughtException', (error) => {
   console.error('[UNCAUGHT EXCEPTION]', getErrorDetails(error));
 });
