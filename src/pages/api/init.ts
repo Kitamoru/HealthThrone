@@ -1,24 +1,18 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import crypto from 'crypto';
 
-// Инициализация Supabase с сервисным ключом
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!, // Используем сервисный ключ
-  { auth: { persistSession: false } }
-);
+console.log("[Init API] Initializing init API handler");
 
-// Улучшенная проверка данных Telegram
 const verifyTelegramData = (initData: string): boolean => {
+  console.log("[Init API] Verifying Telegram data");
+  
   try {
-    console.log('Verifying Telegram data...');
-    
     const params = new URLSearchParams(initData);
     const hash = params.get('hash');
     
     if (!hash) {
-      console.error('Hash not found in initData');
+      console.error('[Init API] Hash not found in initData');
       return false;
     }
 
@@ -43,11 +37,10 @@ const verifyTelegramData = (initData: string): boolean => {
       .digest('hex');
 
     const isValid = hash === calculatedHash;
-    
-    console.log('Telegram hash verification result:', isValid);
+    console.log(`[Init API] Telegram hash verification result: ${isValid}`);
     return isValid;
   } catch (err) {
-    console.error('Telegram hash verification failed:', err);
+    console.error('[Init API] Telegram hash verification failed:', err);
     return false;
   }
 };
@@ -56,24 +49,24 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  console.log('Received init request');
+  console.log('[Init API] Received request', req.method, req.url);
   
   if (req.method !== 'POST') {
-    console.warn('Invalid method', req.method);
+    console.warn('[Init API] Invalid method', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     const { initData } = req.body;
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('[Init API] Request body:', JSON.stringify(req.body, null, 2));
 
     if (!initData) {
-      console.error('initData is required');
+      console.error('[Init API] initData is required');
       return res.status(400).json({ error: 'initData required' });
     }
 
     if (!verifyTelegramData(initData)) {
-      console.warn('Invalid Telegram auth data');
+      console.warn('[Init API] Invalid Telegram auth data');
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -81,31 +74,35 @@ export default async function handler(
     const user = JSON.parse(params.get('user') || '{}');
     const user_id = user?.id;
 
-    console.log('Parsed user data:', user);
+    console.log('[Init API] Parsed user data:', JSON.stringify(user, null, 2));
 
     if (!user_id) {
-      console.error('User ID is missing');
+      console.error('[Init API] User ID is missing');
       return res.status(400).json({ error: 'Invalid user data' });
     }
 
     // Проверяем существование пользователя
-    console.log('Checking user in database...');
+    console.log(`[Init API] Checking user in database: ${user_id}`);
     const { data: existingUser, error: fetchError } = await supabase
       .from('users')
       .select('*')
       .eq('telegram_id', user_id)
       .maybeSingle();
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      console.error('Database fetch error:', fetchError);
-      return res.status(500).json({ error: 'Database error' });
+    if (fetchError) {
+      console.error('[Init API] Database fetch error:', fetchError);
+      return res.status(500).json({ 
+        error: 'Database error',
+        details: fetchError.message
+      });
     }
 
     let userData;
     const now = new Date().toISOString();
+    console.log(`[Init API] Current timestamp: ${now}`);
 
     if (existingUser) {
-      console.log('User exists, updating...');
+      console.log('[Init API] User exists, updating...');
       // Обновляем данные
       const updateData = {
         first_name: user.first_name,
@@ -115,6 +112,8 @@ export default async function handler(
         updated_at: now
       };
 
+      console.log('[Init API] Update data:', JSON.stringify(updateData, null, 2));
+      
       const { data: updatedUser, error: updateError } = await supabase
         .from('users')
         .update(updateData)
@@ -123,14 +122,17 @@ export default async function handler(
         .single();
 
       if (updateError) {
-        console.error('User update error:', updateError);
-        return res.status(500).json({ error: 'Failed to update user' });
+        console.error('[Init API] User update error:', updateError);
+        return res.status(500).json({ 
+          error: 'Failed to update user',
+          details: updateError.message
+        });
       }
 
       userData = updatedUser;
-      console.log('User updated:', updatedUser);
+      console.log('[Init API] User updated:', JSON.stringify(updatedUser, null, 2));
     } else {
-      console.log('User not found, creating new...');
+      console.log('[Init API] User not found, creating new...');
       // Создаем нового пользователя
       const insertData = {
         telegram_id: user_id,
@@ -143,6 +145,8 @@ export default async function handler(
         updated_at: now
       };
 
+      console.log('[Init API] Insert data:', JSON.stringify(insertData, null, 2));
+      
       const { data: newUser, error: insertError } = await supabase
         .from('users')
         .insert(insertData)
@@ -150,22 +154,28 @@ export default async function handler(
         .single();
 
       if (insertError) {
-        console.error('User creation error:', insertError);
-        return res.status(500).json({ error: 'Failed to create user' });
+        console.error('[Init API] User creation error:', insertError);
+        return res.status(500).json({ 
+          error: 'Failed to create user',
+          details: insertError.message
+        });
       }
 
       userData = newUser;
-      console.log('User created:', newUser);
+      console.log('[Init API] User created:', JSON.stringify(newUser, null, 2));
     }
 
-    // Возвращаем успешный ответ
-    res.status(200).json({
+    console.log('[Init API] Returning success response');
+    return res.status(200).json({
       success: true,
       user: userData
     });
 
   } catch (error) {
-    console.error('API error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('[Init API] Unhandled error:', error);
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 }
