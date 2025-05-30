@@ -9,7 +9,8 @@ class Api {
 
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     try {
-      console.log(`API request to: ${endpoint}`);
+      console.log(`[API] Making request to: ${endpoint}`);
+      console.log(`[API] Request options:`, options);
       
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         headers: {
@@ -19,8 +20,8 @@ class Api {
         ...options,
       });
 
-      console.log(`API response status: ${response.status}`);
-
+      console.log(`[API] Response status: ${response.status}`);
+      
       // Обрабатываем случаи, когда ответ не JSON
       const contentType = response.headers.get('content-type');
       let data;
@@ -31,7 +32,7 @@ class Api {
         data = await response.text();
       }
 
-      console.log(`API response data:`, data);
+      console.log(`[API] Response data:`, data);
 
       if (!response.ok) {
         return {
@@ -46,7 +47,7 @@ class Api {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Network error';
-      console.error('API request failed:', errorMessage);
+      console.error('[API] Request failed:', errorMessage);
       return {
         success: false,
         error: errorMessage
@@ -55,12 +56,12 @@ class Api {
   }
 
   async getUserData(userId: number) {
-    console.log(`Fetching user data for ID: ${userId}`);
+    console.log(`[API] Fetching user data for ID: ${userId}`);
     return this.request(`/data?userId=${userId}`);
   }
 
   async updateBurnoutLevel(userId: number, level: number) {
-    console.log(`Updating burnout level for user ${userId} to ${level}`);
+    console.log(`[API] Updating burnout level for user ${userId} to ${level}`);
     return this.request('/update', {
       method: 'POST',
       body: JSON.stringify({ userId, burnoutLevel: level })
@@ -68,7 +69,7 @@ class Api {
   }
 
   async initUser(initData: string) {
-    console.log('Initializing user with initData');
+    console.log('[API] Initializing user with initData');
     return this.request('/init', {
       method: 'POST',
       body: JSON.stringify({ initData })
