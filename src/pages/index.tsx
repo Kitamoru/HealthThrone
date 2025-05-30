@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 import { BurnoutProgress } from '../components/BurnoutProgress';
 import { QuestionCard } from '../components/QuestionCard';
 import { Loader } from '../components/Loader';
+import { api } from '../lib/api';
 
 interface Question {
   id: number;
@@ -94,87 +94,154 @@ const QUESTIONS: Question[] = [
 ];
 
 export default function Home() {
-  const { user, isReady } = useTelegram();
+  const { user, isReady, initData, error } = useTelegram();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [burnoutLevel, setBurnoutLevel] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [initStatus, setInitStatus] = useState<string>('not_started');
+  const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('[Home] Component mounted');
+    
     const initializeApp = async () => {
-      if (!isReady) return;
+      if (!isReady) {
+        console.log('[Home] Telegram not ready yet');
+        return;
+      }
 
       try {
-        // Симуляция загрузки для лучшего UX
-        await new Promise(resolve => setTimeout(resolve, 800));
+        console.log('[Home] Initializing application');
+        setLoading(true);
         
-        // Загружаем вопросы
+        // 1. Инициализация пользователя
+        if (initData && user?.id) {
+          console.log('[Home] Initializing user with initData');
+          setInitStatus('in_progress');
+          
+          const initResponse = await api.initUser(initData);
+          console.log('[Home] User initialization response:', initResponse);
+          
+          if (initResponse.success) {
+            setInitStatus('success');
+            console.log('[Home] User initialized successfully');
+          } else {
+            setInitStatus('failed');
+            setApiError(initResponse.error || 'Failed to initialize user');
+            console.error('[Home] User initialization failed:', initResponse.error);
+          }
+        } else {
+          console.warn('[Home] Skipping user init - missing initData or user.id');
+          setInitStatus('skipped');
+        }
+
+        // 2. Загружаем вопросы
+        console.log('[Home] Setting questions');
         setQuestions(QUESTIONS);
         
-        // Загружаем данные пользователя если есть
+        // 3. Загружаем данные пользователя
         if (user?.id) {
+          console.log(`[Home] Loading user data for ID: ${user.id}`);
+          
           try {
-            const response = await fetch(`/api/data?userId=${user.id}`);
-            const data = await response.json();
+            const response = await api.getUserData(user.id);
+            console.log('[Home] User data response:', response);
             
-            if (data.success && data.data) {
-              setBurnoutLevel(data.data.burnout_level || 0);
+            if (response.success && response.data) {
+              const userData = response.data;
+              console.log('[Home] User data loaded:', userData);
+              setBurnoutLevel(userData.burnout_level || 0);
+              
+              // Загружаем предыдущие ответы если есть
+              if (userData.answers) {
+                console.log('[Home] Loading saved answers');
+                setAnswers(userData.answers);
+              }
+            } else {
+              console.warn('[Home] No user data found or error', response.error);
             }
-          } catch (error) {
-            console.log('Не удалось загрузить данные пользователя');
+          } catch (err) {
+            console.error('[Home] Error loading user data:', err);
           }
+        } else {
+          console.warn('[Home] Skipping user data load - no user ID');
         }
         
         setLoading(false);
+        console.log('[Home] App initialized successfully');
       } catch (error) {
-        console.error('Ошибка инициализации:', error);
+        console.error('[Home] Initialization error:', error);
+        setApiError('Ошибка инициализации приложения');
         setLoading(false);
       }
     };
 
     initializeApp();
-  }, [isReady, user]);
+  }, [isReady, user, initData]);
 
   const handleAnswer = async (questionId: number, isPositive: boolean) => {
+    console.log(`[Home] Handling answer for question ${questionId}: ${isPositive}`);
+    
     const question = questions.find(q => q.id === questionId);
-    if (!question) return;
+    if (!question) {
+      console.warn(`[Home] Question not found: ${questionId}`);
+      return;
+    }
 
     // Обновляем локальные ответы
-    setAnswers(prev => ({
-      ...prev,
+    const newAnswers = {
+      ...answers,
       [questionId]: isPositive
-    }));
+    };
+    setAnswers(newAnswers);
 
     // Рассчитываем изменение уровня выгорания
     const delta = isPositive ? question.weight : 0;
     const newLevel = Math.max(0, Math.min(100, burnoutLevel + delta));
-    
     setBurnoutLevel(newLevel);
+    console.log(`[Home] New burnout level: ${newLevel}%`);
 
     // Отправляем данные на сервер если есть пользователь
     if (user?.id) {
+      console.log(`[Home] Saving burnout level for user ${user.id}`);
+      
       try {
-        await fetch('/api/update', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: user.id,
-            burnoutLevel: newLevel
-          })
-        });
+        const saveResponse = await api.updateBurnoutLevel(user.id, newLevel);
+        console.log('[Home] Save response:', saveResponse);
+        
+        if (!saveResponse.success) {
+          console.error('[Home] Failed to save burnout level:', saveResponse.error);
+        }
       } catch (error) {
-        console.log('Не удалось сохранить данные');
+        console.error('[Home] Error saving burnout level:', error);
       }
+    } else {
+      console.warn('[Home] Skipping save - no user ID');
     }
   };
 
   if (loading) {
+    console.log('[Home] Rendering loader');
     return <Loader />;
   }
 
   const allAnswered = questions.every(q => q.id in answers);
+  console.log(`[Home] All questions answered: ${allAnswered}`);
+
+  // Диагностическая панель
+  const debugInfo = {
+    telegramReady: isReady,
+    user: user ? {
+      id: user.id,
+      name: user.first_name
+    } : null,
+    initData: initData ? `...${initData.slice(-20)}` : null,
+    initStatus,
+    burnoutLevel,
+    answeredQuestions: Object.keys(answers).length,
+    apiError
+  };
 
   return (
     <div className="container">
@@ -209,6 +276,22 @@ export default function Home() {
         <button className="menu-btn">⚙️</button>
         <button className="menu-btn">ℹ️</button>
       </div>
+      
+      {/* Диагностическая панель (только в development) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{
+          marginTop: '20px',
+          padding: '10px',
+          background: '#f0f0f0',
+          borderRadius: '5px',
+          fontSize: '12px'
+        }}>
+          <h3>Debug Information:</h3>
+          <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+          {error && <p style={{ color: 'red' }}>Telegram Error: {error}</p>}
+          {apiError && <p style={{ color: 'red' }}>API Error: {apiError}</p>}
+        </div>
+      )}
     </div>
   );
 }
