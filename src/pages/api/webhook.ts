@@ -79,11 +79,14 @@ bot.command('start', async (ctx) => {
       Markup.button.callback('📊 Статистика', 'stats')
     ]);
 
-    // Отправляем сообщение с корректными параметрами
-    await ctx.reply('🔥 Добро пожаловать!', {
+    // Экранированное сообщение для MarkdownV2
+    const escapedMessage = '🔥 Добро пожаловать\\!';
+    
+    // Отправляем сообщение
+    await ctx.reply(escapedMessage, {
       reply_markup: keyboard.reply_markup,
       parse_mode: 'MarkdownV2',
-      link_preview_options: { is_disabled: true } // Исправленный параметр
+      link_preview_options: { is_disabled: true }
     });
     
     console.log(`Successfully handled /start for user: ${ctx.from.id}`);
@@ -141,76 +144,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const aBuf = Buffer.from(a);
       const bBuf = Buffer.from(b);
-      return crypto.timingSafeEqual(aBuf, bBuf);
-    } catch (e) {
-      return false;
-    }
-  };
-
-  if (
-    !secretToken || 
-    typeof secretToken !== 'string' ||
-    !safeCompare(secretToken, process.env.WEBHOOKSECRETTOKEN!)
-  ) {
-    console.error('INVALID SECRET TOKEN', {
-      received: secretToken || 'MISSING',
-      expected: process.env.WEBHOOKSECRETTOKEN ? 
-        '***' + process.env.WEBHOOKSECRETTOKEN.slice(-5) : 'MISSING',
-      headers: req.headers
-    });
-    return res.status(401).json({ error: 'Invalid token' });
-  }
-
-  // Проверка наличия тела запроса
-  if (!req.body || Object.keys(req.body).length === 0) {
-    console.error('EMPTY REQUEST BODY', {
-      headers: req.headers
-    });
-    return res.status(400).json({ error: 'Empty body' });
-  }
-
-  try {
-    console.log(`[PROCESSING UPDATE] ${req.body.update_id}`);
-    
-    // Логирование типа обновления
-    const updateType = Object.keys(req.body).find(key => key !== 'update_id') || 'unknown';
-    console.log(`Update type: ${updateType}`);
-    
-    // Обработка обновления
-    await bot.handleUpdate(req.body);
-    
-    console.log(`[SUCCESS] Processed update ${req.body.update_id}`);
-    return res.status(200).json({ ok: true });
-    
-  } catch (err) {
-    const errorDetails = getErrorDetails(err);
-    // Детальное логирование ошибки
-    console.error('[WEBHOOK PROCESSING ERROR]', {
-      updateId: req.body.update_id,
-      updateType: Object.keys(req.body).find(key => key !== 'update_id') || 'unknown',
-      error: errorDetails,
-      bodyKeys: Object.keys(req.body)
-    });
-    
-    // Всегда возвращаем 200 OK для Telegram
-    return res.status(200).json({ 
-      error: 'Webhook processing failed but acknowledged'
-    });
-  }
-}
-
-// Фикс для работы на Vercel
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Keeping alive for Vercel.');
-});
-
-// Логирование необработанных исключений
-process.on('uncaughtException', (error) => {
-  console.error('[UNCAUGHT EXCEPTION]', getErrorDetails(error));
-});
-
-process.on('unhandledRejection', (reason) => {
-  console.error('[UNHANDLED REJECTION]', {
-    reason: getErrorDetails(reason)
-  });
-});
+      return crypto.timingSafeEqual(aBuf
