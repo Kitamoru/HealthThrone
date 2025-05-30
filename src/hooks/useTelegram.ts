@@ -62,62 +62,74 @@ export const useTelegram = () => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    console.log('[useTelegram] Initializing Telegram WebApp hook');
+    
     const initTelegram = () => {
       try {
+        console.log('[useTelegram] Checking for Telegram object');
         const telegram = window.Telegram;
         
         if (!telegram) {
-          setError('Telegram object not found on window');
-          console.error('Telegram object is undefined');
+          const errorMsg = 'Telegram object not found on window';
+          setError(errorMsg);
+          console.error('[useTelegram]', errorMsg);
           return;
         }
 
         if (!telegram.WebApp) {
-          setError('Telegram.WebApp not initialized');
-          console.error('Telegram.WebApp is undefined');
+          const errorMsg = 'Telegram.WebApp not initialized';
+          setError(errorMsg);
+          console.error('[useTelegram]', errorMsg);
           return;
         }
 
         const tg = telegram.WebApp;
+        console.log('[useTelegram] Telegram WebApp found:', tg);
+        
         setWebApp(tg);
         
         // Проверяем наличие initData
         if (!tg.initData) {
-          setError('initData is empty');
-          console.error('Telegram WebApp initData is empty');
+          const errorMsg = 'initData is empty';
+          setError(errorMsg);
+          console.error('[useTelegram]', errorMsg);
         } else {
           setInitData(tg.initData);
+          console.log('[useTelegram] initData set');
         }
 
         // Проверяем наличие пользователя
         if (tg.initDataUnsafe?.user) {
           setUser(tg.initDataUnsafe.user);
+          console.log('[useTelegram] User data set:', tg.initDataUnsafe.user);
         } else {
-          setError('User data not available in initDataUnsafe');
-          console.error('Telegram user data is missing');
+          const errorMsg = 'User data not available in initDataUnsafe';
+          setError(errorMsg);
+          console.error('[useTelegram]', errorMsg);
         }
 
         // Инициализируем Telegram WebApp
+        console.log('[useTelegram] Calling Telegram.ready() and expand()');
         tg.ready();
         tg.expand();
         setIsReady(true);
-
-        console.log('Telegram WebApp initialized successfully', {
-          user: tg.initDataUnsafe.user,
-          initData: tg.initData,
-        });
+        console.log('[useTelegram] Telegram WebApp initialized successfully');
 
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
-        setError(`Failed to initialize Telegram WebApp: ${message}`);
-        console.error('Telegram init error:', err);
+        const errorMsg = `Failed to initialize Telegram WebApp: ${message}`;
+        setError(errorMsg);
+        console.error('[useTelegram]', errorMsg, err);
       }
     };
 
     // Добавляем задержку для случаев, когда объект загружается асинхронно
     const timer = setTimeout(initTelegram, 1000);
     
-    return () => clearTimeout(timer);
+    return () => {
+      console.log('[useTelegram] Cleaning up hook');
+      clearTimeout(timer);
+    };
   }, []);
 
   return {
