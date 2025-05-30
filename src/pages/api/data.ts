@@ -1,51 +1,65 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_KEY!,
-  {
-    auth: { persistSession: false }
-  }
-);
+console.log("[Data API] Initializing data API handler");
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  console.log('[Data API] Received request', req.method, req.url);
+  
   if (req.method !== 'GET') {
+    console.warn('[Data API] Invalid method', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     const { userId } = req.query;
+    console.log('[Data API] Request query:', req.query);
 
     if (!userId) {
+      console.error('[Data API] userId is required');
       return res.status(400).json({ error: 'userId required' });
     }
 
+    const userIdNumber = Number(userId);
+    if (isNaN(userIdNumber)) {
+      console.error('[Data API] Invalid userId format', userId);
+      return res.status(400).json({ error: 'Invalid userId format' });
+    }
+
+    console.log(`[Data API] Fetching user data for ID: ${userIdNumber}`);
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
-      .eq('telegram_id', userId)
+      .eq('telegram_id', userIdNumber)
       .single();
 
     if (error) {
-      console.error('Database error:', error);
-      return res.status(500).json({ error: 'Database error' });
+      console.error('[Data API] Database error:', error);
+      return res.status(500).json({ 
+        error: 'Database error',
+        details: error.message
+      });
     }
 
     if (!user) {
+      console.error('[Data API] User not found');
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.status(200).json({
+    console.log('[Data API] User data found:', JSON.stringify(user, null, 2));
+    return res.status(200).json({
       success: true,
       data: user
     });
 
   } catch (error) {
-    console.error('API error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('[Data API] Unhandled error:', error);
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 }
