@@ -1,5 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { setTimeout } from 'timers/promises';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -37,34 +36,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const webhookParams = {
       url: webhookUrl,
-      drop_pending_updates: true, // Исправлено: в API Telegram используется snake_case
+      drop_pending_updates: true,
       allowed_updates: allowedUpdates,
       secret_token: process.env.WEBHOOKSECRETTOKEN || undefined,
     };
 
-    // Таймаут с контроллером
+    // ФИКС: Исправленный таймаут с использованием Node.js таймеров
     const controller = new AbortController();
-    const timeoutPromise = setTimeout(5000).then(() => controller.abort());
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    const response = await fetch(telegramUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(webhookParams),
-      signal: controller.signal,
-    }).finally(() => clearTimeout(timeoutPromise));
-
-    const data = await response.json();
-
-    // Двойная проверка ответа Telegram
-    if (!response.ok || !data.ok) {
-      console.error('Telegram error:', data.description);
-      return res.status(500).json({
-        error: 'Telegram API failure',
-        details: data.description,
+    try {
+      const response = await fetch(telegramUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(webhookParams),
+        signal: controller.signal,
       });
-    }
 
-    return res.status(200).json(data);
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        console.error('Telegram error:', data.description);
+        return res.status(500).json({
+          error: 'Telegram API failure',
+          details: data.description,
+        });
+      }
+
+      return res.status(200).json(data);
+    } finally {
+      clearTimeout(timeoutId); // Корректная очистка таймера
+    }
   } catch (error: any) {
     console.error('Critical error:', error);
     return res.status(500).json({
