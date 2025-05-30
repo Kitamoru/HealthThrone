@@ -26,9 +26,9 @@
     {
       "src": "/(.*)",
       "headers": {
-        "X-Frame-Options": "DENY",
         "X-Content-Type-Options": "nosniff",
-        "Referrer-Policy": "strict-origin-when-cross-origin"
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Content-Security-Policy": "frame-ancestors 'self' https://*.telegram.org;"
       }
     }
   ],
