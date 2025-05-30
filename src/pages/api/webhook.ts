@@ -11,65 +11,121 @@ const requiredEnvVars = ['TOKEN', 'WEBAPPURL', 'WEBHOOKSECRETTOKEN'];
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingVars.length > 0) {
-  console.error('Missing environment variables:', missingVars.join(', '));
-  process.exit(1);
+  const errorMessage = `Missing environment variables: ${missingVars.join(', ')}`;
+  console.error(errorMessage);
+  throw new Error(errorMessage);
 }
 
 const bot = new Telegraf(process.env.TOKEN!);
 const webAppUrl = process.env.WEBAPPURL!;
 
-// 1. Глобальный обработчик ошибок бота
+// Улучшенный глобальный обработчик ошибок
 bot.catch((err, ctx) => {
-  console.error(`[Bot Error] Update ${ctx.update.update_id}:`, err);
+  const errorDetails = {
+    updateId: ctx.update.update_id,
+    updateType: Object.keys(ctx.update).find(key => key !== 'update_id') || 'unknown',
+    userId: ctx.from?.id,
+    chatId: ctx.chat?.id,
+    error: {
+      message: err.message,
+      stack: err.stack,
+      raw: err
+    }
+  };
+  
+  console.error(`[BOT GLOBAL ERROR]`, errorDetails);
+  
   try {
-    ctx.reply('❌ Произошла внутренняя ошибка');
-  } catch (e) {
-    console.error('Failed to send error message:', e);
+    if (ctx.updateType === 'callback_query') {
+      ctx.answerCbQuery('❌ Internal error').catch(e => 
+        console.error('Failed to answer callback:', e));
+    } else {
+      ctx.reply('❌ Произошла внутренняя ошибка. Мы уже работаем над её устранением.');
+    }
+  } catch (sendError) {
+    console.error('Failed to send error notification:', sendError);
   }
 });
 
-// 2. Улучшенное логирование входящих обновлений
+// Логирование входящих обновлений
 bot.use((ctx, next) => {
-  const updateType = Object.keys(ctx.update)
-    .find(key => key !== 'update_id') || 'unknown';
-    
-  console.log(`[Update ${ctx.update.update_id}] Type: ${updateType} | From: ${ctx.from?.id} | Chat: ${ctx.chat?.id}`);
+  const updateType = Object.keys(ctx.update).find(key => key !== 'update_id') || 'unknown';
+  const logInfo = {
+    updateId: ctx.update.update_id,
+    type: updateType,
+    userId: ctx.from?.id,
+    chatId: ctx.chat?.id,
+    text: 'text' in ctx.update ? ctx.update.text : undefined
+  };
   
+  console.log('[INCOMING UPDATE]', logInfo);
   return next();
 });
 
-// Обработка команды /start
+// Обработка команды /start с улучшенной обработкой ошибок
 bot.command('start', async (ctx) => {
   try {
-    // 3. Фикс для корректного отображения кнопки веб-приложения
+    console.log(`Handling /start for user: ${ctx.from.id}`);
+    
     const keyboard = Markup.inlineKeyboard([
       Markup.button.webApp(
         '🌐 Открыть приложение', 
-        `${webAppUrl}` 
+        webAppUrl
       ),
       Markup.button.callback('📊 Статистика', 'stats')
     ]);
     
-    // 4. Фикс экранирования для MarkdownV2
     await ctx.reply('🔥 Добро пожаловать!', {
       reply_markup: keyboard.reply_markup,
       parse_mode: 'MarkdownV2'
     });
+    
+    console.log(`Successfully handled /start for user: ${ctx.from.id}`);
   } catch (err) {
-    console.error('Error in /start command:', err);
-    await ctx.reply('❌ Произошла ошибка, попробуйте позже.');
+    console.error('[START COMMAND ERROR]', {
+      userId: ctx.from?.id,
+      error: err instanceof Error ? {
+        message: err.message,
+        stack: err.stack
+      } : err
+    });
+    
+    try {
+      await ctx.reply('❌ Не удалось обработать команду. Попробуйте ещё раз.');
+      await ctx.answerCbQuery();
+    } catch (sendError) {
+      console.error('Failed to send error notification:', sendError);
+    }
+    
+    // Пробрасываем ошибку для глобального обработчика
+    throw err;
   }
 });
 
 // Обработка callback для кнопки статистики
 bot.action('stats', async (ctx) => {
   try {
+    console.log(`Handling stats for user: ${ctx.from.id}`);
     await ctx.reply('📊 Здесь будет статистика!');
-    // 5. Обязательно отвечаем на callback
     await ctx.answerCbQuery();
+    console.log(`Successfully handled stats for user: ${ctx.from.id}`);
   } catch (err) {
-    console.error('Error in stats callback:', err);
-    await ctx.answerCbQuery('❌ Ошибка при загрузке статистики');
+    console.error('[STATS ACTION ERROR]', {
+      userId: ctx.from?.id,
+      error: err instanceof Error ? {
+        message: err.message,
+        stack: err.stack
+      } : err
+    });
+    
+    try {
+      await ctx.answerCbQuery('❌ Ошибка при загрузке статистики');
+    } catch (answerError) {
+      console.error('Failed to answer callback:', answerError);
+    }
+    
+    // Пробрасываем ошибку для глобального обработчика
+    throw err;
   }
 });
 
@@ -77,10 +133,11 @@ bot.action('stats', async (ctx) => {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Разрешаем только POST-запросы
   if (req.method !== 'POST') {
+    console.warn(`Rejected non-POST request: ${req.method}`);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // 6. Проверка секретного токена
+  // Проверка секретного токена
   const secretToken = req.headers['x-telegram-bot-api-secret-token'];
   
   // Безопасное сравнение токенов
@@ -99,46 +156,71 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     typeof secretToken !== 'string' ||
     !safeCompare(secretToken, process.env.WEBHOOKSECRETTOKEN!)
   ) {
-    console.error('Invalid secret token:', {
+    console.error('INVALID SECRET TOKEN', {
       received: secretToken || 'MISSING',
       expected: process.env.WEBHOOKSECRETTOKEN ? 
-        '***' + process.env.WEBHOOKSECRETTOKEN.slice(-5) : 'MISSING'
+        '***' + process.env.WEBHOOKSECRETTOKEN.slice(-5) : 'MISSING',
+      headers: req.headers
     });
     return res.status(401).json({ error: 'Invalid token' });
   }
 
-  // 7. Проверка наличия тела запроса
+  // Проверка наличия тела запроса
   if (!req.body || Object.keys(req.body).length === 0) {
-    console.error('Empty request body');
+    console.error('EMPTY REQUEST BODY', {
+      headers: req.headers
+    });
     return res.status(400).json({ error: 'Empty body' });
   }
 
   try {
-    console.log(`Processing update ${req.body.update_id}`);
+    console.log(`[PROCESSING UPDATE] ${req.body.update_id}`);
     
-    // 8. Обработка обновления
+    // Логирование типа обновления
+    const updateType = Object.keys(req.body).find(key => key !== 'update_id') || 'unknown';
+    console.log(`Update type: ${updateType}`);
+    
+    // Обработка обновления
     await bot.handleUpdate(req.body);
     
+    console.log(`[SUCCESS] Processed update ${req.body.update_id}`);
     return res.status(200).json({ ok: true });
     
   } catch (err) {
-    // 9. Подробное логирование ошибки
-    console.error('Webhook processing error:', {
+    // Детальное логирование ошибки
+    const errorDetails = {
+      updateId: req.body.update_id,
+      updateType: Object.keys(req.body).find(key => key !== 'update_id') || 'unknown',
       error: err instanceof Error ? {
         message: err.message,
         stack: err.stack
       } : err,
-      body: req.body
-    });
+      // Логируем только ключи тела для экономии места
+      bodyKeys: Object.keys(req.body)
+    };
     
-    // 10. Всегда возвращаем 200 OK для Telegram
+    console.error('[WEBHOOK PROCESSING ERROR]', errorDetails);
+    
+    // Всегда возвращаем 200 OK для Telegram
     return res.status(200).json({ 
       error: 'Webhook processing failed but acknowledged'
     });
   }
 }
 
-// 11. Фикс для работы на Vercel
+// Фикс для работы на Vercel
 process.on('SIGTERM', () => {
   console.log('SIGTERM received. Keeping alive for Vercel.');
+});
+
+// Логирование необработанных исключений
+process.on('uncaughtException', (error) => {
+  console.error('[UNCAUGHT EXCEPTION]', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[UNHANDLED REJECTION]', {
+    reason,
+    promise
+  });
 });
