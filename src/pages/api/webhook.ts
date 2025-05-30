@@ -1,7 +1,7 @@
 console.log("[Bot] TOKEN:", process.env.TOKEN ? "***" + process.env.TOKEN.slice(-5) : "MISSING");
 console.log("[Bot] WEBAPPURL:", process.env.WEBAPPURL || "MISSING");
 
-import { Telegraf, Context } from 'telegraf';
+import { Telegraf, Markup } from 'telegraf'; // Импортируем Markup
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 // Проверка наличия переменных окружения
@@ -18,24 +18,18 @@ bot.use((ctx, next) => {
   return next();
 });
 
-// Обработка команды /start
+// Обработка команды /start - ИСПРАВЛЕНО
 bot.command('start', async (ctx) => {
   try {
-    const keyboard = {
-      inlinekeyboard: 
-        [{
-          text: '🌐 Открыть приложение',
-          web_app: { url: process.env.WEBAPP_URL }
-        },
-        {
-          text: '📊 Статистика',
-          callback_data: 'stats'
-        }
-      ]
-    };
-    await ctx.reply('🔥 Добро пожаловать\!', {
-      replymarkup: keyboard,
-      parsemode: 'MarkdownV2'
+    // Создаем клавиатуру с использованием Markup
+    const keyboard = Markup.inlineKeyboard([
+      Markup.button.webApp('🌐 Открыть приложение', process.env.WEBAPPURL),
+      Markup.button.callback('📊 Статистика', 'stats')
+    ]);
+    
+    await ctx.reply('🔥 Добро пожаловать!', {
+      reply_markup: keyboard.reply_markup, // snake_case
+      parse_mode: 'MarkdownV2'             // snake_case
     });
   } catch (err) {
     console.error('Error in /start command:', err);
@@ -46,7 +40,7 @@ bot.command('start', async (ctx) => {
 // Обработка callback для кнопки статистики
 bot.action('stats', async (ctx) => {
   try {
-    await ctx.reply('📊 Здесь будет статистика\!');
+    await ctx.reply('📊 Здесь будет статистика!');
     await ctx.answerCbQuery();
   } catch (err) {
     console.error('Error in stats callback:', err);
