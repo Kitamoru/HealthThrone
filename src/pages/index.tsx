@@ -4,6 +4,7 @@ import { BurnoutProgress } from '../components/BurnoutProgress';
 import { QuestionCard } from '../components/QuestionCard';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
+import { UserProfile } from '../lib/supabase'; // Импортируем тип UserProfile
 
 interface Question {
   id: number;
@@ -149,15 +150,15 @@ export default function Home() {
             console.log('[Home] User data response:', response);
             
             if (response.success && response.data) {
-              const userData = response.data;
+              // Явно указываем тип данных
+              const userData = response.data as UserProfile;
               console.log('[Home] User data loaded:', userData);
+              
+              // Используем правильное поле из типа UserProfile
               setBurnoutLevel(userData.burnout_level || 0);
               
               // Загружаем предыдущие ответы если есть
-              if (userData.answers) {
-                console.log('[Home] Loading saved answers');
-                setAnswers(userData.answers);
-              }
+              // Убрали обращение к userData.answers, так как его нет в типе
             } else {
               console.warn('[Home] No user data found or error', response.error);
             }
