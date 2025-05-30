@@ -1,6 +1,6 @@
 console.log("[Bot] TOKEN:", process.env.TOKEN ? "***" + process.env.TOKEN.slice(-5) : "MISSING");
 console.log("[Bot] WEBAPPURL:", process.env.WEBAPPURL || "MISSING");
-console.log("[Bot] WEBHOOKSECRETTOKEN:", process.env.WEBHOOKSECRETTOKENN ? "***" + process.env.WEBHOOKSECRETTOKEN.slice(-5) : "MISSING");
+console.log("[Bot] WEBHOOKSECRETTOKEN:", process.env.WEBHOOKSECRETTOKEN ? "***" + process.env.WEBHOOKSECRETTOKEN.slice(-5) : "MISSING");
 
 import { Telegraf, Markup } from 'telegraf';
 import type { NextApiRequest, NextApiResponse } from 'next';
