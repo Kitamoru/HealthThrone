@@ -1,7 +1,7 @@
 console.log("[Bot] TOKEN:", process.env.TOKEN ? "***" + process.env.TOKEN.slice(-5) : "MISSING");
 console.log("[Bot] WEBAPPURL:", process.env.WEBAPPURL || "MISSING");
 
-import { Telegraf, Markup } from 'telegraf'; // Импортируем Markup
+import { Telegraf, Markup } from 'telegraf';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 // Проверка наличия переменных окружения
@@ -11,6 +11,7 @@ if (!process.env.TOKEN || !process.env.WEBAPPURL) {
 }
 
 const bot = new Telegraf(process.env.TOKEN);
+const webAppUrl = process.env.WEBAPPURL; // Сохраняем в константу
 
 // Логирование входящих обновлений для отладки
 bot.use((ctx, next) => {
@@ -18,18 +19,18 @@ bot.use((ctx, next) => {
   return next();
 });
 
-// Обработка команды /start - ИСПРАВЛЕНО
+// Обработка команды /start
 bot.command('start', async (ctx) => {
   try {
     // Создаем клавиатуру с использованием Markup
     const keyboard = Markup.inlineKeyboard([
-      Markup.button.webApp('🌐 Открыть приложение', process.env.WEBAPPURL),
+      Markup.button.webApp('🌐 Открыть приложение', webAppUrl), // Используем константу
       Markup.button.callback('📊 Статистика', 'stats')
     ]);
     
     await ctx.reply('🔥 Добро пожаловать!', {
-      reply_markup: keyboard.reply_markup, // snake_case
-      parse_mode: 'MarkdownV2'             // snake_case
+      reply_markup: keyboard.reply_markup,
+      parse_mode: 'MarkdownV2'
     });
   } catch (err) {
     console.error('Error in /start command:', err);
