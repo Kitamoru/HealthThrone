@@ -1,4 +1,3 @@
-
 const nextConfig = {
   reactStrictMode: true,
   images: {
@@ -11,8 +10,14 @@ const nextConfig = {
         source: '/(.*)',
         headers: [
           {
-            key: 'X-Frame-Options',
-            value: 'ALLOWALL'
+            key: 'Content-Security-Policy',
+            value: 
+              "default-src 'self'; " +
+              "script-src 'self' 'unsafe-inline' https://telegram.org; " +
+              "style-src 'self' 'unsafe-inline'; " +
+              "img-src 'self' data:; " + 
+              "connect-src 'self' https://api.telegram.org; " +
+              "frame-ancestors 'self' https://*.telegram.org;"
           }
         ]
       }
