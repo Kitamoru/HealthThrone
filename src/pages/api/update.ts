@@ -23,21 +23,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const webhookUrl = `${webappUrl.replace(/\/$/, '')}/api/webhook`;
     const telegramUrl = `https://api.telegram.org/bot${token}/setWebhook`;
 
-    // Парсинг ALLOWEDUPDATES с обработкой ошибок
-    let allowedUpdates;
-    if (process.env.ALLOWEDUPDATES) {
-      try {
-        allowedUpdates = JSON.parse(process.env.ALLOWEDUPDATES);
-      } catch (e) {
-        console.error('Invalid ALLOWEDUPDATES:', e);
-        return res.status(500).json({ error: 'Invalid ALLOWEDUPDATES format' });
-      }
-    }
-
     const webhookParams = {
       url: webhookUrl,
       drop_pending_updates: true,
-      allowed_updates: allowedUpdates,
       secret_token: process.env.WEBHOOKSECRETTOKEN || undefined,
     };
 
