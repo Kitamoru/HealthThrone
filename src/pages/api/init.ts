@@ -74,7 +74,13 @@ export default async function handler(
     const user = JSON.parse(params.get('user') || '{}');
     const user_id = user?.id;
 
-    console.log('[Init API] Parsed user data:', JSON.stringify(user, null, 2));
+    // Упрощенное логирование без photo_url
+    console.log('[Init API] Parsed user data:', JSON.stringify({
+      id: user.id,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      username: user.username
+    }, null, 2));
 
     if (!user_id) {
       console.error('[Init API] User ID is missing');
@@ -103,12 +109,11 @@ export default async function handler(
 
     if (existingUser) {
       console.log('[Init API] User exists, updating...');
-      // Обновляем данные
+      // Обновляем данные БЕЗ photo_url
       const updateData = {
         first_name: user.first_name,
         last_name: user.last_name || null,
         username: user.username || null,
-        photo_url: user.photo_url || null,
         updated_at: now
       };
 
@@ -133,13 +138,12 @@ export default async function handler(
       console.log('[Init API] User updated:', JSON.stringify(updatedUser, null, 2));
     } else {
       console.log('[Init API] User not found, creating new...');
-      // Создаем нового пользователя
+      // Создаем нового пользователя БЕЗ photo_url
       const insertData = {
         telegram_id: user_id,
         first_name: user.first_name,
         last_name: user.last_name || null,
         username: user.username || null,
-        photo_url: user.photo_url || null,
         burnout_level: 0,
         created_at: now,
         updated_at: now
