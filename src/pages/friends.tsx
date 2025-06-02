@@ -21,7 +21,7 @@ interface ApiResponse {
 
 // Интерфейс для контакта Telegram
 interface TelegramContact {
-  user_id: number; // Исправлено на user_id (согласно документации)
+  user_id: number;
   first_name?: string;
   last_name?: string;
   username?: string;
@@ -68,16 +68,18 @@ export default function FriendsPage() {
     }
 
     try {
-      // Используем корректный метод для запроса контакта
-      webApp.showContactRequest(
+      // КОРРЕКТНЫЙ метод для запроса контакта
+      window.Telegram.WebApp.openContactForm(
         (contact: TelegramContact) => {
           if (contact) {
             addFriendByContact(contact);
           }
         },
-        (error: Error) => {
-          console.error('Contact request failed', error);
-          setError('Failed to get contact');
+        {
+          params: {
+            request_phone: false, // Не запрашивать номер телефона
+            request_write_access: false // Не запрашивать доступ на запись
+          }
         }
       );
     } catch (err) {
