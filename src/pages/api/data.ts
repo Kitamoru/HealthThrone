@@ -8,7 +8,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   console.log('[Data API] Received request', req.method, req.url);
-  
+
   if (req.method !== 'GET') {
     console.warn('[Data API] Invalid method', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
