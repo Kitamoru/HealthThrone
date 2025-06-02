@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 
 export function validateTelegramInitData(initData: string): boolean {
-  const BOT_TOKEN = process.env.BOT_TOKEN!;
+  const TOKEN = process.env.TOKEN!;
   const data = new URLSearchParams(initData);
   const hash = data.get('hash');
   data.delete('hash');
@@ -16,7 +16,7 @@ export function validateTelegramInitData(initData: string): boolean {
   ).join('\n');
 
   const secret = crypto.createHmac('sha256', 'WebAppData')
-    .update(BOT_TOKEN)
+    .update(TOKEN)
     .digest();
   
   const computedHash = crypto.createHmac('sha256', secret)
