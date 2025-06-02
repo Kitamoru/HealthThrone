@@ -1,4 +1,4 @@
-import { Friend } from './supabase'; // Добавлен импорт Friend
+import { Friend } from './supabase';
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -11,9 +11,6 @@ class Api {
 
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     try {
-      console.log(`[API] Making request to: ${endpoint}`);
-      console.log(`[API] Request options:`, options);
-      
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -22,8 +19,6 @@ class Api {
         ...options,
       });
 
-      console.log(`[API] Response status: ${response.status}`);
-      
       // Обрабатываем случаи, когда ответ не JSON
       const contentType = response.headers.get('content-type');
       let data;
@@ -33,8 +28,6 @@ class Api {
       } else {
         data = await response.text();
       }
-
-      console.log(`[API] Response data:`, data);
 
       if (!response.ok) {
         return {
@@ -49,7 +42,6 @@ class Api {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Network error';
-      console.error('[API] Request failed:', errorMessage);
       return {
         success: false,
         error: errorMessage
@@ -58,12 +50,10 @@ class Api {
   }
 
   async getUserData(userId: number) {
-    console.log(`[API] Fetching user data for ID: ${userId}`);
-    return this.request(`/data?userId=${userId}`);
+    return this.request<UserProfile>(`/data?userId=${userId}`);
   }
 
   async updateBurnoutLevel(userId: number, level: number) {
-    console.log(`[API] Updating burnout level for user ${userId} to ${level}`);
     return this.request('/update', {
       method: 'POST',
       body: JSON.stringify({ userId, burnoutLevel: level })
@@ -71,32 +61,28 @@ class Api {
   }
 
   async initUser(initData: string) {
-    console.log('[API] Initializing user with initData');
     return this.request('/init', {
       method: 'POST',
       body: JSON.stringify({ initData })
     });
   }
 
-  async getFriends(userId: number) {
-    return this.request<Friend[]>(`/friends?userId=${userId}`);
-  }
-
-  async addFriend(userId: number, friendTelegramId: number, friendUsername: string) {
-    return this.request('/friends', {
+  // Новые методы для работы с друзьями
+  async generateInviteLink(userId: number): Promise<ApiResponse<{ link: string }>> {
+    return this.request('/generate-invite', {
       method: 'POST',
-      body: JSON.stringify({ 
-        userId, 
-        friendTelegramId, 
-        friendUsername 
-      })
+      body: JSON.stringify({ userId })
     });
   }
 
-  async removeFriend(userId: number, friendId: number) {
-    return this.request(`/friends/${friendId}`, {
-      method: 'DELETE',
-      body: JSON.stringify({ userId })
+  async getFriends(userId: number): Promise<ApiResponse<Friend[]>> {
+    return this.request(`/friends?userId=${userId}`);
+  }
+
+  async acceptInvite(userId: number, inviteCode: string): Promise<ApiResponse> {
+    return this.request('/accept-invite', {
+      method: 'POST',
+      body: JSON.stringify({ userId, inviteCode })
     });
   }
 }
