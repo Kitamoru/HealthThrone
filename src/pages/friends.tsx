@@ -12,16 +12,18 @@ interface Friend {
   burnoutlevel: number;
 }
 
-// Убираем generic, делаем единый интерфейс
+// Интерфейс для ответа API
 interface ApiResponse {
   success: boolean;
-  data?: any; // Универсальный тип
+  data?: any;
   error?: string;
 }
 
 // Интерфейс для контакта Telegram
 interface TelegramContact {
-  userid: number;
+  user_id: number; // Исправлено на user_id (согласно документации)
+  first_name?: string;
+  last_name?: string;
   username?: string;
 }
 
@@ -42,10 +44,8 @@ export default function FriendsPage() {
           throw new Error('User ID is missing');
         }
 
-        // Убираем generic из типа ответа
         const response: ApiResponse = await api.getFriends(user.id);
         if (response.success && response.data) {
-          // Приводим тип данных к Friend[]
           setFriends(response.data as Friend[]);
         } else {
           setError(response.error || 'Failed to load friends');
@@ -68,12 +68,18 @@ export default function FriendsPage() {
     }
 
     try {
-      // Используем корректный метод из Telegram WebApp
-      webApp.openContactForm((contact: TelegramContact) => {
-        if (contact) {
-          addFriendByContact(contact);
+      // Используем корректный метод для запроса контакта
+      webApp.showContactRequest(
+        (contact: TelegramContact) => {
+          if (contact) {
+            addFriendByContact(contact);
+          }
+        },
+        (error: Error) => {
+          console.error('Contact request failed', error);
+          setError('Failed to get contact');
         }
-      });
+      );
     } catch (err) {
       console.error('Failed to request contact', err);
       setError('Failed to request contact');
@@ -85,16 +91,29 @@ export default function FriendsPage() {
 
     try {
       setLoading(true);
+      
+      // Формируем username из доступных данных
+      let username = contact.username;
+      if (!username) {
+        username = contact.first_name || '';
+        if (contact.last_name) {
+          username += ` ${contact.last_name}`;
+        }
+        if (!username.trim()) {
+          username = `user_${contact.user_id}`;
+        }
+      }
+
       const response: ApiResponse = await api.addFriend(
         user.id, 
-        contact.userid, 
-        contact.username || `user_${contact.userid}`
+        contact.user_id, 
+        username
       );
 
       if (response.success) {
         const newFriend: Friend = {
-          id: contact.userid,
-          username: contact.username || `user_${contact.userid}`,
+          id: contact.user_id,
+          username,
           burnoutlevel: 0,
         };
         setFriends([...friends, newFriend]);
