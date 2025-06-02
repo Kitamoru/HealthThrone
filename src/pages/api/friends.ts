@@ -14,7 +14,10 @@ interface ApiResponse<T> {
   error?: string;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse<ApiResponse<any>>) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<ApiResponse<any>>
+) {
   // Проверка аутентификации
   const initData = req.headers['initdata'] as string;
   if (!validateInitData(initData)) {
@@ -32,11 +35,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       return handleDelete(req, res);
     default:
       res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
-      res.status(405).json({ success: false, error: `Method ${method} Not Allowed` });
+      res.status(405).json({ 
+        success: false, 
+        error: `Method ${method} Not Allowed` 
+      });
   }
 }
 
-async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse<Friend[]>>) {
+async function handleGet(
+  req: NextApiRequest,
+  res: NextApiResponse<ApiResponse<Friend[]>>
+) {
   const { userId } = req.query;
 
   if (!userId) {
@@ -62,11 +71,17 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse<F
       })),
     });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message || 'Internal server error' });
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Internal server error' 
+    });
   }
 }
 
-async function handlePost(req: NextApiRequest, res: NextApiResponse<ApiResponse<null>>) {
+async function handlePost(
+  req: NextApiRequest,
+  res: NextApiResponse<ApiResponse<null>>
+) {
   const { userId, friendId, friendUsername } = req.body;
 
   if (!userId || !friendId || !friendUsername) {
@@ -85,7 +100,10 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse<ApiResponse<
       throw new Error(existingError.message || 'Supabase error');
     }
     if (existing && existing.length > 0) {
-      return res.status(400).json({ success: false, error: 'Friend already added' });
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Friend already added' 
+      });
     }
 
     // Добавляем друга
@@ -102,8 +120,45 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse<ApiResponse<
 
     res.status(200).json({ success: true });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message || 'Internal server error' });
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Internal server error' 
+    });
   }
 }
 
-async func
+async function handleDelete(
+  req: NextApiRequest,
+  res: NextApiResponse<ApiResponse<null>>
+) {
+  const { userId, friendId } = req.query;
+
+  if (!userId || !friendId) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Missing user ID or friend ID' 
+    });
+  }
+
+  try {
+    // Удаляем конкретного друга у пользователя
+    const { error } = await supabase
+      .from('friends')
+      .delete()
+      .match({ 
+        user_id: userId, 
+        friend_id: friendId 
+      });
+
+    if (error) {
+      throw new Error(error.message || 'Supabase error');
+    }
+
+    res.status(200).json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Failed to delete friend' 
+    });
+  }
+}
