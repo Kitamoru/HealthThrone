@@ -1,5 +1,3 @@
-import { Friend } from './supabase'; // Добавлен импорт Friend
-
 interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -78,25 +76,25 @@ class Api {
     });
   }
 
+  // Новые методы для работы с друзьями
   async getFriends(userId: number) {
-    return this.request<Friend[]>(`/friends?userId=${userId}`);
+    console.log(`[API] Fetching friends for user ID: ${userId}`);
+    return this.request(`/friends?userId=${userId}`);
   }
 
-  async addFriend(userId: number, friendTelegramId: number, friendUsername: string) {
+  async addFriend(userId: number, friendId: number, friendUsername: string) {
+    console.log(`[API] Adding friend ${friendId} to user ${userId}`);
     return this.request('/friends', {
       method: 'POST',
-      body: JSON.stringify({ 
-        userId, 
-        friendTelegramId, 
-        friendUsername 
-      })
+      body: JSON.stringify({ userId, friendId, friendUsername })
     });
   }
 
   async removeFriend(userId: number, friendId: number) {
-    return this.request(`/friends/${friendId}`, {
+    console.log(`[API] Removing friend ${friendId} from user ${userId}`);
+    return this.request('/friends', {
       method: 'DELETE',
-      body: JSON.stringify({ userId })
+      body: JSON.stringify({ userId, friendId })
     });
   }
 }
