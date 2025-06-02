@@ -6,11 +6,11 @@ console.log("[Init API] Initializing init API handler");
 
 const verifyTelegramData = (initData: string): boolean => {
   console.log("[Init API] Verifying Telegram data");
-  
+
   try {
     const params = new URLSearchParams(initData);
     const hash = params.get('hash');
-    
+
     if (!hash) {
       console.error('[Init API] Hash not found in initData');
       return false;
@@ -50,7 +50,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   console.log('[Init API] Received request', req.method, req.url);
-  
+
   if (req.method !== 'POST') {
     console.warn('[Init API] Invalid method', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
@@ -118,7 +118,7 @@ export default async function handler(
       };
 
       console.log('[Init API] Update data:', JSON.stringify(updateData, null, 2));
-      
+
       const { data: updatedUser, error: updateError } = await supabase
         .from('users')
         .update(updateData)
@@ -150,7 +150,7 @@ export default async function handler(
       };
 
       console.log('[Init API] Insert data:', JSON.stringify(insertData, null, 2));
-      
+
       const { data: newUser, error: insertError } = await supabase
         .from('users')
         .insert(insertData)
