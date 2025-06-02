@@ -23,8 +23,8 @@ export interface UserProfile {
 export interface Friend {
   id: number;
   user_id: number;
-  friend_telegram_id: number;
+  friend_id: number;
   friend_username: string;
-  friend_burnout_level: number;
+  burnout_level: number;
   created_at: string;
 }
