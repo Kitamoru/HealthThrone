@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useTelegram } from '../../hooks/useTelegram';
+import { useTelegram } from '../../hooks/useTelegram.ts';
 import { api } from '../../lib/api';
 import { useRouter } from 'next/router';
 import { Loader } from '../../components/Loader';
