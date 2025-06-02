@@ -9,13 +9,13 @@ import { useNavigate } from 'react-router-dom';
 interface Friend {
   id: number;
   username: string;
-  burnoutlevel: number;
+  burnoutlevel: number; // Единообразно используем camelCase
 }
 
-// Интерфейс для ответа API
-interface ApiResponse {
+// Исправление 1: Делаем интерфейс обобщенным (generic)
+interface ApiResponse<T = any> {
   success: boolean;
-  data?: Friend;
+  data?: T;
   error?: string;
 }
 
@@ -42,9 +42,10 @@ export default function FriendsPage() {
           throw new Error('User ID is missing');
         }
 
+        // Исправление 2: Указываем тип для ответа
         const response: ApiResponse<Friend[]> = await api.getFriends(user.id);
         if (response.success && response.data) {
-          setFriends(response.data); // Теперь data типизировано как Friend[]
+          setFriends(response.data);
         } else {
           setError(response.error || 'Failed to load friends');
         }
@@ -66,10 +67,8 @@ export default function FriendsPage() {
     }
 
     try {
-      // Используем Telegram API для выбора контакта
-      webApp.showContactRequested = true;
-
-      webApp.requestContact('Share your contact to add friends', (contact: TelegramContact) => {
+      // Исправление 3: Используем стандартный метод Telegram WebApp
+      webApp.openContactForm((contact: TelegramContact) => {
         if (contact) {
           addFriendByContact(contact);
         }
@@ -85,16 +84,21 @@ export default function FriendsPage() {
 
     try {
       setLoading(true);
-      const response: ApiResponse = await api.addFriend(user.id, contact.userid, contact.username || user_${contact.user_id});
+      // Исправление 4: Убираем generic для этого вызова
+      const response: ApiResponse = await api.addFriend(
+        user.id, 
+        contact.userid, 
+        contact.username || `user_${contact.userid}` // Исправление 5: Шаблонная строка
+      );
 
       if (response.success) {
-        // Обновляем список друзей
+        // Исправление 6: Правильное обновление массива
         const newFriend: Friend = {
           id: contact.userid,
-          username: contact.username || `user${contact.userid}`,
+          username: contact.username || `user_${contact.userid}`,
           burnoutlevel: 0,
         };
-        setFriends(...friends, newFriend);
+        setFriends([...friends, newFriend]);
       } else {
         setError(response.error || 'Failed to add friend');
       }
@@ -149,7 +153,8 @@ export default function FriendsPage() {
             <div key={friend.id} className="friend-item">
               <div className="friend-info">
                 <span className="friend-username">@{friend.username}</span>
-                <BurnoutProgress level={friend.burnout_level} />
+                {/* Исправление 7: Единообразное именование свойства */}
+                <BurnoutProgress level={friend.burnoutlevel} />
               </div>
               <button 
                 onClick={() => handleRemoveFriend(friend.id)} 
