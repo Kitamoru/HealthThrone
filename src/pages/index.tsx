@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { BurnoutProgress } from '../components/BurnoutProgress';
 import { QuestionCard } from '../components/QuestionCard';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { UserProfile } from '../lib/supabase';
-import { useNavigate } from 'react-router-dom'; // Добавлен импорт для навигации
 
 interface Question {
   id: number;
@@ -96,6 +96,7 @@ const QUESTIONS: Question[] = [
 ];
 
 export default function Home() {
+  const router = useRouter();
   const { user, isReady, initData, error } = useTelegram();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
@@ -103,7 +104,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [initStatus, setInitStatus] = useState<string>('not_started');
   const [apiError, setApiError] = useState<string | null>(null);
-  const navigate = useNavigate(); // Добавлен хук навигации
 
   useEffect(() => {
     console.log('[Home] Component mounted');
@@ -274,9 +274,8 @@ export default function Home() {
       </div>
 
       <div className="menu">
-        <button className="menu-btn">📊</button>
-        {/* Кнопка перехода на страницу друзей */}
-        <button className="menu-btn" onClick={() => navigate('/friends')}>📈</button>
+        <button className="menu-btn" onClick={() => router.push('/')}>📊</button>
+        <button className="menu-btn" onClick={() => router.push('/friends')}>📈</button>
         <button className="menu-btn">⚙️</button>
         <button className="menu-btn">ℹ️</button>
       </div>
