@@ -1,8 +1,20 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '../../src/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { validateInitData } from './_middleware';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+interface Friend {
+  id: string;
+  username: string;
+  burnout_level: number;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse<ApiResponse<any>>) {
   // Проверка аутентификации
   const initData = req.headers['initdata'] as string;
   if (!validateInitData(initData)) {
@@ -20,11 +32,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return handleDelete(req, res);
     default:
       res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
-      res.status(405).end(`Method ${method} Not Allowed`);
+      res.status(405).json({ success: false, error: `Method ${method} Not Allowed` });
   }
 }
 
-async function handleGet(req: NextApiRequest, res: NextApiResponse) {
+async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse<Friend[]>>) {
   const { userId } = req.query;
 
   if (!userId) {
@@ -38,23 +50,23 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse) {
       .eq('user_id', userId);
 
     if (error) {
-      throw error;
+      throw new Error(error.message || 'Supabase error');
     }
 
-    res.status(200).json({ 
-      success: true, 
-      data: data.map(f => ({
+    res.status(200).json({
+      success: true,
+      data: data.map((f: any) => ({
         id: f.friend_id,
         username: f.friend_username,
-        burnout_level: f.burnout_level
-      })) 
+        burnout_level: f.burnout_level,
+      })),
     });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || 'Internal server error' });
   }
 }
 
-async function handlePost(req: NextApiRequest, res: NextApiResponse) {
+async function handlePost(req: NextApiRequest, res: NextApiResponse<ApiResponse<null>>) {
   const { userId, friendId, friendUsername } = req.body;
 
   if (!userId || !friendId || !friendUsername) {
@@ -69,47 +81,29 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse) {
       .eq('user_id', userId)
       .eq('friend_id', friendId);
 
-    if (existingError) throw existingError;
+    if (existingError) {
+      throw new Error(existingError.message || 'Supabase error');
+    }
     if (existing && existing.length > 0) {
       return res.status(400).json({ success: false, error: 'Friend already added' });
     }
 
     // Добавляем друга
-    const { error } = await supabase
-      .from('friends')
-      .insert({
-        user_id: userId,
-        friend_id: friendId,
-        friend_username: friendUsername,
-        burnout_level: 0
-      });
+    const { error } = await supabase.from('friends').insert({
+      user_id: userId,
+      friend_id: friendId,
+      friend_username: friendUsername,
+      burnout_level: 0,
+    });
 
-    if (error) throw error;
+    if (error) {
+      throw new Error(error.message || 'Supabase error');
+    }
 
     res.status(200).json({ success: true });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message || 'Internal server error' });
   }
 }
 
-async function handleDelete(req: NextApiRequest, res: NextApiResponse) {
-  const { userId, friendId } = req.body;
-
-  if (!userId || !friendId) {
-    return res.status(400).json({ success: false, error: 'Missing parameters' });
-  }
-
-  try {
-    const { error } = await supabase
-      .from('friends')
-      .delete()
-      .eq('user_id', userId)
-      .eq('friend_id', friendId);
-
-    if (error) throw error;
-
-    res.status(200).json({ success: true });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-}
+async func
