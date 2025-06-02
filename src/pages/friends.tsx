@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useTelegram } from '../../hooks/useTelegram.ts';
-import { api } from '../../lib/api';
+import { useTelegram } from '../hooks/useTelegram'; // Исправленный путь
+import { api } from '../lib/api';
 import { useRouter } from 'next/router';
-import { Loader } from '../../components/Loader';
-import { BurnoutProgress } from '../../components/BurnoutProgress';
-import { UserProfile } from '../../lib/supabase';
+import { Loader } from '../components/Loader';
+import { BurnoutProgress } from '../components/BurnoutProgress';
+import { Friend } from '../lib/supabase';
 
 export default function FriendsPage() {
   const { user: telegramUser, isReady } = useTelegram();
