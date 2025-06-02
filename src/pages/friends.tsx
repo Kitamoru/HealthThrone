@@ -12,6 +12,13 @@ interface Friend {
   burnout_level: number;
 }
 
+// Define interface for API response
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
 export default function FriendsPage() {
   const router = useRouter();
   const { user, isReady, initData } = useTelegram();
@@ -24,9 +31,9 @@ export default function FriendsPage() {
 
     const loadFriends = async () => {
       try {
-        const response = await api.getFriends();
-        if (response.success) {
-          setFriends(response.data);
+        const response: ApiResponse<Friend[]> = await api.getFriends();
+        if (response.success && response.data) {
+          setFriends(response.data); // Now TypeScript knows response.data is Friend[]
         } else {
           setError(response.error || 'Failed to load friends');
         }
@@ -38,12 +45,11 @@ export default function FriendsPage() {
     };
 
     loadFriends();
-  }, [isReady, user?.id]); // Added user?.id to dependencies
+  }, [isReady, user?.id]);
 
   const handleAddFriend = () => {
     if (window.Telegram?.WebApp) {
       const inviteText = "Присоединяйся к моей команде для отслеживания выгорания!";
-      // Fixed template literal syntax
       const inviteLink = `https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${encodeURIComponent(inviteText)}`;
       window.Telegram.WebApp.openTelegramLink(inviteLink);
     }
@@ -51,7 +57,7 @@ export default function FriendsPage() {
 
   const handleDeleteFriend = async (friendId: number) => {
     try {
-      const response = await api.deleteFriend(friendId);
+      const response: ApiResponse<void> = await api.deleteFriend(friendId);
       if (response.success) {
         setFriends(friends.filter((f: Friend) => f.id !== friendId));
       } else {
