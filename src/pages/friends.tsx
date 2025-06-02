@@ -27,6 +27,16 @@ interface TelegramContact {
   username?: string;
 }
 
+// Расширяем интерфейс TelegramWebApp для поддержки openContactForm
+declare global {
+  interface TelegramWebApp {
+    openContactForm: (
+      callback: (contact: TelegramContact) => void,
+      options?: { params: { request_phone?: boolean; request_write_access?: boolean } }
+    ) => void;
+  }
+}
+
 export default function FriendsPage() {
   const { user, isReady, webApp } = useTelegram();
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -68,20 +78,25 @@ export default function FriendsPage() {
     }
 
     try {
-      // КОРРЕКТНЫЙ метод для запроса контакта
-      window.Telegram.WebApp.openContactForm(
-        (contact: TelegramContact) => {
-          if (contact) {
-            addFriendByContact(contact);
+      // Проверяем наличие метода openContactForm
+      if (typeof webApp.openContactForm === 'function') {
+        webApp.openContactForm(
+          (contact: TelegramContact) => {
+            if (contact) {
+              addFriendByContact(contact);
+            }
+          },
+          {
+            params: {
+              request_phone: false,
+              request_write_access: false
+            }
           }
-        },
-        {
-          params: {
-            request_phone: false, // Не запрашивать номер телефона
-            request_write_access: false // Не запрашивать доступ на запись
-          }
-        }
-      );
+        );
+      } else {
+        // Fallback для старых версий WebApp
+        setError('Your Telegram app is outdated. Please update to add friends.');
+      }
     } catch (err) {
       console.error('Failed to request contact', err);
       setError('Failed to request contact');
