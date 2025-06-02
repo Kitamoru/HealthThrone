@@ -5,23 +5,20 @@ import { BurnoutProgress } from '../components/BurnoutProgress';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
 
-// Define interface for friend data
 interface Friend {
   id: number;
   friend_username: string;
   burnout_level: number;
 }
 
-// Define API response types
 interface ApiResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
 }
 
-interface FriendsResponse extends ApiResponse<Friend[]> {}
-
-interface DeleteFriendResponse extends ApiResponse<null> {}
+type FriendsResponse = ApiResponse<Friend[]>;
+type DeleteResponse = ApiResponse<null>;
 
 export default function FriendsPage() {
   const router = useRouter();
@@ -35,7 +32,9 @@ export default function FriendsPage() {
 
     const loadFriends = async () => {
       try {
-        const response: FriendsResponse = await api.getFriends();
+        // Явное приведение типа для response
+        const response = await api.getFriends() as FriendsResponse;
+        
         if (response.success && response.data) {
           setFriends(response.data);
         } else {
@@ -61,7 +60,9 @@ export default function FriendsPage() {
 
   const handleDeleteFriend = async (friendId: number) => {
     try {
-      const response: DeleteFriendResponse = await api.deleteFriend(friendId);
+      // Явное приведение типа для response
+      const response = await api.deleteFriend(friendId) as DeleteResponse;
+      
       if (response.success) {
         setFriends(friends.filter(f => f.id !== friendId));
       } else {
