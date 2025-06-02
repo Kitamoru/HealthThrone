@@ -42,7 +42,7 @@ export default function FriendsPage() {
           throw new Error('User ID is missing');
         }
 
-        const response: ApiResponse = await api.getFriends(user.id);
+        const response: ApiResponse<Friend[]> = await api.getFriends(user.id);
         if (response.success && response.data) {
           setFriends(response.data); // Теперь data типизировано как Friend[]
         } else {
