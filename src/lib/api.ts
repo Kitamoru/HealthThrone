@@ -77,24 +77,23 @@ class Api {
   }
 
   // Новые методы для работы с друзьями
-  async getFriends(userId: number) {
-    console.log(`[API] Fetching friends for user ID: ${userId}`);
-    return this.request(`/friends?userId=${userId}`);
+  async getFriends() {
+    console.log('[API] Fetching friends list');
+    return this.request('/friends');
   }
 
-  async addFriend(userId: number, friendId: number, friendUsername: string) {
-    console.log(`[API] Adding friend ${friendId} to user ${userId}`);
+  async addFriend(friendUsername: string) {
+    console.log(`[API] Adding friend: @${friendUsername}`);
     return this.request('/friends', {
       method: 'POST',
-      body: JSON.stringify({ userId, friendId, friendUsername })
+      body: JSON.stringify({ friendUsername })
     });
   }
 
-  async removeFriend(userId: number, friendId: number) {
-    console.log(`[API] Removing friend ${friendId} from user ${userId}`);
-    return this.request('/friends', {
-      method: 'DELETE',
-      body: JSON.stringify({ userId, friendId })
+  async deleteFriend(friendId: number) {
+    console.log(`[API] Deleting friend with ID: ${friendId}`);
+    return this.request(`/friends/${friendId}`, {
+      method: 'DELETE'
     });
   }
 }
