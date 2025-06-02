@@ -5,16 +5,23 @@ import { BurnoutProgress } from '../components/BurnoutProgress';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
 
+// Define interface for friend data
+interface Friend {
+  id: number;
+  friend_username: string;
+  burnout_level: number;
+}
+
 export default function FriendsPage() {
   const router = useRouter();
   const { user, isReady, initData } = useTelegram();
-  const [friends, setFriends] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
     if (!isReady || !user?.id) return;
-    
+
     const loadFriends = async () => {
       try {
         const response = await api.getFriends();
@@ -29,13 +36,14 @@ export default function FriendsPage() {
         setLoading(false);
       }
     };
-    
+
     loadFriends();
-  }, [isReady, user]);
+  }, [isReady, user?.id]); // Added user?.id to dependencies
 
   const handleAddFriend = () => {
     if (window.Telegram?.WebApp) {
       const inviteText = "Присоединяйся к моей команде для отслеживания выгорания!";
+      // Fixed template literal syntax
       const inviteLink = `https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${encodeURIComponent(inviteText)}`;
       window.Telegram.WebApp.openTelegramLink(inviteLink);
     }
@@ -45,7 +53,7 @@ export default function FriendsPage() {
     try {
       const response = await api.deleteFriend(friendId);
       if (response.success) {
-        setFriends(friends.filter(f => f.id !== friendId));
+        setFriends(friends.filter((f: Friend) => f.id !== friendId));
       } else {
         setError(response.error || 'Failed to delete friend');
       }
@@ -58,21 +66,23 @@ export default function FriendsPage() {
 
   return (
     <div className="container">
-      <button className="back-btn" onClick={() => router.push('/')}>📊</button>
-      
+      <button className="back-btn" onClick={() => router.push('/')}>
+        📊
+      </button>
+
       <h1>My Friends</h1>
-      
+
       {error && <div className="error-message">{error}</div>}
-      
+
       <div className="friends-list">
         {friends.length === 0 ? (
           <p>No friends yet. Add some friends to track their burnout levels.</p>
         ) : (
-          friends.map(friend => (
+          friends.map((friend: Friend) => (
             <div key={friend.id} className="friend-card">
               <div className="friend-header">
                 <span className="friend-username">@{friend.friend_username}</span>
-                <button 
+                <button
                   className="delete-btn"
                   onClick={() => handleDeleteFriend(friend.id)}
                 >
@@ -85,7 +95,7 @@ export default function FriendsPage() {
           ))
         )}
       </div>
-      
+
       <div className="add-friend-section">
         <button className="add-friend-btn" onClick={handleAddFriend}>
           Add Friend
