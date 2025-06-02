@@ -9,13 +9,13 @@ import { useNavigate } from 'react-router-dom';
 interface Friend {
   id: number;
   username: string;
-  burnoutlevel: number; // Единообразно используем camelCase
+  burnoutlevel: number;
 }
 
-// Исправление 1: Делаем интерфейс обобщенным (generic)
-interface ApiResponse<T = any> {
+// Убираем generic, делаем единый интерфейс
+interface ApiResponse {
   success: boolean;
-  data?: T;
+  data?: any; // Универсальный тип
   error?: string;
 }
 
@@ -42,10 +42,11 @@ export default function FriendsPage() {
           throw new Error('User ID is missing');
         }
 
-        // Исправление 2: Указываем тип для ответа
-        const response: ApiResponse<Friend[]> = await api.getFriends(user.id);
+        // Убираем generic из типа ответа
+        const response: ApiResponse = await api.getFriends(user.id);
         if (response.success && response.data) {
-          setFriends(response.data);
+          // Приводим тип данных к Friend[]
+          setFriends(response.data as Friend[]);
         } else {
           setError(response.error || 'Failed to load friends');
         }
@@ -67,7 +68,7 @@ export default function FriendsPage() {
     }
 
     try {
-      // Исправление 3: Используем стандартный метод Telegram WebApp
+      // Используем корректный метод из Telegram WebApp
       webApp.openContactForm((contact: TelegramContact) => {
         if (contact) {
           addFriendByContact(contact);
@@ -84,15 +85,13 @@ export default function FriendsPage() {
 
     try {
       setLoading(true);
-      // Исправление 4: Убираем generic для этого вызова
       const response: ApiResponse = await api.addFriend(
         user.id, 
         contact.userid, 
-        contact.username || `user_${contact.userid}` // Исправление 5: Шаблонная строка
+        contact.username || `user_${contact.userid}`
       );
 
       if (response.success) {
-        // Исправление 6: Правильное обновление массива
         const newFriend: Friend = {
           id: contact.userid,
           username: contact.username || `user_${contact.userid}`,
@@ -153,7 +152,6 @@ export default function FriendsPage() {
             <div key={friend.id} className="friend-item">
               <div className="friend-info">
                 <span className="friend-username">@{friend.username}</span>
-                {/* Исправление 7: Единообразное именование свойства */}
                 <BurnoutProgress level={friend.burnoutlevel} />
               </div>
               <button 
