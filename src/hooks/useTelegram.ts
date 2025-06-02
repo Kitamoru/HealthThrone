@@ -63,12 +63,12 @@ export const useTelegram = () => {
     if (typeof window === 'undefined') return;
 
     console.log('[useTelegram] Initializing Telegram WebApp hook');
-    
+
     const initTelegram = () => {
       try {
         console.log('[useTelegram] Checking for Telegram object');
         const telegram = window.Telegram;
-        
+
         if (!telegram) {
           const errorMsg = 'Telegram object not found on window';
           setError(errorMsg);
@@ -85,9 +85,9 @@ export const useTelegram = () => {
 
         const tg = telegram.WebApp;
         console.log('[useTelegram] Telegram WebApp found:', tg);
-        
+
         setWebApp(tg);
-        
+
         // Проверяем наличие initData
         if (!tg.initData) {
           const errorMsg = 'initData is empty';
@@ -125,7 +125,7 @@ export const useTelegram = () => {
 
     // Добавляем задержку для случаев, когда объект загружается асинхронно
     const timer = setTimeout(initTelegram, 1000);
-    
+
     return () => {
       console.log('[useTelegram] Cleaning up hook');
       clearTimeout(timer);
