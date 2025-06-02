@@ -11,7 +11,7 @@ class Api {
     try {
       console.log(`[API] Making request to: ${endpoint}`);
       console.log(`[API] Request options:`, options);
-      
+
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -21,11 +21,11 @@ class Api {
       });
 
       console.log(`[API] Response status: ${response.status}`);
-      
+
       // Обрабатываем случаи, когда ответ не JSON
       const contentType = response.headers.get('content-type');
       let data;
-      
+
       if (contentType?.includes('application/json')) {
         data = await response.json();
       } else {
@@ -73,6 +73,27 @@ class Api {
     return this.request('/init', {
       method: 'POST',
       body: JSON.stringify({ initData })
+    });
+  }
+  async getFriends(userId: number) {
+    return this.request<Friend[]>(`/friends?userId=${userId}`);
+  }
+
+  async addFriend(userId: number, friendTelegramId: number, friendUsername: string) {
+    return this.request('/friends', {
+      method: 'POST',
+      body: JSON.stringify({ 
+        userId, 
+        friendTelegramId, 
+        friendUsername 
+      })
+    });
+  }
+
+  async removeFriend(userId: number, friendId: number) {
+    return this.request(`/friends/${friendId}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ userId })
     });
   }
 }
