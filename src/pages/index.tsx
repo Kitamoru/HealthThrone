@@ -5,7 +5,7 @@ import { QuestionCard } from '../components/QuestionCard';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { UserProfile } from '../lib/supabase';
-import { useRouter } from 'next/router';
+import { useNavigate } from 'react-router-dom'; // Добавлен импорт для навигации
 
 interface Question {
   id: number;
@@ -97,17 +97,17 @@ const QUESTIONS: Question[] = [
 
 export default function Home() {
   const { user, isReady, initData, error } = useTelegram();
-  const router = useRouter();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [burnoutLevel, setBurnoutLevel] = useState(0);
   const [loading, setLoading] = useState(true);
   const [initStatus, setInitStatus] = useState<string>('not_started');
   const [apiError, setApiError] = useState<string | null>(null);
+  const navigate = useNavigate(); // Добавлен хук навигации
 
   useEffect(() => {
     console.log('[Home] Component mounted');
-
+    
     const initializeApp = async () => {
       if (!isReady) {
         console.log('[Home] Telegram not ready yet');
@@ -117,15 +117,15 @@ export default function Home() {
       try {
         console.log('[Home] Initializing application');
         setLoading(true);
-
+        
         // 1. Инициализация пользователя
         if (initData && user?.id) {
           console.log('[Home] Initializing user with initData');
           setInitStatus('in_progress');
-
+          
           const initResponse = await api.initUser(initData);
           console.log('[Home] User initialization response:', initResponse);
-
+          
           if (initResponse.success) {
             setInitStatus('success');
             console.log('[Home] User initialized successfully');
@@ -142,23 +142,23 @@ export default function Home() {
         // 2. Загружаем вопросы
         console.log('[Home] Setting questions');
         setQuestions(QUESTIONS);
-
+        
         // 3. Загружаем данные пользователя
         if (user?.id) {
           console.log(`[Home] Loading user data for ID: ${user.id}`);
-
+          
           try {
             const response = await api.getUserData(user.id);
             console.log('[Home] User data response:', response);
-
+            
             if (response.success && response.data) {
               // Явно указываем тип данных
               const userData = response.data as UserProfile;
               console.log('[Home] User data loaded:', userData);
-
+              
               // Используем правильное поле из типа UserProfile
               setBurnoutLevel(userData.burnout_level || 0);
-
+              
               // Загружаем предыдущие ответы если есть
               // Убрали обращение к userData.answers, так как его нет в типе
             } else {
@@ -170,7 +170,7 @@ export default function Home() {
         } else {
           console.warn('[Home] Skipping user data load - no user ID');
         }
-
+        
         setLoading(false);
         console.log('[Home] App initialized successfully');
       } catch (error) {
@@ -185,7 +185,7 @@ export default function Home() {
 
   const handleAnswer = async (questionId: number, isPositive: boolean) => {
     console.log(`[Home] Handling answer for question ${questionId}: ${isPositive}`);
-
+    
     const question = questions.find(q => q.id === questionId);
     if (!question) {
       console.warn(`[Home] Question not found: ${questionId}`);
@@ -208,11 +208,11 @@ export default function Home() {
     // Отправляем данные на сервер если есть пользователь
     if (user?.id) {
       console.log(`[Home] Saving burnout level for user ${user.id}`);
-
+      
       try {
         const saveResponse = await api.updateBurnoutLevel(user.id, newLevel);
         console.log('[Home] Save response:', saveResponse);
-
+        
         if (!saveResponse.success) {
           console.error('[Home] Failed to save burnout level:', saveResponse.error);
         }
@@ -249,7 +249,7 @@ export default function Home() {
   return (
     <div className="container">
       <BurnoutProgress level={burnoutLevel} />
-
+      
       <div className="content">
         {allAnswered ? (
           <div className="time-message">
@@ -274,17 +274,13 @@ export default function Home() {
       </div>
 
       <div className="menu">
-        <button className="menu-btn active">📊</button>
-        <button 
-          className="menu-btn"
-          onClick={() => router.push('/friends')}
-        >
-          📈
-        </button>
+        <button className="menu-btn">📊</button>
+        {/* Кнопка перехода на страницу друзей */}
+        <button className="menu-btn" onClick={() => navigate('/friends')}>📈</button>
         <button className="menu-btn">⚙️</button>
         <button className="menu-btn">ℹ️</button>
       </div>
-
+      
       {/* Диагностическая панель (только в development) */}
       {process.env.NODE_ENV === 'development' && (
         <div style={{
