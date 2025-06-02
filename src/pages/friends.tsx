@@ -27,12 +27,13 @@ interface TelegramContact {
   username?: string;
 }
 
-// Локальное расширение интерфейса для поддержки openContactForm
-interface ExtendedTelegramWebApp extends Telegram.WebApp {
+// Упрощенное объявление интерфейса без зависимости от Telegram
+interface ExtendedTelegramWebApp {
   openContactForm: (
     callback: (contact: TelegramContact) => void,
     options?: { params: { request_phone?: boolean; request_write_access?: boolean } }
   ) => void;
+  // Добавим другие используемые методы, если нужно
 }
 
 export default function FriendsPage() {
@@ -76,10 +77,9 @@ export default function FriendsPage() {
     }
 
     try {
-      // Приводим тип к нашему расширенному интерфейсу
+      // Приводим тип напрямую без зависимости от Telegram
       const extendedWebApp = webApp as unknown as ExtendedTelegramWebApp;
       
-      // Проверяем наличие метода openContactForm
       if (typeof extendedWebApp.openContactForm === 'function') {
         extendedWebApp.openContactForm(
           (contact: TelegramContact) => {
@@ -95,7 +95,6 @@ export default function FriendsPage() {
           }
         );
       } else {
-        // Fallback для старых версий WebApp
         setError('Your Telegram app is outdated. Please update to add friends.');
       }
     } catch (err) {
