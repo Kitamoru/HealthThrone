@@ -12,9 +12,20 @@ interface Friend {
   burnout_level: number;
 }
 
+// Define API response types
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+interface FriendsResponse extends ApiResponse<Friend[]> {}
+
+interface DeleteFriendResponse extends ApiResponse<null> {}
+
 export default function FriendsPage() {
   const router = useRouter();
-  const { user, isReady } = useTelegram(); // Убрана неиспользуемая initData
+  const { user, isReady } = useTelegram();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
@@ -24,8 +35,8 @@ export default function FriendsPage() {
 
     const loadFriends = async () => {
       try {
-        const response = await api.getFriends();
-        if (response.success) {
+        const response: FriendsResponse = await api.getFriends();
+        if (response.success && response.data) {
           setFriends(response.data);
         } else {
           setError(response.error || 'Failed to load friends');
@@ -43,7 +54,6 @@ export default function FriendsPage() {
   const handleAddFriend = () => {
     if (window.Telegram?.WebApp) {
       const inviteText = "Присоединяйся к моей команде для отслеживания выгорания!";
-      // Исправлена синтаксическая ошибка в шаблоне
       const inviteLink = `https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${encodeURIComponent(inviteText)}`;
       window.Telegram.WebApp.openTelegramLink(inviteLink);
     }
@@ -51,7 +61,7 @@ export default function FriendsPage() {
 
   const handleDeleteFriend = async (friendId: number) => {
     try {
-      const response = await api.deleteFriend(friendId);
+      const response: DeleteFriendResponse = await api.deleteFriend(friendId);
       if (response.success) {
         setFriends(friends.filter(f => f.id !== friendId));
       } else {
