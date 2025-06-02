@@ -5,10 +5,24 @@ import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 
+// Интерфейс для друга
 interface Friend {
   id: number;
   username: string;
-  burnout_level: number;
+  burnoutlevel: number;
+}
+
+// Интерфейс для ответа API
+interface ApiResponse {
+  success: boolean;
+  data?: Friend;
+  error?: string;
+}
+
+// Интерфейс для контакта Telegram
+interface TelegramContact {
+  userid: number;
+  username?: string;
 }
 
 export default function FriendsPage() {
@@ -28,9 +42,9 @@ export default function FriendsPage() {
           throw new Error('User ID is missing');
         }
 
-        const response = await api.getFriends(user.id);
-        if (response.success) {
-          setFriends(response.data);
+        const response: ApiResponse = await api.getFriends(user.id);
+        if (response.success && response.data) {
+          setFriends(response.data); // Теперь data типизировано как Friend[]
         } else {
           setError(response.error || 'Failed to load friends');
         }
@@ -54,8 +68,8 @@ export default function FriendsPage() {
     try {
       // Используем Telegram API для выбора контакта
       webApp.showContactRequested = true;
-      
-      webApp.requestContact('Share your contact to add friends', (contact) => {
+
+      webApp.requestContact('Share your contact to add friends', (contact: TelegramContact) => {
         if (contact) {
           addFriendByContact(contact);
         }
@@ -66,21 +80,21 @@ export default function FriendsPage() {
     }
   };
 
-  const addFriendByContact = async (contact: any) => {
+  const addFriendByContact = async (contact: TelegramContact) => {
     if (!user?.id) return;
-    
+
     try {
       setLoading(true);
-      const response = await api.addFriend(user.id, contact.user_id, contact.username);
-      
+      const response: ApiResponse = await api.addFriend(user.id, contact.userid, contact.username || user_${contact.user_id});
+
       if (response.success) {
         // Обновляем список друзей
-        const newFriend = {
-          id: contact.user_id,
-          username: contact.username || `user_${contact.user_id}`,
-          burnout_level: 0
+        const newFriend: Friend = {
+          id: contact.userid,
+          username: contact.username || `user${contact.userid}`,
+          burnoutlevel: 0,
         };
-        setFriends([...friends, newFriend]);
+        setFriends(...friends, newFriend);
       } else {
         setError(response.error || 'Failed to add friend');
       }
@@ -94,13 +108,13 @@ export default function FriendsPage() {
 
   const handleRemoveFriend = async (friendId: number) => {
     if (!user?.id) return;
-    
+
     try {
       setLoading(true);
-      const response = await api.removeFriend(user.id, friendId);
-      
+      const response: ApiResponse = await api.removeFriend(user.id, friendId);
+
       if (response.success) {
-        setFriends(friends.filter(f => f.id !== friendId));
+        setFriends(friends.filter((f) => f.id !== friendId));
       } else {
         setError(response.error || 'Failed to remove friend');
       }
