@@ -32,7 +32,6 @@ export default function FriendsPage() {
 
     const loadFriends = async () => {
       try {
-        // Явное приведение типа для response
         const response = await api.getFriends() as FriendsResponse;
         
         if (response.success && response.data) {
@@ -54,13 +53,14 @@ export default function FriendsPage() {
     if (window.Telegram?.WebApp) {
       const inviteText = "Присоединяйся к моей команде для отслеживания выгорания!";
       const inviteLink = `https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${encodeURIComponent(inviteText)}`;
-      window.Telegram.WebApp.openTelegramLink(inviteLink);
+      
+      // Исправленный метод для открытия ссылок
+      window.Telegram.WebApp.openLink(inviteLink);
     }
   };
 
   const handleDeleteFriend = async (friendId: number) => {
     try {
-      // Явное приведение типа для response
       const response = await api.deleteFriend(friendId) as DeleteResponse;
       
       if (response.success) {
