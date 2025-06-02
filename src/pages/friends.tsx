@@ -1,94 +1,136 @@
 import React, { useState, useEffect } from 'react';
-import { useTelegram } from '../hooks/useTelegram';
-import { BurnoutProgress } from '../components/BurnoutProgress';
-import { Loader } from '../components/Loader';
-import { api } from '../lib/api';
+import { useTelegram } from '../../hooks/useTelegram';
+import { api } from '../../lib/api';
 import { useRouter } from 'next/router';
-import { Friend } from '../lib/supabase';
+import { Loader } from '../../components/Loader';
+import { BurnoutProgress } from '../../components/BurnoutProgress';
+import { UserProfile } from '../../lib/supabase';
 
-export default function Friends() {
-  const { user, isReady, webApp } = useTelegram();
+export default function FriendsPage() {
+  const { user: telegramUser, isReady } = useTelegram();
   const router = useRouter();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [inviteLink, setInviteLink] = useState('');
+  const [error, setError] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    if (!isReady || !user?.id) return;
+    if (!isReady || !telegramUser?.id) return;
 
-    const loadFriends = async () => {
+    const loadData = async () => {
+      setLoading(true);
       try {
-        const response = await api.getFriends(user.id);
-        if (response.success) {
-          setFriends(response.data || []);
-        } else {
-          setError(response.error || 'Ошибка загрузки команды');
+        // Загружаем профиль пользователя
+        const profileResponse = await api.getUserData(telegramUser.id);
+        if (profileResponse.success && profileResponse.data) {
+          setUserProfile(profileResponse.data);
         }
+
+        // Загружаем список друзей
+        if (profileResponse.success && profileResponse.data) {
+          const friendsResponse = await api.getFriends(profileResponse.data.id);
+          if (friendsResponse.success && friendsResponse.data) {
+            setFriends(friendsResponse.data);
+          }
+        }
+
+        setLoading(false);
       } catch (err) {
-        setError('Ошибка сети');
-      } finally {
+        setError('Ошибка загрузки данных');
         setLoading(false);
       }
     };
 
-    loadFriends();
-  }, [isReady, user]);
+    loadData();
+  }, [isReady, telegramUser]);
 
-  const handleAddFriend = () => {
-    if (!webApp) return;
-
-    if (window.Telegram?.WebApp?.showContactPicker) {
-      try {
-        webApp.showContactPicker(
-          { title: 'Выбери участника команды' },
-          (contact) => {
-            if (!contact.user_id) {
-              webApp.showAlert('У контакта нет Telegram ID');
-              return;
-            }
-            if (!contact.username) {
-              webApp.showAlert('У контакта должен быть username');
-              return;
-            }
-            api.addFriend(user.id, contact.user_id, contact.username)
-              .then(() => {
-                setFriends(prev => [...prev, {
-                  id: Date.now(), // Временный ID
-                  user_id: user.id,
-                  friend_telegram_id: contact.user_id,
-                  friend_username: contact.username,
-                  friend_burnout_level: 0
-                }]);
-              });
-          }
-        );
-      } catch (err) {
-        webApp.showAlert('Ошибка выбора контакта');
+  // Обработка инвайт-кода из URL
+  useEffect(() => {
+    if (router.isReady) {
+      const { invite } = router.query;
+      if (invite && typeof invite === 'string') {
+        setInviteCode(invite);
+        // Очищаем параметр из URL
+        router.replace('/friends', undefined, { shallow: true });
       }
-    } else {
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=Присоединяйся!`;
-      webApp.openLink(shareUrl);
+    }
+  }, [router.isReady, router.query]);
+
+  const handleGenerateInvite = async () => {
+    if (!userProfile) return;
+    
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await api.generateInviteLink(userProfile.id);
+      
+      if (response.success && response.data?.link) {
+        setInviteLink(response.data.link);
+      } else {
+        setError(response.error || 'Ошибка генерации ссылки');
+      }
+    } catch (err) {
+      setError('Сетевая ошибка');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRemoveFriend = async (friendId: number) => {
-    if (!webApp || !user?.id) return;
-
-    const confirmed = await new Promise<boolean>(resolve => {
-      webApp.showConfirm('Удалить участника команды?', resolve);
-    });
-
-    if (!confirmed) return;
-
+  const handleAcceptInvite = async () => {
+    if (!userProfile || !inviteCode) return;
+    
+    setLoading(true);
+    setError('');
+    
     try {
-      const response = await api.removeFriend(user.id, friendId);
+      const response = await api.acceptInvite(userProfile.id, inviteCode);
+      
       if (response.success) {
-        setFriends(prev => prev.filter(f => f.id !== friendId));
+        // Обновляем список друзей
+        const friendsResponse = await api.getFriends(userProfile.id);
+        if (friendsResponse.success && friendsResponse.data) {
+          setFriends(friendsResponse.data);
+        }
+        setInviteCode('');
+        
+        // Показываем уведомление
+        if (window.Telegram?.WebApp?.showAlert) {
+          window.Telegram.WebApp.showAlert('Друг успешно добавлен!');
+        } else {
+          alert('Друг успешно добавлен!');
+        }
       } else {
-        webApp.showAlert('Ошибка: ' + response.error);
+        setError(response.error || 'Ошибка принятия приглашения');
       }
     } catch (err) {
-      webApp.showAlert('Ошибка сети');
+      setError('Сетевая ошибка');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleShareInvite = () => {
+    if (!inviteLink) return;
+    
+    // Используем нативный метод Telegram для шаринга
+    if (window.Telegram?.WebApp?.shareUrl) {
+      window.Telegram.WebApp.shareUrl(inviteLink);
+    } 
+    // Fallback для браузера
+    else if (navigator.share) {
+      navigator.share({ url: inviteLink });
+    } 
+    // Копирование в буфер
+    else {
+      navigator.clipboard.writeText(inviteLink);
+      if (window.Telegram?.WebApp?.showAlert) {
+        window.Telegram.WebApp.showAlert('Ссылка скопирована в буфер!');
+      } else {
+        alert('Ссылка скопирована в буфер!');
+      }
     }
   };
 
@@ -98,47 +140,106 @@ export default function Friends() {
 
   return (
     <div className="container">
-      <h2>Моя команда</h2>
-
+      <h2>Мои друзья</h2>
+      
       {error && <div className="error">{error}</div>}
-
-      <button 
-        className="add-friend-btn"
-        onClick={handleAddFriend}
-      >
-        Добавить участника команды
-      </button>
-
-      <div className="friends-list">
-        {friends.length === 0 ? (
-          <p>У вас пока участников команды</p>
-        ) : (
-          friends.map(friend => (
-            <div key={friend.id} className="friend-card">
-              <div className="friend-info">
-                <span className="username">@{friend.friend_username}</span>
-                <BurnoutProgress level={friend.friend_burnout_level || 0} />
-              </div>
-              <button 
-                className="remove-btn"
-                onClick={() => handleRemoveFriend(friend.id)}
-              >
-                Удалить
-              </button>
-            </div>
-          ))
+      
+      {/* Блок генерации инвайта */}
+      <div className="section">
+        <button 
+          onClick={handleGenerateInvite}
+          className="btn primary"
+          disabled={!userProfile}
+        >
+          Создать приглашение
+        </button>
+        
+        {inviteLink && (
+          <div className="invite-box">
+            <input 
+              type="text" 
+              value={inviteLink} 
+              readOnly 
+              className="invite-input"
+            />
+            <button 
+              onClick={handleShareInvite}
+              className="btn secondary"
+            >
+              Поделиться
+            </button>
+          </div>
         )}
       </div>
-
-      <div className="menu">
-        <button 
-          className="menu-btn active"
-          onClick={() => router.push('/')}
-        >
-          📊
-        </button>
-        <button className="menu-btn">📈</button>
+      
+      {/* Блок принятия инвайта */}
+      <div className="section">
+        <h3>Принять приглашение</h3>
+        <div className="input-group">
+          <input
+            type="text"
+            value={inviteCode}
+            onChange={(e) => setInviteCode(e.target.value)}
+            placeholder="Введите код приглашения"
+            className="input"
+          />
+          <button 
+            onClick={handleAcceptInvite}
+            className="btn primary"
+            disabled={!inviteCode}
+          >
+            Принять
+          </button>
+        </div>
       </div>
-    </div>
-  );
-}
+      
+      {/* Список друзей */}
+      <div className="section">
+        <h3>Ваши друзья ({friends.length})</h3>
+        
+        {friends.length === 0 ? (
+          <p className="empty">У вас пока нет друзей</p>
+        ) : (
+          <div className="friends-list">
+            {friends.map(friend => (
+              <div key={friend.id} className="friend-card">
+                <div className="friend-info">
+                  <div className="friend-name">
+                    {friend.friend_username}
+                  </div>
+                </div>
+                <BurnoutProgress level={friend.friend_burnout_level} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      
+      <style jsx>{`
+        .container {
+          padding: 20px;
+          max-width: 600px;
+          margin: 0 auto;
+        }
+        
+        .section {
+          margin-bottom: 25px;
+          padding: 20px;
+          background: var(--tg-theme-bg-color, #ffffff);
+          border-radius: 15px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .invite-box {
+          display: flex;
+          margin-top: 15px;
+        }
+        
+        .invite-input {
+          flex: 1;
+          padding: 12px 15px;
+          border: 1px solid var(--tg-theme-hint-color, #cccccc);
+          border-radius: 10px 0 0 10px;
+          font-size: 14px;
+          background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+          color: var(--tg-theme-text-color,
