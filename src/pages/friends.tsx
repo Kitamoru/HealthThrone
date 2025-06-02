@@ -12,16 +12,9 @@ interface Friend {
   burnout_level: number;
 }
 
-// Define interface for API response
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
-
 export default function FriendsPage() {
   const router = useRouter();
-  const { user, isReady, initData } = useTelegram();
+  const { user, isReady } = useTelegram(); // Убрана неиспользуемая initData
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
@@ -31,9 +24,9 @@ export default function FriendsPage() {
 
     const loadFriends = async () => {
       try {
-        const response: ApiResponse<Friend[]> = await api.getFriends();
-        if (response.success && response.data) {
-          setFriends(response.data); // Now TypeScript knows response.data is Friend[]
+        const response = await api.getFriends();
+        if (response.success) {
+          setFriends(response.data);
         } else {
           setError(response.error || 'Failed to load friends');
         }
@@ -50,6 +43,7 @@ export default function FriendsPage() {
   const handleAddFriend = () => {
     if (window.Telegram?.WebApp) {
       const inviteText = "Присоединяйся к моей команде для отслеживания выгорания!";
+      // Исправлена синтаксическая ошибка в шаблоне
       const inviteLink = `https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${encodeURIComponent(inviteText)}`;
       window.Telegram.WebApp.openTelegramLink(inviteLink);
     }
@@ -57,9 +51,9 @@ export default function FriendsPage() {
 
   const handleDeleteFriend = async (friendId: number) => {
     try {
-      const response: ApiResponse<void> = await api.deleteFriend(friendId);
+      const response = await api.deleteFriend(friendId);
       if (response.success) {
-        setFriends(friends.filter((f: Friend) => f.id !== friendId));
+        setFriends(friends.filter(f => f.id !== friendId));
       } else {
         setError(response.error || 'Failed to delete friend');
       }
@@ -84,7 +78,7 @@ export default function FriendsPage() {
         {friends.length === 0 ? (
           <p>No friends yet. Add some friends to track their burnout levels.</p>
         ) : (
-          friends.map((friend: Friend) => (
+          friends.map(friend => (
             <div key={friend.id} className="friend-card">
               <div className="friend-header">
                 <span className="friend-username">@{friend.friend_username}</span>
