@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '../../../../lib/supabase';
-import { validateTelegramInitData } from '../../../../lib/telegramAuth';
+import { supabase } from '@/lib/supabase';
+import { validateTelegramInitData } from '@/lib/telegramAuth';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const initData = req.headers['x-telegram-init-data'] as string;
