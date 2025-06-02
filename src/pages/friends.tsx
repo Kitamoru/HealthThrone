@@ -1,207 +1,99 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { BurnoutProgress } from '../components/BurnoutProgress';
-import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
-import { useNavigate } from 'react-router-dom';
-
-// Интерфейс для друга
-interface Friend {
-  id: number;
-  username: string;
-  burnoutlevel: number;
-}
-
-// Интерфейс для ответа API
-interface ApiResponse {
-  success: boolean;
-  data?: any;
-  error?: string;
-}
-
-// Интерфейс для контакта Telegram
-interface TelegramContact {
-  user_id: number;
-  first_name?: string;
-  last_name?: string;
-  username?: string;
-}
-
-// Упрощенное объявление интерфейса без зависимости от Telegram
-interface ExtendedTelegramWebApp {
-  openContactForm: (
-    callback: (contact: TelegramContact) => void,
-    options?: { params: { request_phone?: boolean; request_write_access?: boolean } }
-  ) => void;
-  // Добавим другие используемые методы, если нужно
-}
+import { Loader } from '../components/Loader';
 
 export default function FriendsPage() {
-  const { user, isReady, webApp } = useTelegram();
-  const [friends, setFriends] = useState<Friend[]>([]);
+  const router = useRouter();
+  const { user, isReady, initData } = useTelegram();
+  const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!isReady) return;
-
+    if (!isReady || !user?.id) return;
+    
     const loadFriends = async () => {
       try {
-        setLoading(true);
-        if (!user?.id) {
-          throw new Error('User ID is missing');
-        }
-
-        const response: ApiResponse = await api.getFriends(user.id);
-        if (response.success && response.data) {
-          setFriends(response.data as Friend[]);
+        const response = await api.getFriends();
+        if (response.success) {
+          setFriends(response.data);
         } else {
           setError(response.error || 'Failed to load friends');
         }
       } catch (err) {
-        setError('An error occurred');
-        console.error(err);
+        setError('Network error');
       } finally {
         setLoading(false);
       }
     };
-
+    
     loadFriends();
   }, [isReady, user]);
 
-  const handleAddFriend = async () => {
-    if (!webApp) {
-      setError('Telegram WebApp is not available');
-      return;
-    }
-
-    try {
-      // Приводим тип напрямую без зависимости от Telegram
-      const extendedWebApp = webApp as unknown as ExtendedTelegramWebApp;
-      
-      if (typeof extendedWebApp.openContactForm === 'function') {
-        extendedWebApp.openContactForm(
-          (contact: TelegramContact) => {
-            if (contact) {
-              addFriendByContact(contact);
-            }
-          },
-          {
-            params: {
-              request_phone: false,
-              request_write_access: false
-            }
-          }
-        );
-      } else {
-        setError('Your Telegram app is outdated. Please update to add friends.');
-      }
-    } catch (err) {
-      console.error('Failed to request contact', err);
-      setError('Failed to request contact');
+  const handleAddFriend = () => {
+    if (window.Telegram?.WebApp) {
+      const inviteText = "Присоединяйся к моей команде для отслеживания выгорания!";
+      const inviteLink = `https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${encodeURIComponent(inviteText)}`;
+      window.Telegram.WebApp.openTelegramLink(inviteLink);
     }
   };
 
-  const addFriendByContact = async (contact: TelegramContact) => {
-    if (!user?.id) return;
-
+  const handleDeleteFriend = async (friendId: number) => {
     try {
-      setLoading(true);
-      
-      // Формируем username из доступных данных
-      let username = contact.username;
-      if (!username) {
-        username = contact.first_name || '';
-        if (contact.last_name) {
-          username += ` ${contact.last_name}`;
-        }
-        if (!username.trim()) {
-          username = `user_${contact.user_id}`;
-        }
-      }
-
-      const response: ApiResponse = await api.addFriend(
-        user.id, 
-        contact.user_id, 
-        username
-      );
-
+      const response = await api.deleteFriend(friendId);
       if (response.success) {
-        const newFriend: Friend = {
-          id: contact.user_id,
-          username,
-          burnoutlevel: 0,
-        };
-        setFriends([...friends, newFriend]);
+        setFriends(friends.filter(f => f.id !== friendId));
       } else {
-        setError(response.error || 'Failed to add friend');
+        setError(response.error || 'Failed to delete friend');
       }
     } catch (err) {
-      setError('An error occurred');
-      console.error(err);
-    } finally {
-      setLoading(false);
+      setError('Network error');
     }
   };
 
-  const handleRemoveFriend = async (friendId: number) => {
-    if (!user?.id) return;
-
-    try {
-      setLoading(true);
-      const response: ApiResponse = await api.removeFriend(user.id, friendId);
-
-      if (response.success) {
-        setFriends(friends.filter((f) => f.id !== friendId));
-      } else {
-        setError(response.error || 'Failed to remove friend');
-      }
-    } catch (err) {
-      setError('An error occurred');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const goBack = () => {
-    navigate('/');
-  };
-
-  if (loading) {
-    return <Loader />;
-  }
+  if (loading) return <Loader />;
 
   return (
     <div className="container">
-      <button onClick={goBack} className="back-btn">← Назад</button>
-      <h2>Мои друзья</h2>
+      <button className="back-btn" onClick={() => router.push('/')}>📊</button>
       
-      {error && <div className="error">{error}</div>}
-
+      <h1>My Friends</h1>
+      
+      {error && <div className="error-message">{error}</div>}
+      
       <div className="friends-list">
         {friends.length === 0 ? (
-          <p>У вас пока нет друзей</p>
+          <p>No friends yet. Add some friends to track their burnout levels.</p>
         ) : (
           friends.map(friend => (
-            <div key={friend.id} className="friend-item">
-              <div className="friend-info">
-                <span className="friend-username">@{friend.username}</span>
-                <BurnoutProgress level={friend.burnoutlevel} />
+            <div key={friend.id} className="friend-card">
+              <div className="friend-header">
+                <span className="friend-username">@{friend.friend_username}</span>
+                <button 
+                  className="delete-btn"
+                  onClick={() => handleDeleteFriend(friend.id)}
+                >
+                  ✕
+                </button>
               </div>
-              <button 
-                onClick={() => handleRemoveFriend(friend.id)} 
-                className="remove-btn"
-              >
-                Удалить
-              </button>
+              <BurnoutProgress level={friend.burnout_level} />
+              <div className="burnout-level">{friend.burnout_level}%</div>
             </div>
           ))
         )}
       </div>
-
-      <button onClick={handleAddFriend} className="add-friend-btn">Добавить друга</button>
+      
+      <div className="add-friend-section">
+        <button className="add-friend-btn" onClick={handleAddFriend}>
+          Add Friend
+        </button>
+        <p className="add-friend-hint">
+          Share the app with a friend to add them to your tracking list
+        </p>
+      </div>
     </div>
   );
 }
