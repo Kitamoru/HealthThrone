@@ -1,3 +1,5 @@
+import { Friend } from './supabase'; // Добавлен импорт Friend
+
 interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -11,7 +13,7 @@ class Api {
     try {
       console.log(`[API] Making request to: ${endpoint}`);
       console.log(`[API] Request options:`, options);
-
+      
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -21,11 +23,11 @@ class Api {
       });
 
       console.log(`[API] Response status: ${response.status}`);
-
+      
       // Обрабатываем случаи, когда ответ не JSON
       const contentType = response.headers.get('content-type');
       let data;
-
+      
       if (contentType?.includes('application/json')) {
         data = await response.json();
       } else {
@@ -75,6 +77,7 @@ class Api {
       body: JSON.stringify({ initData })
     });
   }
+
   async getFriends(userId: number) {
     return this.request<Friend[]>(`/friends?userId=${userId}`);
   }
