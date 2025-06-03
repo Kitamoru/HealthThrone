@@ -73,14 +73,19 @@ export default function Friends() {
   };
 
   const handleShare = () => {
-    // Используем openLink вместо shareUrl
-    if (webApp?.openLink) {
-      // Формируем ссылку для шаринга через Telegram
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Join my burnout tracking friends!')}`;
+    // Формируем ссылку для шаринга через Telegram
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Join my burnout tracking friends!')}`;
+    
+    // Используем оптимальные методы Telegram WebApp для открытия ссылок
+    if (webApp?.openTelegramLink) {
+      // Предпочтительный метод для внутренних ссылок Telegram
+      webApp.openTelegramLink(shareUrl);
+    } else if (webApp?.openLink) {
+      // Универсальный метод для всех ссылок
       webApp.openLink(shareUrl);
     } else {
       // Fallback для браузера
-      window.open(`tg://msg_url?url=${encodeURIComponent(referralLink)}`, '_blank');
+      window.open(shareUrl, '_blank');
     }
   };
 
