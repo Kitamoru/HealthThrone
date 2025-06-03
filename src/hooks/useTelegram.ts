@@ -45,6 +45,7 @@ interface TelegramWebApp {
   showAlert: (message: string) => void;
   showConfirm: (message: string, callback: (confirmed: boolean) => void) => void;
   showPopup: (params: any, callback?: (buttonId: string) => void) => void;
+  openTelegramLink: (url: string) => void;
   openLink: (url: string, options?: { try_instant_view?: boolean }) => void;
   HapticFeedback: {
     impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
