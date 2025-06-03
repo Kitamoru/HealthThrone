@@ -259,7 +259,7 @@ export default async function handler(
       user: userData,
       isNewUser
     });
-
+  try {
   } catch (error) {
     console.error('[Init API] Unhandled error:', error);
     return res.status(500).json({ 
