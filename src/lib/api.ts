@@ -57,13 +57,15 @@ class Api {
 
   async getUserData(userId: number, initData?: string) {
     console.log(`[API] Fetching user data for ID: ${userId}`);
-    const headers = initData ? { 'X-Telegram-Init-Data': initData } : {};
+    const headers: Record<string, string> = {}; // Явное указание типа
+    if (initData) headers['X-Telegram-Init-Data'] = initData;
     return this.request(`/data?userId=${userId}`, { headers });
   }
 
   async updateBurnoutLevel(userId: number, level: number, initData?: string) {
     console.log(`[API] Updating burnout level for user ${userId} to ${level}`);
-    const headers = initData ? { 'X-Telegram-Init-Data': initData } : {};
+    const headers: Record<string, string> = {}; // Явное указание типа
+    if (initData) headers['X-Telegram-Init-Data'] = initData;
     return this.request('/update', {
       method: 'POST',
       headers,
@@ -82,13 +84,15 @@ class Api {
   // Методы для работы с друзьями
   async getFriends(initData?: string) {
     console.log('[API] Fetching friends list');
-    const headers = initData ? { 'X-Telegram-Init-Data': initData } : {};
+    const headers: Record<string, string> = {}; // Явное указание типа
+    if (initData) headers['X-Telegram-Init-Data'] = initData;
     return this.request('/friends', { headers });
   }
 
   async addFriend(friendUsername: string, initData?: string) {
     console.log(`[API] Adding friend: @${friendUsername}`);
-    const headers = initData ? { 'X-Telegram-Init-Data': initData } : {};
+    const headers: Record<string, string> = {}; // Явное указание типа
+    if (initData) headers['X-Telegram-Init-Data'] = initData;
     return this.request('/friends', {
       method: 'POST',
       headers,
@@ -98,7 +102,8 @@ class Api {
 
   async deleteFriend(friendId: number, initData?: string) {
     console.log(`[API] Deleting friend with ID: ${friendId}`);
-    const headers = initData ? { 'X-Telegram-Init-Data': initData } : {};
+    const headers: Record<string, string> = {}; // Явное указание типа
+    if (initData) headers['X-Telegram-Init-Data'] = initData;
     return this.request(`/friends/${friendId}`, {
       method: 'DELETE',
       headers
