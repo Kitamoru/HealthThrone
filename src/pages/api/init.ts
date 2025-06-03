@@ -175,7 +175,7 @@ export default async function handler(
       // В блоке обработки реферала замените код на:
     if (ref && typeof ref === 'string' && ref.startsWith('ref_')) {
       try {
-        const referrerTelegramId = ref.replace('ref_', '');  
+        const referrerTelegramId = ref.split('_')[1];  
         const referrerIdNum = parseInt(referrerTelegramId, 10);
       
         if (!isNaN(referrerIdNum) && referrerIdNum !== user_id) {
@@ -183,7 +183,7 @@ export default async function handler(
           const { data: referrer } = await supabase
             .from('users')  
             .select('id')
-            .eq('telegram_id', referrerIdNum)
+            .eq('telegram_id', parseInt(referrerTelegramId))
             .single();
 
           if (referrer) {  
@@ -201,10 +201,8 @@ export default async function handler(
           
               // Добавляем запись
               await supabase.from('friends').insert({
-                user_id: referrer.id,  
-                friend_id: userData.id,
-                friend_username: friendUsername,  
-                burnout_level: 0
+              user_id: referrer.id,
+              friend_id: userData.id
               });  
               console.log(`Added friend: ${referrer.id} -> ${userData.id}`);
             }
@@ -228,5 +226,14 @@ export default async function handler(
       error: 'Internal server error',
       details: error instanceof Error ? error.message : String(error)
     });
+    
+  } catch (e) {
+    console.error('Referral error:', {
+    error: e,
+    ref,
+    referrerTelegramId,
+    userId: userData.id
+  });
+}
   }
 }
