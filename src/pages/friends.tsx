@@ -17,6 +17,23 @@ interface ApiResponse<T = any> {
   error?: string;
 }
 
+// Компонент прогресс-бара для отображения уровня выгорания
+interface BurnoutProgressProps {
+  level: number;
+}
+
+const BurnoutProgress: React.FC<BurnoutProgressProps> = ({ level }) => {
+  return (
+    <div className="progress-container">
+      <div 
+        className="progress-bar"
+        style={{ width: `${level}%` }}
+      />
+      <span className="progress-text">{level}%</span>
+    </div>
+  );
+};
+
 export default function Friends() {
   const router = useRouter();
   const { user, isReady, initData, webApp } = useTelegram();
@@ -106,20 +123,20 @@ export default function Friends() {
         {friends.length === 0 ? (
           <div className="empty">You don't have any friends yet</div>
         ) : (
-          <ul>
+          <div className="friends-grid">
             {friends.map((friend) => (
-              <li key={friend.id} className="friend-item">
-                <span className="friend-name">{friend.friend_username}</span>
-                <span className="burnout-level">{friend.burnout_level}%</span>
+              <div key={friend.id} className="friend-card">
+                <div className="friend-name">{friend.friend_username}</div>
+                <BurnoutProgress level={friend.burnout_level} />
                 <button 
                   className="delete-btn"
                   onClick={() => handleDelete(friend.id)}
                 >
                   Remove
                 </button>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
       {showModal && (
