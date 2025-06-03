@@ -22,12 +22,8 @@ export interface UserProfile {
 }
 export interface Friend {
   id: number;
-  user_id: number;
-  friend_id: number;
-  friend_username: string;
-  burnout_level: number;
   created_at: string;
-  friend?: { // Добавьте это поле
+  friend: {
     id: number;
     first_name: string;
     last_name?: string;
@@ -35,3 +31,4 @@ export interface Friend {
     burnout_level: number;
   };
 }
+
