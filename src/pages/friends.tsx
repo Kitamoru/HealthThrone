@@ -22,7 +22,7 @@ type DeleteResponse = ApiResponse<null>;
 
 export default function FriendsPage() {
   const router = useRouter();
-  const { user, isReady, initData } = useTelegram(); // Добавлено получение initData
+  const { user, isReady, initData } = useTelegram();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
@@ -32,13 +32,11 @@ export default function FriendsPage() {
 
     const loadFriends = async () => {
       try {
-        // Передаем initData в запрос
         const response = await api.getFriends(initData) as FriendsResponse;
         
         if (response.success && response.data) {
           setFriends(response.data);
         } else {
-          // Обработка ошибки авторизации
           if (response.error?.includes("Unauthorized")) {
             setError("Пожалуйста, авторизуйтесь через Telegram");
           } else {
@@ -53,38 +51,35 @@ export default function FriendsPage() {
     };
 
     loadFriends();
-  }, [isReady, user?.id, initData]); // Добавлена зависимость от initData
+  }, [isReady, user?.id, initData]);
 
   const handleAddFriend = () => {
-    // Проверка доступности Telegram WebApp
     if (window.Telegram?.WebApp) {
-      const inviteText = "Присоединяйся к моей команде для отслеживания выгорания!";
+      // Формируем реферальную ссылку с уникальным кодом
+      const referralCode = `ref_${user?.id}`;
+      const shareUrl = `${window.location.origin}?ref=${referralCode}`;
       
-      // Добавлен реферальный параметр с ID пользователя
-      const url = `${window.location.origin}?ref=${user?.id || 'unknown'}`;
+      // Формируем текст для приглашения
+      const shareText = `Присоединяйся к моей команде для отслеживания выгорания! ${shareUrl}`;
       
-      // Исправлено формирование ссылки
-      const inviteLink = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(inviteText)}`;
-      
-      window.Telegram.WebApp.openLink(inviteLink);
+      // Используем Telegram-специфичный метод для поделиться
+      window.Telegram.WebApp.shareUrl(shareUrl, shareText);
     } else {
-      // Fallback для окружений без Telegram WebApp
-      const inviteText = "Присоединяйся к моей команде для отслеживания выгорания!";
-      const url = `${window.location.origin}?ref=${user?.id || 'unknown'}`;
-      const fullUrl = `${url}\n\n${inviteText}`;
-      alert(`Скопируйте ссылку:\n\n${fullUrl}`);
+      // Fallback для обычных браузеров
+      const referralCode = `ref_${user?.id}`;
+      const shareUrl = `${window.location.origin}?ref=${referralCode}`;
+      navigator.clipboard.writeText(shareUrl);
+      alert('Ссылка скопирована в буфер обмена! Поделитесь ей с другом.');
     }
   };
 
   const handleDeleteFriend = async (friendId: number) => {
     try {
-      // Передаем initData в запрос
       const response = await api.deleteFriend(friendId, initData) as DeleteResponse;
       
       if (response.success) {
         setFriends(friends.filter(f => f.id !== friendId));
       } else {
-        // Обработка ошибки авторизации
         if (response.error?.includes("Unauthorized")) {
           setError("Пожалуйста, авторизуйтесь через Telegram");
         } else {
@@ -143,7 +138,6 @@ export default function FriendsPage() {
         </p>
       </div>
 
-      {/* Добавлено идентичное нижнее меню */}
       <div className="menu">
         <button className="menu-btn" onClick={() => router.push('/')}>📊</button>
         <button className="menu-btn active" onClick={() => router.push('/friends')}>📈</button>
