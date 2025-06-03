@@ -55,15 +55,18 @@ class Api {
     }
   }
 
-  async getUserData(userId: number) {
+  async getUserData(userId: number, initData?: string) {
     console.log(`[API] Fetching user data for ID: ${userId}`);
-    return this.request(`/data?userId=${userId}`);
+    const headers = initData ? { 'X-Telegram-Init-Data': initData } : {};
+    return this.request(`/data?userId=${userId}`, { headers });
   }
 
-  async updateBurnoutLevel(userId: number, level: number) {
+  async updateBurnoutLevel(userId: number, level: number, initData?: string) {
     console.log(`[API] Updating burnout level for user ${userId} to ${level}`);
+    const headers = initData ? { 'X-Telegram-Init-Data': initData } : {};
     return this.request('/update', {
       method: 'POST',
+      headers,
       body: JSON.stringify({ userId, burnoutLevel: level })
     });
   }
@@ -76,7 +79,7 @@ class Api {
     });
   }
 
-  // Новые методы для работы с друзьями
+  // Методы для работы с друзьями
   async getFriends(initData?: string) {
     console.log('[API] Fetching friends list');
     const headers = initData ? { 'X-Telegram-Init-Data': initData } : {};
