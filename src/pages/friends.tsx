@@ -51,7 +51,7 @@ export default function Friends() {
     setLoading(true);
     const response = await api.getFriends(user.id, initData) as ApiResponse<Friend[]>;
     
-    if (response.success) {
+    if (response.success && response.data) { // Добавлена проверка response.data
       // Преобразуем данные в нужный формат
       const formattedFriends = response.data.map(f => ({
         id: f.id,
