@@ -186,10 +186,13 @@ export default async function handler(
     }
 
     if (refParam && typeof refParam === 'string' && refParam.startsWith('ref_')) {
-      const referrerTelegramId = refParam.split('_')[1];
-      console.log(`[Init API] Processing referral from: ${referrerTelegramId}`);
-
-      if (referrerTelegramId && !isNaN(Number(referrerTelegramId))) {
+  // Извлекаем ID из формата ref_1_3026215
+  const parts = refParam.split('_');
+  if (parts.length >= 3) {
+    const referrerTelegramId = parts[2]; // Третья часть - ID пользователя
+    
+    // Проверяем что ID - число
+    if (referrerTelegramId && !isNaN(Number(referrerTelegramId))) {
         try {
     // Ищем реферера в базе
           const { data: referrer, error: referrerError } = await supabase
