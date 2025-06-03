@@ -185,35 +185,34 @@ export default async function handler(
       }
     }
 
+    // Исправленный блок обработки реферальной ссылки
     if (refParam && typeof refParam === 'string' && refParam.startsWith('ref_')) {
-  // Извлекаем ID из формата ref_1_3026215
-  const parts = refParam.split('_');
-  if (parts.length >= 3) {
-    const referrerTelegramId = parts[2]; // Третья часть - ID пользователя
-    
-    // Проверяем что ID - число
-    if (referrerTelegramId && !isNaN(Number(referrerTelegramId))) {
-        try {
-    // Ищем реферера в базе
-          const { data: referrer, error: referrerError } = await supabase
-            .from('users')
-            .select('id, telegram_id')
-            .eq('telegram_id', referrerTelegramId)
-            .single();
-
-          if (referrerError || !referrer) {
-            console.error(`[Init API] Referrer not found: ${referrerTelegramId}`, referrerError);
+      try {
+        const parts = refParam.split('_');
+        if (parts.length < 3) {
+          console.error(`[Init API] Invalid ref format: ${refParam}`);
+        } else {
+          const referrerTelegramId = parts[2];
+          const referrerIdNum = parseInt(referrerTelegramId, 10);
+          
+          if (isNaN(referrerIdNum)) {
+            console.error(`[Init API] Invalid referral ID: ${referrerTelegramId}`);
+          } else if (referrerIdNum === user_id) {
+            console.log('[Init API] Skipping self-referral');
           } else {
-            // Проверяем, что пользователь не добавляет сам себя
-            if (Number(referrerTelegramId) === user_id) {
-              console.log('[Init API] User tried to add themselves, skipping');
+            // Ищем реферера в базе
+            const { data: referrer, error: referrerError } = await supabase
+              .from('users')
+              .select('id, telegram_id')
+              .eq('telegram_id', referrerIdNum)
+              .single();
+
+            if (referrerError || !referrer) {
+              console.error(`[Init API] Referrer not found: ${referrerIdNum}`, referrerError);
             } else {
               // Формируем username для добавления
-              let friendUsername = user.username;
-              if (!friendUsername) {
-                // Если username отсутствует, используем first_name + last_name
-                friendUsername = `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}`;
-              }
+              let friendUsername = user.username || 
+                                   `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}`;
 
               // Проверяем существование друга
               const { data: existingFriend, error: friendError } = await supabase
@@ -245,11 +244,9 @@ export default async function handler(
               }
             }
           }
-        } catch (e) {
-          console.error('[Init API] Referral processing error:', e);
         }
-      } else {
-        console.error(`[Init API] Invalid referral ID format: ${refParam}`);
+      } catch (e) {
+        console.error('[Init API] Referral processing error:', e);
       }
     }
 
@@ -259,7 +256,7 @@ export default async function handler(
       user: userData,
       isNewUser
     });
-  try {
+ 
   } catch (error) {
     console.error('[Init API] Unhandled error:', error);
     return res.status(500).json({ 
