@@ -22,7 +22,7 @@ type DeleteResponse = ApiResponse<null>;
 
 export default function FriendsPage() {
   const router = useRouter();
-  const { user, isReady, initData } = useTelegram();
+  const { user, isReady, initData, startParam } = useTelegram(); // <-- Добавлен startParam
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
@@ -62,7 +62,8 @@ export default function FriendsPage() {
       return;
     }
     
-    const referralCode = `ref_${user?.id}`;
+    // Используем startParam если есть, иначе создаем по user.id
+    const referralCode = startParam || `ref_${user?.id}`;
     const deepLink = `https://t.me/${botUsername}?startapp=${referralCode}`;
     
     setModalLink(deepLink);
