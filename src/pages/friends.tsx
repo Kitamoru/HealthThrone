@@ -32,7 +32,8 @@ export default function Friends() {
     const loadFriends = async () => {
       try {
         setLoading(true);
-        const response: ApiResponse<Friend[]> = await api.getFriends(initData);
+        // Исправление: явное приведение типа для response
+        const response = await api.getFriends(initData) as ApiResponse<Friend[]>;
         if (response.success) {
           setFriends(Array.isArray(response.data) ? response.data : []);
         } else {
@@ -49,11 +50,16 @@ export default function Friends() {
   }, [isReady, user, initData]);
 
   const handleDelete = async (friendId: number) => {
-    const response: ApiResponse = await api.deleteFriend(friendId, initData);
-    if (response.success) {
-      setFriends(friends.filter(f => f.id !== friendId));
-    } else {
-      setError(response.error || 'Failed to delete friend');
+    try {
+      // Исправление: добавлено явное приведение типа
+      const response = await api.deleteFriend(friendId, initData) as ApiResponse;
+      if (response.success) {
+        setFriends(friends.filter(f => f.id !== friendId));
+      } else {
+        setError(response.error || 'Failed to delete friend');
+      }
+    } catch (err) {
+      setError('Ошибка при удалении друга');
     }
   };
 
