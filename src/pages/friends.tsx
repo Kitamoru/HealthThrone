@@ -53,26 +53,6 @@ export default function FriendsPage() {
     loadFriends();
   }, [isReady, user?.id, initData]);
 
-  const handleAddFriend = () => {
-    if (window.Telegram?.WebApp) {
-      // Формируем реферальную ссылку с уникальным кодом
-      const referralCode = `ref_${user?.id}`;
-      const shareUrl = `${window.location.origin}?ref=${referralCode}`;
-      
-      // Формируем текст для приглашения
-      const shareText = `Присоединяйся к моей команде для отслеживания выгорания! ${shareUrl}`;
-      
-      // Используем Telegram-специфичный метод для поделиться
-      window.Telegram.WebApp.shareUrl(shareUrl, shareText);
-    } else {
-      // Fallback для обычных браузеров
-      const referralCode = `ref_${user?.id}`;
-      const shareUrl = `${window.location.origin}?ref=${referralCode}`;
-      navigator.clipboard.writeText(shareUrl);
-      alert('Ссылка скопирована в буфер обмена! Поделитесь ей с другом.');
-    }
-  };
-
   const handleDeleteFriend = async (friendId: number) => {
     try {
       const response = await api.deleteFriend(friendId, initData) as DeleteResponse;
@@ -129,21 +109,9 @@ export default function FriendsPage() {
         )}
       </div>
 
-      <div className="add-friend-section">
-        <button className="add-friend-btn" onClick={handleAddFriend}>
-          Add Friend
-        </button>
-        <p className="add-friend-hint">
-          Share the app with a friend to add them to your tracking list
-        </p>
-      </div>
-
-      <div className="menu">
-        <button className="menu-btn" onClick={() => router.push('/')}>📊</button>
-        <button className="menu-btn active" onClick={() => router.push('/friends')}>📈</button>
-        <button className="menu-btn">⚙️</button>
-        <button className="menu-btn">ℹ️</button>
-      </div>
+      <button className="add-friend-btn" onClick={handleAddFriend}>
+        Add Friend
+      </button>
     </div>
   );
 }
