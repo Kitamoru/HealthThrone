@@ -56,24 +56,18 @@ export default function FriendsPage() {
   }, [isReady, user?.id, initData]);
   
   const handleAddFriend = () => {
-  const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
-  if (!botUsername) {
-    console.error('Telegram bot username is not configured');
-    return;
-  }
-  
-  const referralCode = `ref_${user?.id}`;
-  const deepLink = `https://t.me/${botUsername}?startapp=${referralCode}`;
-  
-  if (window.Telegram?.WebApp) {
-    const shareText = "Присоединяйся к моей команде для отслеживания выгорания!";
-    const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(deepLink)}&text=${encodeURIComponent(shareText)}`;
-    window.Telegram.WebApp.openLink(telegramShareUrl);
-  } else {
-    navigator.clipboard.writeText(deepLink);
-    alert('Ссылка скопирована в буфер обмена! Поделитесь ей с другом.');
-  }
-};
+    const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
+    if (!botUsername) {
+      console.error('Telegram bot username is not configured');
+      return;
+    }
+    
+    const referralCode = `ref_${user?.id}`;
+    const deepLink = `https://t.me/${botUsername}?startapp=${referralCode}`;
+    
+    setModalLink(deepLink);
+    setIsModalOpen(true);
+  };
 
   const handleDeleteFriend = async (friendId: number) => {
     try {
@@ -134,42 +128,42 @@ export default function FriendsPage() {
       <button className="add-friend-btn" onClick={handleAddFriend}>
         Add Friend
       </button>
+
+      {isModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2>Ваша ссылка</h2>
+            <p className="referral-link">{modalLink}</p>
+            <div className="modal-buttons">
+              <button 
+                className="copy-btn" 
+                onClick={() => {
+                  navigator.clipboard.writeText(modalLink);
+                  alert('Ссылка скопирована!');
+                }}
+              >
+                Копировать
+              </button>
+              <button 
+                className="share-btn"
+                onClick={() => {
+                  const shareText = "Присоединяйся к моей команде для отслеживания выгорания!";
+                  const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(modalLink)}&text=${encodeURIComponent(shareText)}`;
+                  window.Telegram?.WebApp?.openLink(telegramShareUrl);
+                }}
+              >
+                Поделиться
+              </button>
+              <button 
+                className="close-btn" 
+                onClick={() => setIsModalOpen(false)}
+              >
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-{isModalOpen && (
-  <div className="modal-overlay">
-    <div className="modal">
-      <h2>Ваша ссылка</h2>
-      <p className="referral-link">{modalLink}</p>
-      <div className="modal-buttons">
-        <button 
-          className="copy-btn" 
-          onClick={() => {
-            navigator.clipboard.writeText(modalLink);
-            alert('Ссылка скопирована!');
-          }}
-        >
-          Копировать
-        </button>
-        <button 
-          className="share-btn"
-          onClick={() => {
-            const shareText = "Присоединяйся к моей команде для отслеживания выгорания!";
-            const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(modalLink)}&text=${encodeURIComponent(shareText)}`;
-            window.Telegram.WebApp.openLink(telegramShareUrl);
-          }}
-        >
-          Поделиться
-        </button>
-        <button 
-          className="close-btn" 
-          onClick={() => setIsModalOpen(false)}
-        >
-          Закрыть
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
