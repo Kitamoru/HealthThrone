@@ -89,7 +89,7 @@ export default function Friends() {
   };
 
   const handleShare = () => {
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Join my burnout tracking friends!')}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Добро пожаловать на борт!')}`;
     
     if (webApp?.openTelegramLink) {
       webApp.openTelegramLink(shareUrl);
@@ -107,18 +107,18 @@ export default function Friends() {
   return (
     <div className="container">
       <div className="header">
-        <h2>My Friends</h2>
+        <h2>Моя команда</h2>
         <button 
           className="answer-btn positive"
           onClick={() => setShowModal(true)}
         >
-          Add Friends
+          Добавить
         </button>
       </div>
       {error && <div className="error">{error}</div>}
       <div className="friends-list">
         {friends.length === 0 ? (
-          <div className="empty">You don't have any friends yet</div>
+          <div className="empty">У вас не добавлены участники команды yet</div>
         ) : (
           <div className="friends-grid">
             {friends.map((friend) => (
