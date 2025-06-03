@@ -15,7 +15,6 @@ const verifyTelegramData = (initData: string): boolean => {
       console.error('[Init API] Hash not found in initData');
       return false;
     }
-
     params.delete('hash');
 
     // Создаем секрет как указано в документации Telegram
