@@ -10,7 +10,6 @@ export default function App({ Component, pageProps }: AppProps) {
   const { isReady, initData, startParam } = useTelegram();
 
   useEffect(() => {
-    // Вызываем API инициализации при загрузке приложения
     if (isReady && initData) {
       console.log('Initializing user with startParam:', startParam);
       api.initUser(initData, startParam)
