@@ -47,6 +47,15 @@ class Api {
     }
   }
 
+  // Обновленный метод с параметром startParam
+  async initUser(initData: string, startParam?: string) {
+    return this.request('/init', {
+      method: 'POST',
+      body: JSON.stringify({ initData, ref: startParam }) // Передаем startParam как ref
+    });
+  }
+
+  // Остальные методы без изменений
   async getUserData(userId: number, initData?: string) {
     const headers: Record<string, string> = {};
     if (initData) headers['X-Telegram-Init-Data'] = initData;
@@ -63,14 +72,6 @@ class Api {
     });
   }
 
-  async initUser(initData: string) {
-    return this.request('/init', {
-      method: 'POST',
-      body: JSON.stringify({ initData })
-    });
-  }
-
-  // Методы для работы с друзьями
   async getFriends(initData?: string) {
     const headers: Record<string, string> = {};
     if (initData) headers['X-Telegram-Init-Data'] = initData;
