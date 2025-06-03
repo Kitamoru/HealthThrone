@@ -701,133 +701,75 @@ body {
 
 /* Existing styles... */
 
-/* New styles for Add Friends button and modal */
-.answer-btn {
-  padding: 12px 20px;
-  border: none;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 80px;
-  position: relative;
-  overflow: hidden;
-}
-
-.answer-btn::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  background: rgba(255,255,255,0.2);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  transition: width 0.6s, height 0.6s;
-}
-
-.answer-btn:active::before {
-  width: 300px;
-  height: 300px;
-}
-
-.answer-btn.positive {
-  background: linear-gradient(135deg, var(--tg-accent), #4a7bc8);
-  color: white;
-  box-shadow: 0 4px 15px rgba(91, 140, 255, 0.4);
-}
-
-.answer-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-}
-
-.answer-btn.positive:hover {
-  box-shadow: 0 6px 20px rgba(91, 140, 255, 0.6);
-}
-
-/* Modal styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0,0,0,0.5);
+.container {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+  flex-direction: column;
+  height: 100vh; /* Занимаем всю высоту экрана */
+  padding: 15px;
+  gap: 20px;
 }
 
-.modal-card {
-  background: var(--tg-secondary);
-  border-radius: 16px;
-  padding: 20px;
-  border: 1px solid var(--tg-border);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-  max-width: 500px;
-  width: 90%;
-  margin: 0 auto;
+.scrollable-content {
+  flex: 1; /* Занимает все доступное пространство */
+  overflow-y: auto; /* Включаем прокрутку при необходимости */
+  padding-bottom: 20px; /* Отступ для меню */
 }
 
-.custom-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-}
-
-.custom-modal-header h3 {
-  margin: 0;
-  font-size: 18px;
-  color: var(--tg-text);
-}
-
-.custom-modal-body {
-  margin-bottom: 15px;
-}
-
-.referral-link-container {
-  display: flex;
-  gap: 10px;
-  margin: 15px 0;
-}
-
-.custom-input {
-  background: var(--tg-secondary);
-  border: 1px solid var(--tg-border);
-  border-radius: 12px;
-  padding: 12px;
-  color: var(--tg-text);
-  font-size: 14px;
-  flex: 1;
-  outline: none;
-}
-
-.custom-input:focus {
-  border-color: var(--tg-accent);
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: var(--tg-text);
-  opacity: 0.7;
-  transition: opacity 0.3s;
-}
-
-.close-btn:hover {
-  opacity: 1;
-}
-
-/* Menu positioning fix */
 .menu {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 2px solid var(--tg-border);
+  background: var(--tg-bg);
   position: sticky;
   bottom: 0;
   z-index: 100;
+  margin-top: auto; /* Важное изменение - прижимаем меню к низу */
+}
+
+/* Новые стили для кнопки удаления */
+.delete-btn {
+  background: var(--tg-danger);
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-weight: 500;
+  margin-top: 10px;
+}
+
+.delete-btn:hover {
+  background: #c0392b;
+}
+
+/* Стили для пустого состояния */
+.empty {
+  text-align: center;
+  padding: 20px;
+  color: var(--tg-hint);
+  font-size: 16px;
+}
+
+/* Улучшаем адаптивность */
+@media (max-width: 480px) {
+  .container {
+    padding: 12px;
+  }
+  
+  .menu-btn {
+    padding: 12px;
+    font-size: 20px;
+  }
+  
+  .friend-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .delete-btn {
+    align-self: flex-end;
+  }
 }
