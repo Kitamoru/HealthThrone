@@ -174,42 +174,44 @@ export default async function handler(
 
       // В блоке обработки реферала замените код на:
     if (ref && typeof ref === 'string' && ref.startsWith('ref_')) {
-      try {
-        const referrerTelegramId = ref.split('_')[1];  
-        const referrerIdNum = parseInt(referrerTelegramId, 10);
-      
-        if (!isNaN(referrerIdNum) && referrerIdNum !== user_id) {
-          // Проверяем существует ли реферер
-          const { data: referrer } = await supabase
-            .from('users')  
-            .select('id')
-            .eq('telegram_id', parseInt(referrerTelegramId))
-            .single();
+  try {
+    const referrerTelegramId = ref.split('_')[1];
+    const referrerIdNum = parseInt(referrerTelegramId, 10);
+    
+    if (!isNaN(referrerIdNum) {
+      const { data: referrer } = await supabase
+        .from('users')
+        .select('id')
+        .eq('telegram_id', referrerIdNum)
+        .single();
 
-          if (referrer) {  
-            // Проверяем нет ли уже связи
-            const { count } = await supabase
-              .from('friends')
-              .select('*', { count: 'exact' })
-              .eq('user_id', referrer.id)
-              .eq('friend_id', userData.id);
+      if (referrer && referrer.id !== userData.id) {
+        // Проверка существования связи
+        const { count } = await supabase
+          .from('friends')
+          .select('*', { count: 'exact' })
+          .eq('user_id', referrer.id)
+          .eq('friend_id', userData.id);
 
-            if (count === 0) {
-              // Формируем имя друга
-              const friendUsername = user.username || 
-                `${user.first_name} ${user.last_name || ''}`.trim();
-          
-              // Добавляем запись
-              await supabase.from('friends').insert({
+        if (count === 0) {
+          // Добавляем запись в friends
+          const { error: insertError } = await supabase
+            .from('friends')
+            .insert({
               user_id: referrer.id,
               friend_id: userData.id
-              });  
-              console.log(`Added friend: ${referrer.id} -> ${userData.id}`);
-            }
+            });
+
+          if (!insertError) {
+            console.log(`Added friend: ${referrer.id} -> ${userData.id}`);
+          } else {
+            console.error('Friends insert error:', insertError);
           }
         }
+      }
+    }
   } catch (e) {
-    console.error('Referral error:', e);
+    console.error('Referral processing error:', e);
   }
 }
 
