@@ -24,7 +24,7 @@ interface TelegramWebApp {
     user?: TelegramUser;
     chat_instance?: string;
     chat_type?: string;
-    start_param?: string;
+    start_param?: string;  // <-- Важное поле для реферальных ссылок
   };
   colorScheme: 'light' | 'dark';
   themeParams: {
@@ -71,6 +71,7 @@ export const useTelegram = () => {
   const [error, setError] = useState<string | null>(null);
   const [initData, setInitData] = useState('');
   const [user, setUser] = useState<TelegramUser | null>(null);
+  const [startParam, setStartParam] = useState(''); // <-- Добавлено новое состояние
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -121,6 +122,12 @@ export const useTelegram = () => {
           console.error('[useTelegram]', errorMsg);
         }
 
+        // Добавлено: Извлечение start_param
+        if (tg.initDataUnsafe?.start_param) {
+          setStartParam(tg.initDataUnsafe.start_param);
+          console.log('[useTelegram] start_param set:', tg.initDataUnsafe.start_param);
+        }
+
         // Initialize Telegram WebApp
         console.log('[useTelegram] Calling Telegram.ready() and expand()');
         tg.ready();
@@ -149,6 +156,7 @@ export const useTelegram = () => {
     user,
     isReady,
     initData,
+    startParam, // <-- Возвращаем startParam
     webApp,
     error
   };
