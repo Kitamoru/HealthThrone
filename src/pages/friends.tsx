@@ -106,77 +106,80 @@ export default function Friends() {
 
   return (
     <div className="container">
-      <div className="header">
-        <h2>Моя команда</h2>
-        <button 
-          className="answer-btn positive"
-          onClick={() => setShowModal(true)}
-        >
-          Добавить
-        </button>
-      </div>
-      {error && <div className="error">{error}</div>}
-      <div className="friends-list">
-        {friends.length === 0 ? (
-          <div className="empty">У вас не добавлены участники команды yet</div>
-        ) : (
-          <div className="friends-grid">
-            {friends.map((friend) => (
-              <div key={friend.id} className="friend-card">
-                <div className="friend-name">{friend.friend_username}</div>
-                <BurnoutProgress level={friend.burnout_level} />
+      {/* Основной контент с возможностью прокрутки */}
+      <div className="scrollable-content">
+        <div className="header">
+          <h2>Моя команда</h2>
+          <button 
+            className="answer-btn positive"
+            onClick={() => setShowModal(true)}
+          >
+            Добавить
+          </button>
+        </div>
+        {error && <div className="error">{error}</div>}
+        <div className="friends-list">
+          {friends.length === 0 ? (
+            <div className="empty">У вас не добавлены участники команды</div>
+          ) : (
+            <div className="friends-grid">
+              {friends.map((friend) => (
+                <div key={friend.id} className="friend-card">
+                  <div className="friend-name">{friend.friend_username}</div>
+                  <BurnoutProgress level={friend.burnout_level} />
+                  <button 
+                    className="delete-btn"
+                    onClick={() => handleDelete(friend.id)}
+                  >
+                    Удалить
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        {/* Модальное окно в стиле приложения */}
+        {showModal && (
+          <div className="modal-overlay">
+            <div className="modal-card">
+              <div className="custom-modal-header">
+                <h3>Добавь участника команды</h3>
                 <button 
-                  className="delete-btn"
-                  onClick={() => handleDelete(friend.id)}
+                  className="close-btn" 
+                  onClick={() => setShowModal(false)}
                 >
-                  Remove
+                  &times;
                 </button>
               </div>
-            ))}
+              <div className="custom-modal-body">
+                <p>Поделись реферальной ссылкой для отслеживания состояния команды</p>
+                <div className="referral-link-container">
+                  <input 
+                    type="text" 
+                    value={referralLink} 
+                    readOnly 
+                    className="custom-input"
+                  />
+                  <button 
+                    className={`answer-btn ${copied ? 'positive' : ''}`} 
+                    onClick={handleCopy}
+                  >
+                    {copied ? 'Скопировано!' : 'Копировать'}
+                  </button>
+                </div>
+                <button 
+                  className="answer-btn positive"
+                  onClick={handleShare}
+                  style={{ marginTop: '15px' }}
+                >
+                  Поделиться
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
-      
-      {/* Модальное окно в стиле приложения */}
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-card">
-            <div className="custom-modal-header">
-              <h3>Invite Friends</h3>
-              <button 
-                className="close-btn" 
-                onClick={() => setShowModal(false)}
-              >
-                &times;
-              </button>
-            </div>
-            <div className="custom-modal-body">
-              <p>Share your referral link to track friends' burnout levels:</p>
-              <div className="referral-link-container">
-                <input 
-                  type="text" 
-                  value={referralLink} 
-                  readOnly 
-                  className="custom-input"
-                />
-                <button 
-                  className={`answer-btn ${copied ? 'positive' : ''}`} 
-                  onClick={handleCopy}
-                >
-                  {copied ? 'Copied!' : 'Copy Link'}
-                </button>
-              </div>
-              <button 
-                className="answer-btn positive"
-                onClick={handleShare}
-                style={{ marginTop: '15px' }}
-              >
-                Send to Friend
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       
       {/* Закрепленное меню внизу страницы */}
       <div className="menu">
