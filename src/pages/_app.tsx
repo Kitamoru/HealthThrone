@@ -1,10 +1,29 @@
-
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
 import '../styles/globals.css';
+import { useEffect } from 'react';
+import { useTelegram } from '../hooks/useTelegram';
+import { api } from '../lib/api';
 
 export default function App({ Component, pageProps }: AppProps) {
+  const { isReady, initData, startParam } = useTelegram();
+
+  useEffect(() => {
+    // Вызываем API инициализации при загрузке приложения
+    if (isReady && initData) {
+      console.log('Initializing user with startParam:', startParam);
+      api.initUser(initData, startParam)
+        .then(response => {
+          if (response.success) {
+            console.log('User initialized successfully');
+          } else {
+            console.error('Failed to initialize user:', response.error);
+          }
+        });
+    }
+  }, [isReady, initData, startParam]);
+
   return (
     <>
       <Head>
