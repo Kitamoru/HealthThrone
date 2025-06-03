@@ -183,7 +183,7 @@ export default async function handler(
           // Получаем данные реферера
           const { data: referrer } = await supabase
             .from('users')
-            .select('id')
+            .select('id, first_name, last_name, username')
             .eq('telegram_id', referrerIdNum)
             .single();
 
@@ -207,12 +207,12 @@ export default async function handler(
                 friend_username: friendUsername,
                 burnout_level: 0
               });
-              console.log(`[Init API] Added friend: ${referrer.id} -> ${userData.id}`);
+              console.log(`Added friend: ${referrer.id} -> ${userData.id}`);
             }
           }
         }
       } catch (e) {
-        console.error('[Init API] Referral error:', e);
+        console.error('Referral error:', e);
       }
     }
 
