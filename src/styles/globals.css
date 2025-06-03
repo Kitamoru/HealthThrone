@@ -626,7 +626,7 @@ body {
   cursor: pointer;
 }
 
-/* Modal */
+/* Modal styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -640,19 +640,53 @@ body {
   z-index: 1000;
 }
 
-.modal {
-  background: white;
-  border-radius: 8px;
+.modal-card {
+  background: var(--tg-secondary);
+  border-radius: 16px;
   padding: 20px;
-  width: 90%;
+  border: 1px solid var(--tg-border);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
   max-width: 500px;
+  width: 90%;
+  margin: 0 auto;
 }
 
-.modal-header {
+.custom-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
+}
+
+.custom-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--tg-text);
+}
+
+.custom-modal-body {
+  margin-bottom: 15px;
+}
+
+.referral-link-container {
+  display: flex;
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.custom-input {
+  background: var(--tg-secondary);
+  border: 1px solid var(--tg-border);
+  border-radius: 12px;
+  padding: 12px;
+  color: var(--tg-text);
+  font-size: 14px;
+  flex: 1;
+  outline: none;
+}
+
+.custom-input:focus {
+  border-color: var(--tg-accent);
 }
 
 .close-btn {
@@ -660,45 +694,14 @@ body {
   border: none;
   font-size: 24px;
   cursor: pointer;
+  color: var(--tg-text);
+  opacity: 0.7;
+  transition: opacity 0.3s;
 }
 
-.referral-link-container {
-  display: flex;
-  margin: 15px 0;
+.close-btn:hover {
+  opacity: 1;
 }
-
-.referral-link-input {
-  flex: 1;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px 0 0 4px;
-  font-size: 14px;
-}
-
-.copy-btn {
-  padding: 8px 16px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 0 4px 4px 0;
-  cursor: pointer;
-}
-
-.copy-btn.copied {
-  background-color: #28a745;
-}
-
-.share-btn {
-  width: 100%;
-  padding: 10px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 10px;
-}
-
 /* Existing styles... */
 
 .container {
