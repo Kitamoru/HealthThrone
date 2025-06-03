@@ -47,20 +47,30 @@ export default function Friends() {
     if (!isReady || !user?.id) return;
     
     const loadFriends = async () => {
-      try {
-        setLoading(true);
-        const response = await api.getFriends(user.id, initData) as ApiResponse<Friend[]>;
-        if (response.success) {
-          setFriends(Array.isArray(response.data) ? response.data : []);
-        } else {
-          setError(response.error || 'Не удалось загрузить друзей');
-        }
-      } catch (err) {
-        setError('Ошибка сети');
-      } finally {
-        setLoading(false);
-      }
-    };
+  try {
+    setLoading(true);
+    const response = await api.getFriends(user.id, initData) as ApiResponse<Friend[]>;
+    
+    if (response.success) {
+      // Преобразуем данные в нужный формат
+      const formattedFriends = response.data.map(f => ({
+        id: f.id,
+        friend_id: f.friend.id,
+        friend_username: f.friend.username || `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
+        burnout_level: f.friend.burnout_level
+      }));
+      
+      setFriends(formattedFriends);
+    } else {
+      setError(response.error || 'Не удалось загрузить друзей');
+    }
+  } catch (err) {
+    setError('Ошибка сети');
+  } finally {
+    setLoading(false);
+  }
+};
+
     
     loadFriends();
   }, [isReady, user, initData]);
