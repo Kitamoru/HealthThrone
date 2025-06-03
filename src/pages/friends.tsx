@@ -52,6 +52,27 @@ export default function FriendsPage() {
 
     loadFriends();
   }, [isReady, user?.id, initData]);
+  
+  const handleAddFriend = () => {
+  if (window.Telegram?.WebApp) {
+    // Формируем реферальную ссылку с уникальным кодом
+    const referralCode = `ref_${user?.id}`;
+    const shareUrl = `${window.location.origin}?ref=${referralCode}`;
+    
+    // Формируем текст для приглашения
+    const shareText = "Присоединяйся к моей команде для отслеживания выгорания!";
+    
+    // Используем корректный метод для поделиться
+    const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+    window.Telegram.WebApp.openLink(telegramShareUrl);
+  } else {
+    // Fallback для обычных браузеров
+    const referralCode = `ref_${user?.id}`;
+    const shareUrl = `${window.location.origin}?ref=${referralCode}`;
+    navigator.clipboard.writeText(shareUrl);
+    alert('Ссылка скопирована в буфер обмена! Поделитесь ей с другом.');
+  }
+};
 
   const handleDeleteFriend = async (friendId: number) => {
     try {
