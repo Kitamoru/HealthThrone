@@ -72,10 +72,10 @@ class Api {
     });
   }
 
-  async getFriends(initData?: string) {
+  async getFriends(userId: number, initData?: string) {
     const headers: Record<string, string> = {};
     if (initData) headers['X-Telegram-Init-Data'] = initData;
-    return this.request('/friends', { headers });
+    return this.request(`/friends?userId=${userId}`, { headers });
   }
 
   async addFriend(friendUsername: string, initData?: string) {
