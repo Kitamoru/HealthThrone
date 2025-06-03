@@ -172,26 +172,22 @@ export default async function handler(
       console.log('[Init API] User created:', JSON.stringify(newUser, null, 2));
     }
 
-    // Обработка реферальной ссылки
+      // В блоке обработки реферала замените код на:
     if (ref && typeof ref === 'string' && ref.startsWith('ref_')) {
       try {
-        const referrerTelegramId = ref.split('_')[1];
+        const referrerTelegramId = ref.replace('ref_', '');  
         const referrerIdNum = parseInt(referrerTelegramId, 10);
-        
+      
         if (!isNaN(referrerIdNum) && referrerIdNum !== user_id) {
-          // Получаем данные реферера
+          // Проверяем существует ли реферер
           const { data: referrer } = await supabase
-            .from('users')
-            .select('id, first_name, last_name, username')
+            .from('users')  
+            .select('id')
             .eq('telegram_id', referrerIdNum)
             .single();
 
-          if (referrer) {
-            // Формируем данные для добавления
-            const friendUsername = user.username || 
-              [user.first_name, user.last_name].filter(Boolean).join(' ');
-            
-            // Проверяем существование связи
+          if (referrer) {  
+            // Проверяем нет ли уже связи
             const { count } = await supabase
               .from('friends')
               .select('*', { count: 'exact' })
@@ -199,21 +195,25 @@ export default async function handler(
               .eq('friend_id', userData.id);
 
             if (count === 0) {
-              // Добавляем в друзья
+              // Формируем имя друга
+              const friendUsername = user.username || 
+                `${user.first_name} ${user.last_name || ''}`.trim();
+          
+              // Добавляем запись
               await supabase.from('friends').insert({
-                user_id: referrer.id,
+                user_id: referrer.id,  
                 friend_id: userData.id,
-                friend_username: friendUsername,
+                friend_username: friendUsername,  
                 burnout_level: 0
-              });
+              });  
               console.log(`Added friend: ${referrer.id} -> ${userData.id}`);
             }
           }
         }
-      } catch (e) {
-        console.error('Referral error:', e);
-      }
-    }
+  } catch (e) {
+    console.error('Referral error:', e);
+  }
+}
 
     console.log('[Init API] Returning success response');
     return res.status(200).json({
