@@ -1,49 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
-import { BurnoutProgress } from '../components/BurnoutProgress';
-import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
+import { api } from '../lib/api';
 
 interface Friend {
   id: number;
+  friend_id: number;
   friend_username: string;
   burnout_level: number;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
-
-type FriendsResponse = ApiResponse<Friend[]>;
-type DeleteResponse = ApiResponse<null>;
-
-export default function FriendsPage() {
+export default function Friends() {
   const router = useRouter();
-  const { user, isReady, initData, startParam } = useTelegram(); // <-- Добавлен startParam
+  const { user, isReady, initData, webApp } = useTelegram();
+  const [loading, setLoading] = useState(true);
   const [friends, setFriends] = useState<Friend[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalLink, setModalLink] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!isReady || !user?.id) return;
 
     const loadFriends = async () => {
       try {
-        const response = await api.getFriends(initData) as FriendsResponse;
-        
-        if (response.success && response.data) {
-          setFriends(response.data);
+        setLoading(true);
+        const response = await api.getFriends(initData);
+        if (response.success) {
+          setFriends(response.data || []);
         } else {
-          if (response.error?.includes("Unauthorized")) {
-            setError("Пожалуйста, авторизуйтесь через Telegram");
-          } else {
-            setError(response.error || 'Failed to load friends');
-          }
+          setError(response.error || 'Failed to load friends');
         }
       } catch (err) {
         setError('Network error');
@@ -53,118 +40,112 @@ export default function FriendsPage() {
     };
 
     loadFriends();
-  }, [isReady, user?.id, initData]);
-  
-  const handleAddFriend = () => {
-    const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
-    if (!botUsername) {
-      console.error('Telegram bot username is not configured');
-      return;
-    }
-    
-    // Используем startParam если есть, иначе создаем по user.id
-    const referralCode = startParam || `ref_${user?.id}`;
-    const deepLink = `https://t.me/${botUsername}?startapp=${referralCode}`;
-    
-    setModalLink(deepLink);
-    setIsModalOpen(true);
-  };
+  }, [isReady, user, initData]);
 
-  const handleDeleteFriend = async (friendId: number) => {
-    try {
-      const response = await api.deleteFriend(friendId, initData) as DeleteResponse;
-      
-      if (response.success) {
-        setFriends(friends.filter(f => f.id !== friendId));
-      } else {
-        if (response.error?.includes("Unauthorized")) {
-          setError("Пожалуйста, авторизуйтесь через Telegram");
-        } else {
-          setError(response.error || 'Failed to delete friend');
-        }
-      }
-    } catch (err) {
-      setError('Network error');
+  const handleDelete = async (friendId: number) => {
+    const response = await api.deleteFriend(friendId, initData);
+    if (response.success) {
+      setFriends(friends.filter(f => f.id !== friendId));
+    } else {
+      setError('Failed to delete friend');
     }
   };
 
-  if (loading) return <Loader />;
+  // Формируем реферальную ссылку
+  const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
+  const referralCode = `ref_${user?.id}`;
+  const referralLink = `https://t.me/${botUsername}?start=${referralCode}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(referralLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShare = () => {
+    if (webApp && webApp.shareURL) {
+      webApp.shareURL(referralLink, { title: 'Join my burnout tracking friends!' });
+    } else {
+      window.open(`tg://msg_url?url=${encodeURIComponent(referralLink)}`);
+    }
+  };
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <div className="container">
-      <button className="back-btn" onClick={() => router.push('/')}>
-        📊
-      </button>
+      <div className="header">
+        <h2>My Friends</h2>
+        <button className="add-friends-btn" onClick={() => setShowModal(true)}>
+          Add Friends
+        </button>
+      </div>
 
-      <h1>My Friends</h1>
-
-      {error && (
-        <div className={`error-message ${error.includes("Unauthorized") ? "auth-error" : ""}`}>
-          {error}
-        </div>
-      )}
+      {error && <div className="error">{error}</div>}
 
       <div className="friends-list">
         {friends.length === 0 ? (
-          <p>No friends yet. Add some friends to track their burnout levels.</p>
+          <div className="empty">You don't have any friends yet</div>
         ) : (
-          friends.map(friend => (
-            <div key={friend.id} className="friend-card">
-              <div className="friend-header">
-                <span className="friend-username">@{friend.friend_username}</span>
-                <button
+          <ul>
+            {friends.map((friend) => (
+              <li key={friend.id} className="friend-item">
+                <span className="friend-name">{friend.friend_username}</span>
+                <span className="burnout-level">{friend.burnout_level}%</span>
+                <button 
                   className="delete-btn"
-                  onClick={() => handleDeleteFriend(friend.id)}
+                  onClick={() => handleDelete(friend.id)}
                 >
-                  ✕
+                  Remove
                 </button>
-              </div>
-              <BurnoutProgress level={friend.burnout_level} />
-              <div className="burnout-level">{friend.burnout_level}%</div>
-            </div>
-          ))
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 
-      <button className="add-friend-btn" onClick={handleAddFriend}>
-        Add Friend
-      </button>
-
-      {isModalOpen && (
+      {showModal && (
         <div className="modal-overlay">
           <div className="modal">
-            <h2>Ваша ссылка</h2>
-            <p className="referral-link">{modalLink}</p>
-            <div className="modal-buttons">
-              <button 
-                className="copy-btn" 
-                onClick={() => {
-                  navigator.clipboard.writeText(modalLink);
-                  alert('Ссылка скопирована!');
-                }}
-              >
-                Копировать
-              </button>
+            <div className="modal-header">
+              <h3>Invite Friends</h3>
+              <button className="close-btn" onClick={() => setShowModal(false)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <p>Share your referral link to track friends' burnout levels:</p>
+              <div className="referral-link-container">
+                <input 
+                  type="text" 
+                  value={referralLink} 
+                  readOnly 
+                  className="referral-link-input"
+                />
+                <button 
+                  className={`copy-btn ${copied ? 'copied' : ''}`} 
+                  onClick={handleCopy}
+                >
+                  {copied ? 'Copied!' : 'Copy Link'}
+                </button>
+              </div>
               <button 
                 className="share-btn"
-                onClick={() => {
-                  const shareText = "Присоединяйся к моей команде для отслеживания выгорания!";
-                  const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(modalLink)}&text=${encodeURIComponent(shareText)}`;
-                  window.Telegram?.WebApp?.openLink(telegramShareUrl);
-                }}
+                onClick={handleShare}
               >
-                Поделиться
-              </button>
-              <button 
-                className="close-btn" 
-                onClick={() => setIsModalOpen(false)}
-              >
-                Закрыть
+                Send to Friend
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <div className="menu">
+        <button className="menu-btn" onClick={() => router.push('/')}>📊</button>
+        <button className="menu-btn active" onClick={() => router.push('/friends')}>📈</button>
+        <button className="menu-btn">⚙️</button>
+        <button className="menu-btn">ℹ️</button>
+      </div>
     </div>
   );
 }
