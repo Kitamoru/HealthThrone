@@ -98,6 +98,9 @@ const QUESTIONS: Question[] = [
 export default function Home() {
   const router = useRouter();
   const { user, isReady, initData, error } = useTelegram();
+  // Получаем параметр start из URL
+  const startParam = router.query.start as string | undefined;
+  
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [burnoutLevel, setBurnoutLevel] = useState(0);
@@ -123,6 +126,7 @@ export default function Home() {
           console.log('[Home] Initializing user with initData');
           setInitStatus('in_progress');
           
+          // Используем startParam из роутера
           const initResponse = await api.initUser(initData, startParam);
           console.log('[Home] User initialization response:', initResponse);
           
@@ -158,9 +162,6 @@ export default function Home() {
               
               // Используем правильное поле из типа UserProfile
               setBurnoutLevel(userData.burnout_level || 0);
-              
-              // Загружаем предыдущие ответы если есть
-              // Убрали обращение к userData.answers, так как его нет в типе
             } else {
               console.warn('[Home] No user data found or error', response.error);
             }
@@ -181,7 +182,7 @@ export default function Home() {
     };
 
     initializeApp();
-  }, [isReady, user, initData]);
+  }, [isReady, user, initData, startParam]); // Добавляем startParam в зависимости
 
   const handleAnswer = async (questionId: number, isPositive: boolean) => {
     console.log(`[Home] Handling answer for question ${questionId}: ${isPositive}`);
@@ -243,7 +244,8 @@ export default function Home() {
     initStatus,
     burnoutLevel,
     answeredQuestions: Object.keys(answers).length,
-    apiError
+    apiError,
+    startParam // Добавляем параметр в отладочную информацию
   };
 
   return (
