@@ -212,4 +212,22 @@ export default async function handler(
           }
         }
       } catch (e) {
-        console.error('[
+        console.error('[Init API] Referral error:', e);
+      }
+    }
+
+    console.log('[Init API] Returning success response');
+    return res.status(200).json({
+      success: true,
+      user: userData,
+      isNewUser
+    });
+ 
+  } catch (error) {
+    console.error('[Init API] Unhandled error:', error);
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    });
+  }
+}
