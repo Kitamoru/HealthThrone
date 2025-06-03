@@ -57,7 +57,7 @@ export default async function handler(
   }
 
   try {
-    const { initData } = req.body;
+    const { initData, ref } = req.body;
     console.log('[Init API] Request body:', JSON.stringify(req.body, null, 2));
 
     if (!initData) {
@@ -107,6 +107,9 @@ export default async function handler(
     const now = new Date().toISOString();
     console.log(`[Init API] Current timestamp: ${now}`);
 
+    // Флаг для определения нового пользователя
+    let isNewUser = false;
+
     if (existingUser) {
       console.log('[Init API] User exists, updating...');
       // Обновляем данные БЕЗ photo_url
@@ -137,6 +140,7 @@ export default async function handler(
       userData = updatedUser;
       console.log('[Init API] User updated:', JSON.stringify(updatedUser, null, 2));
     } else {
+      isNewUser = true;
       console.log('[Init API] User not found, creating new...');
       // Создаем нового пользователя БЕЗ photo_url
       const insertData = {
@@ -169,10 +173,64 @@ export default async function handler(
       console.log('[Init API] User created:', JSON.stringify(newUser, null, 2));
     }
 
+    // Обработка реферальной ссылки
+    if (ref && typeof ref === 'string' && ref.startsWith('ref_')) {
+      const referrerTelegramId = ref.split('_')[1];
+      console.log(`[Init API] Processing referral from: ${referrerTelegramId}`);
+
+      if (referrerTelegramId && !isNaN(Number(referrerTelegramId))) {
+        try {
+          // Ищем реферера в базе
+          const { data: referrer, error: referrerError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('telegram_id', referrerTelegramId)
+            .single();
+
+          if (referrerError || !referrer) {
+            console.error(`[Init API] Referrer not found: ${referrerTelegramId}`, referrerError);
+          } else {
+            // Проверяем существование связи
+            const { data: existingFriendship, error: friendshipError } = await supabase
+              .from('friends')
+              .select()
+              .or(`and(user_id_1.eq.${referrer.id},user_id_2.eq.${userData.id})`)
+              .maybeSingle();
+
+            if (friendshipError) {
+              console.error('[Init API] Friendship check error:', friendshipError);
+            } else if (!existingFriendship) {
+              // Создаем связь между пользователями
+              const { error: insertError } = await supabase
+                .from('friends')
+                .insert({
+                  user_id_1: referrer.id,
+                  user_id_2: userData.id,
+                  status: 'accepted'
+                });
+
+              if (insertError) {
+                console.error('[Init API] Friendship creation failed:', insertError);
+              } else {
+                console.log(`[Init API] Added friend connection: ${referrer.id} -> ${userData.id}`);
+              }
+            } else {
+              console.log('[Init API] Friendship already exists');
+            }
+          }
+        } catch (e) {
+          console.error('[Init API] Referral processing error:', e);
+        }
+      } else {
+        console.error(`[Init API] Invalid referral ID format: ${ref}`);
+      }
+    }
+
     console.log('[Init API] Returning success response');
     return res.status(200).json({
       success: true,
-      user: userData
+      user: userData,
+      isNewUser
     });
 
   } catch (error) {
