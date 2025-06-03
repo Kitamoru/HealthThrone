@@ -77,23 +77,28 @@ class Api {
   }
 
   // Новые методы для работы с друзьями
-  async getFriends() {
+  async getFriends(initData?: string) {
     console.log('[API] Fetching friends list');
-    return this.request('/friends');
+    const headers = initData ? { 'X-Telegram-Init-Data': initData } : {};
+    return this.request('/friends', { headers });
   }
 
-  async addFriend(friendUsername: string) {
+  async addFriend(friendUsername: string, initData?: string) {
     console.log(`[API] Adding friend: @${friendUsername}`);
+    const headers = initData ? { 'X-Telegram-Init-Data': initData } : {};
     return this.request('/friends', {
       method: 'POST',
+      headers,
       body: JSON.stringify({ friendUsername })
     });
   }
 
-  async deleteFriend(friendId: number) {
+  async deleteFriend(friendId: number, initData?: string) {
     console.log(`[API] Deleting friend with ID: ${friendId}`);
+    const headers = initData ? { 'X-Telegram-Init-Data': initData } : {};
     return this.request(`/friends/${friendId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers
     });
   }
 }
