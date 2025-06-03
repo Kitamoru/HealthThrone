@@ -26,6 +26,8 @@ export default function FriendsPage() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalLink, setModalLink] = useState('');
 
   useEffect(() => {
     if (!isReady || !user?.id) return;
@@ -135,3 +137,39 @@ export default function FriendsPage() {
     </div>
   );
 }
+{isModalOpen && (
+  <div className="modal-overlay">
+    <div className="modal">
+      <h2>Ваша ссылка</h2>
+      <p className="referral-link">{modalLink}</p>
+      <div className="modal-buttons">
+        <button 
+          className="copy-btn" 
+          onClick={() => {
+            navigator.clipboard.writeText(modalLink);
+            alert('Ссылка скопирована!');
+          }}
+        >
+          Копировать
+        </button>
+        <button 
+          className="share-btn"
+          onClick={() => {
+            const shareText = "Присоединяйся к моей команде для отслеживания выгорания!";
+            const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(modalLink)}&text=${encodeURIComponent(shareText)}`;
+            window.Telegram.WebApp.openLink(telegramShareUrl);
+          }}
+        >
+          Поделиться
+        </button>
+        <button 
+          className="close-btn" 
+          onClick={() => setIsModalOpen(false)}
+        >
+          Закрыть
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
