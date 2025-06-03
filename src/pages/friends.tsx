@@ -11,6 +11,12 @@ interface Friend {
   burnout_level: number;
 }
 
+interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
 export default function Friends() {
   const router = useRouter();
   const { user, isReady, initData, webApp } = useTelegram();
@@ -22,33 +28,32 @@ export default function Friends() {
 
   useEffect(() => {
     if (!isReady || !user?.id) return;
-
+    
     const loadFriends = async () => {
-  try {
-    setLoading(true);
-    const response: ApiResponse = await api.getFriends(initData);
-    if (response.success) {
-      // Проверяем, что response.data — массив, иначе используем пустой массив
-      setFriends(Array.isArray(response.data) ? response.data : []);
-    } else {
-      setError(response.error || 'Не удалось загрузить друзей');
-    }
-  } catch (err) {
-    setError('Ошибка сети');
-  } finally {
-    setLoading(false);
-  }
-};
-
+      try {
+        setLoading(true);
+        const response: ApiResponse<Friend[]> = await api.getFriends(initData);
+        if (response.success) {
+          setFriends(Array.isArray(response.data) ? response.data : []);
+        } else {
+          setError(response.error || 'Не удалось загрузить друзей');
+        }
+      } catch (err) {
+        setError('Ошибка сети');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
     loadFriends();
   }, [isReady, user, initData]);
 
   const handleDelete = async (friendId: number) => {
-    const response = await api.deleteFriend(friendId, initData);
+    const response: ApiResponse = await api.deleteFriend(friendId, initData);
     if (response.success) {
       setFriends(friends.filter(f => f.id !== friendId));
     } else {
-      setError('Failed to delete friend');
+      setError(response.error || 'Failed to delete friend');
     }
   };
 
@@ -64,8 +69,10 @@ export default function Friends() {
   };
 
   const handleShare = () => {
-    if (webApp && webApp.shareURL) {
-      webApp.shareURL(referralLink, { title: 'Join my burnout tracking friends!' });
+    if (webApp && webApp.shareUrl) {
+      webApp.shareUrl(referralLink, { title: 'Join my burnout tracking friends!' });
+    } else if (webApp?.openLink) {
+      webApp.openLink(referralLink);
     } else {
       window.open(`tg://msg_url?url=${encodeURIComponent(referralLink)}`);
     }
@@ -83,9 +90,7 @@ export default function Friends() {
           Add Friends
         </button>
       </div>
-
       {error && <div className="error">{error}</div>}
-
       <div className="friends-list">
         {friends.length === 0 ? (
           <div className="empty">You don't have any friends yet</div>
@@ -106,7 +111,6 @@ export default function Friends() {
           </ul>
         )}
       </div>
-
       {showModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -123,8 +127,7 @@ export default function Friends() {
                   readOnly 
                   className="referral-link-input"
                 />
-                <button 
-                  className={`copy-btn ${copied ? 'copied' : ''}`} 
+                <button className={`copy-btn ${copied ? 'copied' : ''}`} 
                   onClick={handleCopy}
                 >
                   {copied ? 'Copied!' : 'Copy Link'}
@@ -140,10 +143,9 @@ export default function Friends() {
           </div>
         </div>
       )}
-
       <div className="menu">
         <button className="menu-btn" onClick={() => router.push('/')}>📊</button>
-        <button className="menu-btn active" onClick={() => router.push('/friends')}>📈</button>
+        <button className="menu-btn active">📈</button>
         <button className="menu-btn">⚙️</button>
         <button className="menu-btn">ℹ️</button>
       </div>
