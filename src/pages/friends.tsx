@@ -24,20 +24,21 @@ export default function Friends() {
     if (!isReady || !user?.id) return;
 
     const loadFriends = async () => {
-      try {
-        setLoading(true);
-        const response = await api.getFriends(initData);
-        if (response.success) {
-          setFriends(response.data || []);
-        } else {
-          setError(response.error || 'Failed to load friends');
-        }
-      } catch (err) {
-        setError('Network error');
-      } finally {
-        setLoading(false);
-      }
-    };
+  try {
+    setLoading(true);
+    const response: ApiResponse = await api.getFriends(initData);
+    if (response.success) {
+      // Проверяем, что response.data — массив, иначе используем пустой массив
+      setFriends(Array.isArray(response.data) ? response.data : []);
+    } else {
+      setError(response.error || 'Не удалось загрузить друзей');
+    }
+  } catch (err) {
+    setError('Ошибка сети');
+  } finally {
+    setLoading(false);
+  }
+};
 
     loadFriends();
   }, [isReady, user, initData]);
