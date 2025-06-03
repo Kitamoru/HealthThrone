@@ -49,7 +49,6 @@ export default function Friends() {
     const loadFriends = async () => {
       try {
         setLoading(true);
-        // Передаем user.id как первый аргумент и initData как второй
         const response = await api.getFriends(user.id, initData) as ApiResponse<Friend[]>;
         if (response.success) {
           setFriends(Array.isArray(response.data) ? response.data : []);
@@ -79,7 +78,6 @@ export default function Friends() {
     }
   };
 
-  // Формируем реферальную ссылку
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
   const referralCode = `ref_${user?.id || 'default'}`;
   const referralLink = `https://t.me/${botUsername}?start=${referralCode}`;
@@ -110,7 +108,10 @@ export default function Friends() {
     <div className="container">
       <div className="header">
         <h2>My Friends</h2>
-        <button className="add-friends-btn" onClick={() => setShowModal(true)}>
+        <button 
+          className="answer-btn positive"
+          onClick={() => setShowModal(true)}
+        >
           Add Friends
         </button>
       </div>
@@ -135,31 +136,40 @@ export default function Friends() {
           </div>
         )}
       </div>
+      
+      {/* Модальное окно в стиле приложения */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
+          <div className="modal-card">
+            <div className="custom-modal-header">
               <h3>Invite Friends</h3>
-              <button className="close-btn" onClick={() => setShowModal(false)}>&times;</button>
+              <button 
+                className="close-btn" 
+                onClick={() => setShowModal(false)}
+              >
+                &times;
+              </button>
             </div>
-            <div className="modal-body">
+            <div className="custom-modal-body">
               <p>Share your referral link to track friends' burnout levels:</p>
               <div className="referral-link-container">
                 <input 
                   type="text" 
                   value={referralLink} 
                   readOnly 
-                  className="referral-link-input"
+                  className="custom-input"
                 />
-                <button className={`copy-btn ${copied ? 'copied' : ''}`} 
+                <button 
+                  className={`answer-btn ${copied ? 'positive' : ''}`} 
                   onClick={handleCopy}
                 >
                   {copied ? 'Copied!' : 'Copy Link'}
                 </button>
               </div>
               <button 
-                className="share-btn"
+                className="answer-btn positive"
                 onClick={handleShare}
+                style={{ marginTop: '15px' }}
               >
                 Send to Friend
               </button>
@@ -167,6 +177,8 @@ export default function Friends() {
           </div>
         </div>
       )}
+      
+      {/* Закрепленное меню внизу страницы */}
       <div className="menu">
         <button className="menu-btn" onClick={() => router.push('/')}>📊</button>
         <button className="menu-btn active">📈</button>
