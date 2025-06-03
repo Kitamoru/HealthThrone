@@ -49,14 +49,15 @@ export default function Friends() {
     const loadFriends = async () => {
   try {
     setLoading(true);
-    const response = await api.getFriends(user.id, initData) as ApiResponse<Friend[]>;
+    const response = await api.getFriends(user.id, initData) as ApiResponse<any[]>;
     
-    if (response.success && response.data) { // Добавлена проверка response.data
+    if (response.success && response.data) {
       // Преобразуем данные в нужный формат
       const formattedFriends = response.data.map(f => ({
-        id: f.id,
-        friend_id: f.friend.id,
-        friend_username: f.friend.username || `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
+        id: f.id, // ID записи в friends
+        friend_id: f.friend.id, // ID пользователя-друга
+        friend_username: f.friend.username || 
+                        `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
         burnout_level: f.friend.burnout_level
       }));
       
@@ -70,7 +71,6 @@ export default function Friends() {
     setLoading(false);
   }
 };
-
     
     loadFriends();
   }, [isReady, user, initData]);
