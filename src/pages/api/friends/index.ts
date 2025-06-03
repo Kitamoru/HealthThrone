@@ -27,31 +27,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const userId = currentUser.id;
 
   if (req.method === 'GET') {
-    try {
-      // Получаем друзей с актуальными данными из users
-      const { data: friends, error } = await supabase
-        .from('friends')
-        .select(`
-          id, 
-          created_at,
-          friend:friend_id (id, first_name, last_name, username, burnout_level)
-        `)
-        .eq('user_id', userId);
+  try {
+    // Получаем друзей с актуальными данными из users
+    const { data: friends, error } = await supabase
+      .from('friends')
+      .select(`
+        id, 
+        created_at,
+        friend:friend_id (id, first_name, last_name, username, burnout_level)
+      `)
+      .eq('user_id', userId);
 
-      if (error) throw error;
-      
-      // Преобразуем данные для удобства клиента
-      const formattedFriends = friends.map(f => ({
-        id: f.id,
-        created_at: f.created_at,
-        ...f.friend
-      }));
-
-      return res.status(200).json(formattedFriends);
-    } catch (error) {
-      return res.status(500).json({ error: 'Database error' });
-    }
+    if (error) throw error;
+    
+    // Возвращаем данные с вложенной структурой
+    return res.status(200).json(friends);
+  } catch (error) {
+    return res.status(500).json({ error: 'Database error' });
   }
+}
 
   if (req.method === 'POST') {
     const { friendUsername } = req.body;
