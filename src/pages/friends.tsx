@@ -32,7 +32,6 @@ export default function Friends() {
     const loadFriends = async () => {
       try {
         setLoading(true);
-        // Исправление: явное приведение типа для response
         const response = await api.getFriends(initData) as ApiResponse<Friend[]>;
         if (response.success) {
           setFriends(Array.isArray(response.data) ? response.data : []);
@@ -51,7 +50,6 @@ export default function Friends() {
 
   const handleDelete = async (friendId: number) => {
     try {
-      // Исправление: добавлено явное приведение типа
       const response = await api.deleteFriend(friendId, initData) as ApiResponse;
       if (response.success) {
         setFriends(friends.filter(f => f.id !== friendId));
@@ -75,12 +73,14 @@ export default function Friends() {
   };
 
   const handleShare = () => {
-    if (webApp && webApp.shareUrl) {
-      webApp.shareUrl(referralLink, { title: 'Join my burnout tracking friends!' });
-    } else if (webApp?.openLink) {
-      webApp.openLink(referralLink);
+    // Используем openLink вместо shareUrl
+    if (webApp?.openLink) {
+      // Формируем ссылку для шаринга через Telegram
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Join my burnout tracking friends!')}`;
+      webApp.openLink(shareUrl);
     } else {
-      window.open(`tg://msg_url?url=${encodeURIComponent(referralLink)}`);
+      // Fallback для браузера
+      window.open(`tg://msg_url?url=${encodeURIComponent(referralLink)}`, '_blank');
     }
   };
 
