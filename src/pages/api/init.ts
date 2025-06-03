@@ -189,9 +189,9 @@ export default async function handler(
       const referrerTelegramId = refParam.split('_')[1];
       console.log(`[Init API] Processing referral from: ${referrerTelegramId}`);
 
-      if (referrerTelegramId && !isNaN(Number(referrerTelegramId)) {
+      if (referrerTelegramId && !isNaN(Number(referrerTelegramId))) {
         try {
-          // Ищем реферера в базе
+    // Ищем реферера в базе
           const { data: referrer, error: referrerError } = await supabase
             .from('users')
             .select('id, telegram_id')
