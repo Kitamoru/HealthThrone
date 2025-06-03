@@ -14,15 +14,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Invalid user data' });
   }
 
+  // Получаем внутренний ID пользователя
+  const { data: currentUser, error: userError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('telegram_id', user.id)
+    .single();
+
+  if (userError || !currentUser) {
+    return res.status(500).json({ error: 'User not found in database' });
+  }
+  const userId = currentUser.id;
+
   if (req.method === 'GET') {
     try {
-      const { data, error } = await supabase
+      // Получаем друзей с актуальными данными из users
+      const { data: friends, error } = await supabase
         .from('friends')
-        .select('*')
-        .eq('user_id', user.id);
+        .select(`
+          id, 
+          created_at,
+          friend:friend_id (id, first_name, last_name, username, burnout_level)
+        `)
+        .eq('user_id', userId);
 
       if (error) throw error;
-      return res.status(200).json(data || []);
+      
+      // Преобразуем данные для удобства клиента
+      const formattedFriends = friends.map(f => ({
+        id: f.id,
+        created_at: f.created_at,
+        ...f.friend
+      }));
+
+      return res.status(200).json(formattedFriends);
     } catch (error) {
       return res.status(500).json({ error: 'Database error' });
     }
@@ -36,31 +61,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
+      // Находим пользователя по username
+      const { data: friendUser, error: friendError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('username', friendUsername)
+        .single();
+
+      if (friendError || !friendUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
       // Проверяем, что друг не является самим пользователем
-      if (friendUsername === user.username) {
+      if (friendUser.id === userId) {
         return res.status(400).json({ error: 'You cannot add yourself' });
       }
 
-      // Проверяем, что друг еще не добавлен
-      const { data: existingFriend, error: existingError } = await supabase
+      // Проверяем существование связи
+      const { count } = await supabase
         .from('friends')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('friend_username', friendUsername)
-        .maybeSingle();
+        .select('*', { count: 'exact' })
+        .eq('user_id', userId)
+        .eq('friend_id', friendUser.id);
 
-      if (existingError) throw existingError;
-      if (existingFriend) {
+      if (count && count > 0) {
         return res.status(400).json({ error: 'Friend already added' });
       }
 
-      // Добавляем друга
+      // Добавляем связь
       const { data: newFriend, error: insertError } = await supabase
         .from('friends')
         .insert([{
-          user_id: user.id,
-          friend_username: friendUsername,
-          burnout_level: 0
+          user_id: userId,
+          friend_id: friendUser.id
         }])
         .single();
 
