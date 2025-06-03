@@ -22,7 +22,7 @@ type DeleteResponse = ApiResponse<null>;
 
 export default function FriendsPage() {
   const router = useRouter();
-  const { user, isReady } = useTelegram();
+  const { user, isReady, initData } = useTelegram(); // Добавлено получение initData
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
@@ -32,12 +32,18 @@ export default function FriendsPage() {
 
     const loadFriends = async () => {
       try {
-        const response = await api.getFriends() as FriendsResponse;
+        // Передаем initData в запрос
+        const response = await api.getFriends(initData) as FriendsResponse;
         
         if (response.success && response.data) {
           setFriends(response.data);
         } else {
-          setError(response.error || 'Failed to load friends');
+          // Обработка ошибки авторизации
+          if (response.error?.includes("Unauthorized")) {
+            setError("Пожалуйста, авторизуйтесь через Telegram");
+          } else {
+            setError(response.error || 'Failed to load friends');
+          }
         }
       } catch (err) {
         setError('Network error');
@@ -47,26 +53,43 @@ export default function FriendsPage() {
     };
 
     loadFriends();
-  }, [isReady, user?.id]);
+  }, [isReady, user?.id, initData]); // Добавлена зависимость от initData
 
   const handleAddFriend = () => {
+    // Проверка доступности Telegram WebApp
     if (window.Telegram?.WebApp) {
       const inviteText = "Присоединяйся к моей команде для отслеживания выгорания!";
-      const inviteLink = `https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${encodeURIComponent(inviteText)}`;
       
-      // Исправленный метод для открытия ссылок
+      // Добавлен реферальный параметр с ID пользователя
+      const url = `${window.location.origin}?ref=${user?.id || 'unknown'}`;
+      
+      // Исправлено формирование ссылки
+      const inviteLink = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(inviteText)}`;
+      
       window.Telegram.WebApp.openLink(inviteLink);
+    } else {
+      // Fallback для окружений без Telegram WebApp
+      const inviteText = "Присоединяйся к моей команде для отслеживания выгорания!";
+      const url = `${window.location.origin}?ref=${user?.id || 'unknown'}`;
+      const fullUrl = `${url}\n\n${inviteText}`;
+      alert(`Скопируйте ссылку:\n\n${fullUrl}`);
     }
   };
 
   const handleDeleteFriend = async (friendId: number) => {
     try {
-      const response = await api.deleteFriend(friendId) as DeleteResponse;
+      // Передаем initData в запрос
+      const response = await api.deleteFriend(friendId, initData) as DeleteResponse;
       
       if (response.success) {
         setFriends(friends.filter(f => f.id !== friendId));
       } else {
-        setError(response.error || 'Failed to delete friend');
+        // Обработка ошибки авторизации
+        if (response.error?.includes("Unauthorized")) {
+          setError("Пожалуйста, авторизуйтесь через Telegram");
+        } else {
+          setError(response.error || 'Failed to delete friend');
+        }
       }
     } catch (err) {
       setError('Network error');
@@ -83,7 +106,11 @@ export default function FriendsPage() {
 
       <h1>My Friends</h1>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className={`error-message ${error.includes("Unauthorized") ? "auth-error" : ""}`}>
+          {error}
+        </div>
+      )}
 
       <div className="friends-list">
         {friends.length === 0 ? (
@@ -114,6 +141,14 @@ export default function FriendsPage() {
         <p className="add-friend-hint">
           Share the app with a friend to add them to your tracking list
         </p>
+      </div>
+
+      {/* Добавлено идентичное нижнее меню */}
+      <div className="menu">
+        <button className="menu-btn" onClick={() => router.push('/')}>📊</button>
+        <button className="menu-btn active" onClick={() => router.push('/friends')}>📈</button>
+        <button className="menu-btn">⚙️</button>
+        <button className="menu-btn">ℹ️</button>
       </div>
     </div>
   );
