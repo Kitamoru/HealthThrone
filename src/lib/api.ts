@@ -9,9 +9,6 @@ class Api {
 
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     try {
-      console.log(`[API] Making request to: ${endpoint}`);
-      console.log(`[API] Request options:`, options);
-      
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -20,9 +17,7 @@ class Api {
         ...options,
       });
 
-      console.log(`[API] Response status: ${response.status}`);
-      
-      // Обрабатываем случаи, когда ответ не JSON
+      // Обработка JSON и текстовых ответов
       const contentType = response.headers.get('content-type');
       let data;
       
@@ -31,8 +26,6 @@ class Api {
       } else {
         data = await response.text();
       }
-
-      console.log(`[API] Response data:`, data);
 
       if (!response.ok) {
         return {
@@ -47,7 +40,6 @@ class Api {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Network error';
-      console.error('[API] Request failed:', errorMessage);
       return {
         success: false,
         error: errorMessage
@@ -56,15 +48,13 @@ class Api {
   }
 
   async getUserData(userId: number, initData?: string) {
-    console.log(`[API] Fetching user data for ID: ${userId}`);
-    const headers: Record<string, string> = {}; // Явное указание типа
+    const headers: Record<string, string> = {};
     if (initData) headers['X-Telegram-Init-Data'] = initData;
     return this.request(`/data?userId=${userId}`, { headers });
   }
 
   async updateBurnoutLevel(userId: number, level: number, initData?: string) {
-    console.log(`[API] Updating burnout level for user ${userId} to ${level}`);
-    const headers: Record<string, string> = {}; // Явное указание типа
+    const headers: Record<string, string> = {};
     if (initData) headers['X-Telegram-Init-Data'] = initData;
     return this.request('/update', {
       method: 'POST',
@@ -74,7 +64,6 @@ class Api {
   }
 
   async initUser(initData: string) {
-    console.log('[API] Initializing user with initData');
     return this.request('/init', {
       method: 'POST',
       body: JSON.stringify({ initData })
@@ -83,15 +72,13 @@ class Api {
 
   // Методы для работы с друзьями
   async getFriends(initData?: string) {
-    console.log('[API] Fetching friends list');
-    const headers: Record<string, string> = {}; // Явное указание типа
+    const headers: Record<string, string> = {};
     if (initData) headers['X-Telegram-Init-Data'] = initData;
     return this.request('/friends', { headers });
   }
 
   async addFriend(friendUsername: string, initData?: string) {
-    console.log(`[API] Adding friend: @${friendUsername}`);
-    const headers: Record<string, string> = {}; // Явное указание типа
+    const headers: Record<string, string> = {};
     if (initData) headers['X-Telegram-Init-Data'] = initData;
     return this.request('/friends', {
       method: 'POST',
@@ -101,8 +88,7 @@ class Api {
   }
 
   async deleteFriend(friendId: number, initData?: string) {
-    console.log(`[API] Deleting friend with ID: ${friendId}`);
-    const headers: Record<string, string> = {}; // Явное указание типа
+    const headers: Record<string, string> = {};
     if (initData) headers['X-Telegram-Init-Data'] = initData;
     return this.request(`/friends/${friendId}`, {
       method: 'DELETE',
