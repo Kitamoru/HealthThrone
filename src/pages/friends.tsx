@@ -49,7 +49,8 @@ export default function Friends() {
     const loadFriends = async () => {
       try {
         setLoading(true);
-        const response = await api.getFriends(initData) as ApiResponse<Friend[]>;
+        // Передаем user.id как первый аргумент и initData как второй
+        const response = await api.getFriends(user.id, initData) as ApiResponse<Friend[]>;
         if (response.success) {
           setFriends(Array.isArray(response.data) ? response.data : []);
         } else {
@@ -80,7 +81,7 @@ export default function Friends() {
 
   // Формируем реферальную ссылку
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
-  const referralCode = `ref_${user?.id}`;
+  const referralCode = `ref_${user?.id || 'default'}`;
   const referralLink = `https://t.me/${botUsername}?start=${referralCode}`;
 
   const handleCopy = () => {
@@ -90,18 +91,13 @@ export default function Friends() {
   };
 
   const handleShare = () => {
-    // Формируем ссылку для шаринга через Telegram
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Join my burnout tracking friends!')}`;
     
-    // Используем оптимальные методы Telegram WebApp для открытия ссылок
     if (webApp?.openTelegramLink) {
-      // Предпочтительный метод для внутренних ссылок Telegram
       webApp.openTelegramLink(shareUrl);
     } else if (webApp?.openLink) {
-      // Универсальный метод для всех ссылок
       webApp.openLink(shareUrl);
     } else {
-      // Fallback для браузера
       window.open(shareUrl, '_blank');
     }
   };
@@ -174,8 +170,8 @@ export default function Friends() {
       <div className="menu">
         <button className="menu-btn" onClick={() => router.push('/')}>📊</button>
         <button className="menu-btn active">📈</button>
-        <button className="menu-btn">⚙️</button>
-        <button className="menu-btn">ℹ️</button>
+        <button className="menu-btn" onClick={() => router.push('/settings')}>⚙️</button>
+        <button className="menu-btn" onClick={() => router.push('/info')}>ℹ️</button>
       </div>
     </div>
   );
