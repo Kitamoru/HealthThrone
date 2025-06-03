@@ -144,7 +144,7 @@ export default function Friends() {
           <div className="modal-overlay">
             <div className="modal-card">
               <div className="custom-modal-header">
-                <h3>Добавь участника команды</h3>
+                <h3>Ссылка приглашение</h3>
                 <button 
                   className="close-btn" 
                   onClick={() => setShowModal(false)}
@@ -153,7 +153,7 @@ export default function Friends() {
                 </button>
               </div>
               <div className="custom-modal-body">
-                <p>Поделись реферальной ссылкой для отслеживания состояния команды</p>
+                <p>Добавь участникакоманды</p>
                 <div className="referral-link-container">
                   <input 
                     type="text" 
