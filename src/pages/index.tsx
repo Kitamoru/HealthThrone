@@ -123,7 +123,7 @@ export default function Home() {
           console.log('[Home] Initializing user with initData');
           setInitStatus('in_progress');
           
-          const initResponse = await api.initUser(initData);
+          const initResponse = await api.initUser(initData, startParam);
           console.log('[Home] User initialization response:', initResponse);
           
           if (initResponse.success) {
