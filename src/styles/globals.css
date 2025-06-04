@@ -779,9 +779,4 @@ body {
  .page-transition {
   animation: fadeIn 0.3s ease;
 }
-
-.menu-btn.active {
-  background-color: #4a6fa5;
-  color: white;
-}
 }
