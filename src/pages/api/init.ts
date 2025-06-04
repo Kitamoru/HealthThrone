@@ -172,7 +172,6 @@ export default async function handler(
       console.log('[Init API] User created:', JSON.stringify(newUser, null, 2));
     }
 
-    // Обработка реферальной ссылки
    // Обработка реферальной ссылки
 if (ref && typeof ref === 'string') {
   try {
@@ -180,7 +179,7 @@ if (ref && typeof ref === 'string') {
     const cleanRef = ref.replace('ref_', '');
     const referrerTelegramId = parseInt(cleanRef, 10);
     
-    if (!isNaN(referrerTelegramId) {
+    if (!isNaN(referrerTelegramId)) {
       console.log(`[Referral] Processing referral: ${referrerTelegramId} for user: ${user_id}`);
       
       // Проверяем что пользователь не добавляет сам себя
