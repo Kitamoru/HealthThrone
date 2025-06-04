@@ -18,7 +18,17 @@ interface ApiResponse<T = any> {
   error?: string;
 }
 
-// Компонент прогресс-бара для отображения уровня выгорания
+interface RawFriend {
+  id: number;
+  friend: {
+    id: number;
+    username?: string;
+    first_name: string;
+    last_name?: string;
+    burnout_level: number;
+  };
+}
+
 interface BurnoutProgressProps {
   level: number;
 }
@@ -53,14 +63,18 @@ export default function Friends() {
       try {
         setLoading(true);
         
-        // Проверка кэша
         const cached = sessionStorage.getItem(FRIENDS_CACHE_KEY);
         if (cached) {
           setFriends(JSON.parse(cached));
         }
         
-        const response = await api.getFriends(user.id, initData);
+        const response: ApiResponse<RawFriend[]> = await api.getFriends(user.id, initData);
         if (response.success && response.data) {
+          // Проверяем что данные являются массивом
+          if (!Array.isArray(response.data)) {
+            throw new Error('Неверный формат данных друзей');
+          }
+          
           const formattedFriends = response.data.map(f => ({
             id: f.id,
             friend_id: f.friend.id,
@@ -74,8 +88,8 @@ export default function Friends() {
         } else {
           setError(response.error || 'Не удалось загрузить друзей');
         }
-      } catch (err) {
-        setError('Ошибка сети');
+      } catch (err: any) {
+        setError(err.message || 'Ошибка сети');
       } finally {
         setLoading(false);
       }
