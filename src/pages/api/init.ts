@@ -187,11 +187,10 @@ export default async function handler(
         isNewUser: new Date(userData.created_at).toISOString() === now
       });
 
-    } catch (error) {
-      console.error('[Init API] User upsert error:', error);
+    } catch (error: Error) { // Указываем тип Error
       return res.status(500).json({ 
-        error: 'Failed to create/update user',
-        details: error.message
+      error: 'Failed to create/update user',
+      details: error.message // Теперь TypeScript знает, что message существует
       });
     }
 
