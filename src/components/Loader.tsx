@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Loader: React.FC = () => {
+export const Loader: React.FC = () => {
   return (
     <div className="loader-container">
       <div className="loader-overlay">
@@ -15,5 +15,3 @@ const Loader: React.FC = () => {
     </div>
   );
 };
-
-export default Loader;
