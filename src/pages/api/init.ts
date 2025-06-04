@@ -173,41 +173,69 @@ export default async function handler(
     }
 
     // Обработка реферальной ссылки
-    if (ref && typeof ref === 'string' && ref.startsWith('ref_')) {
-      try {
-        const referrerTelegramId = ref.split('_')[1];
-        const referrerIdNum = parseInt(referrerTelegramId, 10);
-        
-        if (!isNaN(referrerIdNum) && referrerIdNum !== user_id) {
-          // Проверяем существует ли реферер
-          const { data: referrer } = await supabase
-            .from('users')  
+   // Обработка реферальной ссылки
+if (ref && typeof ref === 'string') {
+  try {
+    // Удаляем возможный префикс (если есть)
+    const cleanRef = ref.replace('ref_', '');
+    const referrerTelegramId = parseInt(cleanRef, 10);
+    
+    if (!isNaN(referrerTelegramId) {
+      console.log(`[Referral] Processing referral: ${referrerTelegramId} for user: ${user_id}`);
+      
+      // Проверяем что пользователь не добавляет сам себя
+      if (referrerTelegramId === user_id) {
+        console.log('[Referral] User tried to add themselves, skipping');
+      } else {
+        // Проверяем существует ли реферер
+        const { data: referrer, error: referrerError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('telegram_id', referrerTelegramId)
+          .single();
+
+        if (referrerError) {
+          console.error('[Referral] Referrer fetch error:', referrerError);
+        } else if (referrer) {
+          console.log(`[Referral] Referrer found: ${referrer.id}`);
+          
+          // Проверяем нет ли уже связи
+          const { data: existingFriendship, error: friendshipError } = await supabase
+            .from('friends')
             .select('id')
-            .eq('telegram_id', referrerIdNum)
-            .single();
+            .eq('user_id', referrer.id)
+            .eq('friend_id', userData.id);
 
-          if (referrer) {  
-            // Проверяем нет ли уже связи
-            const { count } = await supabase
+          if (friendshipError) {
+            console.error('[Referral] Friendship check error:', friendshipError);
+          } else if (!existingFriendship || existingFriendship.length === 0) {
+            // Добавляем запись
+            const { error: insertError } = await supabase
               .from('friends')
-              .select('*', { count: 'exact' })
-              .eq('user_id', referrer.id)
-              .eq('friend_id', userData.id);
-
-            if (count === 0) {
-              // Добавляем запись
-              await supabase.from('friends').insert({
-                user_id: referrer.id,  
-                friend_id: userData.id
-              });  
-              console.log(`Added friend: ${referrer.id} -> ${userData.id}`);
+              .insert([{
+                user_id: referrer.id,
+                friend_id: userData.id,
+                status: 'accepted',
+                created_at: new Date().toISOString()
+              }]);
+            
+            if (insertError) {
+              console.error('[Referral] Insert friendship error:', insertError);
+            } else {
+              console.log(`[Referral] Friendship added: ${referrer.id} -> ${userData.id}`);
             }
+          } else {
+            console.log('[Referral] Friendship already exists');
           }
+        } else {
+          console.log('[Referral] Referrer not found in database');
         }
-      } catch (e) {
-        console.error('Referral error:', e);
       }
     }
+  } catch (e) {
+    console.error('[Referral] Unhandled error:', e);
+  }
+}
 
     console.log('[Init API] Returning success response');
     return res.status(200).json({
