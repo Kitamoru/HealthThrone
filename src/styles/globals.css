@@ -354,6 +354,10 @@ body {
   bottom: 0;
 }
 
+.menu > * {
+  display: flex;
+}
+
 .menu-btn {
   background: var(--tg-secondary);
   border: 1px solid var(--tg-border);
@@ -365,6 +369,11 @@ body {
   border-radius: 12px;
   position: relative;
   overflow: hidden;
+  width: 100%; /* Добавлено */
+  text-align: center; /* Добавлено */
+  display: flex; /* Добавлено */
+  justify-content: center; /* Добавлено */
+  align-items: center; /* Добавлено */
 }
 
 .menu-btn::before {
