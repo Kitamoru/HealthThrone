@@ -90,7 +90,7 @@ export default function Friends() {
 
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
   const referralCode = `ref_${user?.id || 'default'}`;
-  const referralLink = `https://t.me/${botUsername}?start=${referralCode}`;
+  const referralLink = `https://t.me/${botUsername}/HealthBreake?startapp=${referralCode}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink);
