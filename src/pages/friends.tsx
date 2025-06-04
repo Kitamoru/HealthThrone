@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
@@ -34,6 +35,8 @@ const BurnoutProgress: React.FC<BurnoutProgressProps> = ({ level }) => {
   );
 };
 
+const FRIENDS_CACHE_KEY = 'friends_cache';
+
 export default function Friends() {
   const router = useRouter();
   const { user, isReady, initData, webApp } = useTelegram();
@@ -47,39 +50,47 @@ export default function Friends() {
     if (!isReady || !user?.id) return;
     
     const loadFriends = async () => {
-  try {
-    setLoading(true);
-    const response = await api.getFriends(user.id, initData) as ApiResponse<any[]>;
-    
-    if (response.success && response.data) {
-      // Преобразуем данные в нужный формат
-      const formattedFriends = response.data.map(f => ({
-        id: f.id, // ID записи в friends
-        friend_id: f.friend.id, // ID пользователя-друга
-        friend_username: f.friend.username || 
-                        `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
-        burnout_level: f.friend.burnout_level
-      }));
-      
-      setFriends(formattedFriends);
-    } else {
-      setError(response.error || 'Не удалось загрузить друзей');
-    }
-  } catch (err) {
-    setError('Ошибка сети');
-  } finally {
-    setLoading(false);
-  }
-};
+      try {
+        setLoading(true);
+        
+        // Проверка кэша
+        const cached = sessionStorage.getItem(FRIENDS_CACHE_KEY);
+        if (cached) {
+          setFriends(JSON.parse(cached));
+        }
+        
+        const response = await api.getFriends(user.id, initData);
+        if (response.success && response.data) {
+          const formattedFriends = response.data.map(f => ({
+            id: f.id,
+            friend_id: f.friend.id,
+            friend_username: f.friend.username || 
+                            `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
+            burnout_level: f.friend.burnout_level
+          }));
+          
+          setFriends(formattedFriends);
+          sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(formattedFriends));
+        } else {
+          setError(response.error || 'Не удалось загрузить друзей');
+        }
+      } catch (err) {
+        setError('Ошибка сети');
+      } finally {
+        setLoading(false);
+      }
+    };
     
     loadFriends();
   }, [isReady, user, initData]);
 
   const handleDelete = async (friendId: number) => {
     try {
-      const response = await api.deleteFriend(friendId, initData) as ApiResponse;
+      const response = await api.deleteFriend(friendId, initData);
       if (response.success) {
-        setFriends(friends.filter(f => f.id !== friendId));
+        const updatedFriends = friends.filter(f => f.id !== friendId);
+        setFriends(updatedFriends);
+        sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(updatedFriends));
       } else {
         setError(response.error || 'Failed to delete friend');
       }
@@ -116,7 +127,6 @@ export default function Friends() {
 
   return (
     <div className="container">
-      {/* Основной контент с возможностью прокрутки */}
       <div className="scrollable-content">
         <div className="header">
           <h2>Моя команда</h2>
@@ -149,7 +159,6 @@ export default function Friends() {
           )}
         </div>
         
-        {/* Модальное окно в стиле приложения */}
         {showModal && (
           <div className="modal-overlay">
             <div className="modal-card">
@@ -191,12 +200,23 @@ export default function Friends() {
         )}
       </div>
       
-      {/* Закрепленное меню внизу страницы */}
       <div className="menu">
-        <button className="menu-btn" onClick={() => router.push('/')}>📊</button>
-        <button className="menu-btn active">📈</button>
-        <button className="menu-btn" onClick={() => router.push('/settings')}>⚙️</button>
-        <button className="menu-btn" onClick={() => router.push('/info')}>ℹ️</button>
+        <Link href="/" passHref>
+          <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>
+            📊
+          </button>
+        </Link>
+        <Link href="/friends" passHref>
+          <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>
+            📈
+          </button>
+        </Link>
+        <Link href="/settings" passHref>
+          <button className="menu-btn">⚙️</button>
+        </Link>
+        <Link href="/info" passHref>
+          <button className="menu-btn">ℹ️</button>
+        </Link>
       </div>
     </div>
   );
