@@ -200,7 +200,7 @@ export default function Home() {
         )}
       </div>
 
-      <div className="menu-btn">
+      <div className="menu">
         <Link href="/" passHref>
           <button className="menu-btn">📊</button>
         </Link>
