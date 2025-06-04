@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { BurnoutProgress } from '../components/BurnoutProgress';
@@ -97,94 +98,35 @@ const QUESTIONS: Question[] = [
 
 export default function Home() {
   const router = useRouter();
-  const { user, isReady, initData, error } = useTelegram();
-  // Получаем параметр start из URL
-  const startParam = router.query.start as string | undefined;
+  const { user } = useTelegram();
   
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions] = useState<Question[]>(QUESTIONS);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [burnoutLevel, setBurnoutLevel] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [initStatus, setInitStatus] = useState<string>('not_started');
   const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('[Home] Component mounted');
-    
-    const initializeApp = async () => {
-      if (!isReady) {
-        console.log('[Home] Telegram not ready yet');
-        return;
-      }
-
+    const loadUserData = async () => {
+      if (!user?.id) return;
+      
       try {
-        console.log('[Home] Initializing application');
-        setLoading(true);
-        
-        // 1. Инициализация пользователя
-        if (initData && user?.id) {
-          console.log('[Home] Initializing user with initData');
-          setInitStatus('in_progress');
-          
-          // Используем startParam из роутера
-          const initResponse = await api.initUser(initData, startParam);
-          console.log('[Home] User initialization response:', initResponse);
-          
-          if (initResponse.success) {
-            setInitStatus('success');
-            console.log('[Home] User initialized successfully');
-          } else {
-            setInitStatus('failed');
-            setApiError(initResponse.error || 'Failed to initialize user');
-            console.error('[Home] User initialization failed:', initResponse.error);
-          }
-        } else {
-          console.warn('[Home] Skipping user init - missing initData or user.id');
-          setInitStatus('skipped');
+        const response = await api.getUserData(user.id);
+        if (response.success && response.data) {
+          const userData = response.data as UserProfile;
+          setBurnoutLevel(userData.burnout_level || 0);
         }
-
-        // 2. Загружаем вопросы
-        console.log('[Home] Setting questions');
-        setQuestions(QUESTIONS);
-        
-        // 3. Загружаем данные пользователя
-        if (user?.id) {
-          console.log(`[Home] Loading user data for ID: ${user.id}`);
-          
-          try {
-            const response = await api.getUserData(user.id);
-            console.log('[Home] User data response:', response);
-            
-            if (response.success && response.data) {
-              // Явно указываем тип данных
-              const userData = response.data as UserProfile;
-              console.log('[Home] User data loaded:', userData);
-              
-              // Используем правильное поле из типа UserProfile
-              setBurnoutLevel(userData.burnout_level || 0);
-            } else {
-              console.warn('[Home] No user data found or error', response.error);
-            }
-          } catch (err) {
-            console.error('[Home] Error loading user data:', err);
-          }
-        } else {
-          console.warn('[Home] Skipping user data load - no user ID');
-        }
-        
         setLoading(false);
-        console.log('[Home] App initialized successfully');
-      } catch (error) {
-        console.error('[Home] Initialization error:', error);
-        setApiError('Ошибка инициализации приложения');
+      } catch (err) {
+        console.error('Error loading user data:', err);
         setLoading(false);
       }
     };
+    
+    loadUserData();
+  }, [user?.id]);
 
-    initializeApp();
-  }, [isReady, user, initData, startParam]); // Добавляем startParam в зависимости
-
-  const handleAnswer = async (questionId: number, isPositive: boolean) => {
+    const handleAnswer = async (questionId: number, isPositive: boolean) => {
     console.log(`[Home] Handling answer for question ${questionId}: ${isPositive}`);
     
     const question = questions.find(q => q.id === questionId);
@@ -223,30 +165,13 @@ export default function Home() {
     } else {
       console.warn('[Home] Skipping save - no user ID');
     }
-  };
+   };
 
   if (loading) {
-    console.log('[Home] Rendering loader');
     return <Loader />;
   }
 
   const allAnswered = questions.every(q => q.id in answers);
-  console.log(`[Home] All questions answered: ${allAnswered}`);
-
-  // Диагностическая панель
-  const debugInfo = {
-    telegramReady: isReady,
-    user: user ? {
-      id: user.id,
-      name: user.first_name
-    } : null,
-    initData: initData ? `...${initData.slice(-20)}` : null,
-    initStatus,
-    burnoutLevel,
-    answeredQuestions: Object.keys(answers).length,
-    apiError,
-    startParam // Добавляем параметр в отладочную информацию
-  };
 
   return (
     <div className="container">
@@ -276,8 +201,12 @@ export default function Home() {
       </div>
 
       <div className="menu">
-        <button className="menu-btn" onClick={() => router.push('/')}>📊</button>
-        <button className="menu-btn" onClick={() => router.push('/friends')}>📈</button>
+        <Link href="/" passHref>
+          <button className="menu-btn">📊</button>
+        </Link>
+        <Link href="/friends" passHref>
+          <button className="menu-btn">📈</button>
+        </Link>
         <button className="menu-btn">⚙️</button>
         <button className="menu-btn">ℹ️</button>
       </div>
@@ -292,9 +221,12 @@ export default function Home() {
           fontSize: '12px'
         }}>
           <h3>Debug Information:</h3>
-          <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-          {error && <p style={{ color: 'red' }}>Telegram Error: {error}</p>}
-          {apiError && <p style={{ color: 'red' }}>API Error: {apiError}</p>}
+          <pre>{JSON.stringify({
+            user: user ? { id: user.id, name: user.first_name } : null,
+            burnoutLevel,
+            answeredQuestions: Object.keys(answers).length,
+            apiError
+          }, null, 2)}</pre>
         </div>
       )}
     </div>
