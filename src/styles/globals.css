@@ -787,7 +787,8 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
-
+}
+  
 /* Стили для лоадера (центрирование) */
 .loader-overlay {
   position: fixed;
@@ -800,5 +801,4 @@ body {
   align-items: center;
   background: rgba(255, 255, 255, 0.8);
   z-index: 1000;
-}
 }
