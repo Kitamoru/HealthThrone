@@ -5,7 +5,7 @@ import '../styles/globals.css';
 import { useEffect, useState } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
-import Loader from '../components/Loader';
+import { Loader } from '../components/Loader';
 
 export default function App({ Component, pageProps }: AppProps) {
   const { isReady, initData, startParam } = useTelegram();
