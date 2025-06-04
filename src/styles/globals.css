@@ -776,12 +776,29 @@ body {
     align-self: flex-end;
   }
   
- .page-transition {
-  animation: fadeIn 0.3s ease;
-  }
+ /* Плавная анимация появления */
+.page-transition {
+  animation: fadeIn 0.3s ease forwards;
+  opacity: 0;
+}
 
-  @keyframes fadeIn {
-   from { opacity: 0; transform: translateY(10px); }
-   to { opacity: 1; transform: translateY(0); }
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
- }
+}
+
+/* Стили для лоадера (центрирование) */
+.loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.8);
+  z-index: 1000;
+}
