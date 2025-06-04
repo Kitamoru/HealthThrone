@@ -69,87 +69,48 @@ declare global {
 export const useTelegram = () => {
   const [isReady, setIsReady] = useState(false);
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [initData, setInitData] = useState('');
   const [user, setUser] = useState<TelegramUser | null>(null);
-  const [startParam, setStartParam] = useState(''); // <-- Добавлено новое состояние
+  const [startParam, setStartParam] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
-    console.log('[useTelegram] Initializing Telegram WebApp hook');
     
     const initTelegram = () => {
-      try {
-        console.log('[useTelegram] Checking for Telegram object');
-        const telegram = window.Telegram;
-        
-        if (!telegram) {
-          const errorMsg = 'Telegram object not found on window';
-          setError(errorMsg);
-          console.error('[useTelegram]', errorMsg);
-          return;
-        }
-
-        if (!telegram.WebApp) {
-          const errorMsg = 'Telegram.WebApp not initialized';
-          setError(errorMsg);
-          console.error('[useTelegram]', errorMsg);
-          return;
-        }
-
-        const tg = telegram.WebApp;
-        console.log('[useTelegram] Telegram WebApp found:', tg);
-        
-        setWebApp(tg);
-        
-        // Check initData
-        if (!tg.initData) {
-          const errorMsg = 'initData is empty';
-          setError(errorMsg);
-          console.error('[useTelegram]', errorMsg);
-        } else {
-          setInitData(tg.initData);
-          console.log('[useTelegram] initData set');
-        }
-
-        // Check user data
-        if (tg.initDataUnsafe?.user) {
-          setUser(tg.initDataUnsafe.user);
-          console.log('[useTelegram] User data set:', tg.initDataUnsafe.user);
-        } else {
-          const errorMsg = 'User data not available in initDataUnsafe';
-          setError(errorMsg);
-          console.error('[useTelegram]', errorMsg);
-        }
-
-        // Добавлено: Извлечение start_param
-        if (tg.initDataUnsafe?.start_param) {
-          setStartParam(tg.initDataUnsafe.start_param);
-          console.log('[useTelegram] start_param set:', tg.initDataUnsafe.start_param);
-        }
-
-        // Initialize Telegram WebApp
-        console.log('[useTelegram] Calling Telegram.ready() and expand()');
-        tg.ready();
-        tg.expand();
-        setIsReady(true);
-        console.log('[useTelegram] Telegram WebApp initialized successfully');
-
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        const errorMsg = `Failed to initialize Telegram WebApp: ${message}`;
-        setError(errorMsg);
-        console.error('[useTelegram]', errorMsg, err);
+      const telegram = window.Telegram;
+      if (!telegram?.WebApp) {
+        setError('Telegram WebApp not initialized');
+        return;
       }
+
+      const tg = telegram.WebApp;
+      setWebApp(tg);
+      setInitData(tg.initData);
+      
+      if (tg.initDataUnsafe?.user) {
+        setUser(tg.initDataUnsafe.user);
+      }
+      
+      if (tg.initDataUnsafe?.start_param) {
+        setStartParam(tg.initDataUnsafe.start_param);
+      }
+
+      tg.ready();
+      tg.expand();
+      setIsReady(true);
     };
 
-    // Add delay for async loading
-    const timer = setTimeout(initTelegram, 1000);
-    
+    // Инициализация при наличии объекта Telegram
+    if (window.Telegram?.WebApp) {
+      initTelegram();
+    } else {
+      // Ожидаем кастомное событие от скрипта
+      window.addEventListener('telegram-ready', initTelegram);
+    }
+
     return () => {
-      console.log('[useTelegram] Cleaning up hook');
-      clearTimeout(timer);
+      window.removeEventListener('telegram-ready', initTelegram);
     };
   }, []);
 
@@ -157,7 +118,7 @@ export const useTelegram = () => {
     user,
     isReady,
     initData,
-    startParam, // <-- Возвращаем startParam
+    startParam,
     webApp,
     error
   };
