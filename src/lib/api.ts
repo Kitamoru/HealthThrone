@@ -137,10 +137,11 @@ class Api {
     });
   }
 
+  // Исправлено: возвращаем массив ID спрайтов
   async getOwnedSprites(
     userId: number, 
     initData?: string
-  ): Promise<ApiResponse<Sprite[]>> {
+  ): Promise<ApiResponse<number[]>> {
     return this.request(`/shop/owned?userId=${userId}`, {
       headers: this.getHeaders(initData)
     });
