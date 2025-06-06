@@ -8,6 +8,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
+
 export interface UserProfile {
   id: number;
   telegram_id: number;
@@ -19,7 +20,12 @@ export interface UserProfile {
   avatar_url?: string;
   created_at: string;
   updated_at: string;
+  coins: number;
+  current_sprite_id?: number;
+  last_login_date?: string;
+  last_attempt_date?: string;
 }
+
 export interface Friend {
   id: number;
   created_at: string;
@@ -32,3 +38,17 @@ export interface Friend {
   };
 }
 
+export interface Sprite {
+  id: number;
+  name: string;
+  image_url: string;
+  price: number;
+  created_at: string;
+}
+
+export interface UserSprite {
+  id: number;
+  user_id: number;
+  sprite_id: number;
+  purchased_at: string;
+}
