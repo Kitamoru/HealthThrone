@@ -5,7 +5,6 @@ import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { api, Sprite } from '../lib/api';
 
-// Интерфейс для данных пользователя
 interface UserData {
   id: number;
   username?: string;
@@ -15,9 +14,9 @@ interface UserData {
   burnout_level: number;
   current_sprite_id?: number | null;
   last_attempt_date?: string;
+  purchased_sprites: number[]; // Добавлено: массив купленных спрайтов
 }
 
-// Новый тип с гарантированным наличием цены
 type SpriteWithPrice = Omit<Sprite, 'price'> & { price: number };
 
 export default function Shop() {
@@ -27,6 +26,7 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [coins, setCoins] = useState(0);
   const [currentSprite, setCurrentSprite] = useState<number | null>(null);
+  const [purchasedSprites, setPurchasedSprites] = useState<number[]>([]); // Состояние купленных спрайтов
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -36,10 +36,9 @@ export default function Shop() {
       try {
         setLoading(true);
         
-        // Загрузка спрайтов из магазина
+        // Загрузка спрайтов
         const spritesResponse = await api.getSprites();
         if (spritesResponse.success) {
-          // Гарантируем что у всех спрайтов есть цена (по умолчанию 0)
           const spritesWithPrice: SpriteWithPrice[] = (spritesResponse.data || []).map(sprite => ({
             ...sprite,
             price: sprite.price || 0
@@ -52,10 +51,10 @@ export default function Shop() {
         // Загрузка данных пользователя
         const userResponse = await api.getUserData(user.id, initData);
         if (userResponse.success && userResponse.data) {
-          // Приводим данные пользователя к нашему интерфейсу
           const userData = userResponse.data as UserData;
           setCoins(userData.coins || 0);
           setCurrentSprite(userData.current_sprite_id || null);
+          setPurchasedSprites(userData.purchased_sprites || []); // Загружаем купленные спрайты
         } else {
           setError(userResponse.error || 'Не удалось загрузить данные пользователя');
         }
@@ -70,27 +69,24 @@ export default function Shop() {
     fetchData();
   }, [isReady, user, initData]);
 
-  // Обработка покупки спрайта
   const handlePurchase = async (spriteId: number) => {
-    // Находим спрайт по ID
     const sprite = sprites.find(s => s.id === spriteId);
     if (!sprite) {
       setError('Спрайт не найден');
       return;
     }
     
-    // Проверяем достаточно ли монет (теперь price гарантированно число)
     if (coins < sprite.price) {
       setError('Недостаточно монет');
       return;
     }
     
     try {
-      // Выполняем покупку
       const response = await api.purchaseSprite(user!.id, spriteId, initData);
       if (response.success) {
-        // Обновляем баланс монет
         setCoins(coins - sprite.price);
+        // Добавляем купленный спрайт в список
+        setPurchasedSprites(prev => [...prev, spriteId]);
         setError(null);
       } else {
         setError(response.error || 'Ошибка при покупке');
@@ -100,11 +96,9 @@ export default function Shop() {
     }
   };
 
-  // Обработка установки спрайта
   const handleEquip = async (spriteId: number) => {
     try {
       // Временная функция, пока не реализована в API
-      // В реальном приложении замените на вызов API
       const mockEquip = async () => {
         return new Promise((resolve) => {
           setTimeout(() => {
@@ -126,7 +120,6 @@ export default function Shop() {
     }
   };
 
-  // Показываем загрузчик если данные еще не готовы
   if (loading) {
     return <Loader />;
   }
@@ -155,25 +148,28 @@ export default function Shop() {
                   Цена: {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'}
                 </div>
                 <div className="sprite-actions">
-                  {coins >= sprite.price ? (
+                  {purchasedSprites.includes(sprite.id) ? (
                     <button 
-                      className="buy-btn"
-                      onClick={() => handlePurchase(sprite.id)}
+                      className="equip-btn"
+                      onClick={() => handleEquip(sprite.id)}
+                      disabled={currentSprite === sprite.id}
                     >
-                      Купить
+                      {currentSprite === sprite.id ? 'Установлен' : 'Установить'}
                     </button>
                   ) : (
-                    <button className="buy-btn disabled" disabled>
-                      Недостаточно
-                    </button>
+                    coins >= sprite.price ? (
+                      <button 
+                        className="buy-btn"
+                        onClick={() => handlePurchase(sprite.id)}
+                      >
+                        Купить
+                      </button>
+                    ) : (
+                      <button className="buy-btn disabled" disabled>
+                        Недостаточно
+                      </button>
+                    )
                   )}
-                  <button 
-                    className="equip-btn"
-                    onClick={() => handleEquip(sprite.id)}
-                    disabled={currentSprite === sprite.id}
-                  >
-                    {currentSprite === sprite.id ? 'Установлен' : 'Установить'}
-                  </button>
                 </div>
               </div>
             </div>
@@ -181,7 +177,6 @@ export default function Shop() {
         </div>
       </div>
 
-      {/* Нижнее меню навигации */}
       <div className="menu">
         <Link href="/" passHref>
           <button className="menu-btn">📊</button>
