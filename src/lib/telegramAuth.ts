@@ -22,6 +22,19 @@ export function validateTelegramInitData(initData: string): boolean {
   const computedHash = crypto.createHmac('sha256', secret)
     .update(dataString)
     .digest('hex');
+  
+// lib/telegramAuth.ts
+export function parseInitData(initData: string): { user?: any } {
+  const params = new URLSearchParams(initData);
+  const userParam = params.get('user');
+  if (!userParam) return {};
+  try {
+    return { user: JSON.parse(userParam) };
+  } catch (e) {
+    console.error('Failed to parse user from initData', e);
+    return {};
+  }
+}
 
   return computedHash === hash;
 }
