@@ -1,46 +1,38 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '../../../lib/supabase';
-import { validateTelegramInitData } from '../../../lib/telegramAuth';
+import { supabase } from '@/lib/supabase';
+import { validateTelegramInitData } from '@/lib/telegramAuth';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   const initData = req.headers['x-telegram-init-data'] as string;
-  
   if (!initData || !validateTelegramInitData(initData)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  if (req.method !== 'POST') {
+  if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { userId, spriteId } = req.body;
+  const userId = req.query.userId as string;
+  if (!userId) {
+    return res.status(400).json({ error: 'userId required' });
+  }
 
   try {
-    // Проверка владения спрайтом
-    const { count, error: checkError } = await supabase
+    // Получаем список купленных спрайтов
+    const { data, error } = await supabase
       .from('user_sprites')
-      .select('*', { count: 'exact' })
-      .eq('user_id', userId)
-      .eq('sprite_id', spriteId);
+      .select('sprite_id')
+      .eq('user_id', userId);
 
-    if (checkError || count === 0) {
-      return res.status(400).json({ error: 'Sprite not owned' });
-    }
+    if (error) throw error;
 
-    // Установка спрайта
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ current_sprite_id: spriteId })
-      .eq('id', userId);
-
-    if (updateError) throw updateError;
-
-    return res.status(200).json({ success: true });
+    // Преобразуем в массив ID
+    const spriteIds = data.map(item => item.sprite_id);
+    return res.status(200).json({ success: true, data: spriteIds });
   } catch (error) {
-    console.error('Equip error:', error);
-    return res.status(500).json({ error: 'Equip failed' });
+    return res.status(500).json({ error: 'Failed to fetch owned sprites' });
   }
 }
