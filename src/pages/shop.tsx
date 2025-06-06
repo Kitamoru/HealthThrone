@@ -7,7 +7,7 @@ import { api, Sprite } from '../lib/api';
 
 interface UserData {
   id: number;
-  telegram_id: number; // Добавлено
+  telegram_id: number;
   username?: string;
   first_name?: string;
   last_name?: string;
@@ -15,7 +15,6 @@ interface UserData {
   burnout_level: number;
   current_sprite_id?: number | null;
   last_attempt_date?: string;
-  // Убрано purchased_sprites, так как используем отдельный запрос
 }
 
 type SpriteWithPrice = Omit<Sprite, 'price'> & { price: number };
@@ -27,8 +26,8 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [coins, setCoins] = useState(0);
   const [currentSprite, setCurrentSprite] = useState<number | null>(null);
-  const [ownedSprites, setOwnedSprites] = useState<number[]>([]); // Изменено на ownedSprites
-  const [appUserId, setAppUserId] = useState<number | null>(null); // Добавлено для API-вызовов
+  const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
+  const [appUserId, setAppUserId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -38,8 +37,8 @@ export default function Shop() {
       try {
         setLoading(true);
         
-        // Загрузка спрайтов с передачей initData
-        const spritesResponse = await api.getSprites(initData);
+        // Загрузка спрайтов (без initData, если API не требует)
+        const spritesResponse = await api.getSprites();
         if (spritesResponse.success) {
           const spritesWithPrice: SpriteWithPrice[] = (spritesResponse.data || []).map(sprite => ({
             ...sprite,
@@ -54,7 +53,7 @@ export default function Shop() {
         const userResponse = await api.getUserData(user.id, initData);
         if (userResponse.success && userResponse.data) {
           const userData = userResponse.data as UserData;
-          setAppUserId(userData.id); // Сохраняем ID пользователя приложения
+          setAppUserId(userData.id);
           setCoins(userData.coins || 0);
           setCurrentSprite(userData.current_sprite_id || null);
           
@@ -95,7 +94,7 @@ export default function Shop() {
       const response = await api.purchaseSprite(appUserId, spriteId, initData);
       if (response.success) {
         setCoins(coins - sprite.price);
-        setOwnedSprites(prev => [...prev, spriteId]); // Обновляем локально
+        setOwnedSprites(prev => [...prev, spriteId]);
         setError(null);
       } else {
         setError(response.error || 'Ошибка при покупке');
