@@ -14,7 +14,7 @@ export interface Sprite {
   isEquipped?: boolean;// Надет ли спрайт в данный момент
 }
 
-// Класс для работы с API
+// Класс для работы с AP
 class Api {
   private baseUrl = '/api'; // Базовый URL API
 
