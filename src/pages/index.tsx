@@ -7,6 +7,7 @@ import { QuestionCard } from '../components/QuestionCard';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { UserProfile } from '../lib/supabase';
+import { format } from 'date-fns';
 
 interface Question {
   id: number;
@@ -98,23 +99,38 @@ const QUESTIONS: Question[] = [
 
 export default function Home() {
   const router = useRouter();
-  const { user } = useTelegram();
-  
+  const { user, initData } = useTelegram();
   const [questions] = useState<Question[]>(QUESTIONS);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [burnoutLevel, setBurnoutLevel] = useState(0);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [alreadyAttempted, setAlreadyAttempted] = useState(false);
+  const [spriteUrl, setSpriteUrl] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const loadUserData = async () => {
       if (!user?.id) return;
       
       try {
-        const response = await api.getUserData(user.id);
+        const response = await api.getUserData(user.id, initData);
         if (response.success && response.data) {
           const userData = response.data as UserProfile;
           setBurnoutLevel(userData.burnout_level || 0);
+          
+          // Проверка последней попытки
+          const today = format(new Date(), 'yyyy-MM-dd');
+          if (userData.last_attempt_date === today) {
+            setAlreadyAttempted(true);
+          }
+          
+          // Загрузка текущего спрайта
+          if (userData.current_sprite_id) {
+            const spriteResponse = await api.getSpriteUrl(userData.current_sprite_id);
+            if (spriteResponse.success) {
+              setSpriteUrl(spriteResponse.data.image_url);
+            }
+          }
         }
         setLoading(false);
       } catch (err) {
@@ -124,48 +140,41 @@ export default function Home() {
     };
     
     loadUserData();
-  }, [user?.id]);
+  }, [user?.id, initData]);
 
-    const handleAnswer = async (questionId: number, isPositive: boolean) => {
-    console.log(`[Home] Handling answer for question ${questionId}: ${isPositive}`);
-    
+  const handleAnswer = async (questionId: number, isPositive: boolean) => {
     const question = questions.find(q => q.id === questionId);
-    if (!question) {
-      console.warn(`[Home] Question not found: ${questionId}`);
-      return;
-    }
+    if (!question) return;
 
-    // Обновляем локальные ответы
     const newAnswers = {
       ...answers,
       [questionId]: isPositive
     };
     setAnswers(newAnswers);
 
-    // Рассчитываем изменение уровня выгорания
     const delta = isPositive ? question.weight : 0;
     const newLevel = Math.max(0, Math.min(100, burnoutLevel + delta));
     setBurnoutLevel(newLevel);
-    console.log(`[Home] New burnout level: ${newLevel}%`);
 
-    // Отправляем данные на сервер если есть пользователь
     if (user?.id) {
-      console.log(`[Home] Saving burnout level for user ${user.id}`);
-      
       try {
-        const saveResponse = await api.updateBurnoutLevel(user.id, newLevel);
-        console.log('[Home] Save response:', saveResponse);
-        
-        if (!saveResponse.success) {
-          console.error('[Home] Failed to save burnout level:', saveResponse.error);
-        }
+        await api.updateBurnoutLevel(user.id, newLevel, initData);
       } catch (error) {
-        console.error('[Home] Error saving burnout level:', error);
+        console.error('Error saving burnout level:', error);
       }
-    } else {
-      console.warn('[Home] Skipping save - no user ID');
     }
-   };
+
+    // Если все вопросы отвечены
+    const allAnswered = questions.every(q => q.id in newAnswers);
+    if (allAnswered && user?.id) {
+      try {
+        await api.updateAttemptDate(user.id, initData);
+        setAlreadyAttempted(true);
+      } catch (error) {
+        console.error('Failed to update attempt date:', error);
+      }
+    }
+  };
 
   if (loading) {
     return <Loader />;
@@ -175,15 +184,15 @@ export default function Home() {
 
   return (
     <div className="container">
-      <BurnoutProgress level={burnoutLevel} />
+      <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
       
       <div className="content">
-        {allAnswered ? (
+        {alreadyAttempted || allAnswered ? (
           <div className="time-message">
             <div className="info-message">
-              🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
-              <br />
-              Попробуйте снова завтра для отслеживания динамики.
+              {alreadyAttempted 
+                ? "Данные за сегодняшний день собраны, ждем Вас завтра!" 
+                : `🎯 Тест завершен! Ваш уровень выгорания: ${burnoutLevel}%`}
             </div>
           </div>
         ) : (
@@ -202,33 +211,22 @@ export default function Home() {
 
       <div className="menu">
         <Link href="/" passHref>
-          <button className="menu-btn">📊</button>
+          <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>
+            📊
+          </button>
         </Link>
         <Link href="/friends" passHref>
-          <button className="menu-btn">📈</button>
+          <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>
+            📈
+          </button>
         </Link>
-        <button className="menu-btn">⚙️</button>
+        <Link href="/shop" passHref>
+          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>
+            🛍️
+          </button>
+        </Link>
         <button className="menu-btn">ℹ️</button>
       </div>
-      
-      {/* Диагностическая панель (только в development) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div style={{
-          marginTop: '20px',
-          padding: '10px',
-          background: '#f0f0f0',
-          borderRadius: '5px',
-          fontSize: '12px'
-        }}>
-          <h3>Debug Information:</h3>
-          <pre>{JSON.stringify({
-            user: user ? { id: user.id, name: user.first_name } : null,
-            burnoutLevel,
-            answeredQuestions: Object.keys(answers).length,
-            apiError
-          }, null, 2)}</pre>
-        </div>
-      )}
     </div>
   );
 }
