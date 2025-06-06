@@ -8,7 +8,6 @@ import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { UserProfile } from '../lib/supabase';
 import { format } from 'date-fns';
-import { Sprite } from '../lib/api';
 
 interface Question {
   id: number;
