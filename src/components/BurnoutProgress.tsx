@@ -2,14 +2,18 @@ import React from 'react';
 
 interface BurnoutProgressProps {
   level: number;
+  spriteUrl?: string;
 }
 
-export const BurnoutProgress: React.FC<BurnoutProgressProps> = ({ level }) => {
+export const BurnoutProgress: React.FC<BurnoutProgressProps> = ({ 
+  level,
+  spriteUrl = '/sprite.gif'
+}) => {
   return (
     <>
       <div className="header">
         <div className="sprite-container">
-          <img src="/sprite.gif" alt="Character" className="sprite" />
+          <img src={spriteUrl} alt="Character" className="sprite" />
         </div>
 
         <div className="pentagon">
