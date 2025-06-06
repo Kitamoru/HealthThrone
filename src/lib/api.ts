@@ -8,7 +8,7 @@ interface ApiResponse<T = any> {
 interface Sprite {
   id: number;
   name: string;
-  imageUrl: string;
+  image_url: string; // Исправлено поле (было imageUrl)
   price?: number;
   isEquipped?: boolean;
 }
@@ -105,6 +105,11 @@ class Api {
 
   async getSprites(): Promise<ApiResponse<Sprite[]>> {
     return this.request('/shop/sprites');
+  }
+  
+  // Новый метод для получения одного спрайта по ID
+  async getSprite(spriteId: number): Promise<ApiResponse<Sprite>> {
+    return this.request(`/shop/sprites/${spriteId}`);
   }
 
   async purchaseSprite(
