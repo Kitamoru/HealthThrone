@@ -1,7 +1,10 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: [],
+    domains: [
+      process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', '') || '',
+      'supabase.co'
+    ],
     unoptimized: true
   },
   async headers() {
@@ -15,8 +18,8 @@ const nextConfig = {
               "default-src 'self'; " +
               "script-src 'self' 'unsafe-inline' https://telegram.org; " +
               "style-src 'self' 'unsafe-inline'; " +
-              "img-src 'self' data:; " + 
-              "connect-src 'self' https://api.telegram.org; " +
+              "img-src 'self' data: https://*.supabase.co; " + 
+              "connect-src 'self' https://api.telegram.org https://*.supabase.co; " +
               "frame-ancestors 'self' https://*.telegram.org;"
           }
         ]
