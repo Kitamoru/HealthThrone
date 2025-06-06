@@ -17,10 +17,13 @@ interface UserData {
   last_attempt_date?: string;
 }
 
+// Новый тип с гарантированным наличием цены
+type SpriteWithPrice = Omit<Sprite, 'price'> & { price: number };
+
 export default function Shop() {
   const router = useRouter();
   const { user, isReady, initData } = useTelegram();
-  const [sprites, setSprites] = useState<Sprite[]>([]);
+  const [sprites, setSprites] = useState<SpriteWithPrice[]>([]);
   const [loading, setLoading] = useState(true);
   const [coins, setCoins] = useState(0);
   const [currentSprite, setCurrentSprite] = useState<number | null>(null);
@@ -37,7 +40,7 @@ export default function Shop() {
         const spritesResponse = await api.getSprites();
         if (spritesResponse.success) {
           // Гарантируем что у всех спрайтов есть цена (по умолчанию 0)
-          const spritesWithPrice = (spritesResponse.data || []).map(sprite => ({
+          const spritesWithPrice: SpriteWithPrice[] = (spritesResponse.data || []).map(sprite => ({
             ...sprite,
             price: sprite.price || 0
           }));
@@ -76,7 +79,7 @@ export default function Shop() {
       return;
     }
     
-    // Проверяем достаточно ли монет
+    // Проверяем достаточно ли монет (теперь price гарантированно число)
     if (coins < sprite.price) {
       setError('Недостаточно монет');
       return;
@@ -148,7 +151,9 @@ export default function Shop() {
               />
               <div className="sprite-info">
                 <h3>{sprite.name}</h3>
-                <div className="sprite-price">Цена: {sprite.price} монет</div>
+                <div className="sprite-price">
+                  Цена: {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'}
+                </div>
                 <div className="sprite-actions">
                   {coins >= sprite.price ? (
                     <button 
