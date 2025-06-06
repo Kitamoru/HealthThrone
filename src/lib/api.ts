@@ -18,6 +18,15 @@ export interface Sprite {
 class Api {
   private baseUrl = '/api'; // Базовый URL API
 
+  // Вспомогательный метод для формирования заголовков
+  private getHeaders(initData?: string): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (initData) headers['X-Telegram-Init-Data'] = initData;
+    return headers;
+  }
+
   // Общий метод для выполнения запросов
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     try {
@@ -74,47 +83,41 @@ class Api {
 
   // Получение данных пользователя
   async getUserData(userId: number, initData?: string) {
-    const headers: Record<string, string> = {};
-    if (initData) headers['X-Telegram-Init-Data'] = initData;
-    return this.request(`/data?userId=${userId}`, { headers });
+    return this.request(`/data?userId=${userId}`, { 
+      headers: this.getHeaders(initData) 
+    });
   }
 
   // Обновление уровня выгорания
   async updateBurnoutLevel(userId: number, level: number, initData?: string) {
-    const headers: Record<string, string> = {};
-    if (initData) headers['X-Telegram-Init-Data'] = initData;
     return this.request('/update', {
       method: 'POST',
-      headers,
+      headers: this.getHeaders(initData),
       body: JSON.stringify({ userId, burnoutLevel: level })
     });
   }
 
   // Получение списка друзей
   async getFriends(userId: number, initData?: string) {
-    const headers: Record<string, string> = {};
-    if (initData) headers['X-Telegram-Init-Data'] = initData;
-    return this.request(`/friends?userId=${userId}`, { headers });
+    return this.request(`/friends?userId=${userId}`, { 
+      headers: this.getHeaders(initData) 
+    });
   }
 
   // Добавление друга
   async addFriend(friendUsername: string, initData?: string) {
-    const headers: Record<string, string> = {};
-    if (initData) headers['X-Telegram-Init-Data'] = initData;
     return this.request('/friends', {
       method: 'POST',
-      headers,
+      headers: this.getHeaders(initData),
       body: JSON.stringify({ friendUsername })
     });
   }
 
   // Удаление друга
   async deleteFriend(friendId: number, initData?: string) {
-    const headers: Record<string, string> = {};
-    if (initData) headers['X-Telegram-Init-Data'] = initData;
     return this.request(`/friends/${friendId}`, {
       method: 'DELETE',
-      headers
+      headers: this.getHeaders(initData)
     });
   }
 
@@ -134,12 +137,9 @@ class Api {
     spriteId: number, 
     initData?: string
   ): Promise<ApiResponse> {
-    const headers: Record<string, string> = {};
-    if (initData) headers['X-Telegram-Init-Data'] = initData;
-    
     return this.request('/shop/purchase', {
       method: 'POST',
-      headers,
+      headers: this.getHeaders(initData),
       body: JSON.stringify({ userId, spriteId })
     });
   }
@@ -149,12 +149,33 @@ class Api {
     userId: number,
     initData?: string
   ): Promise<ApiResponse> {
-    const headers: Record<string, string> = {};
-    if (initData) headers['X-Telegram-Init-Data'] = initData;
     return this.request('/updateAttemptDate', {
       method: 'POST',
-      headers,
+      headers: this.getHeaders(initData),
       body: JSON.stringify({ userId })
+    });
+  }
+
+  // Получение купленных спрайтов пользователя
+  async getOwnedSprites(
+    userId: number, 
+    initData?: string
+  ): Promise<ApiResponse<Sprite[]>> {
+    return this.request(`/shop/owned?userId=${userId}`, {
+      headers: this.getHeaders(initData)
+    });
+  }
+
+  // Установка активного спрайта
+  async equipSprite(
+    userId: number, 
+    spriteId: number, 
+    initData?: string
+  ): Promise<ApiResponse> {
+    return this.request('/shop/equip', {
+      method: 'POST',
+      headers: this.getHeaders(initData),
+      body: JSON.stringify({ userId, spriteId })
     });
   }
 }
