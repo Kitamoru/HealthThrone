@@ -124,9 +124,10 @@ export default function Home() {
             setAlreadyAttempted(true);
           }
           
-          // Загрузка текущего спрайта
+          // Загрузка текущего спрайта (ИСПРАВЛЕНО)
           if (userData.current_sprite_id) {
-            const spriteResponse = await api.getSprites(userData.current_sprite_id);
+            // Используем новый метод getSprite
+            const spriteResponse = await api.getSprite(userData.current_sprite_id);
             if (spriteResponse.success) {
               setSpriteUrl(spriteResponse.data.image_url);
             }
