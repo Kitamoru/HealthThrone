@@ -4,7 +4,6 @@ interface ApiResponse<T = any> {
   error?: string;
 }
 
-// Определяем интерфейс для Sprite
 export interface Sprite {
   id: number;
   name: string;
@@ -107,7 +106,6 @@ class Api {
     return this.request('/shop/sprites');
   }
   
-  // Новый метод для получения одного спрайта по ID
   async getSprite(spriteId: number): Promise<ApiResponse<Sprite>> {
     return this.request(`/shop/sprites/${spriteId}`);
   }
