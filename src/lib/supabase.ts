@@ -8,6 +8,9 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
+export const setUserContext = async (telegramId: number) => {
+  await supabase.rpc('set_current_user', { user_id: telegramId });
+};
 
 export interface UserProfile {
   id: number;
