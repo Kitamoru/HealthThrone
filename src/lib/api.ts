@@ -1,24 +1,20 @@
-// Базовый интерфейс для ответов API
 interface ApiResponse<T = any> {
-  success: boolean;    // Успешно ли выполнен запрос
-  data?: T;            // Данные ответа (если есть)
-  error?: string;      // Сообщение об ошибке (если запрос не удался)
+  success: boolean;
+  data?: T;
+  error?: string;
 }
 
-// Интерфейс для спрайтов (аватарок)
 export interface Sprite {
-  id: number;          // Уникальный ID спрайта
-  name: string;        // Название спрайта
-  image_url: string;   // URL изображения спрайта
-  price?: number;      // Цена спрайта (может быть не определена)
-  isEquipped?: boolean;// Надет ли спрайт в данный момент
+  id: number;
+  name: string;
+  image_url: string;
+  price?: number;
+  isEquipped?: boolean;
 }
 
-// Класс для работы с AP
 class Api {
-  private baseUrl = '/api'; // Базовый URL API
+  private baseUrl = '/api';
 
-  // Вспомогательный метод для формирования заголовков
   private getHeaders(initData?: string): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
@@ -27,10 +23,8 @@ class Api {
     return headers;
   }
 
-  // Общий метод для выполнения запросов
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     try {
-      // Выполняем fetch-запрос
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -39,41 +33,33 @@ class Api {
         ...options,
       });
 
-      // Определяем тип контента
-      const contentType = response.headers.get('content-type');
+      const responseText = await response.text();
       let data;
-      
-      // Обрабатываем JSON или обычный текст
-      if (contentType?.includes('application/json')) {
-        data = await response.json();
-      } else {
-        data = await response.text();
+      try {
+        data = responseText ? JSON.parse(responseText) : null;
+      } catch {
+        data = responseText;
       }
 
-      // Если ответ не успешный
       if (!response.ok) {
         return {
           success: false,
-          error: data.error || 'Что-то пошло не так'
+          error: data?.error || 'Что-то пошло не так'
         };
       }
 
-      // Возвращаем успешный ответ
       return {
         success: true,
         data
       };
     } catch (error) {
-      // Обработка ошибок сети
-      const errorMessage = error instanceof Error ? error.message : 'Ошибка сети';
       return {
         success: false,
-        error: errorMessage
+        error: 'Ошибка сети'
       };
     }
   }
 
-  // Инициализация пользователя
   async initUser(initData: string, startParam?: string) {
     return this.request('/init', {
       method: 'POST',
@@ -81,14 +67,12 @@ class Api {
     });
   }
 
-  // Получение данных пользователя
   async getUserData(userId: number, initData?: string) {
     return this.request(`/data?userId=${userId}`, { 
       headers: this.getHeaders(initData) 
     });
   }
 
-  // Обновление уровня выгорания
   async updateBurnoutLevel(userId: number, level: number, initData?: string) {
     return this.request('/update', {
       method: 'POST',
@@ -97,14 +81,12 @@ class Api {
     });
   }
 
-  // Получение списка друзей
   async getFriends(userId: number, initData?: string) {
     return this.request(`/friends?userId=${userId}`, { 
       headers: this.getHeaders(initData) 
     });
   }
 
-  // Добавление друга
   async addFriend(friendUsername: string, initData?: string) {
     return this.request('/friends', {
       method: 'POST',
@@ -113,7 +95,6 @@ class Api {
     });
   }
 
-  // Удаление друга
   async deleteFriend(friendId: number, initData?: string) {
     return this.request(`/friends/${friendId}`, {
       method: 'DELETE',
@@ -121,17 +102,18 @@ class Api {
     });
   }
 
-  // Получение всех спрайтов
-  async getSprites(): Promise<ApiResponse<Sprite[]>> {
-    return this.request('/shop/sprites');
+  async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
+    return this.request('/shop/sprites', {
+      headers: this.getHeaders(initData)
+    });
   }
   
-  // Получение конкретного спрайта по ID
-  async getSprite(spriteId: number): Promise<ApiResponse<Sprite>> {
-    return this.request(`/shop/sprites/${spriteId}`);
+  async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
+    return this.request(`/shop/sprites/${spriteId}`, {
+      headers: this.getHeaders(initData)
+    });
   }
 
-  // Покупка спрайта
   async purchaseSprite(
     userId: number, 
     spriteId: number, 
@@ -144,7 +126,6 @@ class Api {
     });
   }
 
-  // Обновление даты последней попытки
   async updateAttemptDate(
     userId: number,
     initData?: string
@@ -156,7 +137,6 @@ class Api {
     });
   }
 
-  // Получение купленных спрайтов пользователя
   async getOwnedSprites(
     userId: number, 
     initData?: string
@@ -166,7 +146,6 @@ class Api {
     });
   }
 
-  // Установка активного спрайта
   async equipSprite(
     userId: number, 
     spriteId: number, 
@@ -180,5 +159,4 @@ class Api {
   }
 }
 
-// Экспортируем экземпляр API
 export const api = new Api();
