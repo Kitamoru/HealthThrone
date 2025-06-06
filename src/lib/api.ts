@@ -4,6 +4,15 @@ interface ApiResponse<T = any> {
   error?: string;
 }
 
+// Определяем интерфейс для Sprite
+interface Sprite {
+  id: number;
+  name: string;
+  imageUrl: string;
+  price?: number;
+  isEquipped?: boolean;
+}
+
 class Api {
   private baseUrl = '/api';
 
@@ -108,21 +117,6 @@ class Api {
     if (initData) headers['X-Telegram-Init-Data'] = initData;
     
     return this.request('/shop/purchase', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ userId, spriteId, price })
-    });
-  }
-
-  async equipSprite(
-    userId: number, 
-    spriteId: number,
-    initData?: string
-  ): Promise<ApiResponse> {
-    const headers: Record<string, string> = {};
-    if (initData) headers['X-Telegram-Init-Data'] = initData;
-    
-    return this.request('/shop/equip', {
       method: 'POST',
       headers,
       body: JSON.stringify({ userId, spriteId })
