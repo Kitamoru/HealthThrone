@@ -37,8 +37,8 @@ export default function Shop() {
       try {
         setLoading(true);
         
-        // Загрузка спрайтов (без initData, если API не требует)
-        const spritesResponse = await api.getSprites();
+        // Загрузка спрайтов
+        const spritesResponse = await api.getSprites(initData);
         if (spritesResponse.success) {
           const spritesWithPrice: SpriteWithPrice[] = (spritesResponse.data || []).map(sprite => ({
             ...sprite,
@@ -47,6 +47,8 @@ export default function Shop() {
           setSprites(spritesWithPrice);
         } else {
           setError(spritesResponse.error || 'Не удалось загрузить спрайты');
+          setLoading(false);
+          return;
         }
         
         // Загрузка данных пользователя
@@ -59,8 +61,9 @@ export default function Shop() {
           
           // Загрузка купленных спрайтов
           const ownedResponse = await api.getOwnedSprites(userData.id, initData);
-          if (ownedResponse.success) {
-            setOwnedSprites(ownedResponse.data || []);
+          if (ownedResponse.success && ownedResponse.data) {
+            const spriteIds = ownedResponse.data.map((s: Sprite) => s.id);
+            setOwnedSprites(spriteIds);
           } else {
             setError(ownedResponse.error || 'Ошибка загрузки спрайтов');
           }
@@ -79,6 +82,11 @@ export default function Shop() {
   }, [isReady, user, initData]);
 
   const handlePurchase = async (spriteId: number) => {
+    if (ownedSprites.includes(spriteId)) {
+      setError('Уже куплено');
+      return;
+    }
+    
     const sprite = sprites.find(s => s.id === spriteId);
     if (!sprite || !appUserId) {
       setError(sprite ? 'User ID not available' : 'Спрайт не найден');
@@ -195,7 +203,9 @@ export default function Shop() {
         <Link href="/shop" passHref>
           <button className="menu-btn active">🛍️</button>
         </Link>
-        <button className="menu-btn">ℹ️</button>
+        <Link href="/info" passHref>
+          <button className="menu-btn">ℹ️</button>
+        </Link>
       </div>
     </div>
   );
