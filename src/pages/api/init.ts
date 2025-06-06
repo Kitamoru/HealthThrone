@@ -147,7 +147,7 @@ export default async function handler(
             } else {
               const { data: referrer, error: referrerError } = await supabase
                 .from('users')
-                .select('id')
+                .select('id, coins')
                 .eq('telegram_id', referrerTelegramId)
                 .single();
 
@@ -178,6 +178,18 @@ export default async function handler(
                     console.error('[Referral] Insert friendship error:', insertError);
                   } else {
                     console.log(`[Referral] Friendship added: ${referrer.id} -> ${userData.id}`);
+                    
+                    // Начисление 200 монет рефереру
+                    const { error: updateError } = await supabase
+                      .from('users')
+                      .update({ coins: referrer.coins + 200 })
+                      .eq('id', referrer.id);
+                    
+                    if (updateError) {
+                      console.error('[Referral] Update coins error:', updateError);
+                    } else {
+                      console.log(`[Referral] Added 200 coins to referrer: ${referrer.id}`);
+                    }
                   }
                 } else {
                   console.log('[Referral] Friendship already exists');
