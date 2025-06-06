@@ -29,6 +29,14 @@ export default async function handler(
   }
 
   try {
+    // Преобразуем userId в число
+    const userIdNumber = parseInt(userId, 10);
+    
+    // Проверяем, что преобразование прошло успешно
+    if (isNaN(userIdNumber)) {
+      return res.status(400).json({ error: 'Invalid userId format' });
+    }
+
     // Устанавливаем контекст пользователя для RLS
     await setUserContext(user.id);
 
@@ -36,7 +44,7 @@ export default async function handler(
     const { data, error } = await supabase
       .from('user_sprites')
       .select('sprite_id')
-      .eq('user_id', parseInt(userId, 10));  // Преобразуем userId в число
+      .eq('user_id', userIdNumber);  // Используем число
 
     if (error) throw error;
 
