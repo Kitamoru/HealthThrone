@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '@/lib/supabase';
-import { validateTelegramInitData } from '@/lib/telegramAuth';
+import { supabase } from '../../../lib/supabase';
+import { validateTelegramInitData } from '../../../lib/telegramAuth';
 
 export default async function handler(
   req: NextApiRequest,
@@ -40,6 +40,7 @@ export default async function handler(
 
     return res.status(200).json({ success: true });
   } catch (error) {
+    console.error('Equip error:', error);
     return res.status(500).json({ error: 'Equip failed' });
   }
 }
