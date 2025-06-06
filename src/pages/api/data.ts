@@ -1,43 +1,37 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 
-console.log("[Data API] Initializing data API handler");
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  console.log('[Data API] Received request', req.method, req.url);
-
   if (req.method !== 'GET') {
-    console.warn('[Data API] Invalid method', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     const { userId } = req.query;
-    console.log('[Data API] Request query:', req.query);
 
     if (!userId) {
-      console.error('[Data API] userId is required');
       return res.status(400).json({ error: 'userId required' });
     }
 
     const userIdNumber = Number(userId);
     if (isNaN(userIdNumber)) {
-      console.error('[Data API] Invalid userId format', userId);
       return res.status(400).json({ error: 'Invalid userId format' });
     }
 
-    console.log(`[Data API] Fetching user data for ID: ${userIdNumber}`);
+    // Получаем данные пользователя и его купленные спрайты
     const { data: user, error } = await supabase
       .from('users')
-      .select('*')
+      .select(`
+        *,
+        user_sprites (sprite_id)
+      `)
       .eq('telegram_id', userIdNumber)
       .single();
 
     if (error) {
-      console.error('[Data API] Database error:', error);
       return res.status(500).json({ 
         error: 'Database error',
         details: error.message
@@ -45,18 +39,21 @@ export default async function handler(
     }
 
     if (!user) {
-      console.error('[Data API] User not found');
       return res.status(404).json({ error: 'User not found' });
     }
 
-    console.log('[Data API] User data found:', JSON.stringify(user, null, 2));
+    // Формируем массив ID купленных спрайтов
+    const purchased_sprites = user.user_sprites?.map((us: any) => us.sprite_id) || [];
+
     return res.status(200).json({
       success: true,
-      data: user
+      data: {
+        ...user,
+        purchased_sprites
+      }
     });
 
   } catch (error) {
-    console.error('[Data API] Unhandled error:', error);
     return res.status(500).json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : String(error)
