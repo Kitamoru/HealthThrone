@@ -5,7 +5,7 @@ import { useTelegram } from '../hooks/useTelegram';
 import { BurnoutProgress } from '../components/BurnoutProgress';
 import { QuestionCard } from '../components/QuestionCard';
 import { Loader } from '../components/Loader';
-import { api } from '../lib/api';
+import { api, Sprite } from '../lib/api'; // Добавлен импорт Sprite
 import { UserProfile } from '../lib/supabase';
 import { format } from 'date-fns';
 
@@ -126,7 +126,7 @@ export default function Home() {
           
           // Загрузка текущего спрайта с проверкой данных
           if (userData.current_sprite_id) {
-            const spriteResponse = await api.getSprite(userData.current_sprite_id);
+            const spriteResponse = await api.getSprite(userData.current_sprite_id)
             // Добавлена проверка на существование данных
             if (spriteResponse.success && spriteResponse.data) {
               setSpriteUrl(spriteResponse.data.image_url);
