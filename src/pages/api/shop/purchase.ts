@@ -1,8 +1,7 @@
-console.log('Fetching owned sprites for user:', userId)
-
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '../../../lib/supabase';
 import { validateTelegramInitData } from '../../../lib/telegramAuth';
+import { setUserContext } from '../../../lib/supabase';
 
 export default async function handler(
   req: NextApiRequest,
@@ -24,15 +23,31 @@ export default async function handler(
   }
 
   try {
+    console.log('Processing purchase for user:', userId, 'sprite:', spriteId);
+    
+    // Парсим initData для получения user
+    const params = new URLSearchParams(initData);
+    const userParam = params.get('user');
+    if (!userParam) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const user = JSON.parse(userParam);
+    if (!user || !user.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Устанавливаем контекст пользователя для RLS
+    await setUserContext(user.id);
+
     // Проверка баланса
-    const { data: user, error: userError } = await supabase
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('coins')
       .eq('id', userId)
       .single();
 
     if (userError) throw userError;
-    if (!user) {
+    if (!userData) {
       return res.status(400).json({ error: 'User not found' });
     }
 
@@ -50,14 +65,14 @@ export default async function handler(
 
     const price = sprite.price;
 
-    if (user.coins < price) {
+    if (userData.coins < price) {
       return res.status(400).json({ error: 'Insufficient coins' });
     }
 
     // Обновление баланса
     const { error: updateError } = await supabase
       .from('users')
-      .update({ coins: user.coins - price })
+      .update({ coins: userData.coins - price })
       .eq('id', userId);
 
     if (updateError) throw updateError;
