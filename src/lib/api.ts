@@ -17,7 +17,6 @@ class Api {
         ...options,
       });
 
-      // Обработка JSON и текстовых ответов
       const contentType = response.headers.get('content-type');
       let data;
       
@@ -47,15 +46,13 @@ class Api {
     }
   }
 
-  // Обновленный метод с параметром startParam
   async initUser(initData: string, startParam?: string) {
     return this.request('/init', {
       method: 'POST',
-      body: JSON.stringify({ initData, ref: startParam }) // Передаем startParam как ref
+      body: JSON.stringify({ initData, ref: startParam })
     });
   }
 
-  // Остальные методы без изменений
   async getUserData(userId: number, initData?: string) {
     const headers: Record<string, string> = {};
     if (initData) headers['X-Telegram-Init-Data'] = initData;
@@ -94,6 +91,54 @@ class Api {
     return this.request(`/friends/${friendId}`, {
       method: 'DELETE',
       headers
+    });
+  }
+
+  async getSprites(): Promise<ApiResponse<Sprite[]>> {
+    return this.request('/shop/sprites');
+  }
+
+  async purchaseSprite(
+    userId: number, 
+    spriteId: number, 
+    price: number,
+    initData?: string
+  ): Promise<ApiResponse> {
+    const headers: Record<string, string> = {};
+    if (initData) headers['X-Telegram-Init-Data'] = initData;
+    
+    return this.request('/shop/purchase', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ userId, spriteId, price })
+    });
+  }
+
+  async equipSprite(
+    userId: number, 
+    spriteId: number,
+    initData?: string
+  ): Promise<ApiResponse> {
+    const headers: Record<string, string> = {};
+    if (initData) headers['X-Telegram-Init-Data'] = initData;
+    
+    return this.request('/shop/equip', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ userId, spriteId })
+    });
+  }
+
+  async updateAttemptDate(
+    userId: number,
+    initData?: string
+  ): Promise<ApiResponse> {
+    const headers: Record<string, string> = {};
+    if (initData) headers['X-Telegram-Init-Data'] = initData;
+    return this.request('/updateAttemptDate', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ userId })
     });
   }
 }
