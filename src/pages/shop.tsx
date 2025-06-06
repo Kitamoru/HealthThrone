@@ -37,8 +37,25 @@ export default function Shop() {
       try {
         setLoading(true);
         
-        // Загрузка спрайтов
-        const spritesResponse = await api.getSprites(initData);
+        // Загрузка данных пользователя
+        const userResponse = await api.getUserData(user.id, initData);
+        if (!userResponse.success || !userResponse.data) {
+          setError(userResponse.error || 'Не удалось загрузить данные пользователя');
+          setLoading(false);
+          return;
+        }
+
+        const userData = userResponse.data as UserData;
+        setAppUserId(userData.id);
+        setCoins(userData.coins || 0);
+        setCurrentSprite(userData.current_sprite_id || null);
+        
+        // Параллельная загрузка спрайтов и купленных спрайтов
+        const [spritesResponse, ownedResponse] = await Promise.all([
+          api.getSprites(initData),
+          api.getOwnedSprites(userData.id, initData)
+        ]);
+
         if (spritesResponse.success) {
           const spritesWithPrice: SpriteWithPrice[] = (spritesResponse.data || []).map(sprite => ({
             ...sprite,
@@ -47,28 +64,12 @@ export default function Shop() {
           setSprites(spritesWithPrice);
         } else {
           setError(spritesResponse.error || 'Не удалось загрузить спрайты');
-          setLoading(false);
-          return;
         }
         
-        // Загрузка данных пользователя
-        const userResponse = await api.getUserData(user.id, initData);
-        if (userResponse.success && userResponse.data) {
-          const userData = userResponse.data as UserData;
-          setAppUserId(userData.id);
-          setCoins(userData.coins || 0);
-          setCurrentSprite(userData.current_sprite_id || null);
-          
-          // Загрузка купленных спрайтов
-          const ownedResponse = await api.getOwnedSprites(userData.id, initData);
-          if (ownedResponse.success && ownedResponse.data) {
-            const spriteIds = ownedResponse.data.map((s: Sprite) => s.id);
-            setOwnedSprites(spriteIds);
-          } else {
-            setError(ownedResponse.error || 'Ошибка загрузки спрайтов');
-          }
+        if (ownedResponse.success && ownedResponse.data) {
+          setOwnedSprites(ownedResponse.data);
         } else {
-          setError(userResponse.error || 'Не удалось загрузить данные пользователя');
+          setError(ownedResponse.error || 'Ошибка загрузки спрайтов');
         }
         
         setLoading(false);
