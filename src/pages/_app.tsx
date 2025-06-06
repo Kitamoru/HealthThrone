@@ -13,7 +13,6 @@ export default function App({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     if (isReady && initData && !userInitialized) {
-      console.log('Initializing user with startParam:', startParam);
       api.initUser(initData, startParam)
         .then(response => {
           if (response.success) {
