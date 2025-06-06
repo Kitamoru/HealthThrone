@@ -5,10 +5,10 @@ interface ApiResponse<T = any> {
 }
 
 // Определяем интерфейс для Sprite
-interface Sprite {
+export interface Sprite {
   id: number;
   name: string;
-  image_url: string; // Исправлено поле (было imageUrl)
+  image_url: string;
   price?: number;
   isEquipped?: boolean;
 }
