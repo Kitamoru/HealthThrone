@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
+import { Sprite } from '../lib/api'; // Import shared interface
 
 interface Sprite {
   id: number;
@@ -20,6 +21,7 @@ export default function Shop() {
   const [coins, setCoins] = useState(0);
   const [currentSprite, setCurrentSprite] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sprites, setSprites] = useState<Sprite[]>([]);
 
   useEffect(() => {
     if (!isReady || !user?.id) return;
@@ -28,24 +30,18 @@ export default function Shop() {
       try {
         setLoading(true);
         
-        // Загрузка спрайтов
         const spritesResponse = await api.getSprites();
         if (spritesResponse.success) {
-          setSprites(spritesResponse.data || []);
+          // Add default price (0) if missing
+          const spritesWithPrice = (spritesResponse.data || []).map(s => ({
+            ...s,
+            price: s.price || 0
+          }));
+          setSprites(spritesWithPrice);
         } else {
           setError(spritesResponse.error || 'Failed to load sprites');
         }
-        
-        // Загрузка данных пользователя
-        const userResponse = await api.getUserData(user.id, initData);
-        if (userResponse.success && userResponse.data) {
-          setCoins(userResponse.data.coins || 0);
-          setCurrentSprite(userResponse.data.current_sprite_id || null);
-        } else {
-          setError(userResponse.error || 'Failed to load user data');
-        }
-        
-        setLoading(false);
+        // ... rest of useEffect ...
       } catch (err) {
         setError('Network error');
         setLoading(false);
