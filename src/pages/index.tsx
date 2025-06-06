@@ -126,7 +126,7 @@ export default function Home() {
           
           // Загрузка текущего спрайта
           if (userData.current_sprite_id) {
-            const spriteResponse = await api.getSpritesUrl(userData.current_sprite_id);
+            const spriteResponse = await api.getSprites(userData.current_sprite_id);
             if (spriteResponse.success) {
               setSpriteUrl(spriteResponse.data.image_url);
             }
