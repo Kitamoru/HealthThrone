@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import crypto from 'crypto';
+import { format } from 'date-fns';
 
 console.log("[Init API] Initializing init API handler");
 
@@ -198,6 +199,90 @@ export default async function handler(
 
   } catch (error) {
     console.error('[Init API] Unhandled error:', error);
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    });
+  }
+}
+};
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const { initData, ref } = req.body;
+    
+    if (!initData) {
+      return res.status(400).json({ error: 'initData required' });
+    }
+
+    if (!verifyTelegramData(initData)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const params = new URLSearchParams(initData);
+    const user = JSON.parse(params.get('user') || '{}');
+    const user_id = user?.id;
+
+    if (!user_id) {
+      return res.status(400).json({ error: 'Invalid user data' });
+    }
+
+    const now = new Date().toISOString();
+    const today = format(new Date(), 'yyyy-MM-dd');
+
+    // Получаем существующего пользователя
+    const { data: existingUser, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('telegram_id', user_id)
+      .maybeSingle();
+
+    let coinsToAdd = 0;
+    
+    // Начисляем монеты за первый вход сегодня
+    if (!existingUser || existingUser.last_login_date !== today) {
+      coinsToAdd = 100;
+    }
+
+    // Обновляем данные пользователя
+    const updates = {
+      telegram_id: user_id,
+      first_name: user.first_name,
+      last_name: user.last_name || null,
+      username: user.username || null,
+      coins: (existingUser?.coins || 0) + coinsToAdd,
+      last_login_date: today,
+      updated_at: now
+    };
+
+    const { data: userData, error: upsertError } = await supabase
+      .from('users')
+      .upsert(updates, {
+        onConflict: 'telegram_id',
+        ignoreDuplicates: false
+      })
+      .select()
+      .single();
+
+    if (upsertError) throw upsertError;
+
+    // Обработка реферальной ссылки (существующая логика) ...
+
+    return res.status(200).json({
+      success: true,
+      user: userData,
+      coinsAdded: coinsToAdd,
+      isNewUser: !existingUser
+    });
+
+  } catch (error) {
     return res.status(500).json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : String(error)
