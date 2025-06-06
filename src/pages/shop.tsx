@@ -7,6 +7,7 @@ import { api, Sprite } from '../lib/api';
 
 interface UserData {
   id: number;
+  telegram_id: number; // Добавлено
   username?: string;
   first_name?: string;
   last_name?: string;
@@ -14,7 +15,7 @@ interface UserData {
   burnout_level: number;
   current_sprite_id?: number | null;
   last_attempt_date?: string;
-  purchased_sprites: number[]; // Добавлено: массив купленных спрайтов
+  // Убрано purchased_sprites, так как используем отдельный запрос
 }
 
 type SpriteWithPrice = Omit<Sprite, 'price'> & { price: number };
@@ -26,7 +27,8 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [coins, setCoins] = useState(0);
   const [currentSprite, setCurrentSprite] = useState<number | null>(null);
-  const [purchasedSprites, setPurchasedSprites] = useState<number[]>([]); // Состояние купленных спрайтов
+  const [ownedSprites, setOwnedSprites] = useState<number[]>([]); // Изменено на ownedSprites
+  const [appUserId, setAppUserId] = useState<number | null>(null); // Добавлено для API-вызовов
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -36,8 +38,8 @@ export default function Shop() {
       try {
         setLoading(true);
         
-        // Загрузка спрайтов
-        const spritesResponse = await api.getSprites();
+        // Загрузка спрайтов с передачей initData
+        const spritesResponse = await api.getSprites(initData);
         if (spritesResponse.success) {
           const spritesWithPrice: SpriteWithPrice[] = (spritesResponse.data || []).map(sprite => ({
             ...sprite,
@@ -52,9 +54,17 @@ export default function Shop() {
         const userResponse = await api.getUserData(user.id, initData);
         if (userResponse.success && userResponse.data) {
           const userData = userResponse.data as UserData;
+          setAppUserId(userData.id); // Сохраняем ID пользователя приложения
           setCoins(userData.coins || 0);
           setCurrentSprite(userData.current_sprite_id || null);
-          setPurchasedSprites(userData.purchased_sprites || []); // Загружаем купленные спрайты
+          
+          // Загрузка купленных спрайтов
+          const ownedResponse = await api.getOwnedSprites(userData.id, initData);
+          if (ownedResponse.success) {
+            setOwnedSprites(ownedResponse.data || []);
+          } else {
+            setError(ownedResponse.error || 'Ошибка загрузки спрайтов');
+          }
         } else {
           setError(userResponse.error || 'Не удалось загрузить данные пользователя');
         }
@@ -71,8 +81,8 @@ export default function Shop() {
 
   const handlePurchase = async (spriteId: number) => {
     const sprite = sprites.find(s => s.id === spriteId);
-    if (!sprite) {
-      setError('Спрайт не найден');
+    if (!sprite || !appUserId) {
+      setError(sprite ? 'User ID not available' : 'Спрайт не найден');
       return;
     }
     
@@ -82,11 +92,10 @@ export default function Shop() {
     }
     
     try {
-      const response = await api.purchaseSprite(user!.id, spriteId, initData);
+      const response = await api.purchaseSprite(appUserId, spriteId, initData);
       if (response.success) {
         setCoins(coins - sprite.price);
-        // Добавляем купленный спрайт в список
-        setPurchasedSprites(prev => [...prev, spriteId]);
+        setOwnedSprites(prev => [...prev, spriteId]); // Обновляем локально
         setError(null);
       } else {
         setError(response.error || 'Ошибка при покупке');
@@ -97,18 +106,13 @@ export default function Shop() {
   };
 
   const handleEquip = async (spriteId: number) => {
+    if (!appUserId) {
+      setError('User ID not available');
+      return;
+    }
+    
     try {
-      // Временная функция, пока не реализована в API
-      const mockEquip = async () => {
-        return new Promise((resolve) => {
-          setTimeout(() => {
-            resolve({ success: true });
-          }, 300);
-        });
-      };
-      
-      const response: any = await mockEquip();
-      
+      const response = await api.equipSprite(appUserId, spriteId, initData);
       if (response.success) {
         setCurrentSprite(spriteId);
         setError(null);
@@ -135,45 +139,50 @@ export default function Shop() {
         {error && <div className="error">{error}</div>}
         
         <div className="sprites-grid">
-          {sprites.map(sprite => (
-            <div key={sprite.id} className="sprite-card">
-              <img 
-                src={sprite.image_url} 
-                alt={sprite.name} 
-                className="sprite-image"
-              />
-              <div className="sprite-info">
-                <h3>{sprite.name}</h3>
-                <div className="sprite-price">
-                  Цена: {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'}
-                </div>
-                <div className="sprite-actions">
-                  {purchasedSprites.includes(sprite.id) ? (
-                    <button 
-                      className="equip-btn"
-                      onClick={() => handleEquip(sprite.id)}
-                      disabled={currentSprite === sprite.id}
-                    >
-                      {currentSprite === sprite.id ? 'Установлен' : 'Установить'}
-                    </button>
-                  ) : (
-                    coins >= sprite.price ? (
-                      <button 
-                        className="buy-btn"
-                        onClick={() => handlePurchase(sprite.id)}
-                      >
-                        Купить
-                      </button>
+          {sprites.map(sprite => {
+            const isOwned = ownedSprites.includes(sprite.id);
+            const isEquipped = currentSprite === sprite.id;
+            
+            return (
+              <div key={sprite.id} className="sprite-card">
+                <img 
+                  src={sprite.image_url} 
+                  alt={sprite.name} 
+                  className="sprite-image"
+                />
+                <div className="sprite-info">
+                  <h3>{sprite.name}</h3>
+                  <div className="sprite-price">
+                    Цена: {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'}
+                  </div>
+                  <div className="sprite-actions">
+                    {!isOwned ? (
+                      coins >= sprite.price ? (
+                        <button 
+                          className="buy-btn"
+                          onClick={() => handlePurchase(sprite.id)}
+                        >
+                          Купить
+                        </button>
+                      ) : (
+                        <button className="buy-btn disabled" disabled>
+                          Недостаточно
+                        </button>
+                      )
                     ) : (
-                      <button className="buy-btn disabled" disabled>
-                        Недостаточно
+                      <button 
+                        className="equip-btn"
+                        onClick={() => handleEquip(sprite.id)}
+                        disabled={isEquipped}
+                      >
+                        {isEquipped ? 'Установлен' : 'Установить'}
                       </button>
-                    )
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
