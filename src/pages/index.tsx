@@ -108,7 +108,7 @@ export default function Home() {
   const [alreadyAttempted, setAlreadyAttempted] = useState(false);
   const [spriteUrl, setSpriteUrl] = useState<string | undefined>(undefined);
 
-  useEffect(() => {
+   useEffect(() => {
     const loadUserData = async () => {
       if (!user?.id) return;
       
@@ -124,11 +124,11 @@ export default function Home() {
             setAlreadyAttempted(true);
           }
           
-          // Загрузка текущего спрайта (ИСПРАВЛЕНО)
+          // Загрузка текущего спрайта с проверкой данных
           if (userData.current_sprite_id) {
-            // Используем новый метод getSprite
             const spriteResponse = await api.getSprite(userData.current_sprite_id);
-            if (spriteResponse.success) {
+            // Добавлена проверка на существование данных
+            if (spriteResponse.success && spriteResponse.data) {
               setSpriteUrl(spriteResponse.data.image_url);
             }
           }
