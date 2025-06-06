@@ -4,6 +4,10 @@ export function validateTelegramInitData(initData: string): boolean {
   const TOKEN = process.env.TOKEN!;
   const data = new URLSearchParams(initData);
   const hash = data.get('hash');
+  
+  // Если хэша нет - данные невалидны
+  if (!hash) return false;
+  
   data.delete('hash');
 
   // Сортируем параметры по ключу
@@ -23,18 +27,18 @@ export function validateTelegramInitData(initData: string): boolean {
     .update(dataString)
     .digest('hex');
   
-// lib/telegramAuth.ts
+  return computedHash === hash;
+}
+
 export function parseInitData(initData: string): { user?: any } {
   const params = new URLSearchParams(initData);
   const userParam = params.get('user');
   if (!userParam) return {};
+  
   try {
     return { user: JSON.parse(userParam) };
   } catch (e) {
     console.error('Failed to parse user from initData', e);
     return {};
   }
-}
-
-  return computedHash === hash;
 }
