@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '../../../lib/supabase';
-import { validateTelegramInitData } from '../../../lib/telegramAuth';
+import { supabase } from '@/lib/supabase';
+import { validateTelegramInitData } from '@/lib/telegramAuth';
 
 export default async function handler(
   req: NextApiRequest,
@@ -17,20 +17,15 @@ export default async function handler(
   }
 
   try {
-    // Получение всех спрайтов
+    // Получаем все спрайты
     const { data: sprites, error } = await supabase
       .from('sprites')
-      .select('*')
-      .order('id', { ascending: true });
+      .select('*');
 
     if (error) throw error;
 
-    return res.status(200).json({ 
-      success: true, 
-      data: sprites || []
-    });
+    return res.status(200).json({ success: true, data: sprites });
   } catch (error) {
-    console.error('Sprites error:', error);
-    return res.status(500).json({ error: 'Failed to get sprites' });
+    return res.status(500).json({ error: 'Failed to fetch sprites' });
   }
 }
