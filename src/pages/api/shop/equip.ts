@@ -11,28 +11,38 @@ export default async function handler(
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  if (req.method !== 'GET') {
+  if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const userId = req.query.userId as string;
-  if (!userId) {
-    return res.status(400).json({ error: 'userId required' });
+  const { userId, spriteId } = req.body;
+  if (!userId || !spriteId) {
+    return res.status(400).json({ error: 'userId and spriteId required' });
   }
 
   try {
-    // Получаем список купленных спрайтов
-    const { data, error } = await supabase
+    // Проверяем, что спрайт принадлежит пользователю
+    const { data: ownership, error: ownershipError } = await supabase
       .from('user_sprites')
-      .select('sprite_id')
-      .eq('user_id', userId);
+      .select('id')
+      .eq('user_id', userId)
+      .eq('sprite_id', spriteId)
+      .single();
+
+    if (ownershipError || !ownership) {
+      return res.status(400).json({ error: 'Sprite not owned by user' });
+    }
+
+    // Обновляем текущий спрайт пользователя
+    const { error } = await supabase
+      .from('users')
+      .update({ current_sprite_id: spriteId })
+      .eq('id', userId);
 
     if (error) throw error;
 
-    // Преобразуем в массив ID
-    const spriteIds = data.map(item => item.sprite_id);
-    return res.status(200).json({ success: true, data: spriteIds });
+    return res.status(200).json({ success: true });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to fetch owned sprites' });
+    return res.status(500).json({ error: 'Failed to equip sprite' });
   }
 }
