@@ -1,4 +1,5 @@
 console.log('Fetching owned sprites for user:', userId)
+
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '../../../lib/supabase';
 import { validateTelegramInitData } from '../../../lib/telegramAuth';
