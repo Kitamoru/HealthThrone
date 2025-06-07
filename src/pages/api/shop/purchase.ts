@@ -66,10 +66,10 @@ export default async function handler(
 
     if (updateError) throw updateError;
 
-    // Добавление спрайта в купленные
+    // Добавление спрайта в купленные (ИСПРАВЛЕННАЯ СТРОКА)
     const { error: purchaseError } = await supabase
       .from('user_sprites')
-      .insert([{ user:telegram_id, sprite_id: spriteId }]);
+      .insert([{ user: telegramId, sprite_id: spriteId }]); // <-- Замена telegram_id на telegramId
 
     if (purchaseError) throw purchaseError;
 
