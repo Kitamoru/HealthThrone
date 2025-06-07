@@ -232,7 +232,7 @@ export default function Home() {
               Вы уже прошли опрос сегодня. Возвращайтесь завтра!
             </div>
           </div>
-        ) : surveyCompleted ? (
+       ) : surveyCompleted ? ( // Исправлено здесь
           <div className="time-message">
             <div className="info-message">
               🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
