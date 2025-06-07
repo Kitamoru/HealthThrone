@@ -7,7 +7,6 @@ console.log("[Init API] Initializing init API handler");
 
 const verifyTelegramData = (initData: string): boolean => {
   console.log("[Init API] Verifying Telegram data");
-  await setUserContext(user_id);
 
   try {
     const params = new URLSearchParams(initData);
@@ -88,7 +87,7 @@ export default async function handler(
     const today = format(new Date(), 'yyyy-MM-dd');
     console.log(`[Init API] Current date: ${today}, timestamp: ${now}`);
 
-    // Проверяем существующего пользователя
+    // Check existing user
     const { data: existingUser, error: userError } = await supabase
       .from('users')
       .select('id, coins, last_login_date, created_at')
@@ -134,7 +133,7 @@ export default async function handler(
 
       console.log('[Init API] User upsert successful:', JSON.stringify(userData, null, 2));
 
-      // Обработка реферальной ссылки
+      // Referral handling
       if (ref && typeof ref === 'string') {
         try {
           const cleanRef = ref.replace('ref_', '');
@@ -180,7 +179,7 @@ export default async function handler(
                   } else {
                     console.log(`[Referral] Friendship added: ${referrer.id} -> ${userData.id}`);
                     
-                    // Начисление 200 монет рефереру
+                    // Add referral bonus
                     const { error: updateError } = await supabase
                       .from('users')
                       .update({ coins: referrer.coins + 200 })
