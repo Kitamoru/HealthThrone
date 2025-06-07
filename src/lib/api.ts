@@ -128,15 +128,15 @@ class Api {
   }
 
   async updateAttemptDate(
-    telegramId: number,
-    initData?: string
-  ): Promise<ApiResponse> {
-    return this.request('/updateAttemptDate', {
-      method: 'POST',
-      headers: this.getHeaders(initData),
-      body: JSON.stringify({ telegramId })
-    });
-  }
+  telegramId: number,
+  initData?: string
+): Promise<ApiResponse> {
+  return this.request('/updateAttemptDate', {
+    method: 'POST',
+    headers: this.getHeaders(initData),
+    body: JSON.stringify({ telegramId })
+  });
+}
 
   async getOwnedSprites(
     telegramId: number, 
