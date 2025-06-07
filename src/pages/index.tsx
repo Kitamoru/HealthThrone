@@ -110,38 +110,36 @@ export default function Home() {
 
    // Замените useEffect на этот код
 useEffect(() => {
-  const loadUserData = async () => {
-    if (!user?.id) return;
-    
-    try {
-      const response = await api.getUserData(user.id, initData);
-      if (response.success && response.data) {
-        const userData = response.data as UserProfile;
-        setBurnoutLevel(userData.burnout_level || 0);
-        
-        // Проверка последней попытки
-        const today = format(new Date(), 'yyyy-MM-dd');
-        // Используем last_attempt_date вместо last_survey_date
-        if (userData.last_attempt_date === today) {
-          setAlreadyAttempted(true);
-        }
-        
-        if (userData.current_sprite_id) {
-          const spriteResponse = await api.getSprite(userData.current_sprite_id)
-          if (spriteResponse.success && spriteResponse.data) {
-            setSpriteUrl(spriteResponse.data.image_url);
+    const loadUserData = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const response = await api.getUserData(user.id, initData);
+        if (response.success && response.data) {
+          const userData = response.data as UserProfile;
+          setBurnoutLevel(userData.burnout_level || 0);
+          
+          const today = format(new Date(), 'yyyy-MM-dd');
+          if (userData.last_attempt_date === today) {
+            setAlreadyAttempted(true);
+          }
+          
+          if (userData.current_sprite_id) {
+            const spriteResponse = await api.getSprite(userData.current_sprite_id)
+            if (spriteResponse.success && spriteResponse.data) {
+              setSpriteUrl(spriteResponse.data.image_url);
+            }
           }
         }
+        setLoading(false);
+      } catch (err) {
+        console.error('Error loading user data:', err);
+        setLoading(false);
       }
-      setLoading(false);
-    } catch (err) {
-      console.error('Error loading user data:', err);
-      setLoading(false);
-    }
-  };
-  
-  loadUserData();
-}, [user?.id, initData, router.pathname]); // Добавлен router.pathname в зависимости
+    };
+    
+    loadUserData();
+  }, [user?.id, initData]);
 
   const handleAnswer = async (questionId: number, isPositive: boolean) => {
     const question = questions.find(q => q.id === questionId);
@@ -165,7 +163,6 @@ useEffect(() => {
       }
     }
 
-    // Если все вопросы отвечены
     const allAnswered = questions.every(q => q.id in newAnswers);
     if (allAnswered && user?.id) {
       try {
@@ -176,6 +173,7 @@ useEffect(() => {
       }
     }
   };
+
 
   if (loading) {
     return <Loader />;
