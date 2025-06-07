@@ -101,6 +101,18 @@ export default function Shop() {
       return;
     }
     
+    // Обновляем монеты при изменении
+  const updateCoins = async () => {
+    if (!user?.id) return;
+    
+    const response = await api.getUserData(user.id, initData);
+    if (response.success && response.data) {
+      const userData = response.data as UserData;
+      setCoins(userData.coins || 0);
+    }
+  };
+
+  const handlePurchase = async (spriteId: number) => {
     try {
       const response = await api.purchaseSprite(user.id, spriteId, initData);
       if (response.success) {
