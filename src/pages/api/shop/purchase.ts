@@ -17,33 +17,22 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { userId, spriteId } = req.body;
-  if (typeof userId !== 'number' || typeof spriteId !== 'number') {
+  const { telegramId, spriteId } = req.body;
+  if (typeof telegramId !== 'number' || typeof spriteId !== 'number') {
     return res.status(400).json({ error: 'Invalid request body' });
   }
 
   try {
-    console.log('Processing purchase for user:', userId, 'sprite:', spriteId);
+    console.log('Processing purchase for user:', telegramId, 'sprite:', spriteId);
     
-    // Парсим initData для получения user
-    const params = new URLSearchParams(initData);
-    const userParam = params.get('user');
-    if (!userParam) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-    const user = JSON.parse(userParam);
-    if (!user || !user.id) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     // Устанавливаем контекст пользователя для RLS
-    await setUserContext(user.id);
+    await setUserContext(telegramId);
 
     // Проверка баланса
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('coins')
-      .eq('id', userId)
+      .eq('telegram_id', telegramId)
       .single();
 
     if (userError) throw userError;
@@ -73,14 +62,14 @@ export default async function handler(
     const { error: updateError } = await supabase
       .from('users')
       .update({ coins: userData.coins - price })
-      .eq('id', userId);
+      .eq('telegram_id', telegramId);
 
     if (updateError) throw updateError;
 
     // Добавление спрайта в купленные
     const { error: purchaseError } = await supabase
       .from('user_sprites')
-      .insert([{ user_id: userId, sprite_id: spriteId }]);
+      .insert([{ user:telegram_id, sprite_id: spriteId }]);
 
     if (purchaseError) throw purchaseError;
 
