@@ -15,7 +15,7 @@ export default async function handler(
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
-
+await setUserContext(user_id);
   try {
     // Получаем все спрайты
     const { data: sprites, error } = await supabase
