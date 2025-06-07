@@ -52,7 +52,8 @@ export interface Sprite {
   name: string;
   image_url: string;
   price: number;
-  created_at: string;
+  created_at?: string;
+  isEquipped?: boolean;
 }
 
 export interface UserSprite {
