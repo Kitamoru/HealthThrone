@@ -48,7 +48,7 @@ export default async function handler(
       console.error('[Data API] User not found');
       return res.status(404).json({ error: 'User not found' });
     }
-
+    await setUserContext(userIdNumber);
     console.log('[Data API] User data found:', JSON.stringify(user, null, 2));
     return res.status(200).json({
       success: true,
