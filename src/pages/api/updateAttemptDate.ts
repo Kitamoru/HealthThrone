@@ -17,14 +17,14 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { userId } = req.body;
+  const { telegramId } = req.body;
   const today = format(new Date(), 'yyyy-MM-dd');
 
   try {
     const { error } = await supabase
       .from('users')
       .update({ last_attempt_date: today })
-      .eq('telegram_id', userId);
+      .eq('telegram_id', telegramId);
 
     if (error) throw error;
 
