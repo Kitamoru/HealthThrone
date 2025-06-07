@@ -6,7 +6,6 @@ import { Loader } from '../components/Loader';
 import { api, Sprite } from '../lib/api';
 
 interface UserData {
-  id: number;
   telegram_id: number;
   username?: string;
   first_name?: string;
@@ -27,34 +26,32 @@ export default function Shop() {
   const [coins, setCoins] = useState(0);
   const [currentSprite, setCurrentSprite] = useState<number | null>(null);
   const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
-  const [appUserId, setAppUserId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isReady || !user?.id) return;
     
     const fetchData = async () => {
-  try {
-    setLoading(true);
-    
-    // Загрузка данных пользователя
-    const userResponse = await api.getUserData(user.id, initData);
-    if (!userResponse.success || !userResponse.data) {
-      setError(userResponse.error || 'Не удалось загрузить данные пользователя');
-      setLoading(false);
-      return;
-    }
+      try {
+        setLoading(true);
+        
+        // Загрузка данных пользователя
+        const userResponse = await api.getUserData(user.id, initData);
+        if (!userResponse.success || !userResponse.data) {
+          setError(userResponse.error || 'Не удалось загрузить данные пользователя');
+          setLoading(false);
+          return;
+        }
 
-    const userData = userResponse.data as UserData;
-    setAppUserId(userData.id);
-    setCoins(userData.coins || 0);
-    setCurrentSprite(userData.current_sprite_id || null);
-    
-    // Загрузка спрайтов и купленных спрайтов
-    const [spritesResponse, ownedResponse] = await Promise.all([
-      api.getSprites(initData),
-      api.getOwnedSprites(userData.id, initData) // Используем внутренний ID
-    ]);
+        const userData = userResponse.data as UserData;
+        setCoins(userData.coins || 0);
+        setCurrentSprite(userData.current_sprite_id || null);
+        
+        // Параллельная загрузка спрайтов и купленных спрайтов
+        const [spritesResponse, ownedResponse] = await Promise.all([
+          api.getSprites(initData),
+          api.getOwnedSprites(user.id, initData)
+        ]);
 
         if (spritesResponse.success) {
           const spritesWithPrice: SpriteWithPrice[] = (spritesResponse.data || []).map(sprite => ({
@@ -83,14 +80,19 @@ export default function Shop() {
   }, [isReady, user, initData]);
 
   const handlePurchase = async (spriteId: number) => {
+    if (!user) {
+      setError('Пользователь не определен');
+      return;
+    }
+
     if (ownedSprites.includes(spriteId)) {
       setError('Уже куплено');
       return;
     }
     
     const sprite = sprites.find(s => s.id === spriteId);
-    if (!sprite || !appUserId) {
-      setError(sprite ? 'User ID not available' : 'Спрайт не найден');
+    if (!sprite) {
+      setError('Спрайт не найден');
       return;
     }
     
@@ -100,7 +102,7 @@ export default function Shop() {
     }
     
     try {
-      const response = await api.purchaseSprite(appUserId, spriteId, initData);
+      const response = await api.purchaseSprite(user.id, spriteId, initData);
       if (response.success) {
         setCoins(coins - sprite.price);
         setOwnedSprites(prev => [...prev, spriteId]);
@@ -114,13 +116,13 @@ export default function Shop() {
   };
 
   const handleEquip = async (spriteId: number) => {
-    if (!appUserId) {
-      setError('User ID not available');
+    if (!user) {
+      setError('Пользователь не определен');
       return;
     }
     
     try {
-      const response = await api.equipSprite(appUserId, spriteId, initData);
+      const response = await api.equipSprite(user.id, spriteId, initData);
       if (response.success) {
         setCurrentSprite(spriteId);
         setError(null);
@@ -211,4 +213,3 @@ export default function Shop() {
     </div>
   );
 }
- 
