@@ -220,10 +220,13 @@ export default function Home() {
       <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
       
       <div className="content">
-        {alreadyAttempted || allAnswered ? (
-          <div className="time-message">
-            <div className="info-message">
-               {alreadyAttempted ? (
+        {apiError && (
+          <div className="error-message">
+            {apiError}
+          </div>
+        )}
+        
+        {alreadyAttempted ? (
           <div className="time-message">
             <div className="info-message">
               Вы уже прошли опрос сегодня. Возвращайтесь завтра!
