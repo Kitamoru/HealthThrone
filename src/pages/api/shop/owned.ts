@@ -67,9 +67,9 @@ export default async function handler(
 
     // Получаем список купленных спрайтов
     const { data, error: dbError } = await supabase
-      .from('user_sprites')
-      .select('sprite_id')
-      .eq('user_id', userIdNumber);
+  .from('user_sprites')
+  .select('sprite_id')
+  .eq('user_id', userIdNumber);
 
     if (dbError) {
       console.error('[Shop/Owned] Database error:', dbError);
