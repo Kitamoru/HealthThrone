@@ -119,6 +119,8 @@ export default function Shop() {
         setCoins(coins - sprite.price);
         setOwnedSprites(prev => [...prev, spriteId]);
         setError(null);
+         if (response.success) {
+      await updateCoins(); // Обновляем баланс
       } else {
         setError(response.error || 'Ошибка при покупке');
       }
