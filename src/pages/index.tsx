@@ -139,52 +139,49 @@ useEffect(() => {
   }, [user?.id, initData]);
 
   const handleAnswer = async (questionId: number, isPositive: boolean) => {
-    if (alreadyAttempted) return;
+  if (alreadyAttempted || !user) return; // Добавлена проверка на наличие user
 
-    const question = questions.find(q => q.id === questionId);
-    if (!question) return;
-    
-    const newAnswers = {
-      ...answers,
-      [questionId]: isPositive
-    };
-    setAnswers(newAnswers);
-
-    // Рассчитываем новый уровень на основе начального уровня и ответов
-    let answeredDelta = 0;
-    Object.entries(newAnswers).forEach(([id, ans]) => {
-      const qId = parseInt(id);
-      const q = questions.find(q => q.id === qId);
-      if (q && ans) {
-        answeredDelta += q.weight;
-      }
-    });
-    
-    // Новый уровень = начальный уровень + набранные баллы
-    const newLevel = Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
-    setBurnoutLevel(newLevel);
-
-    // Сохраняем промежуточный прогресс
-    if (user?.id) {
-      try {
-        await api.updateBurnoutLevel(user.id, newLevel, initData);
-      } catch (error) {
-        console.error('Error saving burnout level:', error);
-      }
-    }
-
-    // Проверяем завершение опроса
-    const allAnswered = questions.every(q => q.id in newAnswers);
-    if (allAnswered && !alreadyAttempted) {
-      try {
-        await api.updateAttemptDate(user.id, initData);
-        setAlreadyAttempted(true);
-      } catch (error) {
-        console.error('Failed to update attempt date:', error);
-        setApiError('Ошибка сохранения данных. Попробуйте еще раз.');
-      }
-    }
+  const question = questions.find(q => q.id === questionId);
+  if (!question) return;
+  
+  const newAnswers = {
+    ...answers,
+    [questionId]: isPositive
   };
+  setAnswers(newAnswers);
+
+  // Рассчитываем новый уровень на основе начального уровня и ответов
+  let answeredDelta = 0;
+  Object.entries(newAnswers).forEach(([id, ans]) => {
+    const qId = parseInt(id);
+    const q = questions.find(q => q.id === qId);
+    if (q && ans) {
+      answeredDelta += q.weight;
+    }
+  });
+  
+  const newLevel = Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
+  setBurnoutLevel(newLevel);
+
+  // Сохраняем промежуточный прогресс
+  try {
+    await api.updateBurnoutLevel(user.id, newLevel, initData); // user гарантированно есть
+  } catch (error) {
+    console.error('Error saving burnout level:', error);
+  }
+
+  // Проверяем завершение опроса
+  const allAnswered = questions.every(q => q.id in newAnswers);
+  if (allAnswered && !alreadyAttempted) {
+    try {
+      await api.updateAttemptDate(user.id, initData); // user гарантированно есть
+      setAlreadyAttempted(true);
+    } catch (error) {
+      console.error('Failed to update attempt date:', error);
+      setApiError('Ошибка сохранения данных. Попробуйте еще раз.');
+    }
+  }
+};
 
 
   if (loading) {
