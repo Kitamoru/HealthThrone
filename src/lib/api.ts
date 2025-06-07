@@ -139,13 +139,21 @@ class Api {
 
   // Исправлено: возвращаем массив ID спрайтов
   async getOwnedSprites(
-    userId: number, 
-    initData?: string
-  ): Promise<ApiResponse<number[]>> {
-    return this.request(`/shop/owned?userId=${userId}`, {
-      headers: this.getHeaders(initData)
-    });
+  userId: number, 
+  initData?: string
+): Promise<ApiResponse<number[]>> {
+  // Добавить проверку на undefined
+  if (userId === undefined || userId === null) {
+    return {
+      success: false,
+      error: 'User ID is missing'
+    };
   }
+  
+  return this.request(`/shop/owned?userId=${userId}`, {
+    headers: this.getHeaders(initData)
+  });
+}
 
   async equipSprite(
     userId: number, 
