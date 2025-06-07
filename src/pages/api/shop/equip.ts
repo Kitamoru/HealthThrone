@@ -15,12 +15,25 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { userId, spriteId } = req.body;
-  if (!userId || !spriteId) {
-    return res.status(400).json({ error: 'userId and spriteId required' });
+  const { telegramId, spriteId } = req.body;
+  if (!telegramId || !spriteId) {
+    return res.status(400).json({ error: 'telegramId and spriteId required' });
   }
 
   try {
+    // Находим пользователя по telegram_id
+    const { data: userRecord, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('telegram_id', telegramId)
+      .single();
+
+    if (userError || !userRecord) {
+      return res.status(400).json({ error: 'User not found' });
+    }
+
+    const userId = userRecord.id;
+
     // Проверяем, что спрайт принадлежит пользователю
     const { data: ownership, error: ownershipError } = await supabase
       .from('user_sprites')
@@ -37,7 +50,7 @@ export default async function handler(
     const { error } = await supabase
       .from('users')
       .update({ current_sprite_id: spriteId })
-      .eq('id', userId);
+      .eq('telegram_id', telegramId);
 
     if (error) throw error;
 
