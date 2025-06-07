@@ -7,6 +7,7 @@ console.log("[Init API] Initializing init API handler");
 
 const verifyTelegramData = (initData: string): boolean => {
   console.log("[Init API] Verifying Telegram data");
+  await setUserContext(user_id);
 
   try {
     const params = new URLSearchParams(initData);
