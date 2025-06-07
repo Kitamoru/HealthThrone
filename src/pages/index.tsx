@@ -119,16 +119,10 @@ useEffect(() => {
           const userData = response.data as UserProfile;
           setBurnoutLevel(userData.burnout_level || 0);
           
+          // Проверка последней попытки
           const today = format(new Date(), 'yyyy-MM-dd');
           if (userData.last_attempt_date === today) {
             setAlreadyAttempted(true);
-          }
-          
-          if (userData.current_sprite_id) {
-            const spriteResponse = await api.getSprite(userData.current_sprite_id)
-            if (spriteResponse.success && spriteResponse.data) {
-              setSpriteUrl(spriteResponse.data.image_url);
-            }
           }
         }
         setLoading(false);
@@ -142,8 +136,7 @@ useEffect(() => {
   }, [user?.id, initData]);
 
   const handleAnswer = async (questionId: number, isPositive: boolean) => {
-    const question = questions.find(q => q.id === questionId);
-    if (!question) return;
+    if (alreadyAttempted) return; // Защита от повторных ответов
 
     const newAnswers = {
       ...answers,
@@ -164,12 +157,16 @@ useEffect(() => {
     }
 
     const allAnswered = questions.every(q => q.id in newAnswers);
-    if (allAnswered && user?.id) {
+     if (allAnswered && user?.id && !alreadyAttempted) {
       try {
+        // Сохраняем финальный уровень
+        await api.updateBurnoutLevel(user.id, newLevel, initData);
+        
+        // Обновляем дату попытки
         await api.updateAttemptDate(user.id, initData);
         setAlreadyAttempted(true);
       } catch (error) {
-        console.error('Failed to update attempt date:', error);
+        console.error('Failed to update data:', error);
       }
     }
   };
