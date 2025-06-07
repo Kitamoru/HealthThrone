@@ -8,7 +8,6 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const initData = req.headers['x-telegram-init-data'] as string;
-  
   if (!initData || !validateTelegramInitData(initData)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
@@ -18,8 +17,6 @@ export default async function handler(
   }
 
   const { telegramId } = req.body;
-  
-  // Добавляем проверку наличия telegramId
   if (!telegramId) {
     return res.status(400).json({ error: 'telegramId is required' });
   }
@@ -27,11 +24,10 @@ export default async function handler(
   const today = format(new Date(), 'yyyy-MM-dd');
 
   try {
-    // Исправляем userId на telegramId и меняем поле для сравнения
     const { error } = await supabase
       .from('users')
       .update({ last_attempt_date: today })
-      .eq('telegram_id', telegramId); // Используем telegram_id вместо id
+      .eq('telegram_id', telegramId);
 
     if (error) throw error;
 
