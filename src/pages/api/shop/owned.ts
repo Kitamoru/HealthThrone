@@ -49,15 +49,21 @@ export default async function handler(
     console.log('[Shop/Owned] User context set for Telegram user:', user.id);
 
     // Получаем список купленных спрайтов
-    const { data, error: dbError } = await supabase
-      .from('user_sprites')
-      .select('sprite_id')
-      .eq('user:telegram_id', telegramIdNumber);
+    const { data: userData, error: userError } = await supabase
+  .from('users')
+  .select('id')
+  .eq('telegram_id', telegramId)
+  .single();
 
-    if (dbError) {
-      console.error('[Shop/Owned] Database error:', dbError);
-      throw dbError;
-    }
+if (userError || !userData) {
+  throw new Error('User not found');
+}
+
+// Затем получаем спрайты по user_id
+const { data, error: dbError } = await supabase
+  .from('user_sprites')
+  .select('sprite_id')
+  .eq('user_id', userData.id);
 
     console.log(`[Shop/Owned] Retrieved ${data?.length} sprites for user ${telegramIdNumber}`);
     
