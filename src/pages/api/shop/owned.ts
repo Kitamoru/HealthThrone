@@ -28,7 +28,16 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const userId = req.query.userId as string;
+  // Обработка userId с учетом возможного массива значений
+  const rawUserId = req.query.userId;
+  let userId: string | number | undefined;
+  
+  if (Array.isArray(rawUserId)) {
+    userId = rawUserId[0]; // Берем первое значение если это массив
+  } else {
+    userId = rawUserId;
+  }
+
   console.log('[Shop/Owned] userId from query:', userId);
   
   if (!userId) {
@@ -37,7 +46,14 @@ export default async function handler(
   }
 
   try {
-    const userIdNumber = parseInt(userId, 10);
+    // Добавленная проверка типа
+    let userIdNumber: number;
+    if (typeof userId === 'number') {
+      userIdNumber = userId;
+    } else {
+      userIdNumber = parseInt(userId, 10);
+    }
+    
     console.log('[Shop/Owned] Parsed userIdNumber:', userIdNumber);
     
     if (isNaN(userIdNumber)) {
