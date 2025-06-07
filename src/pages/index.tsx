@@ -110,86 +110,110 @@ export default function Home() {
   const [alreadyAttempted, setAlreadyAttempted] = useState(false);
   const [spriteUrl, setSpriteUrl] = useState<string | undefined>(undefined);
 
-   // Замените useEffect на этот код
-useEffect(() => {
-    const loadUserData = async () => {
-      if (!user?.id) return;
-      setLoading(true);
-      
-      try {
-        const response = await api.getUserData(user.id, initData);
-        if (response.success && response.data) {
-          const userData = response.data as UserProfile;
-          const level = userData.burnout_level || 0;
-          setInitialBurnoutLevel(level); // Сохраняем начальный уровень
-          setBurnoutLevel(level);
-          
-          const today = format(new Date(), 'yyyy-MM-dd');
-          if (userData.last_attempt_date === today) {
-            setAlreadyAttempted(true);
-          }
-        }
-        setLoading(false);
-      } catch (err) {
-        console.error('Error loading user data:', err);
-        setLoading(false);
-      }
-    };
+     // Выносим загрузку данных в отдельную функцию
+  const loadUserData = useCallback(async () => {
+    if (!user?.id) return;
     
-    loadUserData();
+    try {
+      const response = await api.getUserData(user.id, initData);
+      if (response.success && response.data) {
+        const userData = response.data as UserProfile;
+        const level = userData.burnout_level || 0;
+        setInitialBurnoutLevel(level);
+        setBurnoutLevel(level);
+        
+        // Проверка последней попытки
+        const today = format(new Date(), 'yyyy-MM-dd');
+        if (userData.last_attempt_date === today) {
+          setAlreadyAttempted(true);
+        } else {
+          setAlreadyAttempted(false);
+          setAnswers({}); // Сбрасываем ответы если новый день
+        }
+      }
+    } catch (err) {
+      console.error('Error loading user data:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [user?.id, initData]);
 
+  // Загружаем данные при монтировании и изменении пользователя
+  useEffect(() => {
+    setLoading(true);
+    loadUserData();
+  }, [loadUserData]);
+
+  // Загружаем данные при возврате на страницу
+  useEffect(() => {
+    const handleRouteChange = () => {
+      if (router.pathname === '/') {
+        loadUserData();
+      }
+    };
+
+    router.events.on('routeChangeComplete', handleRouteChange);
+    return () => {
+      router.events.off('routeChangeComplete', handleRouteChange);
+    };
+  }, [loadUserData, router]);
+
   const handleAnswer = async (questionId: number, isPositive: boolean) => {
-  if (alreadyAttempted || !user) return; // Добавлена проверка на наличие user
+    if (alreadyAttempted || !user) return;
 
-  const question = questions.find(q => q.id === questionId);
-  if (!question) return;
-  
-  const newAnswers = {
-    ...answers,
-    [questionId]: isPositive
-  };
-  setAnswers(newAnswers);
+    const question = questions.find(q => q.id === questionId);
+    if (!question) return;
+    
+    const newAnswers = {
+      ...answers,
+      [questionId]: isPositive
+    };
+    setAnswers(newAnswers);
 
-  // Рассчитываем новый уровень на основе начального уровня и ответов
-  let answeredDelta = 0;
-  Object.entries(newAnswers).forEach(([id, ans]) => {
-    const qId = parseInt(id);
-    const q = questions.find(q => q.id === qId);
-    if (q && ans) {
-      answeredDelta += q.weight;
-    }
-  });
-  
-  const newLevel = Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
-  setBurnoutLevel(newLevel);
+    // Рассчитываем дельту на основе ответов
+    let answeredDelta = 0;
+    Object.entries(newAnswers).forEach(([id, ans]) => {
+      const qId = parseInt(id);
+      const q = questions.find(q => q.id === qId);
+      if (q && ans) {
+        answeredDelta += q.weight;
+      }
+    });
+    
+    const newLevel = Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
+    setBurnoutLevel(newLevel);
 
-  // Сохраняем промежуточный прогресс
-  try {
-    await api.updateBurnoutLevel(user.id, newLevel, initData); // user гарантированно есть
-  } catch (error) {
-    console.error('Error saving burnout level:', error);
-  }
-
-  // Проверяем завершение опроса
-  const allAnswered = questions.every(q => q.id in newAnswers);
-  if (allAnswered && !alreadyAttempted) {
+    // Сохраняем промежуточный прогресс
     try {
-      await api.updateAttemptDate(user.id, initData); // user гарантированно есть
-      setAlreadyAttempted(true);
+      await api.updateBurnoutLevel(user.id, newLevel, initData);
     } catch (error) {
-      console.error('Failed to update attempt date:', error);
-      setApiError('Ошибка сохранения данных. Попробуйте еще раз.');
+      console.error('Error saving burnout level:', error);
     }
-  }
-};
 
+    // Проверяем завершение опроса
+    const allAnswered = questions.every(q => q.id in newAnswers);
+    if (allAnswered && !alreadyAttempted) {
+      try {
+        await api.updateAttemptDate(user.id, initData);
+        setAlreadyAttempted(true);
+      } catch (error) {
+        console.error('Failed to update attempt date:', error);
+        setApiError('Ошибка сохранения данных. Попробуйте еще раз.');
+      }
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="error-message">
+        Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение.
+      </div>
+    );
+  }
 
   if (loading) {
     return <Loader />;
   }
-
-  const allAnswered = questions.every(q => q.id in answers);
 
   return (
     <div className="container">
