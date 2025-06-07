@@ -151,7 +151,7 @@ useEffect(() => {
       return q && ans ? sum + q.weight : sum;
     }, 0);
     
-    const newLevel = Math.max(0, Math.min(100, BurnoutLevel + answeredDelta));
+    const newLevel = Math.max(0, Math.min(100, setBurnoutLevel + answeredDelta));
     setBurnoutLevel(newLevel);
     
     // Сохраняем промежуточный прогресс
