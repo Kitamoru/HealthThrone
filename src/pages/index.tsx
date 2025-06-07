@@ -102,6 +102,7 @@ export default function Home() {
   const { user, initData } = useTelegram();
   const [questions] = useState<Question[]>(QUESTIONS);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
+  const [initialBurnoutLevel, setInitialBurnoutLevel] = useState(0); // Загруженный из базы уровень
   const [initialBurnoutLevel, setInitialBurnoutLevel] = useState(0); // Добавлено состояние для начального уровня
   const [burnoutLevel, setBurnoutLevel] = useState(0);
   const [loading, setLoading] = useState(true);
