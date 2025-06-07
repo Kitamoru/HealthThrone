@@ -102,6 +102,7 @@ export default function Home() {
   const { user, initData } = useTelegram();
   const [questions] = useState<Question[]>(QUESTIONS);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
+  const [initialBurnoutLevel, setInitialBurnoutLevel] = useState(0); // Добавлено состояние для начального уровня
   const [burnoutLevel, setBurnoutLevel] = useState(0);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -119,6 +120,7 @@ useEffect(() => {
         if (response.success && response.data) {
           const userData = response.data as UserProfile;
           const level = userData.burnout_level || 0;
+          setInitialBurnoutLevel(level); // Сохраняем начальный уровень
           setBurnoutLevel(level);
           
           const today = format(new Date(), 'yyyy-MM-dd');
@@ -138,22 +140,30 @@ useEffect(() => {
 
   const handleAnswer = async (questionId: number, isPositive: boolean) => {
     if (alreadyAttempted) return;
-    
+
     const question = questions.find(q => q.id === questionId);
     if (!question) return;
     
-    const newAnswers = { ...answers, [questionId]: isPositive };
+    const newAnswers = {
+      ...answers,
+      [questionId]: isPositive
+    };
     setAnswers(newAnswers);
+
+    // Рассчитываем новый уровень на основе начального уровня и ответов
+    let answeredDelta = 0;
+    Object.entries(newAnswers).forEach(([id, ans]) => {
+      const qId = parseInt(id);
+      const q = questions.find(q => q.id === qId);
+      if (q && ans) {
+        answeredDelta += q.weight;
+      }
+    });
     
-    const answeredQuestions = Object.keys(newAnswers).length;
-    const answeredDelta = Object.entries(newAnswers).reduce((sum, [id, ans]) => {
-      const q = questions.find(q => q.id === parseInt(id));
-      return q && ans ? sum + q.weight : sum;
-    }, 0);
-    
-    const newLevel = Math.max(0, Math.min(100, setBurnoutLevel + answeredDelta));
+    // Новый уровень = начальный уровень + набранные баллы
+    const newLevel = Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
     setBurnoutLevel(newLevel);
-    
+
     // Сохраняем промежуточный прогресс
     if (user?.id) {
       try {
@@ -163,8 +173,9 @@ useEffect(() => {
       }
     }
 
-    // Завершение опроса
-    if (answeredQuestions === questions.length && user?.id && !alreadyAttempted) {
+    // Проверяем завершение опроса
+    const allAnswered = questions.every(q => q.id in newAnswers);
+    if (allAnswered && !alreadyAttempted) {
       try {
         await api.updateAttemptDate(user.id, initData);
         setAlreadyAttempted(true);
