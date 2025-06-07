@@ -17,14 +17,18 @@ export default async function handler(
   }
 
   try {
-    // Парсинг initData
-    const initDataParsed = parseInitData(initData);
-    const user = initDataParsed.user;
+    // Парсинг initData: извлекаем и декодируем данные пользователя
+    const params = new URLSearchParams(initData);
+    const userString = params.get('user');
+    if (!userString) {
+      return res.status(401).json({ error: 'Unauthorized: user data missing' });
+    }
+    const user = JSON.parse(userString);
     if (!user || !user.id) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Установка контекста
+    // Установка контекста (предполагается, что setUserContext существует)
     await setUserContext(user.id);
 
     // Получаем все спрайты
