@@ -24,15 +24,29 @@ export default async function handler(
   const today = format(new Date(), 'yyyy-MM-dd');
 
   try {
-    const { error } = await supabase
+    // Получаем текущие данные пользователя
+    const { data: user, error: fetchError } = await supabase
       .from('users')
-      .update({ last_attempt_date: today })
-      .eq('telegram_id', telegramId);
+      .select('burnout_level, last_attempt_date')
+      .eq('telegram_id', telegramId)
+      .single();
 
-    if (error) throw error;
+    if (fetchError) throw fetchError;
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // Обновляем только если сегодня еще не было попытки
+    if (user.last_attempt_date !== today) {
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ last_attempt_date: today })
+        .eq('telegram_id', telegramId);
+
+      if (updateError) throw updateError;
+    }
 
     return res.status(200).json({ success: true });
   } catch (error) {
+    console.error('Failed to update attempt date:', error);
     return res.status(500).json({ error: 'Failed to update attempt date' });
   }
 }
