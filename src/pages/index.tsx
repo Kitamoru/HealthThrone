@@ -108,40 +108,40 @@ export default function Home() {
   const [alreadyAttempted, setAlreadyAttempted] = useState(false);
   const [spriteUrl, setSpriteUrl] = useState<string | undefined>(undefined);
 
-   useEffect(() => {
-    const loadUserData = async () => {
-      if (!user?.id) return;
-      
-      try {
-        const response = await api.getUserData(user.id, initData);
-        if (response.success && response.data) {
-          const userData = response.data as UserProfile;
-          setBurnoutLevel(userData.burnout_level || 0);
-          
-          // Проверка последней попытки
-          const today = format(new Date(), 'yyyy-MM-dd');
-          if (userData.last_attempt_date === today) {
-            setAlreadyAttempted(true);
-          }
-          
-          // Загрузка текущего спрайта с проверкой данных
-          if (userData.current_sprite_id) {
-            const spriteResponse = await api.getSprite(userData.current_sprite_id)
-            // Добавлена проверка на существование данных
-            if (spriteResponse.success && spriteResponse.data) {
-              setSpriteUrl(spriteResponse.data.image_url);
-            }
+   // Замените useEffect на этот код
+useEffect(() => {
+  const loadUserData = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const response = await api.getUserData(user.id, initData);
+      if (response.success && response.data) {
+        const userData = response.data as UserProfile;
+        setBurnoutLevel(userData.burnout_level || 0);
+        
+        // Проверка последней попытки
+        const today = format(new Date(), 'yyyy-MM-dd');
+        // Используем last_attempt_date вместо last_survey_date
+        if (userData.last_attempt_date === today) {
+          setAlreadyAttempted(true);
+        }
+        
+        if (userData.current_sprite_id) {
+          const spriteResponse = await api.getSprite(userData.current_sprite_id)
+          if (spriteResponse.success && spriteResponse.data) {
+            setSpriteUrl(spriteResponse.data.image_url);
           }
         }
-        setLoading(false);
-      } catch (err) {
-        console.error('Error loading user data:', err);
-        setLoading(false);
       }
-    };
-    
-    loadUserData();
-  }, [user?.id, initData]);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error loading user data:', err);
+      setLoading(false);
+    }
+  };
+  
+  loadUserData();
+}, [user?.id, initData, router.pathname]); // Добавлен router.pathname в зависимости
 
   const handleAnswer = async (questionId: number, isPositive: boolean) => {
     const question = questions.find(q => q.id === questionId);
