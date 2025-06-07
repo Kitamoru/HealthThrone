@@ -34,27 +34,27 @@ export default function Shop() {
     if (!isReady || !user?.id) return;
     
     const fetchData = async () => {
-      try {
-        setLoading(true);
-        
-        // Загрузка данных пользователя
-        const userResponse = await api.getUserData(user.id, initData);
-        if (!userResponse.success || !userResponse.data) {
-          setError(userResponse.error || 'Не удалось загрузить данные пользователя');
-          setLoading(false);
-          return;
-        }
+  try {
+    setLoading(true);
+    
+    // Загрузка данных пользователя
+    const userResponse = await api.getUserData(user.id, initData);
+    if (!userResponse.success || !userResponse.data) {
+      setError(userResponse.error || 'Не удалось загрузить данные пользователя');
+      setLoading(false);
+      return;
+    }
 
-        const userData = userResponse.data as UserData;
-        setAppUserId(userData.id);
-        setCoins(userData.coins || 0);
-        setCurrentSprite(userData.current_sprite_id || null);
-        
-        // Параллельная загрузка спрайтов и купленных спрайтов
-        const [spritesResponse, ownedResponse] = await Promise.all([
-          api.getSprites(initData),
-          api.getOwnedSprites(userData.id, initData)
-        ]);
+    const userData = userResponse.data as UserData;
+    setAppUserId(userData.id);
+    setCoins(userData.coins || 0);
+    setCurrentSprite(userData.current_sprite_id || null);
+    
+    // Загрузка спрайтов и купленных спрайтов
+    const [spritesResponse, ownedResponse] = await Promise.all([
+      api.getSprites(initData),
+      api.getOwnedSprites(userData.id, initData) // Используем внутренний ID
+    ]);
 
         if (spritesResponse.success) {
           const spritesWithPrice: SpriteWithPrice[] = (spritesResponse.data || []).map(sprite => ({
@@ -211,3 +211,4 @@ export default function Shop() {
     </div>
   );
 }
+ 
