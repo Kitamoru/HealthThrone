@@ -9,7 +9,13 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 export const setUserContext = async (telegramId: number) => {
-  await supabase.rpc('set_current_user', { user_id: telegramId });
+  console.log(`[RLS] Setting user context: ${telegramId}`);
+  const { error } = await supabase
+    .rpc('set_current_user', { user_id: telegramId });
+  
+  if (error) {
+    console.error('[RLS] Error setting user context:', error);
+  }
 };
 
 export interface UserProfile {
