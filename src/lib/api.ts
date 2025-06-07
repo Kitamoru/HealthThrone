@@ -67,22 +67,22 @@ class Api {
     });
   }
 
-  async getUserData(userId: number, initData?: string) {
-    return this.request(`/data?userId=${userId}`, { 
+  async getUserData(telegramId: number, initData?: string) {
+    return this.request(`/data?telegramId=${telegramId}`, { 
       headers: this.getHeaders(initData) 
     });
   }
 
-  async updateBurnoutLevel(userId: number, level: number, initData?: string) {
+  async updateBurnoutLevel(telegramId: number, level: number, initData?: string) {
     return this.request('/update', {
       method: 'POST',
       headers: this.getHeaders(initData),
-      body: JSON.stringify({ userId, burnoutLevel: level })
+      body: JSON.stringify({ telegramId, burnoutLevel: level })
     });
   }
 
-  async getFriends(userId: number, initData?: string) {
-    return this.request(`/friends?userId=${userId}`, { 
+  async getFriends(telegramId: number, initData?: string) {
+    return this.request(`/friends?telegramId=${telegramId}`, { 
       headers: this.getHeaders(initData) 
     });
   }
@@ -115,55 +115,46 @@ class Api {
   }
 
   async purchaseSprite(
-    userId: number, 
+    telegramId: number, 
     spriteId: number, 
     initData?: string
   ): Promise<ApiResponse> {
     return this.request('/shop/purchase', {
       method: 'POST',
       headers: this.getHeaders(initData),
-      body: JSON.stringify({ userId, spriteId })
+      body: JSON.stringify({ telegramId, spriteId })
     });
   }
 
   async updateAttemptDate(
-    userId: number,
+    telegramId: number,
     initData?: string
   ): Promise<ApiResponse> {
     return this.request('/updateAttemptDate', {
       method: 'POST',
       headers: this.getHeaders(initData),
-      body: JSON.stringify({ userId })
+      body: JSON.stringify({ telegramId })
     });
   }
 
-  // Исправлено: возвращаем массив ID спрайтов
   async getOwnedSprites(
-  userId: number, 
-  initData?: string
-): Promise<ApiResponse<number[]>> {
-  // Добавить проверку на undefined
-  if (userId === undefined || userId === null) {
-    return {
-      success: false,
-      error: 'User ID is missing'
-    };
+    telegramId: number, 
+    initData?: string
+  ): Promise<ApiResponse<number[]>> {
+    return this.request(`/shop/owned?telegramId=${telegramId}`, {
+      headers: this.getHeaders(initData)
+    });
   }
-  
-  return this.request(`/shop/owned?userId=${userId}`, {
-    headers: this.getHeaders(initData)
-  });
-}
 
   async equipSprite(
-    userId: number, 
+    telegramId: number, 
     spriteId: number, 
     initData?: string
   ): Promise<ApiResponse> {
     return this.request('/shop/equip', {
       method: 'POST',
       headers: this.getHeaders(initData),
-      body: JSON.stringify({ userId, spriteId })
+      body: JSON.stringify({ telegramId, spriteId })
     });
   }
 }
