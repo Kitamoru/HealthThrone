@@ -223,9 +223,16 @@ export default function Home() {
         {alreadyAttempted || allAnswered ? (
           <div className="time-message">
             <div className="info-message">
-              {alreadyAttempted 
-                ? "Данные за сегодняшний день собраны, ждем Вас завтра!" 
-                : `🎯 Тест завершен! Ваш уровень выгорания: ${burnoutLevel}%`}
+               {alreadyAttempted ? (
+          <div className="time-message">
+            <div className="info-message">
+              Вы уже прошли опрос сегодня. Возвращайтесь завтра!
+            </div>
+          </div>
+        ) : surveyCompleted ? (
+          <div className="time-message">
+            <div className="info-message">
+              🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
             </div>
           </div>
         ) : (
