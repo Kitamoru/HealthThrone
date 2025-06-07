@@ -65,6 +65,17 @@ export default async function handler(
       .eq('telegram_id', telegramId);
 
     if (updateError) throw updateError;
+    
+    // После проверки баланса
+const { data: sprite, error: spriteError } = await supabase
+  .from('sprites')
+  .select('price, id')
+  .eq('id', spriteId)
+  .single();
+
+if (spriteError || !sprite) {
+  return res.status(400).json({ error: 'Invalid sprite' });
+}
 
     // Добавление спрайта в купленные (ИСПРАВЛЕННАЯ СТРОКА)
     const { error: purchaseError } = await supabase
