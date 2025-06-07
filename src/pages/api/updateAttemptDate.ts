@@ -26,7 +26,6 @@ export default async function handler(
     .update({ last_attempt_date: today })
     .eq('id', userId); // Исправлено на id
 
-
     if (error) throw error;
 
     return res.status(200).json({ success: true });
