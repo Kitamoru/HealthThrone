@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
-import { validateTelegramInitData, parseInitData } from '@/lib/telegramAuth';
+import { validateTelegramInitData } from '@/lib/telegramAuth'; // Удалён parseInitData
 import { setUserContext } from '@/lib/supabase';
 
 export default async function handler(
@@ -15,8 +15,22 @@ export default async function handler(
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const initDataParsed = parseInitData(initData);
-  const user = initDataParsed.user;
+  // Ручной парсинг initData вместо parseInitData
+  const params = new URLSearchParams(initData);
+  const userString = params.get('user');
+  if (!userString) {
+    console.log('[Shop/Owned] Unauthorized: user not found in init data');
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  let user;
+  try {
+    user = JSON.parse(userString);
+  } catch (e) {
+    console.log('[Shop/Owned] Unauthorized: failed to parse user data');
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   if (!user || !user.id) {
     console.log('[Shop/Owned] Unauthorized: user not found in init data');
     return res.status(401).json({ error: 'Unauthorized' });
@@ -50,20 +64,19 @@ export default async function handler(
 
     // Получаем список купленных спрайтов
     const { data: userData, error: userError } = await supabase
-  .from('users')
-  .select('id')
-  .eq('telegram_id', telegramId)
-  .single();
+      .from('users')
+      .select('id')
+      .eq('telegram_id', telegramIdNumber)
+      .single();
 
-if (userError || !userData) {
-  throw new Error('User not found');
-}
+    if (userError || !userData) {
+      throw new Error('User not found');
+    }
 
-// Затем получаем спрайты по user_id
-const { data, error: dbError } = await supabase
-  .from('user_sprites')
-  .select('sprite_id')
-  .eq('user_id', userData.id);
+    const { data, error: dbError } = await supabase
+      .from('user_sprites')
+      .select('sprite_id')
+      .eq('user_id', userData.id);
 
     console.log(`[Shop/Owned] Retrieved ${data?.length} sprites for user ${telegramIdNumber}`);
     
