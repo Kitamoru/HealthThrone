@@ -28,6 +28,17 @@ export default function Shop() {
   const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  // Функция для обновления баланса монет
+  const updateCoins = async () => {
+    if (!user?.id) return;
+    
+    const response = await api.getUserData(user.id, initData);
+    if (response.success && response.data) {
+      const userData = response.data as UserData;
+      setCoins(userData.coins || 0);
+    }
+  };
+
   useEffect(() => {
     if (!isReady || !user?.id) return;
     
@@ -101,26 +112,13 @@ export default function Shop() {
       return;
     }
     
-    // Обновляем монеты при изменении
-  const updateCoins = async () => {
-    if (!user?.id) return;
-    
-    const response = await api.getUserData(user.id, initData);
-    if (response.success && response.data) {
-      const userData = response.data as UserData;
-      setCoins(userData.coins || 0);
-    }
-  };
-
-  const handlePurchase = async (spriteId: number) => {
     try {
       const response = await api.purchaseSprite(user.id, spriteId, initData);
       if (response.success) {
-        setCoins(coins - sprite.price);
+        // Обновляем баланс с сервера
+        await updateCoins();
         setOwnedSprites(prev => [...prev, spriteId]);
         setError(null);
-         if (response.success) {
-      await updateCoins(); // Обновляем баланс
       } else {
         setError(response.error || 'Ошибка при покупке');
       }
