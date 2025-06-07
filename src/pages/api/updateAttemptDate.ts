@@ -21,10 +21,11 @@ export default async function handler(
   const today = format(new Date(), 'yyyy-MM-dd');
 
   try {
-    const { error } = await supabase
-      .from('users')
-      .update({ last_attempt_date: today })
-      .eq('telegram_id', telegramId);
+  const { error } = await supabase
+    .from('users')
+    .update({ last_attempt_date: today })
+    .eq('id', userId); // Исправлено на id
+
 
     if (error) throw error;
 
