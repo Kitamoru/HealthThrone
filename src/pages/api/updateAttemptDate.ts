@@ -18,13 +18,20 @@ export default async function handler(
   }
 
   const { telegramId } = req.body;
+  
+  // Добавляем проверку наличия telegramId
+  if (!telegramId) {
+    return res.status(400).json({ error: 'telegramId is required' });
+  }
+
   const today = format(new Date(), 'yyyy-MM-dd');
 
   try {
-  const { error } = await supabase
-    .from('users')
-    .update({ last_attempt_date: today })
-    .eq('id', userId); // Исправлено на id
+    // Исправляем userId на telegramId и меняем поле для сравнения
+    const { error } = await supabase
+      .from('users')
+      .update({ last_attempt_date: today })
+      .eq('telegram_id', telegramId); // Используем telegram_id вместо id
 
     if (error) throw error;
 
