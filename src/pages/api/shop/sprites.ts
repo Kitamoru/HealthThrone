@@ -17,15 +17,29 @@ export default async function handler(
   }
 
   try {
-    // Get all sprites
+    // Парсинг initData
+    const initDataParsed = parseInitData(initData);
+    const user = initDataParsed.user;
+    if (!user || !user.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Установка контекста
+    await setUserContext(user.id);
+
+    // Получаем все спрайты
     const { data: sprites, error } = await supabase
       .from('sprites')
       .select('*');
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      return res.status(500).json({ error: 'Database error' });
+    }
 
     return res.status(200).json({ success: true, data: sprites });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to fetch sprites' });
+    console.error('Unexpected error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
