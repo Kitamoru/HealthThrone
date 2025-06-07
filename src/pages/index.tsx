@@ -119,7 +119,6 @@ useEffect(() => {
         if (response.success && response.data) {
           const userData = response.data as UserProfile;
           const level = userData.burnout_level || 0;
-          setInitialBurnoutLevel(level);
           setBurnoutLevel(level);
           
           const today = format(new Date(), 'yyyy-MM-dd');
