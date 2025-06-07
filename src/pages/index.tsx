@@ -136,17 +136,22 @@ useEffect(() => {
   }, [user?.id, initData]);
 
   const handleAnswer = async (questionId: number, isPositive: boolean) => {
-    if (alreadyAttempted) return; // Защита от повторных ответов
+  if (alreadyAttempted) return;
 
-    const newAnswers = {
-      ...answers,
-      [questionId]: isPositive
-    };
-    setAnswers(newAnswers);
+  // Находим вопрос по ID
+  const currentQuestion = questions.find(q => q.id === questionId);
+  if (!currentQuestion) return; // Защита от несуществующих вопросов
 
-    const delta = isPositive ? question.weight : 0;
-    const newLevel = Math.max(0, Math.min(100, burnoutLevel + delta));
-    setBurnoutLevel(newLevel);
+  const newAnswers = {
+    ...answers,
+    [questionId]: isPositive
+  };
+  setAnswers(newAnswers);
+
+  // Используем найденный вопрос для расчета
+  const delta = isPositive ? currentQuestion.weight : 0;
+  const newLevel = Math.max(0, Math.min(100, burnoutLevel + delta));
+  setBurnoutLevel(newLevel);
 
     if (user?.id) {
       try {
