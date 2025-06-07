@@ -15,25 +15,25 @@ export default async function handler(
   }
 
   try {
-    const { userId } = req.query;
+    const { telegramId } = req.query;
     console.log('[Data API] Request query:', req.query);
 
-    if (!userId) {
-      console.error('[Data API] userId is required');
-      return res.status(400).json({ error: 'userId required' });
+    if (!telegramId) {
+      console.error('[Data API] telegramId is required');
+      return res.status(400).json({ error: 'telegramId required' });
     }
 
-    const userIdNumber = Number(userId);
-    if (isNaN(userIdNumber)) {
-      console.error('[Data API] Invalid userId format', userId);
-      return res.status(400).json({ error: 'Invalid userId format' });
+    const telegramIdNumber = Number(telegramId);
+    if (isNaN(telegramIdNumber)) {
+      console.error('[Data API] Invalid telegramId format', telegramId);
+      return res.status(400).json({ error: 'Invalid telegramId format' });
     }
 
-    console.log(`[Data API] Fetching user data for ID: ${userIdNumber}`);
+    console.log(`[Data API] Fetching user data for ID: ${telegramIdNumber}`);
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
-      .eq('telegram_id', userIdNumber)
+      .eq('telegram_id', telegramIdNumber)
       .single();
 
     if (error) {
