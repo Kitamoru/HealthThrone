@@ -85,3 +85,4 @@ try {
   console.error('Purchase error:', error);
   return res.status(500).json({ error: 'Purchase failed' });
 }
+}
