@@ -28,9 +28,6 @@ export default async function handler(
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Установка контекста (предполагается, что setUserContext существует)
-    await setUserContext(user.id);
-
     // Получаем все спрайты
     const { data: sprites, error } = await supabase
       .from('sprites')
