@@ -108,6 +108,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
   const [alreadyAttempted, setAlreadyAttempted] = useState(false);
+  const [surveyCompleted, setSurveyCompleted] = useState(false); // Исправлено объявление
   const [spriteUrl, setSpriteUrl] = useState<string | undefined>(undefined);
 
      // Выносим загрузку данных в отдельную функцию
