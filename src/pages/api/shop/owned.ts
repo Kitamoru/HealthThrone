@@ -15,7 +15,6 @@ export default async function handler(
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  // Парсим initData для получения user
   const initDataParsed = parseInitData(initData);
   const user = initDataParsed.user;
   if (!user || !user.id) {
@@ -28,37 +27,21 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Обработка userId с учетом возможного массива значений
-  const rawUserId = req.query.userId;
-  let userId: string | number | undefined;
+  const telegramId = req.query.telegramId as string;
+  console.log('[Shop/Owned] telegramId from query:', telegramId);
   
-  if (Array.isArray(rawUserId)) {
-    userId = rawUserId[0]; // Берем первое значение если это массив
-  } else {
-    userId = rawUserId;
-  }
-
-  console.log('[Shop/Owned] userId from query:', userId);
-  
-  if (!userId) {
-    console.log('[Shop/Owned] Bad request: userId is required');
-    return res.status(400).json({ error: 'userId required' });
+  if (!telegramId) {
+    console.log('[Shop/Owned] Bad request: telegramId is required');
+    return res.status(400).json({ error: 'telegramId required' });
   }
 
   try {
-    // Добавленная проверка типа
-    let userIdNumber: number;
-    if (typeof userId === 'number') {
-      userIdNumber = userId;
-    } else {
-      userIdNumber = parseInt(userId, 10);
-    }
+    const telegramIdNumber = parseInt(telegramId, 10);
+    console.log('[Shop/Owned] Parsed telegramIdNumber:', telegramIdNumber);
     
-    console.log('[Shop/Owned] Parsed userIdNumber:', userIdNumber);
-    
-    if (isNaN(userIdNumber)) {
-      console.log('[Shop/Owned] Bad request: userId is not a number', userId);
-      return res.status(400).json({ error: 'Invalid userId format' });
+    if (isNaN(telegramIdNumber)) {
+      console.log('[Shop/Owned] Bad request: telegramId is not a number', telegramId);
+      return res.status(400).json({ error: 'Invalid telegramId format' });
     }
 
     // Устанавливаем контекст пользователя для RLS
@@ -67,18 +50,17 @@ export default async function handler(
 
     // Получаем список купленных спрайтов
     const { data, error: dbError } = await supabase
-  .from('user_sprites')
-  .select('sprite_id')
-  .eq('user_id', userIdNumber);
+      .from('user_sprites')
+      .select('sprite_id')
+      .eq('user:telegram_id', telegramIdNumber);
 
     if (dbError) {
       console.error('[Shop/Owned] Database error:', dbError);
       throw dbError;
     }
 
-    console.log(`[Shop/Owned] Retrieved ${data?.length} sprites for user ${userIdNumber}`);
+    console.log(`[Shop/Owned] Retrieved ${data?.length} sprites for user ${telegramIdNumber}`);
     
-    // Преобразуем в массив ID, проверяя на null
     const spriteIds = data ? data.map(item => item.sprite_id) : [];
     return res.status(200).json({ success: true, data: spriteIds });
   } catch (error) {
