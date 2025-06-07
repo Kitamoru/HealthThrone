@@ -112,14 +112,16 @@ export default function Home() {
 useEffect(() => {
     const loadUserData = async () => {
       if (!user?.id) return;
+      setLoading(true);
       
       try {
         const response = await api.getUserData(user.id, initData);
         if (response.success && response.data) {
           const userData = response.data as UserProfile;
-          setBurnoutLevel(userData.burnout_level || 0);
+          const level = userData.burnout_level || 0;
+          setInitialBurnoutLevel(level);
+          setBurnoutLevel(level);
           
-          // Проверка последней попытки
           const today = format(new Date(), 'yyyy-MM-dd');
           if (userData.last_attempt_date === today) {
             setAlreadyAttempted(true);
@@ -136,23 +138,24 @@ useEffect(() => {
   }, [user?.id, initData]);
 
   const handleAnswer = async (questionId: number, isPositive: boolean) => {
-  if (alreadyAttempted) return;
-
-  // Находим вопрос по ID
-  const currentQuestion = questions.find(q => q.id === questionId);
-  if (!currentQuestion) return; // Защита от несуществующих вопросов
-
-  const newAnswers = {
-    ...answers,
-    [questionId]: isPositive
-  };
-  setAnswers(newAnswers);
-
-  // Используем найденный вопрос для расчета
-  const delta = isPositive ? currentQuestion.weight : 0;
-  const newLevel = Math.max(0, Math.min(100, burnoutLevel + delta));
-  setBurnoutLevel(newLevel);
-
+    if (alreadyAttempted) return;
+    
+    const question = questions.find(q => q.id === questionId);
+    if (!question) return;
+    
+    const newAnswers = { ...answers, [questionId]: isPositive };
+    setAnswers(newAnswers);
+    
+    const answeredQuestions = Object.keys(newAnswers).length;
+    const answeredDelta = Object.entries(newAnswers).reduce((sum, [id, ans]) => {
+      const q = questions.find(q => q.id === parseInt(id));
+      return q && ans ? sum + q.weight : sum;
+    }, 0);
+    
+    const newLevel = Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
+    setBurnoutLevel(newLevel);
+    
+    // Сохраняем промежуточный прогресс
     if (user?.id) {
       try {
         await api.updateBurnoutLevel(user.id, newLevel, initData);
@@ -161,17 +164,14 @@ useEffect(() => {
       }
     }
 
-    const allAnswered = questions.every(q => q.id in newAnswers);
-     if (allAnswered && user?.id && !alreadyAttempted) {
+    // Завершение опроса
+    if (answeredQuestions === questions.length && user?.id && !alreadyAttempted) {
       try {
-        // Сохраняем финальный уровень
-        await api.updateBurnoutLevel(user.id, newLevel, initData);
-        
-        // Обновляем дату попытки
         await api.updateAttemptDate(user.id, initData);
         setAlreadyAttempted(true);
       } catch (error) {
-        console.error('Failed to update data:', error);
+        console.error('Failed to update attempt date:', error);
+        setApiError('Ошибка сохранения данных. Попробуйте еще раз.');
       }
     }
   };
