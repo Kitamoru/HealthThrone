@@ -6,7 +6,8 @@ import { BurnoutProgress } from '../components/BurnoutProgress';
 import { QuestionCard } from '../components/QuestionCard';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
-import { UserProfile } from '../lib/supabase';
+import { UserProfile } from '../lib/api';
+import { SupabaseUserProfile } from '../lib/supabase';
 import { format, isBefore, addDays, parseISO } from 'date-fns';
 
 interface Question {
@@ -128,8 +129,7 @@ export default function Home() {
     const response = await api.getUserData(user.id, initData);
     
     if (response.success && response.data) {
-      // Явно указываем тип для userData
-      const userData = response.data as UserProfile;
+    const userData = response.data; 
       
       // Используем значение burnout_level или 0 по умолчанию
       const level = userData.burnout_level ?? 0;
@@ -214,9 +214,8 @@ const submitSurvey = async (totalScore: number) => {
       initData
     });
     
-    if (response.success && response.data) {
-      // FIX: Directly cast to UserProfile instead of nested object
-      const updatedUser = response.data as UserProfile;
+    i if (response.success && response.data) {
+    const updatedUser = response.data; // Убираем приведение типа
       const todayUTC = new Date().toISOString();
       
       // Update state with new user data
