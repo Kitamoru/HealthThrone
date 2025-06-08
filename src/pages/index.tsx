@@ -106,32 +106,50 @@ export default function Home() {
   const [burnoutLevel, setBurnoutLevel] = useState(0);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [alreadyAttempted, setAlreadyAttempted] = useState(false);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
-  const [spriteUrl, setSpriteUrl] = useState<string | undefined>(undefined);
 
-  
-// Проверка даты при загрузке
-const loadUserData = useCallback(async () => {
-  if (!user?.id) return;
-  
-  try {
-    const response = await api.getUserData(user.id, initData);
-    if (response.success && response.data) {
-      const userData = response.data;
-      const todayUTC = new Date().toISOString().split('T')[0]; // UTC дата
-      const lastAttempt = userData.last_attempt_date?.split('T')[0] || "";
-      
-      setAlreadyAttempted(lastAttempt === todayUTC);
+  // Инициализация состояния из localStorage
+  const [alreadyAttempted, setAlreadyAttempted] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const lastDate = localStorage.getItem('lastAttemptDate');
+      if (lastDate) {
+        const today = new Date().toISOString().split('T')[0];
+        return lastDate.split('T')[0] === today;
       }
     }
-  } catch (err) {
-    console.error('Error loading user data:', err);
-    setApiError('Ошибка загрузки данных пользователя');
-  } finally {
-    setLoading(false);
-  }
-}, [user?.id, initData]);
+    return false;
+  });
+
+  const loadUserData = useCallback(async () => {
+    if (!user?.id) return;
+    
+    try {
+      const response = await api.getUserData(user.id, initData);
+      if (response.success && response.data) {
+        const userData = response.data as UserProfile;
+        const level = userData.burnout_level || 0;
+        setInitialBurnoutLevel(level);
+        setBurnoutLevel(level);
+        
+        // Проверяем дату последней попытки
+        if (userData.last_attempt_date) {
+          const todayUTC = new Date().toISOString().split('T')[0];
+          const lastAttemptUTC = new Date(userData.last_attempt_date).toISOString().split('T')[0];
+          const attemptedToday = lastAttemptUTC === todayUTC;
+          
+          setAlreadyAttempted(attemptedToday);
+          if (attemptedToday && typeof window !== 'undefined') {
+            localStorage.setItem('lastAttemptDate', new Date().toISOString());
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error loading user data:', err);
+      setApiError('Ошибка загрузки данных пользователя');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id, initData]);
 
   useEffect(() => {
     setLoading(true);
@@ -184,32 +202,36 @@ const loadUserData = useCallback(async () => {
   };
 
   const submitSurvey = async (totalScore: number) => {
-  if (!user?.id) return;
-  
-  try {
-    const response = await api.submitSurvey({
-      telegramId: user.id,
-      newScore: totalScore,
-      initData
-    });
+    if (!user?.id) return;
     
-    if (response.success && response.data) {
-      const { burnout_level, last_attempt_date } = response.data;
+    try {
+      const response = await api.submitSurvey({
+        telegramId: user.id,
+        newScore: totalScore,
+        initData
+      });
       
-      // Обновляем все данные сразу
-      setBurnoutLevel(burnout_level);
-      setInitialBurnoutLevel(burnout_level);
-      setAlreadyAttempted(true);
-      setSurveyCompleted(true);
-      
-      // Для надежности: сохраняем дату в localStorage
-      localStorage.setItem('lastAttemptDate', last_attempt_date);
+      if (response.success && response.data) {
+        const data = response.data as { burnout_level: number };
+        
+        // Обновляем состояние и localStorage
+        const todayUTC = new Date().toISOString();
+        setSurveyCompleted(true);
+        setAlreadyAttempted(true);
+        setBurnoutLevel(data.burnout_level);
+        setInitialBurnoutLevel(data.burnout_level);
+        
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('lastAttemptDate', todayUTC);
+        }
+      } else {
+        setApiError(response.error || 'Ошибка сохранения результатов');
+      }
+    } catch (error) {
+      console.error('Survey submission failed:', error);
+      setApiError('Ошибка соединения с сервером');
     }
-  } catch (error)  {
-    console.error('Survey submission failed:', error);
-    setApiError('Ошибка соединения с сервером');
-  }
-};
+  };
 
   if (!user) {
     return (
@@ -222,45 +244,41 @@ const loadUserData = useCallback(async () => {
   if (loading) {
     return <Loader />;
   }
-
   
-return (
-  <div className="container">
-    <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
-    
-    <div className="content">
-      {apiError && (
-        <div className="error-message">{apiError}</div>
-      )}
+  return (
+    <div className="container">
+      <BurnoutProgress level={burnoutLevel} />
       
-      {/* Основное изменение: сначала проверяем alreadyAttempted */}
-      {alreadyAttempted ? (
-        <div className="time-message">
-          <div className="info-message">
-            Вы уже прошли опрос сегодня. Возвращайтесь завтра!
+      <div className="content">
+        {apiError && (
+          <div className="error-message">{apiError}</div>
+        )}
+        
+        {alreadyAttempted ? (
+          <div className="time-message">
+            <div className="info-message">
+              Вы уже прошли опрос сегодня. Возвращайтесь завтра!
+            </div>
           </div>
-        </div>
-      ) : loading ? (
-        <Loader />
-      ) : surveyCompleted ? (
-        <div className="time-message">
-          <div className="info-message">
-            🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
+        ) : surveyCompleted ? (
+          <div className="time-message">
+            <div className="info-message">
+              🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="questions">
-          {questions.map((question) => (
-            <QuestionCard
-              key={question.id}
-              question={question}
-              onAnswer={handleAnswer}
-              answered={question.id in answers}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+        ) : (
+          <div className="questions">
+            {questions.map((question) => (
+              <QuestionCard
+                key={question.id}
+                question={question}
+                onAnswer={handleAnswer}
+                answered={question.id in answers}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="menu">
         <Link href="/" passHref>
