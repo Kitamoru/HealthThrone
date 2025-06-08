@@ -8,7 +8,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   console.log('[Data API] Received request', req.method, req.url);
-  
+
   // Добавляем заголовки для предотвращения кеширования
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.setHeader('Pragma', 'no-cache');
