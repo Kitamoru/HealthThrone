@@ -88,13 +88,14 @@ export default async function handler(
 
     console.log(`[Shop/Owned] Retrieved ${data?.length} sprites for user ${telegramIdNumber}`);
     
-    const spriteIds = data ? data.map(item => item.sprite_id) : [];
+     const spriteIds = data ? data.map(item => item.sprite_id) : [];
     return res.status(200).json({ success: true, data: spriteIds });
   } catch (error) {
     console.error('[Shop/Owned] Error:', error);
-    return res.status(500).json({ 
-      error: 'Failed to fetch owned sprites',
-      details: error instanceof Error ? error.message : String(error)
+    // При ошибке возвращаем пустой массив
+    return res.status(200).json({ 
+      success: true, 
+      data: [] 
     });
   }
 }
