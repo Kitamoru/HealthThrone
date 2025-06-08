@@ -196,28 +196,28 @@ export default function Home() {
   };
 
   const submitSurvey = async (totalScore: number) => {
-    if (!user?.id) return;
+  if (!user?.id) return;
+  
+  try {
+    const response = await api.submitSurvey({
+      telegramId: user.id,  // Передаем telegramId
+      newScore: totalScore,
+      initData
+    });
     
-    try {
-      const response = await api.submitSurvey({
-        userId: user.id,
-        newScore: totalScore,
-        initData
-      });
-      
-      if (response.success && response.data) {
-        setSurveyCompleted(true);
-        setAlreadyAttempted(true);
-        setBurnoutLevel(response.data.burnout_level);
-        setInitialBurnoutLevel(response.data.burnout_level);
-      } else {
-        setApiError(response.error || 'Ошибка сохранения результатов');
-      }
-    } catch (error) {
-      console.error('Survey submission failed:', error);
-      setApiError('Ошибка соединения с сервером');
+    if (response.success && response.data) {
+      setSurveyCompleted(true);
+      setAlreadyAttempted(true);
+      setBurnoutLevel(response.data.burnout_level);
+      setInitialBurnoutLevel(response.data.burnout_level);
+    } else {
+      setApiError(response.error || 'Ошибка сохранения результатов');
     }
-  };
+  } catch (error) {
+    console.error('Survey submission failed:', error);
+    setApiError('Ошибка соединения с сервером');
+  }
+};
 
   if (!user) {
     return (
