@@ -120,7 +120,7 @@ class Api {
     });
   }
 
-  async deleteFriend(friendId: number, initData?: string) {
+  async deleteFriend(friendId: string, initData?: string) { // Изменено на string
     return this.request(`/friends/${friendId}`, {
       method: 'DELETE',
       headers: this.getHeaders(initData)
