@@ -233,13 +233,30 @@ export default function Home() {
       const updatedUser = responseData.user;
       const todayUTC = new Date().toISOString();
       
-      // Обновляем состояние
+     // src/pages/index.tsx
+
+const submitSurvey = async (totalScore: number) => {
+  if (!user?.id) return;
+  
+  try {
+    const response = await api.submitSurvey({
+      telegramId: user.id,
+      newScore: totalScore,
+      initData
+    });
+    
+    if (response.success && response.data) {
+      // FIX: Directly cast to UserProfile instead of nested object
+      const updatedUser = response.data as UserProfile;
+      const todayUTC = new Date().toISOString();
+      
+      // Update state with new user data
       setSurveyCompleted(true);
       setAlreadyAttempted(true);
       setBurnoutLevel(updatedUser.burnout_level);
       setInitialBurnoutLevel(updatedUser.burnout_level);
       
-      // Обновляем localStorage
+      // Update localStorage
       if (typeof window !== 'undefined') {
         localStorage.setItem('lastAttemptDate', todayUTC);
       }
