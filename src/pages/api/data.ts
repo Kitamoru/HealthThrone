@@ -8,7 +8,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  console.log('[Data API] Received request', req.method, req.url);
+  console.log('[Data API] Received request', req.method, req.url, req.query);
   
   // Заголовки для предотвращения кеширования
   res.setHeader('Cache-Control', 'no-store, max-age=0');
@@ -27,23 +27,18 @@ export default async function handler(
   }
 
   try {
-    // Безопасное извлечение параметра
-    let telegramId = req.query.telegramId;
+    // Извлекаем telegramId из query параметров
+    const telegramId = req.query.telegramId;
     
-    // Обработка массива значений
-    if (Array.isArray(telegramId)) {
-      telegramId = telegramId[0];
-    }
-
-    console.log('[Data API] Request query:', req.query);
+    console.log('[Data API] Raw telegramId:', telegramId);
 
     if (!telegramId) {
       console.error('[Data API] telegramId is required');
       return res.status(400).json({ error: 'telegramId required' });
     }
 
-    // Преобразование в число и валидация
-    const telegramIdNumber = parseInt(telegramId, 10);
+    // Преобразование в число
+    const telegramIdNumber = Number(telegramId);
     if (isNaN(telegramIdNumber)) {
       console.error('[Data API] Invalid telegramId format:', telegramId);
       return res.status(400).json({ error: 'Invalid telegramId format' });
@@ -52,7 +47,17 @@ export default async function handler(
     console.log(`[Data API] Fetching user data for ID: ${telegramIdNumber}`);
     
     // Установка контекста пользователя для RLS
-    await supabase.rpc('set_current_user', { user_id: telegramIdNumber.toString() });
+    const setUserResult = await supabase.rpc('set_current_user', { 
+      user_id: telegramIdNumber.toString() 
+    });
+
+    if (setUserResult.error) {
+      console.error('[Data API] RLS error:', setUserResult.error);
+      return res.status(500).json({ 
+        error: 'RLS configuration failed',
+        details: setUserResult.error.message
+      });
+    }
 
     const { data: user, error } = await supabase
       .from('users')
@@ -73,29 +78,28 @@ export default async function handler(
       return res.status(404).json({ error: 'User not found' });
     }
 
-    console.log('[Data API] User data found:', JSON.stringify({
+    console.log(`[Data API] User data found. Coins: ${user.coins}, ID: ${user.id}`);
+    
+    const userData = {
       id: user.id,
       telegram_id: user.telegram_id,
-      burnout_level: user.burnout_level,
-      last_attempt_date: user.last_attempt_date
-    }, null, 2));
+      created_at: user.created_at,
+      username: user.username,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      burnout_level: user.burnout_level || 0,
+      last_attempt_date: user.last_attempt_date,
+      coins: user.coins || 0,
+      updated_at: user.updated_at,
+      current_sprite_id: user.current_sprite_id,
+      last_login_date: user.last_login_date
+    };
+
+    console.log('[Data API] Full user data:', JSON.stringify(userData, null, 2));
     
     return res.status(200).json({
       success: true,
-      data: {
-        id: user.id,
-        telegram_id: user.telegram_id,
-        created_at: user.created_at,
-        username: user.username,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        burnout_level: user.burnout_level || 0,
-        last_attempt_date: user.last_attempt_date,
-        coins: user.coins || 0,
-        updated_at: user.updated_at,
-        current_sprite_id: user.current_sprite_id,
-        last_login_date: user.last_login_date
-      }
+      data: userData
     });
 
   } catch (error: any) {
