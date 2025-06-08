@@ -214,7 +214,7 @@ const submitSurvey = async (totalScore: number) => {
       initData
     });
     
-    i if (response.success && response.data) {
+    if (response.success && response.data) {
     const updatedUser = response.data; // Убираем приведение типа
       const todayUTC = new Date().toISOString();
       
