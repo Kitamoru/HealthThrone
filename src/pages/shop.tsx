@@ -39,8 +39,6 @@ export default function Shop() {
     }
   };
 
-  const numericTelegramId = parseInt(user?.id || '0', 10);
-
   useEffect(() => {
     if (!isReady || !user?.id) return;
     
@@ -49,7 +47,7 @@ export default function Shop() {
         setLoading(true);
         
         // Загрузка данных пользователя
-        const userResponse = await api.getUserData(numericTelegramId.toString(), initData);
+        const userResponse = await api.getUserData(user.id, initData);
         if (!userResponse.success || !userResponse.data) {
           setError(userResponse.error || 'Не удалось загрузить данные пользователя');
           setLoading(false);
@@ -92,9 +90,7 @@ export default function Shop() {
       fetchData();
   }, [isReady, user, initData]);
 
-  // В обработчиках используем numericTelegramId
-   const handlePurchase = async (spriteId: number) => {
-    const response = await api.purchaseSprite(numericTelegramId, spriteId, initData);
+  const handlePurchase = async (spriteId: number) => {
     if (!user) {
       setError('Пользователь не определен');
       return;
