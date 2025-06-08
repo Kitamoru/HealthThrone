@@ -14,15 +14,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Invalid user data' });
   }
 
-    if (req.method === 'DELETE') {
-    const friendId = req.query.id as string; // Принимаем как строку
+     if (req.method === 'DELETE') {
+    const friendId = req.query.id as string;
     
     try {
       // Проверяем что друг принадлежит пользователю
       const { data: friend, error: fetchError } = await supabase
         .from('friends')
         .select('id')
-        .eq('id', friendId) // Прямое сравнение строк
+        .eq('id', parseInt(friendId)) // Парсим в число для Supabase
         .eq('user_id', user.id)
         .single();
 
