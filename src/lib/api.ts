@@ -13,6 +13,17 @@ export interface Sprite {
   isEquipped?: boolean;
 }
 
+export interface UserProfile {
+  id: string;
+  telegram_id: string;
+  created_at: string;
+  username?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  burnout_level: number;
+  last_attempt_date?: string | null;
+}
+
 class Api {
   private baseUrl = '/api';
 
@@ -27,36 +38,39 @@ class Api {
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        ...options,
         headers: {
           'Content-Type': 'application/json',
-          ...options.headers,
-        },
-        ...options,
+          ...(options.headers || {})
+        }
       });
 
-      const responseText = await response.text();
-      let data;
-      try {
-        data = responseText ? JSON.parse(responseText) : null;
-      } catch {
-        data = responseText;
-      }
-
+      // Обработка HTTP ошибок
       if (!response.ok) {
-        return {
-          success: false,
-          error: data?.error || 'Что-то пошло не так'
-        };
+        const errorText = await response.text();
+        try {
+          const errorData = JSON.parse(errorText);
+          return {
+            success: false,
+            error: errorData.error || `HTTP Error ${response.status}`
+          };
+        } catch {
+          return {
+            success: false,
+            error: errorText || `HTTP Error ${response.status}`
+          };
+        }
       }
 
-      return {
-        success: true,
-        data
-      };
-    } catch (error) {
+      // Успешный ответ
+      const data: T = await response.json();
+      return { success: true, data };
+      
+    } catch (error: any) {
+      // Сетевые ошибки
       return {
         success: false,
-        error: 'Ошибка сети'
+        error: error.message || 'Network error'
       };
     }
   }
@@ -68,14 +82,18 @@ class Api {
     });
   }
 
-  async getUserData(telegramId: number, initData?: string) {
-    const timestamp = new Date().getTime();
-    return this.request(`/data?telegramId=${telegramId}&_t=${timestamp}`, { 
-      headers: this.getHeaders(initData) 
+  async getUserData(telegramId: string, initData?: string): Promise<ApiResponse<UserProfile>> {
+    const params = new URLSearchParams({ 
+      telegramId, 
+      _t: Date.now().toString() 
+    });
+    
+    return this.request<UserProfile>(`/data?${params}`, {
+      headers: this.getHeaders(initData)
     });
   }
 
-  async updateBurnoutLevel(telegramId: number, level: number, initData?: string) {
+  async updateBurnoutLevel(telegramId: string, level: number, initData?: string) {
     return this.request('/update', {
       method: 'POST',
       headers: this.getHeaders(initData),
@@ -83,10 +101,14 @@ class Api {
     });
   }
 
-  async getFriends(telegramId: number, initData?: string) {
-    const timestamp = new Date().getTime();
-    return this.request(`/friends?telegramId=${telegramId}&_t=${timestamp}`, { 
-      headers: this.getHeaders(initData) 
+  async getFriends(telegramId: string, initData?: string) {
+    const params = new URLSearchParams({ 
+      telegramId, 
+      _t: Date.now().toString() 
+    });
+    
+    return this.request(`/friends?${params}`, {
+      headers: this.getHeaders(initData)
     });
   }
 
@@ -106,21 +128,27 @@ class Api {
   }
 
   async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
-    const timestamp = new Date().getTime();
-    return this.request(`/shop/sprites?_t=${timestamp}`, {
+    const params = new URLSearchParams({ 
+      _t: Date.now().toString() 
+    });
+    
+    return this.request<Sprite[]>(`/shop/sprites?${params}`, {
       headers: this.getHeaders(initData)
     });
   }
   
   async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
-    const timestamp = new Date().getTime();
-    return this.request(`/shop/sprites/${spriteId}?_t=${timestamp}`, {
+    const params = new URLSearchParams({ 
+      _t: Date.now().toString() 
+    });
+    
+    return this.request<Sprite>(`/shop/sprites/${spriteId}?${params}`, {
       headers: this.getHeaders(initData)
     });
   }
 
   async purchaseSprite(
-    telegramId: number, 
+    telegramId: string, 
     spriteId: number, 
     initData?: string
   ): Promise<ApiResponse> {
@@ -132,28 +160,32 @@ class Api {
   }
 
   async updateAttemptDate(
-  telegramId: number,
-  initData?: string
-): Promise<ApiResponse> {
-  return this.request('/updateAttemptDate', {
-    method: 'POST',
-    headers: this.getHeaders(initData),
-    body: JSON.stringify({ telegramId })
-  });
-}
+    telegramId: string,
+    initData?: string
+  ): Promise<ApiResponse> {
+    return this.request('/updateAttemptDate', {
+      method: 'POST',
+      headers: this.getHeaders(initData),
+      body: JSON.stringify({ telegramId })
+    });
+  }
 
   async getOwnedSprites(
-    telegramId: number, 
+    telegramId: string, 
     initData?: string
   ): Promise<ApiResponse<number[]>> {
-    const timestamp = new Date().getTime();
-    return this.request(`/shop/owned?telegramId=${telegramId}&_t=${timestamp}`, {
+    const params = new URLSearchParams({ 
+      telegramId, 
+      _t: Date.now().toString() 
+    });
+    
+    return this.request<number[]>(`/shop/owned?${params}`, {
       headers: this.getHeaders(initData)
     });
   }
 
   async equipSprite(
-    telegramId: number, 
+    telegramId: string, 
     spriteId: number, 
     initData?: string
   ): Promise<ApiResponse> {
@@ -165,19 +197,19 @@ class Api {
   }
   
   async submitSurvey(params: {
-  telegramId: number;
-  newScore: number;
-  initData?: string;
-}): Promise<ApiResponse<{ burnout_level: number } | { error: string }>> {
-  return this.request('/updateBurnout', {
-    method: 'POST',
-    headers: this.getHeaders(params.initData),
-    body: JSON.stringify({
-      telegramId: params.telegramId,
-      newScore: params.newScore
-    })
-  });
-}
+    telegramId: string;
+    newScore: number;
+    initData?: string;
+  }): Promise<ApiResponse<UserProfile>> {
+    return this.request<UserProfile>('/updateBurnout', {
+      method: 'POST',
+      headers: this.getHeaders(params.initData),
+      body: JSON.stringify({
+        telegramId: params.telegramId,
+        newScore: params.newScore
+      })
+    });
+  }
 }
 
 export const api = new Api();
