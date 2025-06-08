@@ -214,26 +214,7 @@ export default function Home() {
     }
   };
 
-  const submitSurvey = async (totalScore: number) => {
-  if (!user?.id) return;
-  
-  try {
-    const response = await api.submitSurvey({
-      telegramId: user.id,
-      newScore: totalScore,
-      initData
-    });
-    
-    if (response.success && response.data) {
-      // Получаем полные данные пользователя
-      const responseData = response.data as { 
-        user: UserProfile;
-      };
-      
-      const updatedUser = responseData.user;
-      const todayUTC = new Date().toISOString();
-      
-     // src/pages/index.tsx
+  // src/pages/index.tsx
 
 const submitSurvey = async (totalScore: number) => {
   if (!user?.id) return;
