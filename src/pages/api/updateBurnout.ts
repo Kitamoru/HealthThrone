@@ -22,19 +22,22 @@ export default async function handler(
   }
 
   try {
-    const { data, error } = await supabase.rpc('update_burnout', {
-      p_telegram_id: telegramId,  // Используем новый параметр
-      p_new_score: newScore
-    });
+  const { data, error } = await supabase.rpc('update_burnout', {
+    p_telegram_id: telegramId,
+    p_new_score: newScore
+  });
 
-    if (error) {
-      console.error('RPC error:', error);
-      return res.status(400).json({ error: error.message });
-    }
-
-    return res.status(200).json(data);
-  } catch (e) {
-    console.error('Server error:', e);
-    return res.status(500).json({ error: 'Internal server error' });
+  if (error) {
+    console.error('RPC error:', error);
+    return res.status(400).json({ error: error.message });
   }
+
+  // Возвращаем обновленный уровень и флаг успешного обновления
+  return res.status(200).json({
+    success: true,
+    burnout_level: data.burnout_level
+  });
+} catch (e) {
+  console.error('Server error:', e);
+  return res.status(500).json({ error: 'Internal server error' });
 }
