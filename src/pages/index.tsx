@@ -121,37 +121,48 @@ export default function Home() {
   });
 
   const loadUserData = useCallback(async () => {
-    if (!user?.id) return;
+  if (!user?.id) {
+    console.log('User ID not available yet');
+    return;
+  }
+  
+  try {
+    console.log(`Loading user data for ID: ${user.id}`);
+    const response = await api.getUserData(user.id, initData);
     
-    try {
-      const response = await api.getUserData(user.id, initData);
-      if (response.success && response.data) {
-        const userData = response.data as UserProfile;
-        const level = userData.burnout_level || 0;
+    if (response.success && response.data) {
+      const userData = response.data as UserProfile;
+      const level = userData.burnout_level || 0;
+      
+      console.log(`Loaded user data: burnout_level=${level}, 
+        last_attempt=${userData.last_attempt_date}`);
+      
+      // Всегда обновляем уровень выгорания
+      setInitialBurnoutLevel(level);
+      setBurnoutLevel(level);
+      
+      // Проверяем дату последней попытки
+      if (userData.last_attempt_date) {
+        const todayUTC = new Date().toISOString().split('T')[0];
+        const lastAttemptUTC = new Date(userData.last_attempt_date).toISOString().split('T')[0];
+        const attemptedToday = lastAttemptUTC === todayUTC;
         
-        // Всегда обновляем уровень выгорания
-        setInitialBurnoutLevel(level);
-        setBurnoutLevel(level);
-        
-        // Проверяем дату последней попытки
-        if (userData.last_attempt_date) {
-          const todayUTC = new Date().toISOString().split('T')[0];
-          const lastAttemptUTC = new Date(userData.last_attempt_date).toISOString().split('T')[0];
-          const attemptedToday = lastAttemptUTC === todayUTC;
-          
-          setAlreadyAttempted(attemptedToday);
-          if (attemptedToday && typeof window !== 'undefined') {
-            localStorage.setItem('lastAttemptDate', new Date().toISOString());
-          }
+        setAlreadyAttempted(attemptedToday);
+        if (attemptedToday && typeof window !== 'undefined') {
+          localStorage.setItem('lastAttemptDate', new Date().toISOString());
         }
       }
-    } catch (err) {
-      console.error('Error loading user data:', err);
-      setApiError('Ошибка загрузки данных пользователя');
-    } finally {
-      setLoading(false);
+    } else {
+      console.error('Error loading user data:', response.error);
+      setApiError(response.error || 'Ошибка загрузки данных пользователя');
     }
-  }, [user?.id, initData]);
+  } catch (err) {
+    console.error('Error loading user data:', err);
+    setApiError('Ошибка загрузки данных пользователя');
+  } finally {
+    setLoading(false);
+  }
+}, [user?.id, initData]);
 
   useEffect(() => {
     setLoading(true);
