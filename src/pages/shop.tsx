@@ -28,120 +28,107 @@ export default function Shop() {
   const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  console.log('Shop component render:', {
-    isReady,
-    user: user ? 'exists' : 'null',
-    loading,
-    coins,
-    currentSprite,
-    ownedSprites,
-    error
-  });
+  // Логирование состояния компонента
+  useEffect(() => {
+    console.log("[Shop] Component mounted");
+    console.log("[Shop] Router path:", router.pathname);
+    console.log("[Shop] isReady:", isReady, "user:", user);
+    console.log("[Shop] initData length:", initData ? initData.length : "null");
+    return () => console.log("[Shop] Component unmounted");
+  }, []);
 
   // Функция для обновления баланса монет
   const updateCoins = async () => {
-    console.log('updateCoins called');
     if (!user?.id) {
-      console.warn('updateCoins: user.id missing');
+      console.error("[updateCoins] User ID is missing");
       return;
     }
     
-    try {
-      console.log('Calling api.getUserData for updateCoins');
-      const response = await api.getUserData(user.id, initData);
-      console.log('updateCoins response:', response);
-      
-      if (response.success && response.data) {
-        const userData = response.data as UserData;
-        console.log('Updating coins:', userData.coins || 0);
-        setCoins(userData.coins || 0);
-      } else {
-        console.error('updateCoins failed:', response.error);
-      }
-    } catch (err) {
-      console.error('updateCoins network error:', err);
+    console.log("[updateCoins] Fetching user data for ID:", user.id);
+    const response = await api.getUserData(user.id, initData);
+    
+    if (response.success && response.data) {
+      const userData = response.data as UserData;
+      console.log(`[updateCoins] Received coins: ${userData.coins} (previous: ${coins})`);
+      setCoins(userData.coins || 0);
+    } else {
+      console.error(
+        "[updateCoins] Failed to update coins:", 
+        response.error,
+        "Status:", response.status
+      );
     }
   };
 
   useEffect(() => {
-    console.log('useEffect triggered', { isReady, user: user?.id });
-    
-    if (!isReady) {
-      console.log('useEffect: Telegram not ready yet');
-      return;
-    }
-    
-    if (!user?.id) {
-      console.log('useEffect: user.id missing');
-      setError('User ID not available');
-      setLoading(false);
+    if (!isReady || !user?.id) {
+      console.log(`[useEffect] Skipping fetch - isReady:${isReady} userID:${user?.id}`);
       return;
     }
     
     const fetchData = async () => {
       try {
-        console.log('Starting data fetching');
+        console.log("[fetchData] Starting data loading");
         setLoading(true);
-        setError(null);
         
         // Загрузка данных пользователя
-        console.log('Fetching user data...');
+        console.log("[fetchData] Loading user data for ID:", user.id);
         const userResponse = await api.getUserData(user.id, initData);
-        console.log('User data response:', userResponse);
-        
+        console.log("[fetchData] User response:", userResponse);
+
         if (!userResponse.success || !userResponse.data) {
           const errorMsg = userResponse.error || 'Не удалось загрузить данные пользователя';
-          console.error('User data error:', errorMsg);
+          console.error("[fetchData] User data error:", errorMsg, "Status:", userResponse.status);
           setError(errorMsg);
           setLoading(false);
           return;
         }
 
         const userData = userResponse.data as UserData;
-        console.log('User data received:', {
-          coins: userData.coins,
-          current_sprite: userData.current_sprite_id
-        });
-        
+        console.log(
+          `[fetchData] User data: coins=${userData.coins}, ` +
+          `sprite=${userData.current_sprite_id}, ` +
+          `burnout=${userData.burnout_level}`
+        );
         setCoins(userData.coins || 0);
         setCurrentSprite(userData.current_sprite_id || null);
         
         // Параллельная загрузка спрайтов и купленных спрайтов
-        console.log('Fetching sprites and owned sprites...');
+        console.log("[fetchData] Loading sprites and owned sprites");
         const [spritesResponse, ownedResponse] = await Promise.all([
           api.getSprites(initData),
           api.getOwnedSprites(user.id, initData)
         ]);
 
-        console.log('Sprites response:', spritesResponse);
-        console.log('Owned sprites response:', ownedResponse);
+        console.log("[fetchData] Sprites response:", spritesResponse);
+        console.log("[fetchData] Owned sprites response:", ownedResponse);
 
         if (spritesResponse.success) {
           const spritesWithPrice: SpriteWithPrice[] = (spritesResponse.data || []).map(sprite => ({
             ...sprite,
             price: sprite.price || 0
           }));
-          console.log(`Loaded ${spritesWithPrice.length} sprites`);
+          console.log(`[fetchData] Loaded ${spritesWithPrice.length} sprites`);
           setSprites(spritesWithPrice);
         } else {
           const errorMsg = spritesResponse.error || 'Не удалось загрузить спрайты';
-          console.error('Sprites error:', errorMsg);
+          console.error("[fetchData] Sprites error:", errorMsg, "Status:", spritesResponse.status);
           setError(errorMsg);
         }
         
         if (ownedResponse.success && ownedResponse.data) {
-          console.log(`Loaded ${ownedResponse.data.length} owned sprites`);
+          console.log(`[fetchData] User owns ${ownedResponse.data.length} sprites`);
           setOwnedSprites(ownedResponse.data);
         } else {
           const errorMsg = ownedResponse.error || 'Ошибка загрузки спрайтов';
-          console.error('Owned sprites error:', errorMsg);
+          console.error("[fetchData] Owned sprites error:", errorMsg, "Status:", ownedResponse.status);
           setError(errorMsg);
         }
         
         setLoading(false);
-        console.log('Data loading completed');
+        console.log("[fetchData] Data loading completed");
       } catch (err) {
-        console.error('Fetch data error:', err);
+        console.error("[fetchData] Network error:", err);
         setError('Ошибка сети');
         setLoading(false);
       }
@@ -151,19 +138,18 @@ export default function Shop() {
   }, [isReady, user, initData]);
 
   const handlePurchase = async (spriteId: number) => {
-    console.log('handlePurchase called for sprite:', spriteId);
-    setError(null);
+    console.log("[handlePurchase] Attempting purchase for sprite:", spriteId);
     
     if (!user) {
       const errorMsg = 'Пользователь не определен';
-      console.error(errorMsg);
+      console.error("[handlePurchase] Error:", errorMsg);
       setError(errorMsg);
       return;
     }
 
     if (ownedSprites.includes(spriteId)) {
       const errorMsg = 'Уже куплено';
-      console.error(errorMsg);
+      console.warn("[handlePurchase]", errorMsg);
       setError(errorMsg);
       return;
     }
@@ -171,86 +157,83 @@ export default function Shop() {
     const sprite = sprites.find(s => s.id === spriteId);
     if (!sprite) {
       const errorMsg = 'Спрайт не найден';
-      console.error(errorMsg);
+      console.error("[handlePurchase]", errorMsg);
       setError(errorMsg);
       return;
     }
     
+    console.log(`[handlePurchase] User coins: ${coins}, Sprite price: ${sprite.price}`);
     if (coins < sprite.price) {
       const errorMsg = 'Недостаточно монет';
-      console.error(errorMsg, { coins, price: sprite.price });
+      console.warn("[handlePurchase]", errorMsg);
       setError(errorMsg);
       return;
     }
     
     try {
-      console.log('Calling api.purchaseSprite', {
-        userId: user.id,
-        spriteId,
-        initData: initData ? 'exists' : 'null'
-      });
-      
+      console.log(`[handlePurchase] Purchasing sprite ${spriteId} for user ${user.id}`);
       const response = await api.purchaseSprite(user.id, spriteId, initData);
-      console.log('purchaseSprite response:', response);
-      
+      console.log("[handlePurchase] Purchase response:", response);
+
       if (response.success) {
-        console.log('Purchase successful, updating coins...');
+        console.log("[handlePurchase] Purchase successful");
+        // Обновляем баланс с сервера
         await updateCoins();
         setOwnedSprites(prev => [...prev, spriteId]);
         setError(null);
       } else {
-        const errorMsg = response.error || 'Ошибка при покупке';
-        console.error('Purchase failed:', errorMsg);
-        setError(errorMsg);
+        console.error(
+          "[handlePurchase] Purchase failed:", 
+          response.error, 
+          "Status:", response.status
+        );
+        setError(response.error || 'Ошибка при покупке');
       }
     } catch (error) {
-      console.error('Purchase network error:', error);
+      console.error("[handlePurchase] Network exception:", error);
       setError('Ошибка сети');
     }
   };
 
   const handleEquip = async (spriteId: number) => {
-    console.log('handleEquip called for sprite:', spriteId);
-    setError(null);
+    console.log("[handleEquip] Equipping sprite:", spriteId);
     
     if (!user) {
       const errorMsg = 'Пользователь не определен';
-      console.error(errorMsg);
+      console.error("[handleEquip] Error:", errorMsg);
       setError(errorMsg);
       return;
     }
     
     try {
-      console.log('Calling api.equipSprite', {
-        userId: user.id,
-        spriteId,
-        initData: initData ? 'exists' : 'null'
-      });
-      
+      console.log(`[handleEquip] Equipping sprite ${spriteId} for user ${user.id}`);
       const response = await api.equipSprite(user.id, spriteId, initData);
-      console.log('equipSprite response:', response);
-      
+      console.log("[handleEquip] Equip response:", response);
+
       if (response.success) {
-        console.log('Equip successful, setting current sprite:', spriteId);
+        console.log("[handleEquip] Equip successful");
         setCurrentSprite(spriteId);
         setError(null);
       } else {
-        const errorMsg = response.error || 'Ошибка при установке';
-        console.error('Equip failed:', errorMsg);
-        setError(errorMsg);
+        console.error(
+          "[handleEquip] Equip failed:", 
+          response.error, 
+          "Status:", response.status
+        );
+        setError(response.error || 'Ошибка при установке');
       }
     } catch (error) {
-      console.error('Equip network error:', error);
+      console.error("[handleEquip] Network exception:", error);
       setError('Ошибка сети');
     }
   };
 
   if (loading) {
-    console.log('Rendering loader');
+    console.log("[Render] Loading state");
     return <Loader />;
   }
 
-  console.log('Rendering shop content');
+  console.log("[Render] Rendering shop UI");
   return (
     <div className="container">
       <div className="scrollable-content">
