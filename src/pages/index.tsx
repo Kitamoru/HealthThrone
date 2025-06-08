@@ -111,39 +111,30 @@ export default function Home() {
   const [spriteUrl, setSpriteUrl] = useState<string | undefined>(undefined);
 
   const loadUserData = useCallback(async () => {
-    if (!user?.id) return;
-    
-    try {
-      const response = await api.getUserData(user.id, initData);
-      if (response.success && response.data) {
-        const userData = response.data as UserProfile;
-        const level = userData.burnout_level || 0;
-        setInitialBurnoutLevel(level);
-        setBurnoutLevel(level);
-        
-        // Проверка последней попытки
-        if (userData.last_attempt_date) {
-          const lastAttempt = parseISO(userData.last_attempt_date);
-          const today = new Date();
-          const tomorrow = addDays(lastAttempt, 1);
-          
-          // Проверяем прошло ли 24 часа
-          if (isBefore(today, tomorrow)) {
-            setAlreadyAttempted(true);
-          } else {
-            setAlreadyAttempted(false);
-          }
-        } else {
-          setAlreadyAttempted(false);
-        }
+  if (!user?.id) return;
+  
+  try {
+    const response = await api.getUserData(user.id, initData);
+    if (response.success && response.data) {
+      const userData = response.data as UserProfile;
+      const level = userData.burnout_level || 0;
+      setInitialBurnoutLevel(level);
+      setBurnoutLevel(level);
+      
+      // Упрощенная проверка последней попытки
+      if (userData.last_attempt_date) {
+        const today = format(new Date(), 'yyyy-MM-dd');
+        // Сравниваем строки дат напрямую
+        setAlreadyAttempted(userData.last_attempt_date === today);
       }
-    } catch (err) {
-      console.error('Error loading user data:', err);
-      setApiError('Ошибка загрузки данных пользователя');
-    } finally {
-      setLoading(false);
     }
-  }, [user?.id, initData]);
+  } catch (err) {
+    console.error('Error loading user data:', err);
+    setApiError('Ошибка загрузки данных пользователя');
+  } finally {
+    setLoading(false);
+  }
+}, [user?.id, initData]);
 
   useEffect(() => {
     setLoading(true);
@@ -231,42 +222,44 @@ export default function Home() {
     return <Loader />;
   }
 
-  return (
-    <div className="container">
-      <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
+  
+return (
+  <div className="container">
+    <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
+    
+    <div className="content">
+      {apiError && (
+        <div className="error-message">{apiError}</div>
+      )}
       
-      <div className="content">
-        {apiError && (
-          <div className="error-message">
-            {apiError}
+      {/* Основное изменение: сначала проверяем alreadyAttempted */}
+      {alreadyAttempted ? (
+        <div className="time-message">
+          <div className="info-message">
+            Вы уже прошли опрос сегодня. Возвращайтесь завтра!
           </div>
-        )}
-        
-        {alreadyAttempted ? (
-          <div className="time-message">
-            <div className="info-message">
-              Вы уже прошли опрос сегодня. Возвращайтесь завтра!
-            </div>
+        </div>
+      ) : loading ? (
+        <Loader />
+      ) : surveyCompleted ? (
+        <div className="time-message">
+          <div className="info-message">
+            🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
           </div>
-        ) : surveyCompleted ? (
-          <div className="time-message">
-            <div className="info-message">
-              🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
-            </div>
-          </div>
-        ) : (
-          <div className="questions">
-            {questions.map((question) => (
-              <QuestionCard
-                key={question.id}
-                question={question}
-                onAnswer={handleAnswer}
-                answered={question.id in answers}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="questions">
+          {questions.map((question) => (
+            <QuestionCard
+              key={question.id}
+              question={question}
+              onAnswer={handleAnswer}
+              answered={question.id in answers}
+            />
+          ))}
+        </div>
+      )}
+    </div>
 
       <div className="menu">
         <Link href="/" passHref>
