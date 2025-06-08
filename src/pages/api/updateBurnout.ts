@@ -15,15 +15,15 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { userId, newScore } = req.body;
+  const { telegramId, newScore } = req.body;  // Изменяем userId на telegramId
   
-  if (!userId || newScore === undefined) {
+  if (!telegramId || newScore === undefined) {
     return res.status(400).json({ error: 'Missing parameters' });
   }
 
   try {
     const { data, error } = await supabase.rpc('update_burnout', {
-      p_user_id: userId,
+      p_telegram_id: telegramId,  // Используем новый параметр
       p_new_score: newScore
     });
 
