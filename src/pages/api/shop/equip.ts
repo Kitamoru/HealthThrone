@@ -6,6 +6,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  // Проверка авторизации
   const initData = req.headers['x-telegram-init-data'] as string;
   if (!initData || !validateTelegramInitData(initData)) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -15,9 +16,12 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { telegramId, spriteId } = req.body;
-  if (!telegramId || !spriteId) {
-    return res.status(400).json({ error: 'telegramId and spriteId required' });
+   // Преобразование ID
+  const telegramId = parseInt(req.body.telegramId, 10);
+  const spriteId = parseInt(req.body.spriteId, 10);
+  
+  if (isNaN(telegramId) || isNaN(spriteId)) {
+    return res.status(400).json({ error: 'Invalid ID format' });
   }
 
   try {
