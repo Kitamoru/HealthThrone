@@ -197,10 +197,13 @@ export default function Home() {
     });
     
     if (response.success && response.data) {
+      // Исправление: приведение типа для response.data
+      const data = response.data as { burnout_level: number };
+      
       setSurveyCompleted(true);
       setAlreadyAttempted(true);
-      setBurnoutLevel(response.data.burnout_level);
-      setInitialBurnoutLevel(response.data.burnout_level);
+      setBurnoutLevel(data.burnout_level);
+      setInitialBurnoutLevel(data.burnout_level);
     } else {
       setApiError(response.error || 'Ошибка сохранения результатов');
     }
