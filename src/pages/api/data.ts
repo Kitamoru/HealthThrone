@@ -8,7 +8,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   console.log('[Data API] Received request', req.method, req.url);
-
+  
   // Добавляем заголовки для предотвращения кеширования
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.setHeader('Pragma', 'no-cache');
@@ -53,7 +53,13 @@ export default async function handler(
       return res.status(404).json({ error: 'User not found' });
     }
 
-    console.log('[Data API] User data found:', JSON.stringify(user, null, 2));
+    console.log('[Data API] User data found:', JSON.stringify({
+      id: user.id,
+      telegram_id: user.telegram_id,
+      burnout_level: user.burnout_level,
+      last_attempt_date: user.last_attempt_date
+    }, null, 2));
+    
     return res.status(200).json({
       success: true,
       data: user
