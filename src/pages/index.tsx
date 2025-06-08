@@ -129,7 +129,7 @@ export default function Home() {
     
     if (response.success && response.data) {
       const userData = response.data;
-      const level = userData.burnout_level || 0;
+      const level = { userData.burnout_level } || 0;
       
       // Всегда обновляем уровень выгорания
       setBurnoutLevel(level);
