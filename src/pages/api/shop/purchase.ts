@@ -22,13 +22,23 @@ export default async function handler(
     return res.status(400).json({ error: 'Invalid request body' });
   }
 
- // ... предыдущий код без изменений ...
-
-try {
-  console.log('Processing purchase for user:', telegramId, 'sprite:', spriteId);
-  
-  // Устанавливаем контекст
+  try {
+    console.log('Processing purchase for user:', telegramId, 'sprite:', spriteId);
+    
+    // Устанавливаем контекст
     await setUserContext(telegramId);
+
+    // Проверяем существование пользователя
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id, coins')
+      .eq('telegram_id', telegramId)
+      .single();
+
+    if (userError) throw userError;
+    if (!userData) {
+      return res.status(400).json({ error: 'User not found' });
+    }
 
     // Проверяем существование спрайта
     const { data: sprite, error: spriteError } = await supabase
@@ -37,39 +47,21 @@ try {
       .eq('id', spriteId)
       .single();
 
-  if (userError) throw userError;
-  if (!userData) {
-    return res.status(400).json({ error: 'User not found' });
-  }
+    if (spriteError) throw spriteError;
+    if (!sprite) {
+      return res.status(400).json({ error: 'Sprite not found' });
+    }
 
-  // Получаем цену спрайта
-  const { data: sprite, error: spriteError } = await supabase
-    .from('sprites')
-    .select('price')
-    .eq('id', spriteId)
-    .single();
+    const price = sprite.price;
 
-  if (spriteError) throw spriteError;
-  if (!sprite) {
-    return res.status(400).json({ error: 'Sprite not found' });
-  }
+    if (userData.coins < price) {
+      return res.status(400).json({ error: 'Insufficient coins' });
+    }
 
-  const price = sprite.price;
-
-  if (userData.coins < price) {
-    return res.status(400).json({ error: 'Insufficient coins' });
-  }
-
-  const { data: userData, error: userError } = await supabase
+    // Обновление баланса и добавление спрайта
+    const updatePromise = supabase
       .from('users')
-      .select('id, coins')
-      .eq('telegram_id', telegramId)
-      .single();
-
-  // Обновление баланса
-  const updatePromise = supabase
-      .from('users')
-      .update({ coins: userData.coins - sprite.price })
+      .update({ coins: userData.coins - price })
       .eq('telegram_id', telegramId);
 
     const insertPromise = supabase
@@ -78,13 +70,16 @@ try {
         user_id: userData.id,
         sprite_id: spriteId 
       }]);
- const [updateResult, insertResult] = await Promise.all([updatePromise, insertPromise]);
 
-  if (purchaseError) throw purchaseError;
+    const [updateResult, insertResult] = await Promise.all([updatePromise, insertPromise]);
 
-  return res.status(200).json({ success: true });
-} catch (error) {
-  console.error('Purchase error:', error);
-  return res.status(500).json({ error: 'Purchase failed' });
-}
+    if (updateResult.error || insertResult.error) {
+      throw updateResult.error || insertResult.error;
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Purchase error:', error);
+    return res.status(500).json({ error: 'Purchase failed' });
+  }
 }
