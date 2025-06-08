@@ -57,69 +57,73 @@ export default function Shop() {
   };
 
   useEffect(() => {
-    if (!isReady || !user?.id) {
-      console.log(`[Shop] Skipping fetch - isReady:${isReady}, userID:${user?.id}`);
-      return;
-    }
-    
+    if (!isReady || !user?.id) return;
+
     const fetchData = async () => {
       try {
-        console.log("[Shop] Starting data loading");
         setLoading(true);
         setError(null);
         
-        // Параллельная загрузка всех данных
-        const [userResponse, spritesResponse, ownedResponse] = await Promise.all([
+        const responses = await Promise.allSettled([
           api.getUserData(user.id, initData),
           api.getSprites(initData),
           api.getOwnedSprites(user.id, initData)
         ]);
 
-        console.log("[Shop] User response:", userResponse);
-        console.log("[Shop] Sprites response:", spritesResponse);
-        console.log("[Shop] Owned sprites response:", ownedResponse);
+        // Обработка каждого ответа отдельно
+        const [userResponse, spritesResponse, ownedResponse] = responses;
 
-        // Обработка ответов
-        if (!userResponse.success || !userResponse.data) {
-          const errorMsg = userResponse.error || 'Failed to load user data';
-          console.error("[Shop] User data error:", errorMsg);
+        // Обработка данных пользователя
+        if (userResponse.status === 'fulfilled' && 
+            userResponse.value.success && 
+            userResponse.value.data) {
+          const userData = userResponse.value.data;
+          setCoins(userData.coins || 0);
+          setCurrentSprite(userData.current_sprite_id || null);
+        } else {
+          const errorMsg = userResponse.status === 'rejected' 
+            ? 'User data request failed'
+            : userResponse.value.error || 'Failed to load user data';
           setError(errorMsg);
-          return;
         }
 
-        const userData = userResponse.data;
-        setCoins(userData.coins || 0);
-        setCurrentSprite(userData.current_sprite_id || null);
-        
-        if (spritesResponse.success && spritesResponse.data) {
-          const spritesWithPrice: SpriteWithPrice[] = spritesResponse.data.map(sprite => ({
+        // Обработка спрайтов - КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ
+        if (spritesResponse.status === 'fulfilled' && 
+            spritesResponse.value.success && 
+            spritesResponse.value.isArray) {
+          const spritesData = spritesResponse.value.data || [];
+          const spritesWithPrice: SpriteWithPrice[] = spritesData.map(sprite => ({
             ...sprite,
             price: sprite.price || 0
           }));
           setSprites(spritesWithPrice);
         } else {
-          const errorMsg = spritesResponse.error || 'Failed to load sprites';
-          setError(errorMsg);
+          const errorMsg = spritesResponse.status === 'rejected'
+            ? 'Sprites request failed'
+            : spritesResponse.value?.error || 'Invalid sprites data format';
+          setError(prev => prev || errorMsg);
+          setSprites([]);
         }
-        
-        if (ownedResponse.success && ownedResponse.data) {
-          setOwnedSprites(ownedResponse.data);
+
+        // Обработка купленных спрайтов
+        if (ownedResponse.status === 'fulfilled' && 
+            ownedResponse.value.success && 
+            Array.isArray(ownedResponse.value.data)) {
+          setOwnedSprites(ownedResponse.value.data);
         } else {
-          const errorMsg = ownedResponse.error || 'Failed to load owned sprites';
-          setError(errorMsg);
+          console.error('Failed to load owned sprites', ownedResponse);
         }
-        
-      } catch (err: any) {
-        console.error("[Shop] Fetch error:", err);
-        setError(err.message || 'Network error');
+
+      } catch (err) {
+        setError('Unexpected error');
       } finally {
         setLoading(false);
-        console.log("[Shop] Data loading completed");
       }
     };
     
     fetchData();
   }, [isReady, user, initData]);
+
 
   const handlePurchase = async (spriteId: number) => {
     console.log("[Shop] Purchase attempt for sprite:", spriteId);
