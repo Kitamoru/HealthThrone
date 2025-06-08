@@ -121,7 +121,7 @@ export default function Home() {
   });
 
   const loadUserData = useCallback(async () => {
-  setApiError(null); // Сбрасываем ошибки при новой загрузке
+  setApiError(null);
   if (!user?.id) return;
 
   try {
@@ -129,9 +129,9 @@ export default function Home() {
     
     if (response.success && response.data) {
       const userData = response.data;
-      const level = { userData.burnout_level } || 0;
+      // Исправлено здесь: убраны фигурные скобки
+      const level = userData.burnout_level || 0;
       
-      // Всегда обновляем уровень выгорания
       setBurnoutLevel(level);
       setInitialBurnoutLevel(level);
 
