@@ -1,5 +1,6 @@
 interface ApiResponse<T = any> {
   success: boolean;
+  status: number; // Добавлен HTTP статус
   data?: T;
   error?: string;
 }
@@ -22,7 +23,7 @@ export type UserProfile = {
   last_name?: string | null;
   burnout_level: number;
   last_attempt_date?: string | null;
-  coins: number; // Добавляем недостающие поля
+  coins: number;
   updated_at: string;
   current_sprite_id?: number;
   last_login_date?: string;
@@ -39,9 +40,20 @@ class Api {
     return headers;
   }
 
-  async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+  async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<ApiResponse<T>> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const startTime = Date.now();
+    
     try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      console.log(`[API] ${options.method || 'GET'} ${url}`, {
+        headers: options.headers,
+        body: options.body
+      });
+
+      const response = await fetch(url, {
         ...options,
         headers: {
           'Content-Type': 'application/json',
@@ -49,32 +61,45 @@ class Api {
         }
       });
 
-      // Обработка HTTP ошибок
+      const responseTime = Date.now() - startTime;
+      const status = response.status;
+      const responseClone = response.clone(); // Для безопасного чтения
+
+      // Упрощенная обработка ошибок
       if (!response.ok) {
-        const errorText = await response.text();
+        let errorText = 'Unknown error';
         try {
-          const errorData = JSON.parse(errorText);
-          return {
-            success: false,
-            error: errorData.error || `HTTP Error ${response.status}`
-          };
+          const errorResponse = await responseClone.json();
+          errorText = errorResponse.error || JSON.stringify(errorResponse);
         } catch {
-          return {
-            success: false,
-            error: errorText || `HTTP Error ${response.status}`
-          };
+          errorText = await responseClone.text();
         }
+
+        console.error(`[API] Error ${status} (${responseTime}ms): ${errorText}`);
+        return {
+          success: false,
+          status,
+          error: errorText
+        };
       }
 
-      // Успешный ответ
       const data: T = await response.json();
-      return { success: true, data };
+      console.log(`[API] Success ${status} (${responseTime}ms):`, data);
+      
+      return { 
+        success: true, 
+        status,
+        data 
+      };
       
     } catch (error: any) {
-      // Сетевые ошибки
+      const responseTime = Date.now() - startTime;
+      console.error(`[API] Network error (${responseTime}ms):`, error);
+      
       return {
         success: false,
-        error: error.message || 'Network error'
+        status: 0,
+        error: error.message || 'Network request failed'
       };
     }
   }
@@ -87,12 +112,7 @@ class Api {
   }
 
   async getUserData(telegramId: string, initData?: string): Promise<ApiResponse<UserProfile>> {
-    const params = new URLSearchParams({ 
-      telegramId, 
-      _t: Date.now().toString() 
-    });
-    
-    return this.request<UserProfile>(`/data?${params}`, {
+    return this.request<UserProfile>(`/data?telegramId=${telegramId}`, {
       headers: this.getHeaders(initData)
     });
   }
@@ -106,12 +126,7 @@ class Api {
   }
 
   async getFriends(telegramId: string, initData?: string) {
-    const params = new URLSearchParams({ 
-      telegramId, 
-      _t: Date.now().toString() 
-    });
-    
-    return this.request(`/friends?${params}`, {
+    return this.request(`/friends?telegramId=${telegramId}`, {
       headers: this.getHeaders(initData)
     });
   }
@@ -124,7 +139,7 @@ class Api {
     });
   }
 
-  async deleteFriend(friendId: string, initData?: string) { // Изменено на string
+  async deleteFriend(friendId: string, initData?: string) {
     return this.request(`/friends/${friendId}`, {
       method: 'DELETE',
       headers: this.getHeaders(initData)
@@ -132,21 +147,13 @@ class Api {
   }
 
   async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
-    const params = new URLSearchParams({ 
-      _t: Date.now().toString() 
-    });
-    
-    return this.request<Sprite[]>(`/shop/sprites?${params}`, {
+    return this.request<Sprite[]>('/shop/sprites', {
       headers: this.getHeaders(initData)
     });
   }
   
   async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
-    const params = new URLSearchParams({ 
-      _t: Date.now().toString() 
-    });
-    
-    return this.request<Sprite>(`/shop/sprites/${spriteId}?${params}`, {
+    return this.request<Sprite>(`/shop/sprites/${spriteId}`, {
       headers: this.getHeaders(initData)
     });
   }
@@ -178,12 +185,7 @@ class Api {
     telegramId: string, 
     initData?: string
   ): Promise<ApiResponse<number[]>> {
-    const params = new URLSearchParams({ 
-      telegramId, 
-      _t: Date.now().toString() 
-    });
-    
-    return this.request<number[]>(`/shop/owned?${params}`, {
+    return this.request<number[]>(`/shop/owned?telegramId=${telegramId}`, {
       headers: this.getHeaders(initData)
     });
   }
