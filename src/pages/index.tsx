@@ -5,9 +5,9 @@ import { useTelegram } from '../hooks/useTelegram';
 import { BurnoutProgress } from '../components/BurnoutProgress';
 import { QuestionCard } from '../components/QuestionCard';
 import { Loader } from '../components/Loader';
-import { api, Sprite } from '../lib/api'; // Добавлен импорт Sprite
+import { api } from '../lib/api';
 import { UserProfile } from '../lib/supabase';
-import { format } from 'date-fns';
+import { format, isBefore, addDays, parseISO } from 'date-fns';
 
 interface Question {
   id: number;
@@ -102,16 +102,14 @@ export default function Home() {
   const { user, initData } = useTelegram();
   const [questions] = useState<Question[]>(QUESTIONS);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
-  const [initialBurnoutLevel, setInitialBurnoutLevel] = useState(0); // Загруженный из базы уровень
-  const [currentBurnoutDelta, setCurrentBurnoutDelta] = useState(0); // Дельта в текущей сессии
-  const [burnoutLevel, setBurnoutLevel] = useState(0); // = initialBurnoutLevel + currentBurnoutDelta
+  const [initialBurnoutLevel, setInitialBurnoutLevel] = useState(0);
+  const [burnoutLevel, setBurnoutLevel] = useState(0);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
   const [alreadyAttempted, setAlreadyAttempted] = useState(false);
-  const [surveyCompleted, setSurveyCompleted] = useState(false); // Исправлено объявление
+  const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [spriteUrl, setSpriteUrl] = useState<string | undefined>(undefined);
 
-     // Выносим загрузку данных в отдельную функцию
   const loadUserData = useCallback(async () => {
     if (!user?.id) return;
     
@@ -124,28 +122,34 @@ export default function Home() {
         setBurnoutLevel(level);
         
         // Проверка последней попытки
-        const today = format(new Date(), 'yyyy-MM-dd');
-        if (userData.last_attempt_date === today) {
-          setAlreadyAttempted(true);
+        if (userData.last_attempt_date) {
+          const lastAttempt = parseISO(userData.last_attempt_date);
+          const today = new Date();
+          const tomorrow = addDays(lastAttempt, 1);
+          
+          // Проверяем прошло ли 24 часа
+          if (isBefore(today, tomorrow)) {
+            setAlreadyAttempted(true);
+          } else {
+            setAlreadyAttempted(false);
+          }
         } else {
           setAlreadyAttempted(false);
-          setAnswers({}); // Сбрасываем ответы если новый день
         }
       }
     } catch (err) {
       console.error('Error loading user data:', err);
+      setApiError('Ошибка загрузки данных пользователя');
     } finally {
       setLoading(false);
     }
   }, [user?.id, initData]);
 
-  // Загружаем данные при монтировании и изменении пользователя
   useEffect(() => {
     setLoading(true);
     loadUserData();
   }, [loadUserData]);
 
-  // Загружаем данные при возврате на страницу
   useEffect(() => {
     const handleRouteChange = () => {
       if (router.pathname === '/') {
@@ -159,7 +163,7 @@ export default function Home() {
     };
   }, [loadUserData, router]);
 
-  const handleAnswer = async (questionId: number, isPositive: boolean) => {
+  const handleAnswer = (questionId: number, isPositive: boolean) => {
     if (alreadyAttempted || !user) return;
 
     const question = questions.find(q => q.id === questionId);
@@ -184,23 +188,34 @@ export default function Home() {
     const newLevel = Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
     setBurnoutLevel(newLevel);
 
-    // Сохраняем промежуточный прогресс
-    try {
-      await api.updateBurnoutLevel(user.id, newLevel, initData);
-    } catch (error) {
-      console.error('Error saving burnout level:', error);
-    }
-
     // Проверяем завершение опроса
     const allAnswered = questions.every(q => q.id in newAnswers);
     if (allAnswered && !alreadyAttempted) {
-      try {
-        await api.updateAttemptDate(user.id, initData);
+      submitSurvey(answeredDelta);
+    }
+  };
+
+  const submitSurvey = async (totalScore: number) => {
+    if (!user?.id) return;
+    
+    try {
+      const response = await api.submitSurvey({
+        userId: user.id,
+        newScore: totalScore,
+        initData
+      });
+      
+      if (response.success && response.data) {
+        setSurveyCompleted(true);
         setAlreadyAttempted(true);
-      } catch (error) {
-        console.error('Failed to update attempt date:', error);
-        setApiError('Ошибка сохранения данных. Попробуйте еще раз.');
+        setBurnoutLevel(response.data.burnout_level);
+        setInitialBurnoutLevel(response.data.burnout_level);
+      } else {
+        setApiError(response.error || 'Ошибка сохранения результатов');
       }
+    } catch (error) {
+      console.error('Survey submission failed:', error);
+      setApiError('Ошибка соединения с сервером');
     }
   };
 
@@ -233,7 +248,7 @@ export default function Home() {
               Вы уже прошли опрос сегодня. Возвращайтесь завтра!
             </div>
           </div>
-       ) : surveyCompleted ? ( // Исправлено здесь
+        ) : surveyCompleted ? (
           <div className="time-message">
             <div className="info-message">
               🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
