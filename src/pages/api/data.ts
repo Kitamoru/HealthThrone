@@ -9,7 +9,7 @@ export default async function handler(
 ) {
   console.log('[Data API] Received request', req.method, req.url);
   
-  // Добавляем заголовки для предотвращения кеширования
+  // Заголовки для предотвращения кеширования
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.setHeader('Pragma', 'no-cache');
 
@@ -19,7 +19,14 @@ export default async function handler(
   }
 
   try {
-    const { telegramId } = req.query;
+    // Безопасное извлечение параметра
+    let telegramId = req.query.telegramId;
+    
+    // Обработка массива значений
+    if (Array.isArray(telegramId)) {
+      telegramId = telegramId[0];
+    }
+
     console.log('[Data API] Request query:', req.query);
 
     if (!telegramId) {
@@ -27,17 +34,12 @@ export default async function handler(
       return res.status(400).json({ error: 'telegramId required' });
     }
 
-    const telegramIdNumber = Number(telegramId);
-    if (isNaN(telegramIdNumber)) {
-      console.error('[Data API] Invalid telegramId format', telegramId);
-      return res.status(400).json({ error: 'Invalid telegramId format' });
-    }
-
-    console.log(`[Data API] Fetching user data for ID: ${telegramIdNumber}`);
+    console.log(`[Data API] Fetching user data for ID: ${telegramId}`);
+    
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
-      .eq('telegram_id', telegramIdNumber)
+      .eq('telegram_id', telegramId)
       .single();
 
     if (error) {
@@ -62,14 +64,19 @@ export default async function handler(
     
     return res.status(200).json({
       success: true,
-      data: user
+      data: {
+        ...user,
+        // Гарантируем наличие обязательных полей
+        burnout_level: user.burnout_level || 0,
+        telegram_id: user.telegram_id.toString() // Конвертируем в строку
+      }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Data API] Unhandled error:', error);
     return res.status(500).json({ 
       error: 'Internal server error',
-      details: error instanceof Error ? error.message : String(error)
+      details: error.message || String(error)
     });
   }
 }
