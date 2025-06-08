@@ -10,6 +10,9 @@ interface Friend {
   friend_id: number;
   friend_username: string;
   burnout_level: number;
+  coins: number;
+  updated_at: string;
+}
 }
 
 interface ApiResponse<T = any> {
@@ -70,8 +73,12 @@ export default function Friends() {
             friend_id: f.friend.id,
             friend_username: f.friend.username || 
                             `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
-            burnout_level: f.friend.burnout_level
+            burnout_level: f.friend.burnout_level,
+            // Добавляем недостающие поля
+            coins: f.friend.coins || 0,
+            updated_at: f.friend.updated_at || new Date().toISOString()
           }));
+          
           
           setFriends(formattedFriends);
           sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(formattedFriends));
