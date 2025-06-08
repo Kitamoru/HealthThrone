@@ -88,10 +88,11 @@ export default function Friends() {
     loadFriends();
   }, [isReady, user, initData]);
 
-  const handleDelete = async (friendId: number) => {
-    try {
-      // Исправлено: преобразование friendId в строку
-      const response = await api.deleteFriend(String(friendId), initData);
+  
+const handleDelete = async (friendId: number) => {
+  try {
+    // Преобразуем в строку для совместимости
+    const response = await api.deleteFriend(friendId.toString(), initData);
       if (response.success) {
         const updatedFriends = friends.filter(f => f.id !== friendId);
         setFriends(updatedFriends);
