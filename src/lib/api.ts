@@ -13,16 +13,20 @@ export interface Sprite {
   isEquipped?: boolean;
 }
 
-export interface UserProfile {
-  id: string;
-  telegram_id: string;
+export type UserProfile = {
+  id: number;
+  telegram_id: number;
   created_at: string;
   username?: string | null;
   first_name?: string | null;
   last_name?: string | null;
   burnout_level: number;
   last_attempt_date?: string | null;
-}
+  coins: number; // Добавляем недостающие поля
+  updated_at: string;
+  current_sprite_id?: number;
+  last_login_date?: string;
+};
 
 class Api {
   private baseUrl = '/api';
