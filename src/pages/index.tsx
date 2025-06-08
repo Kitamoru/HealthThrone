@@ -110,22 +110,19 @@ export default function Home() {
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [spriteUrl, setSpriteUrl] = useState<string | undefined>(undefined);
 
-  const loadUserData = useCallback(async () => {
+  
+// Проверка даты при загрузке
+const loadUserData = useCallback(async () => {
   if (!user?.id) return;
   
   try {
     const response = await api.getUserData(user.id, initData);
     if (response.success && response.data) {
-      const userData = response.data as UserProfile;
-      const level = userData.burnout_level || 0;
-      setInitialBurnoutLevel(level);
-      setBurnoutLevel(level);
+      const userData = response.data;
+      const todayUTC = new Date().toISOString().split('T')[0]; // UTC дата
+      const lastAttempt = userData.last_attempt_date?.split('T')[0] || "";
       
-      // Упрощенная проверка последней попытки
-      if (userData.last_attempt_date) {
-        const today = format(new Date(), 'yyyy-MM-dd');
-        // Сравниваем строки дат напрямую
-        setAlreadyAttempted(userData.last_attempt_date === today);
+      setAlreadyAttempted(lastAttempt === todayUTC);
       }
     }
   } catch (err) {
@@ -191,23 +188,24 @@ export default function Home() {
   
   try {
     const response = await api.submitSurvey({
-      telegramId: user.id,  // Передаем telegramId
+      telegramId: user.id,
       newScore: totalScore,
       initData
     });
     
     if (response.success && response.data) {
-      // Исправление: приведение типа для response.data
-      const data = response.data as { burnout_level: number };
+      const { burnout_level, last_attempt_date } = response.data;
       
-      setSurveyCompleted(true);
+      // Обновляем все данные сразу
+      setBurnoutLevel(burnout_level);
+      setInitialBurnoutLevel(burnout_level);
       setAlreadyAttempted(true);
-      setBurnoutLevel(data.burnout_level);
-      setInitialBurnoutLevel(data.burnout_level);
-    } else {
-      setApiError(response.error || 'Ошибка сохранения результатов');
+      setSurveyCompleted(true);
+      
+      // Для надежности: сохраняем дату в localStorage
+      localStorage.setItem('lastAttemptDate', last_attempt_date);
     }
-  } catch (error) {
+  } catch (error)  {
     console.error('Survey submission failed:', error);
     setApiError('Ошибка соединения с сервером');
   }
