@@ -128,9 +128,11 @@ export default function Home() {
     const response = await api.getUserData(user.id, initData);
     
     if (response.success && response.data) {
-      const userData = response.data;
-      // Исправлено здесь: убраны фигурные скобки
-      const level = userData.burnout_level || 0;
+      // Явно указываем тип для userData
+      const userData = response.data as UserProfile;
+      
+      // Используем значение burnout_level или 0 по умолчанию
+      const level = userData.burnout_level ?? 0;
       
       setBurnoutLevel(level);
       setInitialBurnoutLevel(level);
