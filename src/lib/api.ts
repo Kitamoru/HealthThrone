@@ -61,8 +61,6 @@ class Api {
     }
   }
 
-  
-
   async initUser(initData: string, startParam?: string) {
     return this.request('/init', {
       method: 'POST',
@@ -71,7 +69,8 @@ class Api {
   }
 
   async getUserData(telegramId: number, initData?: string) {
-    return this.request(`/data?telegramId=${telegramId}`, { 
+    const timestamp = new Date().getTime();
+    return this.request(`/data?telegramId=${telegramId}&_t=${timestamp}`, { 
       headers: this.getHeaders(initData) 
     });
   }
@@ -85,7 +84,8 @@ class Api {
   }
 
   async getFriends(telegramId: number, initData?: string) {
-    return this.request(`/friends?telegramId=${telegramId}`, { 
+    const timestamp = new Date().getTime();
+    return this.request(`/friends?telegramId=${telegramId}&_t=${timestamp}`, { 
       headers: this.getHeaders(initData) 
     });
   }
@@ -106,13 +106,15 @@ class Api {
   }
 
   async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
-    return this.request('/shop/sprites', {
+    const timestamp = new Date().getTime();
+    return this.request(`/shop/sprites?_t=${timestamp}`, {
       headers: this.getHeaders(initData)
     });
   }
   
   async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
-    return this.request(`/shop/sprites/${spriteId}`, {
+    const timestamp = new Date().getTime();
+    return this.request(`/shop/sprites/${spriteId}?_t=${timestamp}`, {
       headers: this.getHeaders(initData)
     });
   }
@@ -144,7 +146,8 @@ class Api {
     telegramId: number, 
     initData?: string
   ): Promise<ApiResponse<number[]>> {
-    return this.request(`/shop/owned?telegramId=${telegramId}`, {
+    const timestamp = new Date().getTime();
+    return this.request(`/shop/owned?telegramId=${telegramId}&_t=${timestamp}`, {
       headers: this.getHeaders(initData)
     });
   }
@@ -178,4 +181,3 @@ class Api {
 }
 
 export const api = new Api();
-
