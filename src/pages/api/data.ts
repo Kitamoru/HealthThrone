@@ -62,15 +62,24 @@ export default async function handler(
       last_attempt_date: user.last_attempt_date
     }, null, 2));
     
-    return res.status(200).json({
-      success: true,
-      data: {
-        ...user,
-        // Гарантируем наличие обязательных полей
-        burnout_level: user.burnout_level || 0,
-        telegram_id: user.telegram_id.toString() // Конвертируем в строку
-      }
-    });
+    // В обработчике GET:
+return res.status(200).json({
+  success: true,
+  data: {
+    id: user.id,
+    telegram_id: user.telegram_id,
+    created_at: user.created_at,
+    username: user.username,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    burnout_level: user.burnout_level || 0,
+    last_attempt_date: user.last_attempt_date,
+    coins: user.coins || 0, // Добавляем недостающие поля
+    updated_at: user.updated_at,
+    current_sprite_id: user.current_sprite_id,
+    last_login_date: user.last_login_date
+  }
+});
 
   } catch (error: any) {
     console.error('[Data API] Unhandled error:', error);
