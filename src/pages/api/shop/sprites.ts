@@ -17,18 +17,6 @@ export default async function handler(
   }
 
   try {
-    // Парсинг initData: извлекаем и декодируем данные пользователя
-    const params = new URLSearchParams(initData);
-    const userString = params.get('user');
-    if (!userString) {
-      return res.status(401).json({ error: 'Unauthorized: user data missing' });
-    }
-    const user = JSON.parse(userString);
-    if (!user || !user.id) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    // Получаем все спрайты
     const { data: sprites, error } = await supabase
       .from('sprites')
       .select('*');
@@ -38,9 +26,18 @@ export default async function handler(
       return res.status(500).json({ error: 'Database error' });
     }
 
-    return res.status(200).json({ success: true, data: sprites });
+    // Гарантируем что вернем массив (даже пустой)
+    const resultData = Array.isArray(sprites) ? sprites : [];
+    
+    return res.status(200).json({ 
+      success: true, 
+      data: resultData 
+    });
   } catch (error) {
     console.error('Unexpected error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      data: [] // Всегда возвращаем массив
+    });
   }
 }
