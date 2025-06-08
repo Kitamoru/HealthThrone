@@ -162,19 +162,18 @@ class Api {
   }
   
   async submitSurvey(params: {
-    telegramId: number;  // Изменяем userId на telegramId
-    newScore: number;
-    initData?: string;
-  }): Promise<ApiResponse<{ burnout_level: number }>> {
-    return this.request('/updateBurnout', {
-      method: 'POST',
-      headers: this.getHeaders(params.initData),
-      body: JSON.stringify({
-        telegramId: params.telegramId,  // Используем telegramId
-        newScore: params.newScore
-      })
-    });
-  }
+  telegramId: number;
+  newScore: number;
+  initData?: string;
+}): Promise<ApiResponse<{ burnout_level: number } | { error: string }>> {
+  return this.request('/updateBurnout', {
+    method: 'POST',
+    headers: this.getHeaders(params.initData),
+    body: JSON.stringify({
+      telegramId: params.telegramId,
+      newScore: params.newScore
+    })
+  });
 }
 
 export const api = new Api();
