@@ -1,9 +1,18 @@
 interface ApiResponse<T = any> {
   success: boolean;
-  status: number; // Добавлен HTTP статус
+  status: number;
   data?: T;
   error?: string;
+  isArray?: boolean; // Добавляем флаг массива
 }
+
+// В методе request после успешного ответа:
+return { 
+  success: true, 
+  status,
+  data,
+  isArray: Array.isArray(data) // Добавляем информацию о типе
+};
 
 export interface Sprite {
   id: number;
