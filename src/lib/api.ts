@@ -61,6 +61,8 @@ class Api {
     }
   }
 
+  
+
   async initUser(initData: string, startParam?: string) {
     return this.request('/init', {
       method: 'POST',
@@ -156,6 +158,21 @@ class Api {
       method: 'POST',
       headers: this.getHeaders(initData),
       body: JSON.stringify({ telegramId, spriteId })
+    });
+  }
+  
+  async submitSurvey(params: {
+    userId: number;
+    newScore: number;
+    initData?: string;
+  }): Promise<ApiResponse<{ burnout_level: number }>> {
+    return this.request('/updateBurnout', {
+      method: 'POST',
+      headers: this.getHeaders(params.initData),
+      body: JSON.stringify({
+        userId: params.userId,
+        newScore: params.newScore
+      })
     });
   }
 }
