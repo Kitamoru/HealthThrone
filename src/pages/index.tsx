@@ -121,44 +121,30 @@ export default function Home() {
   });
 
   const loadUserData = useCallback(async () => {
-  if (!user?.id) {
-    console.log('User ID not available yet');
-    return;
-  }
-  
+  setApiError(null); // Сбрасываем ошибки при новой загрузке
+  if (!user?.id) return;
+
   try {
-    console.log(`Loading user data for ID: ${user.id}`);
     const response = await api.getUserData(user.id, initData);
     
     if (response.success && response.data) {
-      const userData = response.data as UserProfile;
+      const userData = response.data;
       const level = userData.burnout_level || 0;
       
-      console.log(`Loaded user data: burnout_level=${level}, 
-        last_attempt=${userData.last_attempt_date}`);
-      
       // Всегда обновляем уровень выгорания
-      setInitialBurnoutLevel(level);
       setBurnoutLevel(level);
-      
-      // Проверяем дату последней попытки
+      setInitialBurnoutLevel(level);
+
       if (userData.last_attempt_date) {
-        const todayUTC = new Date().toISOString().split('T')[0];
-        const lastAttemptUTC = new Date(userData.last_attempt_date).toISOString().split('T')[0];
-        const attemptedToday = lastAttemptUTC === todayUTC;
-        
-        setAlreadyAttempted(attemptedToday);
-        if (attemptedToday && typeof window !== 'undefined') {
-          localStorage.setItem('lastAttemptDate', new Date().toISOString());
-        }
+        const today = new Date().toISOString().split('T')[0];
+        const lastAttempt = new Date(userData.last_attempt_date).toISOString().split('T')[0];
+        setAlreadyAttempted(today === lastAttempt);
       }
     } else {
-      console.error('Error loading user data:', response.error);
-      setApiError(response.error || 'Ошибка загрузки данных пользователя');
+      setApiError(response.error || "Ошибка загрузки данных");
     }
   } catch (err) {
-    console.error('Error loading user data:', err);
-    setApiError('Ошибка загрузки данных пользователя');
+    setApiError("Ошибка соединения");
   } finally {
     setLoading(false);
   }
@@ -235,7 +221,6 @@ const submitSurvey = async (totalScore: number) => {
       setSurveyCompleted(true);
       setAlreadyAttempted(true);
       setBurnoutLevel(updatedUser.burnout_level);
-      setInitialBurnoutLevel(updatedUser.burnout_level);
       
       // Update localStorage
       if (typeof window !== 'undefined') {
