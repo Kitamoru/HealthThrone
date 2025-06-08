@@ -87,10 +87,10 @@ export default async function handler(
     const today = format(new Date(), 'yyyy-MM-dd');
     console.log(`[Init API] Current date: ${today}, timestamp: ${now}`);
 
-    // Check existing user
+    // Check existing user - ИСПРАВЛЕНО: добавлено поле burnout_level в запрос
     const { data: existingUser, error: userError } = await supabase
       .from('users')
-      .select('id, coins, last_login_date, created_at')
+      .select('id, coins, last_login_date, created_at, burnout_level') // Добавлено burnout_level
       .eq('telegram_id', user_id)
       .maybeSingle();
 
