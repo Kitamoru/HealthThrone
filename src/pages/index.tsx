@@ -214,25 +214,27 @@ export default function Home() {
     });
     
     if (response.success && response.data) {
-      // Явное приведение типа для данных ответа
+      // Получаем полные данные пользователя
       const responseData = response.data as { 
-        burnout_level: number; 
-        last_attempt_date?: string 
+        user: UserProfile;
       };
       
-      const { burnout_level } = responseData;
+      const updatedUser = responseData.user;
       const todayUTC = new Date().toISOString();
       
       // Обновляем состояние
       setSurveyCompleted(true);
       setAlreadyAttempted(true);
-      setBurnoutLevel(burnout_level);
-      setInitialBurnoutLevel(burnout_level);
+      setBurnoutLevel(updatedUser.burnout_level);
+      setInitialBurnoutLevel(updatedUser.burnout_level);
       
       // Обновляем localStorage
       if (typeof window !== 'undefined') {
         localStorage.setItem('lastAttemptDate', todayUTC);
       }
+
+      console.log('Survey submitted successfully. New burnout level:', 
+        updatedUser.burnout_level);
     } else {
       setApiError(response.error || 'Ошибка сохранения результатов');
     }
