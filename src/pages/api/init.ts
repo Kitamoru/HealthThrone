@@ -110,14 +110,18 @@ export default async function handler(
     try {
       console.log(`[Init API] Upserting user: ${user_id}`);
       
-      const updates = {
-        telegram_id: user_id,
-        first_name: user.first_name,
-        last_name: user.last_name || null,
-        username: user.username || null,
-        coins: (existingUser?.coins || 0) + coinsToAdd,
-        last_login_date: today,
-        updated_at: now
+      
+    const updates = {
+      telegram_id: user_id,
+      first_name: user.first_name,
+      last_name: user.last_name || null,
+      username: user.username || null,
+      coins: (existingUser?.coins || 0) + coinsToAdd,
+      last_login_date: today,
+      updated_at: now,
+      // Добавляем недостающие поля для соответствия типу
+      burnout_level: existingUser?.burnout_level || 0,
+      created_at: existingUser?.created_at || now
       };
 
       const { data: userData, error: upsertError } = await supabase
