@@ -49,19 +49,16 @@ export default async function handler(
   }
 
   try {
+    const telegramId = req.query.telegramId as string;
+    if (!telegramId) {
+      return res.status(400).json({ error: 'telegramId required' });
+    }
+
     const telegramIdNumber = parseInt(telegramId, 10);
-    console.log('[Shop/Owned] Parsed telegramIdNumber:', telegramIdNumber);
-    
     if (isNaN(telegramIdNumber)) {
-      console.log('[Shop/Owned] Bad request: telegramId is not a number', telegramId);
       return res.status(400).json({ error: 'Invalid telegramId format' });
     }
 
-    // Проверка соответствия пользователя
-    if (telegramIdNumber !== telegramUser.id) {
-      console.log(`[Shop/Owned] Forbidden: User ${telegramUser.id} requested data for ${telegramIdNumber}`);
-      return res.status(403).json({ error: 'Forbidden' });
-    }
 
     // Установка контекста пользователя для RLS
     await supabase.rpc('set_current_user', { user_id: telegramIdNumber.toString() });
