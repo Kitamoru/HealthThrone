@@ -24,7 +24,7 @@ interface TelegramWebApp {
     user?: TelegramUser;
     chat_instance?: string;
     chat_type?: string;
-    start_param?: string;  // <-- Важное поле для реферальных ссылок
+    start_param?: string;
   };
   colorScheme: 'light' | 'dark';
   themeParams: {
@@ -101,11 +101,9 @@ export const useTelegram = () => {
       setIsReady(true);
     };
 
-    // Инициализация при наличии объекта Telegram
     if (window.Telegram?.WebApp) {
       initTelegram();
     } else {
-      // Ожидаем кастомное событие от скрипта
       window.addEventListener('telegram-ready', initTelegram);
     }
 
