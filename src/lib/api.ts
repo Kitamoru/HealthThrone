@@ -162,7 +162,7 @@ class Api {
   }
   
   async submitSurvey(params: {
-    userId: number;
+    telegramId: number;  // Изменяем userId на telegramId
     newScore: number;
     initData?: string;
   }): Promise<ApiResponse<{ burnout_level: number }>> {
@@ -170,7 +170,7 @@ class Api {
       method: 'POST',
       headers: this.getHeaders(params.initData),
       body: JSON.stringify({
-        userId: params.userId,
+        telegramId: params.telegramId,  // Используем telegramId
         newScore: params.newScore
       })
     });
