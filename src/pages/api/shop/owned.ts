@@ -7,7 +7,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   console.log('[Shop/Owned] Request received. Method:', req.method);
-  
+
   const initData = req.headers['x-telegram-init-data'] as string;
   if (!initData || !validateTelegramInitData(initData)) {
     console.log('[Shop/Owned] Unauthorized: missing or invalid init data');
