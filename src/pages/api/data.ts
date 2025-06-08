@@ -92,7 +92,7 @@ export default async function handler(
 
     console.log('[Data API] Full user data:', JSON.stringify(userData, null, 2));
     
-    return res.status(200).json({
+      return res.status(200).json({
       success: true,
       data: userData
     });
