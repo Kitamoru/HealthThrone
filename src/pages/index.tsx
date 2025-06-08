@@ -128,6 +128,8 @@ export default function Home() {
       if (response.success && response.data) {
         const userData = response.data as UserProfile;
         const level = userData.burnout_level || 0;
+        
+        // Всегда обновляем уровень выгорания
         setInitialBurnoutLevel(level);
         setBurnoutLevel(level);
         
@@ -212,15 +214,16 @@ export default function Home() {
       });
       
       if (response.success && response.data) {
-        const data = response.data as { burnout_level: number };
-        
-        // Обновляем состояние и localStorage
+        const { burnout_level } = response.data;
         const todayUTC = new Date().toISOString();
+        
+        // Обновляем состояние
         setSurveyCompleted(true);
         setAlreadyAttempted(true);
-        setBurnoutLevel(data.burnout_level);
-        setInitialBurnoutLevel(data.burnout_level);
+        setBurnoutLevel(burnout_level);
+        setInitialBurnoutLevel(burnout_level);
         
+        // Обновляем localStorage
         if (typeof window !== 'undefined') {
           localStorage.setItem('lastAttemptDate', todayUTC);
         }
@@ -257,7 +260,7 @@ export default function Home() {
         {alreadyAttempted ? (
           <div className="time-message">
             <div className="info-message">
-              Вы уже прошли опрос сегодня. Возвращайтесь завтра!
+              Вы уже прошли опрос сегодня. Ваш текущий уровень выгорания: {burnoutLevel}%
             </div>
           </div>
         ) : surveyCompleted ? (
