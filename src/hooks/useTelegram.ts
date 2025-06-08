@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 interface TelegramUser {
-  id: string;;
+  id: string;
   first_name: string;
   last_name?: string;
   username?: string;
