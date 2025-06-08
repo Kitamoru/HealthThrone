@@ -6,14 +6,6 @@ interface ApiResponse<T = any> {
   isArray?: boolean; // Добавляем флаг массива
 }
 
-// В методе request после успешного ответа:
-return { 
-  success: true, 
-  status,
-  data,
-  isArray: Array.isArray(data) // Добавляем информацию о типе
-};
-
 export interface Sprite {
   id: number;
   name: string;
