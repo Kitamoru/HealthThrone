@@ -27,15 +27,15 @@ export default async function handler(
 try {
   console.log('Processing purchase for user:', telegramId, 'sprite:', spriteId);
   
-  // Устанавливаем контекст пользователя для RLS
-  await setUserContext(telegramId);
+  // Устанавливаем контекст
+    await setUserContext(telegramId);
 
-  // Проверка баланса (ДОБАВЛЯЕМ ВЫБОР id ПОЛЬЗОВАТЕЛЯ)
-  const { data: userData, error: userError } = await supabase
-    .from('users')
-    .select('id, coins') // ← добавляем id пользователя
-    .eq('telegram_id', telegramId)
-    .single();
+    // Проверяем существование спрайта
+    const { data: sprite, error: spriteError } = await supabase
+      .from('sprites')
+      .select('price')
+      .eq('id', spriteId)
+      .single();
 
   if (userError) throw userError;
   if (!userData) {
@@ -60,23 +60,25 @@ try {
     return res.status(400).json({ error: 'Insufficient coins' });
   }
 
+  const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id, coins')
+      .eq('telegram_id', telegramId)
+      .single();
+
   // Обновление баланса
-  const { error: updateError } = await supabase
-    .from('users')
-    .update({ coins: userData.coins - price })
-    .eq('telegram_id', telegramId);
+  const updatePromise = supabase
+      .from('users')
+      .update({ coins: userData.coins - sprite.price })
+      .eq('telegram_id', telegramId);
 
-  if (updateError) throw updateError;
-  
-  // УДАЛЯЕМ ИЗБЫТОЧНЫЙ ЗАПРОС НА ПОЛУЧЕНИЕ SPRITE
-
-  // Добавление спрайта в купленные (ФИКС ССЫЛКИ НА ПОЛЬЗОВАТЕЛЯ)
-  const { error: purchaseError } = await supabase
-    .from('user_sprites')
-    .insert([{ 
-      user_id: userData.id, // ← исправлено на внутренний ID
-      sprite_id: spriteId 
-    }]);
+    const insertPromise = supabase
+      .from('user_sprites')
+      .insert([{ 
+        user_id: userData.id,
+        sprite_id: spriteId 
+      }]);
+ const [updateResult, insertResult] = await Promise.all([updatePromise, insertPromise]);
 
   if (purchaseError) throw purchaseError;
 
