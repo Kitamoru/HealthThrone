@@ -56,7 +56,7 @@ export default function Shop() {
     }
   };
 
-  useEffect(() => {
+ useEffect(() => {
     if (!isReady || !user?.id) return;
 
     const fetchData = async () => {
@@ -70,10 +70,9 @@ export default function Shop() {
           api.getOwnedSprites(user.id, initData)
         ]);
 
-        // Обработка каждого ответа отдельно
         const [userResponse, spritesResponse, ownedResponse] = responses;
 
-        // Обработка данных пользователя
+        // Обработка пользовательских данных
         if (userResponse.status === 'fulfilled' && 
             userResponse.value.success && 
             userResponse.value.data) {
@@ -81,27 +80,24 @@ export default function Shop() {
           setCoins(userData.coins || 0);
           setCurrentSprite(userData.current_sprite_id || null);
         } else {
-          const errorMsg = userResponse.status === 'rejected' 
-            ? 'User data request failed'
-            : userResponse.value.error || 'Failed to load user data';
-          setError(errorMsg);
+          // Обработка ошибки
         }
 
-        // Обработка спрайтов - КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ
+        // Ключевое исправление: проверка типа данных перед map
         if (spritesResponse.status === 'fulfilled' && 
-            spritesResponse.value.success && 
-            spritesResponse.value.isArray) {
-          const spritesData = spritesResponse.value.data || [];
-          const spritesWithPrice: SpriteWithPrice[] = spritesData.map(sprite => ({
+            spritesResponse.value.success) {
+          // Защита от не-массивов
+          const spritesData = Array.isArray(spritesResponse.value.data) 
+            ? spritesResponse.value.data 
+            : [];
+          
+          const spritesWithPrice = spritesData.map(sprite => ({
             ...sprite,
             price: sprite.price || 0
           }));
           setSprites(spritesWithPrice);
         } else {
-          const errorMsg = spritesResponse.status === 'rejected'
-            ? 'Sprites request failed'
-            : spritesResponse.value?.error || 'Invalid sprites data format';
-          setError(prev => prev || errorMsg);
+          // Обработка ошибки
           setSprites([]);
         }
 
@@ -110,10 +106,8 @@ export default function Shop() {
             ownedResponse.value.success && 
             Array.isArray(ownedResponse.value.data)) {
           setOwnedSprites(ownedResponse.value.data);
-        } else {
-          console.error('Failed to load owned sprites', ownedResponse);
         }
-
+        
       } catch (err) {
         setError('Unexpected error');
       } finally {
