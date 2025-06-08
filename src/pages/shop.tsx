@@ -54,8 +54,7 @@ export default function Shop() {
     } else {
       console.error(
         "[updateCoins] Failed to update coins:", 
-        response.error,
-        "Status:", response.status
+        response.error
       );
     }
   };
@@ -78,7 +77,7 @@ export default function Shop() {
 
         if (!userResponse.success || !userResponse.data) {
           const errorMsg = userResponse.error || 'Не удалось загрузить данные пользователя';
-          console.error("[fetchData] User data error:", errorMsg, "Status:", userResponse.status);
+          console.error("[fetchData] User data error:", errorMsg);
           setError(errorMsg);
           setLoading(false);
           return;
@@ -112,7 +111,7 @@ export default function Shop() {
           setSprites(spritesWithPrice);
         } else {
           const errorMsg = spritesResponse.error || 'Не удалось загрузить спрайты';
-          console.error("[fetchData] Sprites error:", errorMsg, "Status:", spritesResponse.status);
+          console.error("[fetchData] Sprites error:", errorMsg);
           setError(errorMsg);
         }
         
@@ -121,7 +120,7 @@ export default function Shop() {
           setOwnedSprites(ownedResponse.data);
         } else {
           const errorMsg = ownedResponse.error || 'Ошибка загрузки спрайтов';
-          console.error("[fetchData] Owned sprites error:", errorMsg, "Status:", ownedResponse.status);
+          console.error("[fetchData] Owned sprites error:", errorMsg);
           setError(errorMsg);
         }
         
@@ -184,8 +183,7 @@ export default function Shop() {
       } else {
         console.error(
           "[handlePurchase] Purchase failed:", 
-          response.error, 
-          "Status:", response.status
+          response.error
         );
         setError(response.error || 'Ошибка при покупке');
       }
@@ -217,8 +215,7 @@ export default function Shop() {
       } else {
         console.error(
           "[handleEquip] Equip failed:", 
-          response.error, 
-          "Status:", response.status
+          response.error
         );
         setError(response.error || 'Ошибка при установке');
       }
