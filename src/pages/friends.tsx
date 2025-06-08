@@ -13,7 +13,6 @@ interface Friend {
   coins: number;
   updated_at: string;
 }
-}
 
 interface ApiResponse<T = any> {
   success: boolean;
