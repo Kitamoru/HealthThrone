@@ -204,37 +204,43 @@ export default function Home() {
   };
 
   const submitSurvey = async (totalScore: number) => {
-    if (!user?.id) return;
+  if (!user?.id) return;
+  
+  try {
+    const response = await api.submitSurvey({
+      telegramId: user.id,
+      newScore: totalScore,
+      initData
+    });
     
-    try {
-      const response = await api.submitSurvey({
-        telegramId: user.id,
-        newScore: totalScore,
-        initData
-      });
+    if (response.success && response.data) {
+      // Явное приведение типа для данных ответа
+      const responseData = response.data as { 
+        burnout_level: number; 
+        last_attempt_date?: string 
+      };
       
-      if (response.success && response.data) {
-        const { burnout_level } = response.data;
-        const todayUTC = new Date().toISOString();
-        
-        // Обновляем состояние
-        setSurveyCompleted(true);
-        setAlreadyAttempted(true);
-        setBurnoutLevel(burnout_level);
-        setInitialBurnoutLevel(burnout_level);
-        
-        // Обновляем localStorage
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('lastAttemptDate', todayUTC);
-        }
-      } else {
-        setApiError(response.error || 'Ошибка сохранения результатов');
+      const { burnout_level } = responseData;
+      const todayUTC = new Date().toISOString();
+      
+      // Обновляем состояние
+      setSurveyCompleted(true);
+      setAlreadyAttempted(true);
+      setBurnoutLevel(burnout_level);
+      setInitialBurnoutLevel(burnout_level);
+      
+      // Обновляем localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('lastAttemptDate', todayUTC);
       }
-    } catch (error) {
-      console.error('Survey submission failed:', error);
-      setApiError('Ошибка соединения с сервером');
+    } else {
+      setApiError(response.error || 'Ошибка сохранения результатов');
     }
-  };
+  } catch (error) {
+    console.error('Survey submission failed:', error);
+    setApiError('Ошибка соединения с сервером');
+  }
+};
 
   if (!user) {
     return (
