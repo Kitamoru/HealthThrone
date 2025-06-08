@@ -1,7 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
-import { validateTelegramInitData } from '@/lib/telegramAuth'; // Удалён parseInitData
-import { setUserContext } from '@/lib/supabase';
+import { validateTelegramInitData } from '@/lib/telegramAuth';
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,7 +14,7 @@ export default async function handler(
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  // Ручной парсинг initData вместо parseInitData
+  // Парсинг initData для получения ID пользователя
   const params = new URLSearchParams(initData);
   const userString = params.get('user');
   if (!userString) {
@@ -23,15 +22,15 @@ export default async function handler(
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  let user;
+  let telegramUser;
   try {
-    user = JSON.parse(userString);
+    telegramUser = JSON.parse(userString);
   } catch (e) {
     console.log('[Shop/Owned] Unauthorized: failed to parse user data');
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  if (!user || !user.id) {
+  if (!telegramUser || !telegramUser.id) {
     console.log('[Shop/Owned] Unauthorized: user not found in init data');
     return res.status(401).json({ error: 'Unauthorized' });
   }
@@ -58,11 +57,17 @@ export default async function handler(
       return res.status(400).json({ error: 'Invalid telegramId format' });
     }
 
-    // Устанавливаем контекст пользователя для RLS
-    await setUserContext(user.id);
-    console.log('[Shop/Owned] User context set for Telegram user:', user.id);
+    // Проверка соответствия пользователя
+    if (telegramIdNumber !== telegramUser.id) {
+      console.log(`[Shop/Owned] Forbidden: User ${telegramUser.id} requested data for ${telegramIdNumber}`);
+      return res.status(403).json({ error: 'Forbidden' });
+    }
 
-    // Получаем список купленных спрайтов
+    // Установка контекста пользователя для RLS
+    await supabase.rpc('set_current_user', { user_id: telegramIdNumber.toString() });
+    console.log('[Shop/Owned] User context set for Telegram user:', telegramIdNumber);
+
+    // Получаем внутренний ID пользователя
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('id')
@@ -73,10 +78,16 @@ export default async function handler(
       throw new Error('User not found');
     }
 
+    // Получаем список купленных спрайтов
     const { data, error: dbError } = await supabase
       .from('user_sprites')
       .select('sprite_id')
       .eq('user_id', userData.id);
+
+    if (dbError) {
+      console.error('[Shop/Owned] Database error:', dbError);
+      throw dbError;
+    }
 
     console.log(`[Shop/Owned] Retrieved ${data?.length} sprites for user ${telegramIdNumber}`);
     
