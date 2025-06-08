@@ -75,25 +75,20 @@ export default async function handler(
 
     if (!user) {
       console.error('[Data API] User not found');
-      return res.status(404).json({ error: 'User not found' });
+      // Вместо ошибки возвращаем структуру с default значениями
+      return res.status(200).json({
+        success: true,
+        data: {
+          id: 0,
+          telegram_id: Number(telegramId),
+          coins: 0,
+          burnout_level: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      });
     }
 
-    console.log(`[Data API] User data found. Coins: ${user.coins}, ID: ${user.id}`);
-    
-    const userData = {
-      id: user.id,
-      telegram_id: user.telegram_id,
-      created_at: user.created_at,
-      username: user.username,
-      first_name: user.first_name,
-      last_name: user.last_name,
-      burnout_level: user.burnout_level || 0,
-      last_attempt_date: user.last_attempt_date,
-      coins: user.coins || 0,
-      updated_at: user.updated_at,
-      current_sprite_id: user.current_sprite_id,
-      last_login_date: user.last_login_date
-    };
 
     console.log('[Data API] Full user data:', JSON.stringify(userData, null, 2));
     
