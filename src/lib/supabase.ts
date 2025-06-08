@@ -18,7 +18,7 @@ export const setUserContext = async (telegramId: number) => {
   }
 };
 
-export interface UserProfile {
+export interface SupabaseUserProfile {
   id: number;
   telegram_id: number;
   first_name: string;
