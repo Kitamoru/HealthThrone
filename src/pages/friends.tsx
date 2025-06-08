@@ -1,4 +1,3 @@
-// ./src/pages/friends.tsx
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -19,7 +18,6 @@ interface ApiResponse<T = any> {
   error?: string;
 }
 
-// Компонент прогресс-бара для отображения уровня выгорания
 interface BurnoutProgressProps {
   level: number;
 }
@@ -54,11 +52,9 @@ export default function Friends() {
       try {
         setLoading(true);
         
-        // Проверка кэша
         const cached = sessionStorage.getItem(FRIENDS_CACHE_KEY);
         if (cached) {
           const parsedCache = JSON.parse(cached);
-          // Проверяем что в кэше массив
           if (Array.isArray(parsedCache)) {
             setFriends(parsedCache);
           } else {
@@ -66,7 +62,8 @@ export default function Friends() {
           }
         }
         
-        const response = await api.getFriends(user.id, initData);
+        // Исправлено: преобразование user.id в строку
+        const response = await api.getFriends(String(user.id), initData);
         if (response.success && response.data && Array.isArray(response.data)) {
           const formattedFriends = response.data.map(f => ({
             id: f.id,
@@ -93,7 +90,8 @@ export default function Friends() {
 
   const handleDelete = async (friendId: number) => {
     try {
-      const response = await api.deleteFriend(friendId, initData);
+      // Исправлено: преобразование friendId в строку
+      const response = await api.deleteFriend(String(friendId), initData);
       if (response.success) {
         const updatedFriends = friends.filter(f => f.id !== friendId);
         setFriends(updatedFriends);
@@ -107,7 +105,8 @@ export default function Friends() {
   };
 
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
-  const referralCode = `ref_${user?.id || 'default'}`;
+  // Добавлена проверка на наличие user
+  const referralCode = user ? `ref_${user.id}` : 'ref_default';
   const referralLink = `https://t.me/${botUsername}/HealthBreake?startapp=${referralCode}`;
 
   const handleCopy = () => {
