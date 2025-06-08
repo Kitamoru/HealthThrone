@@ -22,10 +22,10 @@ export default async function handler(
   }
 
   try {
-    // 1. Получаем текущий уровень выгорания пользователя
+    // 1. Получаем текущие данные пользователя
     const { data: userData, error: fetchError } = await supabase
       .from('users')
-      .select('burnout_level')
+      .select('*')
       .eq('telegram_id', telegramId)
       .single();
 
@@ -43,15 +43,20 @@ export default async function handler(
         last_attempt_date: new Date().toISOString()
       })
       .eq('telegram_id', telegramId)
-      .select('burnout_level, last_attempt_date')
+      .select('*')  // Возвращаем все данные пользователя
       .single();
 
     if (updateError) throw updateError;
 
+    console.log(`[UpdateBurnout] Updated user ${telegramId}:`, {
+      oldLevel: currentLevel,
+      newLevel,
+      newAttemptDate: updatedUser.last_attempt_date
+    });
+
     return res.status(200).json({
       success: true,
-      burnout_level: updatedUser.burnout_level,
-      last_attempt_date: updatedUser.last_attempt_date
+      user: updatedUser  // Возвращаем полные данные пользователя
     });
   } catch (e) {
     console.error('Server error:', e);
