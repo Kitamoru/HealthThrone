@@ -1,14 +1,19 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
-import { validateTelegramInitData } from '@/lib/telegramAuth';
+import { validateTelegramInitData, extractTelegramUser } from '@/lib/telegramAuth';
+import { UserProfile } from '@/lib/types';
 
-console.log("[Data API] Initializing data API handler");
+interface DataResponse {
+  success: boolean;
+  data?: UserProfile;
+  error?: string;
+}
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<DataResponse>
 ) {
-  console.log('[Data API] Received request', req.method, req.url, req.query);
+  console.log('[Data API] Received request', req.method, req.url);
   
   // Заголовки для предотвращения кеширования
   res.setHeader('Cache-Control', 'no-store, max-age=0');
@@ -16,32 +21,39 @@ export default async function handler(
 
   if (req.method !== 'GET') {
     console.warn('[Data API] Invalid method', req.method);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
   // Проверка авторизации через initData
   const initData = req.headers['x-telegram-init-data'] as string;
   if (!initData || !validateTelegramInitData(initData)) {
     console.warn('[Data API] Unauthorized: Invalid or missing init data');
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
 
   try {
     // Извлекаем telegramId из query параметров
-    const telegramId = req.query.telegramId;
+    const telegramId = req.query.telegramId as string;
     
     console.log('[Data API] Raw telegramId:', telegramId);
 
     if (!telegramId) {
       console.error('[Data API] telegramId is required');
-      return res.status(400).json({ error: 'telegramId required' });
+      return res.status(400).json({ success: false, error: 'telegramId required' });
     }
 
     // Преобразование в число
     const telegramIdNumber = Number(telegramId);
     if (isNaN(telegramIdNumber)) {
       console.error('[Data API] Invalid telegramId format:', telegramId);
-      return res.status(400).json({ error: 'Invalid telegramId format' });
+      return res.status(400).json({ success: false, error: 'Invalid telegramId format' });
+    }
+
+    // Дополнительная проверка пользователя из initData
+    const telegramUser = extractTelegramUser(initData);
+    if (!telegramUser || Number(telegramUser.id) !== telegramIdNumber) {
+      console.warn('[Data API] User ID mismatch');
+      return res.status(403).json({ success: false, error: 'Forbidden' });
     }
 
     console.log(`[Data API] Fetching user data for ID: ${telegramIdNumber}`);
@@ -54,54 +66,27 @@ export default async function handler(
     if (setUserResult.error) {
       console.error('[Data API] RLS error:', setUserResult.error);
       return res.status(500).json({ 
-        error: 'RLS configuration failed',
-        details: setUserResult.error.message
+        success: false,
+        error: 'RLS configuration failed'
       });
     }
 
-    const { data: user, error } = await supabase
+    const { data: user, error: dbError } = await supabase
       .from('users')
       .select('*')
       .eq('telegram_id', telegramIdNumber)
       .single();
 
-    if (error) {
-      console.error('[Data API] Database error:', error);
+    if (dbError) {
+      console.error('[Data API] Database error:', dbError);
       return res.status(500).json({ 
-        error: 'Database error',
-        details: error.message
-      });
-    }
-
-    // Если пользователь не найден, создаем default структуру
-    if (!user) {
-      console.error('[Data API] User not found, returning default');
-      
-      const defaultUserData = {
-        id: 0,
-        telegram_id: telegramIdNumber,
-        created_at: new Date().toISOString(),
-        username: null,
-        first_name: null,
-        last_name: null,
-        burnout_level: 0,
-        last_attempt_date: null,
-        coins: 0,
-        updated_at: new Date().toISOString(),
-        current_sprite_id: null,
-        last_login_date: null
-      };
-      
-      console.log('[Data API] Default user data:', JSON.stringify(defaultUserData, null, 2));
-      
-      return res.status(200).json({
-        success: true,
-        data: defaultUserData
+        success: false,
+        error: 'Database error'
       });
     }
 
     // Формируем данные пользователя для ответа
-    const userData = {
+    const userData: UserProfile = {
       id: user.id,
       telegram_id: user.telegram_id,
       created_at: user.created_at,
@@ -116,7 +101,7 @@ export default async function handler(
       last_login_date: user.last_login_date
     };
 
-    console.log('[Data API] Full user data:', JSON.stringify(userData, null, 2));
+    console.log('[Data API] Returning user data');
     
     return res.status(200).json({
       success: true,
@@ -126,8 +111,8 @@ export default async function handler(
   } catch (error: any) {
     console.error('[Data API] Unhandled error:', error);
     return res.status(500).json({ 
-      error: 'Internal server error',
-      details: error.message || String(error)
+      success: false,
+      error: 'Internal server error'
     });
   }
 }
