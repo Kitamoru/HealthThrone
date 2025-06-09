@@ -1,11 +1,14 @@
 import crypto from 'crypto';
 
 export const validateTelegramInitData = (initData: string): boolean => {
-  try {
-    const params = new URLSearchParams(initData);
-    const hash = params.get('hash');
-    if (!hash) return false;
-    params.delete('hash');
+  const params = new URLSearchParams(initData);
+  const hash = params.get('hash');
+  if (!hash) return false;
+
+  // Проверяем срок действия данных (не старше 1 часа)
+  const authDate = params.get('auth_date');
+  if (authDate && Date.now() - parseInt(authDate) * 1000 > 3600000) {
+    return false;
 
     const secretKey = crypto
       .createHmac('sha256', 'WebAppData')
