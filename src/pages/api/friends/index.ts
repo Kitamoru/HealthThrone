@@ -40,7 +40,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             last_name, 
             username, 
             burnout_level,
-            coins,        // Добавляем недостающие поля
             updated_at
           )
         `)
