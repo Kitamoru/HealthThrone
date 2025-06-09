@@ -224,12 +224,12 @@ const handleDelete = async (friendId: number) => {
             📈
           </button>
         </Link>
-        <Link href="/settings" passHref>
-          <button className="menu-btn">⚙️</button>
+        <Link href="/shop" passHref>
+          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>
+            🛍️
+          </button>
         </Link>
-        <Link href="/info" passHref>
-          <button className="menu-btn">ℹ️</button>
-        </Link>
+        <button className="menu-btn">ℹ️</button>
       </div>
     </div>
   );
