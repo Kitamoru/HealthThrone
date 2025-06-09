@@ -6,8 +6,7 @@ import { BurnoutProgress } from '../components/BurnoutProgress';
 import { QuestionCard } from '../components/QuestionCard';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
-import { UserProfile } from '../lib/api';
-import { SupabaseUserProfile } from '../lib/supabase';
+import { UserProfile } from '../lib/types';
 import { format, isBefore, addDays, parseISO } from 'date-fns';
 
 interface Question {
@@ -122,35 +121,34 @@ export default function Home() {
   });
 
   const loadUserData = useCallback(async () => {
-  setApiError(null);
-  if (!user?.id) return;
+    setApiError(null);
+    if (!user?.id) return;
 
-  try {
-    const response = await api.getUserData(user.id, initData);
-    
-    if (response.success && response.data) {
-    const userData = response.data; 
+    try {
+      // Преобразуем ID пользователя в число
+      const response = await api.getUserData(Number(user.id), initData);
       
-      // Используем значение burnout_level или 0 по умолчанию
-      const level = userData.burnout_level ?? 0;
-      
-      setBurnoutLevel(level);
-      setInitialBurnoutLevel(level);
+      if (response.success && response.data) {
+        const userData = response.data; 
+        const level = userData.burnout_level ?? 0;
+        
+        setBurnoutLevel(level);
+        setInitialBurnoutLevel(level);
 
-      if (userData.last_attempt_date) {
-        const today = new Date().toISOString().split('T')[0];
-        const lastAttempt = new Date(userData.last_attempt_date).toISOString().split('T')[0];
-        setAlreadyAttempted(today === lastAttempt);
+        if (userData.last_attempt_date) {
+          const today = new Date().toISOString().split('T')[0];
+          const lastAttempt = new Date(userData.last_attempt_date).toISOString().split('T')[0];
+          setAlreadyAttempted(today === lastAttempt);
+        }
+      } else {
+        setApiError(response.error || "Ошибка загрузки данных");
       }
-    } else {
-      setApiError(response.error || "Ошибка загрузки данных");
+    } catch (err) {
+      setApiError("Ошибка соединения");
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    setApiError("Ошибка соединения");
-  } finally {
-    setLoading(false);
-  }
-}, [user?.id, initData]);
+  }, [user?.id, initData]);
 
   useEffect(() => {
     setLoading(true);
@@ -204,40 +202,35 @@ export default function Home() {
 
   // src/pages/index.tsx
 
-const submitSurvey = async (totalScore: number) => {
-  if (!user?.id) return;
-  
-  try {
-    const response = await api.submitSurvey({
-      telegramId: user.id,
-      newScore: totalScore,
-      initData
-    });
+ const submitSurvey = async (totalScore: number) => {
+    if (!user?.id) return;
     
-    if (response.success && response.data) {
-    const updatedUser = response.data; // Убираем приведение типа
-      const todayUTC = new Date().toISOString();
+    try {
+      const response = await api.submitSurvey({
+        telegramId: Number(user.id), // Преобразование в число
+        newScore: totalScore,
+        initData
+      });
       
-      // Update state with new user data
-      setSurveyCompleted(true);
-      setAlreadyAttempted(true);
-      setBurnoutLevel(updatedUser.burnout_level);
-      
-      // Update localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('lastAttemptDate', todayUTC);
+      if (response.success && response.data) {
+        const updatedUser = response.data;
+        const todayUTC = new Date().toISOString();
+        
+        setSurveyCompleted(true);
+        setAlreadyAttempted(true);
+        setBurnoutLevel(updatedUser.burnout_level);
+        
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('lastAttemptDate', todayUTC);
+        }
+      } else {
+        setApiError(response.error || 'Ошибка сохранения результатов');
       }
-
-      console.log('Survey submitted successfully. New burnout level:', 
-        updatedUser.burnout_level);
-    } else {
-      setApiError(response.error || 'Ошибка сохранения результатов');
+    } catch (error) {
+      console.error('Survey submission failed:', error);
+      setApiError('Ошибка соединения с сервером');
     }
-  } catch (error) {
-    console.error('Survey submission failed:', error);
-    setApiError('Ошибка соединения с сервером');
-  }
-};
+  };
 
   if (!user) {
     return (
