@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { UserProfile, Friend, Sprite, UserSprite } from './types';
 
 console.log("[Supabase] Initializing Supabase client");
 console.log("[Supabase] URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "***" + process.env.NEXT_PUBLIC_SUPABASE_URL.slice(-8) : "MISSING");
@@ -8,57 +9,23 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
-export const setUserContext = async (telegramId: number) => {
+
+/**
+ * Устанавливает контекст пользователя для RLS (Row Level Security)
+ * @param telegramId Telegram ID пользователя
+ */
+export const setUserContext = async (telegramId: number): Promise<void> => {
   console.log(`[RLS] Setting user context: ${telegramId}`);
-  const { error } = await supabase
-    .rpc('set_current_user', { user_id: telegramId.toString() }); // Преобразуем в строку
   
-  if (error) {
+  try {
+    const { error } = await supabase
+      .rpc('set_current_user', { user_id: telegramId.toString() });
+    
+    if (error) {
+      throw new Error(`RLS error: ${error.message}`);
+    }
+  } catch (error) {
     console.error('[RLS] Error setting user context:', error);
+    throw error;
   }
 };
-
-export interface SupabaseUserProfile {
-  id: number;
-  telegram_id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  burnout_level: number;
-  last_survey_date?: string;
-  avatar_url?: string;
-  created_at: string;
-  updated_at: string;
-  coins: number;
-  current_sprite_id?: number;
-  last_login_date?: string;
-  last_attempt_date?: string;
-}
-
-export interface Friend {
-  id: number;
-  created_at: string;
-  friend: {
-    id: number;
-    first_name: string;
-    last_name?: string;
-    username?: string;
-    burnout_level: number;
-  };
-}
-
-export interface Sprite {
-  id: number;
-  name: string;
-  image_url: string;
-  price: number;
-  created_at?: string;
-  isEquipped?: boolean;
-}
-
-export interface UserSprite {
-  id: number;
-  user_id: number;
-  sprite_id: number;
-  purchased_at: string;
-}
