@@ -1,101 +1,90 @@
-interface ApiResponse<T = any> {
-  success: boolean;
-  status: number;
-  data?: T;
-  error?: string;
-  isArray?: boolean; // Добавляем флаг массива
-}
-
-export interface Sprite {
-  id: number;
-  name: string;
-  image_url: string;
-  price: number;
-  created_at?: string;
-  isEquipped?: boolean;
-}
-
-export type UserProfile = {
-  id: number;
-  telegram_id: number;
-  created_at: string;
-  username?: string | null;
-  first_name?: string | null;
-  last_name?: string | null;
-  burnout_level: number;
-  last_attempt_date?: string | null;
-  coins: number;
-  updated_at: string;
-  current_sprite_id?: number;
-  last_login_date?: string;
-};
+import { ApiResponse, UserProfile, Sprite, Friend } from './types';
 
 class Api {
   private baseUrl = '/api';
+  private defaultHeaders: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
 
-  private getHeaders(initData?: string): Record<string, string> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
-    };
-    if (initData) headers['X-Telegram-Init-Data'] = initData;
-    return headers;
-  }
+  private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
+    const responseTime = Date.now();
+    const status = response.status;
+    const responseClone = response.clone();
 
-  async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<ApiResponse<T>> {
-    const url = `${this.baseUrl}${endpoint}`;
-    const startTime = Date.now();
-    
-    try {
-      console.log(`[API] ${options.method || 'GET'} ${url}`, {
-        headers: options.headers,
-        body: options.body
-      });
-
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...(options.headers || {})
-        }
-      });
-
-      const responseTime = Date.now() - startTime;
-      const status = response.status;
-      const responseClone = response.clone(); // Для безопасного чтения
-
-      // Упрощенная обработка ошибок
-      if (!response.ok) {
-        let errorText = 'Unknown error';
+    if (!response.ok) {
+      let errorText = 'Unknown error';
+      try {
+        const errorResponse = await responseClone.json();
+        errorText = errorResponse.error || JSON.stringify(errorResponse);
+      } catch {
         try {
-          const errorResponse = await responseClone.json();
-          errorText = errorResponse.error || JSON.stringify(errorResponse);
-        } catch {
           errorText = await responseClone.text();
+        } catch (textError) {
+          errorText = 'Failed to parse error response';
         }
-
-        console.error(`[API] Error ${status} (${responseTime}ms): ${errorText}`);
-        return {
-          success: false,
-          status,
-          error: errorText
-        };
       }
+      return {
+        success: false,
+        status,
+        error: errorText
+      };
+    }
 
+    try {
       const data: T = await response.json();
-      console.log(`[API] Success ${status} (${responseTime}ms):`, data);
-      
       return { 
         success: true, 
         status,
         data 
       };
+    } catch (parseError) {
+      return {
+        success: false,
+        status: 500,
+        error: 'Failed to parse response data'
+      };
+    }
+  }
+
+  private async makeRequest<T>(
+    endpoint: string,
+    method: string = 'GET',
+    body?: any,
+    initData?: string
+  ): Promise<ApiResponse<T>> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const headers: Record<string, string> = { ...this.defaultHeaders };
+    
+    if (initData) {
+      headers['X-Telegram-Init-Data'] = initData;
+    }
+
+    const startTime = Date.now();
+    console.log(`[API] ${method} ${url}`, {
+      headers,
+      body: body ? JSON.stringify(body) : undefined
+    });
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined
+      });
+
+      const result = await this.handleResponse<T>(response);
+      const duration = Date.now() - startTime;
       
+      if (result.success) {
+        console.log(`[API] Success ${result.status} (${duration}ms):`, result.data);
+      } else {
+        console.error(`[API] Error ${result.status} (${duration}ms): ${result.error}`);
+      }
+      
+      return result;
     } catch (error: any) {
-      const responseTime = Date.now() - startTime;
-      console.error(`[API] Network error (${responseTime}ms):`, error);
+      const duration = Date.now() - startTime;
+      console.error(`[API] Network error (${duration}ms):`, error);
       
       return {
         success: false,
@@ -105,117 +94,129 @@ class Api {
     }
   }
 
+  // User-related methods
   async initUser(initData: string, startParam?: string) {
-    return this.request('/init', {
-      method: 'POST',
-      body: JSON.stringify({ initData, ref: startParam })
-    });
+    return this.makeRequest('/init', 'POST', { initData, ref: startParam });
   }
 
-  async getUserData(telegramId: string, initData?: string): Promise<ApiResponse<UserProfile>> {
-    return this.request<UserProfile>(`/data?telegramId=${telegramId}`, {
-      headers: this.getHeaders(initData)
-    });
+  async getUserData(telegramId: number, initData?: string): Promise<ApiResponse<UserProfile>> {
+    return this.makeRequest<UserProfile>(
+      `/data?telegramId=${telegramId}`, 
+      'GET', 
+      undefined, 
+      initData
+    );
   }
 
-  async updateBurnoutLevel(telegramId: string, level: number, initData?: string) {
-    return this.request('/update', {
-      method: 'POST',
-      headers: this.getHeaders(initData),
-      body: JSON.stringify({ telegramId, burnoutLevel: level })
-    });
+  async updateBurnoutLevel(telegramId: number, level: number, initData?: string) {
+    return this.makeRequest(
+      '/update', 
+      'POST', 
+      { telegramId, burnoutLevel: level },
+      initData
+    );
   }
 
-  async getFriends(telegramId: string, initData?: string) {
-    return this.request(`/friends?telegramId=${telegramId}`, {
-      headers: this.getHeaders(initData)
-    });
+  // Friends methods
+  async getFriends(telegramId: number, initData?: string): Promise<ApiResponse<Friend[]>> {
+    return this.makeRequest<Friend[]>(
+      `/friends?telegramId=${telegramId}`, 
+      'GET', 
+      undefined, 
+      initData
+    );
   }
 
-  async addFriend(friendUsername: string, initData?: string) {
-    return this.request('/friends', {
-      method: 'POST',
-      headers: this.getHeaders(initData),
-      body: JSON.stringify({ friendUsername })
-    });
+  async addFriend(friendUsername: string, initData?: string): Promise<ApiResponse> {
+    return this.makeRequest(
+      '/friends', 
+      'POST', 
+      { friendUsername },
+      initData
+    );
   }
 
-  async deleteFriend(friendId: string, initData?: string) {
-    return this.request(`/friends/${friendId}`, {
-      method: 'DELETE',
-      headers: this.getHeaders(initData)
-    });
+  async deleteFriend(friendId: number, initData?: string): Promise<ApiResponse> {
+    return this.makeRequest(
+      `/friends/${friendId}`, 
+      'DELETE', 
+      undefined, 
+      initData
+    );
   }
 
+  // Shop methods
   async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
-    return this.request<Sprite[]>('/shop/sprites', {
-      headers: this.getHeaders(initData)
-    });
+    return this.makeRequest<Sprite[]>(
+      '/shop/sprites', 
+      'GET', 
+      undefined, 
+      initData
+    );
   }
   
   async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
-    return this.request<Sprite>(`/shop/sprites/${spriteId}`, {
-      headers: this.getHeaders(initData)
-    });
+    return this.makeRequest<Sprite>(
+      `/shop/sprites/${spriteId}`, 
+      'GET', 
+      undefined, 
+      initData
+    );
   }
 
   async purchaseSprite(
-    telegramId: string, 
+    telegramId: number, 
     spriteId: number, 
     initData?: string
   ): Promise<ApiResponse> {
-    return this.request('/shop/purchase', {
-      method: 'POST',
-      headers: this.getHeaders(initData),
-      body: JSON.stringify({ telegramId, spriteId })
-    });
-  }
-
-  async updateAttemptDate(
-    telegramId: string,
-    initData?: string
-  ): Promise<ApiResponse> {
-    return this.request('/updateAttemptDate', {
-      method: 'POST',
-      headers: this.getHeaders(initData),
-      body: JSON.stringify({ telegramId })
-    });
+    return this.makeRequest(
+      '/shop/purchase', 
+      'POST', 
+      { telegramId, spriteId },
+      initData
+    );
   }
 
   async getOwnedSprites(
-    telegramId: string, 
+    telegramId: number, 
     initData?: string
   ): Promise<ApiResponse<number[]>> {
-    return this.request<number[]>(`/shop/owned?telegramId=${telegramId}`, {
-      headers: this.getHeaders(initData)
-    });
+    return this.makeRequest<number[]>(
+      `/shop/owned?telegramId=${telegramId}`, 
+      'GET', 
+      undefined, 
+      initData
+    );
   }
 
   async equipSprite(
-    telegramId: string, 
+    telegramId: number, 
     spriteId: number, 
     initData?: string
   ): Promise<ApiResponse> {
-    return this.request('/shop/equip', {
-      method: 'POST',
-      headers: this.getHeaders(initData),
-      body: JSON.stringify({ telegramId, spriteId })
-    });
+    return this.makeRequest(
+      '/shop/equip', 
+      'POST', 
+      { telegramId, spriteId },
+      initData
+    );
   }
   
+  // Survey methods
   async submitSurvey(params: {
-    telegramId: string;
+    telegramId: number;
     newScore: number;
     initData?: string;
   }): Promise<ApiResponse<UserProfile>> {
-    return this.request<UserProfile>('/updateBurnout', {
-      method: 'POST',
-      headers: this.getHeaders(params.initData),
-      body: JSON.stringify({
+    return this.makeRequest<UserProfile>(
+      '/updateBurnout', 
+      'POST', 
+      {
         telegramId: params.telegramId,
         newScore: params.newScore
-      })
-    });
+      },
+      params.initData
+    );
   }
 }
 
