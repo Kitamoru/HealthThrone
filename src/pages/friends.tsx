@@ -4,20 +4,15 @@ import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
+import { Friend } from '../lib/types';
 
-interface Friend {
+interface FriendDisplay {
   id: number;
   friend_id: number;
   friend_username: string;
   burnout_level: number;
   coins: number;
   updated_at: string;
-}
-
-interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
 }
 
 interface BurnoutProgressProps {
@@ -42,7 +37,7 @@ export default function Friends() {
   const router = useRouter();
   const { user, isReady, initData, webApp } = useTelegram();
   const [loading, setLoading] = useState(true);
-  const [friends, setFriends] = useState<Friend[]>([]);
+  const [friends, setFriends] = useState<FriendDisplay[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -53,19 +48,24 @@ export default function Friends() {
     const loadFriends = async () => {
       try {
         setLoading(true);
+        setError(null);
         
+        // Проверка кеша
         const cached = sessionStorage.getItem(FRIENDS_CACHE_KEY);
         if (cached) {
-          const parsedCache = JSON.parse(cached);
-          if (Array.isArray(parsedCache)) {
-            setFriends(parsedCache);
-          } else {
+          try {
+            const parsedCache = JSON.parse(cached);
+            if (Array.isArray(parsedCache)) {
+              setFriends(parsedCache);
+            }
+          } catch (e) {
             sessionStorage.removeItem(FRIENDS_CACHE_KEY);
           }
         }
         
-        // Исправлено: преобразование user.id в строку
-        const response = await api.getFriends(String(user.id), initData);
+        // Получение данных с сервера
+        const response = await api.getFriends(Number(user.id), initData);
+        
         if (response.success && response.data && Array.isArray(response.data)) {
           const formattedFriends = response.data.map(f => ({
             id: f.id,
@@ -73,11 +73,9 @@ export default function Friends() {
             friend_username: f.friend.username || 
                             `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
             burnout_level: f.friend.burnout_level,
-            // Добавляем недостающие поля
             coins: f.friend.coins || 0,
             updated_at: f.friend.updated_at || new Date().toISOString()
           }));
-          
           
           setFriends(formattedFriends);
           sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(formattedFriends));
@@ -94,17 +92,15 @@ export default function Friends() {
     loadFriends();
   }, [isReady, user, initData]);
 
-  
-const handleDelete = async (friendId: number) => {
-  try {
-    // Преобразуем в строку для совместимости
-    const response = await api.deleteFriend(friendId.toString(), initData);
+  const handleDelete = async (friendId: number) => {
+    try {
+      const response = await api.deleteFriend(friendId, initData);
       if (response.success) {
         const updatedFriends = friends.filter(f => f.id !== friendId);
         setFriends(updatedFriends);
         sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(updatedFriends));
       } else {
-        setError(response.error || 'Failed to delete friend');
+        setError(response.error || 'Не удалось удалить друга');
       }
     } catch (err) {
       setError('Ошибка при удалении друга');
@@ -112,7 +108,6 @@ const handleDelete = async (friendId: number) => {
   };
 
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
-  // Добавлена проверка на наличие user
   const referralCode = user ? `ref_${user.id}` : 'ref_default';
   const referralLink = `https://t.me/${botUsername}/HealthBreake?startapp=${referralCode}`;
 
@@ -185,7 +180,7 @@ const handleDelete = async (friendId: number) => {
                 </button>
               </div>
               <div className="custom-modal-body">
-                <p>Добавь участникакоманды</p>
+                <p>Добавь участника команды</p>
                 <div className="referral-link-container">
                   <input 
                     type="text" 
