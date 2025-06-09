@@ -1,85 +1,55 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '../../../lib/supabase';
-import { validateTelegramInitData } from '../../../lib/telegramAuth';
-import { setUserContext } from '../../../lib/supabase';
+import { supabase } from '@/lib/supabase';
+import { validateTelegramInitData } from '@/lib/telegramAuth';
+import { ApiResponse } from '@/lib/types';
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<ApiResponse>
 ) {
   const initData = req.headers['x-telegram-init-data'] as string;
-  
-  if (!initData || !validateTelegramInitData(initData)) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  if (!validateTelegramInitData(initData)) {
+    return res.status(401).json({ 
+      success: false, 
+      status: 401,
+      error: 'Unauthorized' 
+    });
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ 
+      success: false, 
+      status: 405,
+      error: 'Method not allowed' 
+    });
   }
 
   const { telegramId, spriteId } = req.body;
   if (typeof telegramId !== 'number' || typeof spriteId !== 'number') {
-    return res.status(400).json({ error: 'Invalid request body' });
+    return res.status(400).json({ 
+      success: false,
+      status: 400,
+      error: 'Invalid request body' 
+    });
   }
 
   try {
-    console.log('Processing purchase for user:', telegramId, 'sprite:', spriteId);
-    
-    // Устанавливаем контекст
-    await setUserContext(telegramId);
+    // Начало транзакции
+    const transaction = await supabase.rpc('purchase_sprite_transaction', {
+      p_telegram_id: telegramId,
+      p_sprite_id: spriteId
+    });
 
-    // Проверяем существование пользователя
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id, coins')
-      .eq('telegram_id', telegramId)
-      .single();
-
-    if (userError) throw userError;
-    if (!userData) {
-      return res.status(400).json({ error: 'User not found' });
+    if (transaction.error) {
+      throw transaction.error;
     }
 
-    // Проверяем существование спрайта
-    const { data: sprite, error: spriteError } = await supabase
-      .from('sprites')
-      .select('price')
-      .eq('id', spriteId)
-      .single();
-
-    if (spriteError) throw spriteError;
-    if (!sprite) {
-      return res.status(400).json({ error: 'Sprite not found' });
-    }
-
-    const price = sprite.price;
-
-    if (userData.coins < price) {
-      return res.status(400).json({ error: 'Insufficient coins' });
-    }
-
-    // Обновление баланса и добавление спрайта
-    const updatePromise = supabase
-      .from('users')
-      .update({ coins: userData.coins - price })
-      .eq('telegram_id', telegramId);
-
-    const insertPromise = supabase
-      .from('user_sprites')
-      .insert([{ 
-        user_id: userData.id,
-        sprite_id: spriteId 
-      }]);
-
-    const [updateResult, insertResult] = await Promise.all([updatePromise, insertPromise]);
-
-    if (updateResult.error || insertResult.error) {
-      throw updateResult.error || insertResult.error;
-    }
-
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ success: true, status: 200 });
   } catch (error) {
-    console.error('Purchase error:', error);
-    return res.status(500).json({ error: 'Purchase failed' });
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      error: 'Purchase failed'
+    });
   }
 }
