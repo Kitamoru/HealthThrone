@@ -97,9 +97,9 @@ export default async function handler(
       username: user.username,
       first_name: user.first_name,
       last_name: user.last_name,
-      burnout_level: user.burnout_level || 0,
+      burnout_level: user.burnout_level,
       last_attempt_date: user.last_attempt_date,
-      coins: user.coins !== null ? user.coins : 0,
+      coins: user.coins,
       updated_at: user.updated_at,
       current_sprite_id: user.current_sprite_id,
       last_login_date: user.last_login_date
