@@ -11,7 +11,7 @@ export default function Shop() {
   const { user, isReady, initData } = useTelegram();
   const [sprites, setSprites] = useState<Sprite[]>([]);
   const [loading, setLoading] = useState(true);
-  const [coins, setCoins] = useState(0);
+  const [coins, setCoins] = useState<number | null>(null); // Изменение типа на nullable
   const [currentSprite, setCurrentSprite] = useState<number | null>(null);
   const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export default function Shop() {
 
         // Обрабатываем пользовательские данные
         if (userResponse.success && userResponse.data) {
-          setCoins(userResponse.data.coins || 0);
+          setCoins(userResponse.data.coins || 0); // Устанавливаем значение coins
           setCurrentSprite(userResponse.data.current_sprite_id || null);
         } else if (userResponse.error) {
           setError(userResponse.error);
@@ -66,11 +66,6 @@ export default function Shop() {
     fetchData();
   }, [isReady, user, initData]);
 
-  // Обновление информации о монетах при изменении состояния
-  useEffect(() => {
-    console.log("Current coins value:", coins);
-  }, [coins]);
-
   const handlePurchase = async (spriteId: number) => {
     if (!user?.id) {
       setError('Пользователь не определён');
@@ -98,7 +93,7 @@ export default function Shop() {
 
       if (response.success) {
         setOwnedSprites((prev) => [...prev, spriteId]);
-        setCoins((prev) => prev - sprite.price);
+        setCoins((prev) => prev - sprite.price); // Уменьшаем кол-во монет
         setError(null);
       } else {
         setError(response.error || 'Ошибка покупки');
@@ -137,7 +132,9 @@ export default function Shop() {
       <div className="scrollable-content">
         <div className="header">
           <h2>Магазин спрайтов</h2>
-          <div className="coins-display">Монеты: {coins}</div>
+          <div className="coins-display">
+            Монеты: {coins != null ? coins : 'Загружаю...'} {/* Рендеринг с проверкой */}
+          </div>
         </div>
 
         {error && <div className="error">{error}</div>}
