@@ -49,12 +49,12 @@ export interface UserProfile {
 export interface Friend {
   id: number;
   created_at: string;
-  friend_id: number;
+  friend_id: number; // Добавлено обязательное поле
   friend: {
     id: number;
     first_name: string;
-    last_name?: string;
-    username?: string;
+    last_name?: string | null; // Обновлено с учетом null
+    username?: string | null;  // Обновлено с учетом null
     burnout_level: number;
     coins: number;
     updated_at: string;
