@@ -60,6 +60,7 @@ export default async function handler(
         .select(`
           id, 
           created_at,
+          friend_id,
           friend:friend_id (
             id, 
             first_name, 
@@ -176,6 +177,7 @@ export default async function handler(
         .select(`
           id,
           created_at,
+          friend_id,
           friend:friend_id (
             id, 
             first_name, 
@@ -200,6 +202,7 @@ export default async function handler(
       const formattedFriend: Friend = {
         id: insertedFriend.id,
         created_at: insertedFriend.created_at,
+        friend_id: insertedFriend.friend_id,
         friend: {
           id: insertedFriend.friend.id,
           first_name: insertedFriend.friend.first_name,
