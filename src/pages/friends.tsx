@@ -73,7 +73,6 @@ export default function Friends() {
             friend_username: f.friend.username || 
                             `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
             burnout_level: f.friend.burnout_level,
-            coins: f.friend.coins || 0,
             updated_at: f.friend.updated_at || new Date().toISOString()
           }));
           
