@@ -11,7 +11,7 @@ export default function Shop() {
   const { user, isReady, initData } = useTelegram();
   const [sprites, setSprites] = useState<Sprite[]>([]);
   const [loading, setLoading] = useState(true);
-  const [coins, setCoins] = useState<number | null>(null); // Изменение типа на nullable
+  const [coins, setCoins] = useState<number | null>(null); // Nullable
   const [currentSprite, setCurrentSprite] = useState<number | null>(null);
   const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export default function Shop() {
 
         // Обрабатываем пользовательские данные
         if (userResponse.success && userResponse.data) {
-          setCoins(userResponse.data.coins || 0); // Устанавливаем значение coins
+          setCoins(userResponse.data.coins || 0);
           setCurrentSprite(userResponse.data.current_sprite_id || null);
         } else if (userResponse.error) {
           setError(userResponse.error);
@@ -83,7 +83,8 @@ export default function Shop() {
       return;
     }
 
-    if (coins < sprite.price) {
+    // Проверка существования coins перед сравнением
+    if (coins !== null && coins < sprite.price) {
       setError('Недостаточно монет');
       return;
     }
@@ -133,7 +134,7 @@ export default function Shop() {
         <div className="header">
           <h2>Магазин спрайтов</h2>
           <div className="coins-display">
-            Монеты: {coins != null ? coins : 'Загружаю...'} {/* Рендеринг с проверкой */}
+            Монеты: {coins != null ? coins : 'Загружаю...'}
           </div>
         </div>
 
@@ -169,7 +170,7 @@ export default function Shop() {
                     </div>
                     <div className="sprite-actions">
                       {!isOwned ? (
-                        coins >= sprite.price ? (
+                        coins !== null && coins >= sprite.price ? ( // Проверка на наличие coins
                           <button
                             className="buy-btn"
                             onClick={() => handlePurchase(sprite.id)}>
