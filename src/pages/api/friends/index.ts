@@ -55,13 +55,9 @@ export default async function handler(
 
     if (req.method === 'GET') {
       // Получаем список друзей
-      const { data: friends, error } = await supabase
+      const { data: rawFriends, error } = await supabase
         .from('friends')
-        .select(`
-          id, 
-          created_at,
-          friend (*)
-        `)
+        .select('id, created_at, friend_id')
         .eq('user_id', userId);
 
       if (error) {
@@ -71,33 +67,39 @@ export default async function handler(
           error: 'Database error' 
         });
       }
-      
-      // Проверяем, чтобы friend был одним объектом, а не массивом
-      const formattedFriends: Friend[] = (friends || [])
-        .filter(f => Array.isArray(f.friend) ? f.friend.length : true)
-        .map(f => {
-          let friendObj = f.friend;
-          
-          // Если friend - массив, берём первую запись
-          if (Array.isArray(friendObj)) {
-            friendObj = friendObj[0];
-          }
 
-          return {
-            id: f.id,
-            created_at: f.created_at,
-            friend_id: friendObj.id,
-            friend: {
-              id: friendObj.id,
-              first_name: friendObj.first_name,
-              last_name: friendObj.last_name || null,
-              username: friendObj.username || null,
-              burnout_level: friendObj.burnout_level,
-              coins: friendObj.coins || 0,
-              updated_at: friendObj.updated_at
-            }
-          };
+      // Массив для хранения итоговых данных
+      const formattedFriends: Friend[] = [];
+
+      for (let i = 0; i < rawFriends.length; i++) {
+        const friendRecord = rawFriends[i];
+        
+        // Отдельно запрашиваем профиль друга
+        const { data: friendData, error: friendError } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, username, burnout_level, coins, updated_at')
+          .eq('id', friendRecord.friend_id)
+          .single();
+
+        if (friendError || !friendData) {
+          continue; // Пропускаем данную запись, если возникли ошибки
+        }
+
+        formattedFriends.push({
+          id: friendRecord.id,
+          created_at: friendRecord.created_at,
+          friend_id: friendRecord.friend_id,
+          friend: {
+            id: friendData.id,
+            first_name: friendData.first_name,
+            last_name: friendData.last_name || null,
+            username: friendData.username || null,
+            burnout_level: friendData.burnout_level,
+            coins: friendData.coins || 0,
+            updated_at: friendData.updated_at
+          }
         });
+      }
 
       return res.status(200).json({
         success: true,
@@ -164,45 +166,20 @@ export default async function handler(
       const newFriend = {
         user_id: userId,
         friend_id: friendUser.id,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        status: 'active' // Дополнение статуса, если требуется
       };
 
       await supabase.from('friends').insert([newFriend]);
 
-      // Повторно получаем свежую запись из БД
-      const { data: insertedFriend, error: selectError } = await supabase
-        .from('friends')
-        .select(`*, friend (*)`) // Включаем вложенные данные друга
-        .eq('user_id', userId)
-        .eq('friend_id', friendUser.id);
-
-      if (selectError) {
-        console.error('Select friendship error:', selectError);
-        return res.status(500).json({ 
-          success: false,
-          error: 'Database error' 
-        });
-      }
-
-      // Предполагаем, что result.data - это массив из одной записи
-      const formattedFriend: Friend = {
-        id: insertedFriend[0].id,
-        created_at: insertedFriend[0].created_at,
-        friend_id: insertedFriend[0].friend.id,
-        friend: {
-          id: insertedFriend[0].friend.id,
-          first_name: insertedFriend[0].friend.first_name,
-          last_name: insertedFriend[0].friend.last_name || null,
-          username: insertedFriend[0].friend.username || null,
-          burnout_level: insertedFriend[0].friend.burnout_level,
-          coins: insertedFriend[0].friend.coins || 0,
-          updated_at: insertedFriend[0].friend.updated_at
-        }
-      };
-
+      // Возвращаем успешный статус без повторного запроса
       return res.status(201).json({
         success: true,
-        data: formattedFriend
+        message: 'Friend successfully added',
+        data: {
+          id: newFriend.user_id,
+          friend_id: newFriend.friend_id
+        }
       });
     }
 
