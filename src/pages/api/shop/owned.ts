@@ -32,23 +32,8 @@ export default async function handler(
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
-  const queryTelegramId = req.query.telegramId as string;
-  if (!queryTelegramId) {
-    return res.status(400).json({ success: false, error: 'telegramId required' });
-  }
-
-  const queryTelegramIdNum = parseInt(queryTelegramId, 10);
-  if (isNaN(queryTelegramIdNum)) {
-    return res.status(400).json({ success: false, error: 'Invalid telegramId format' });
-  }
-
-  // Проверяем, что запрашиваемый telegramId совпадает с авторизованным
-  if (queryTelegramIdNum !== telegramId) {
-    return res.status(403).json({ success: false, error: 'Forbidden' });
-  }
-
   try {
-    // Находим внутренний ID пользователя
+    // Находим внутреннего пользователя
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('id')
@@ -56,6 +41,7 @@ export default async function handler(
       .single();
 
     if (userError || !userData) {
+      console.error('[Owned API] User lookup failed:', userError || 'User not found');
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
