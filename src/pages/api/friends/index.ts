@@ -107,6 +107,7 @@ export default async function handler(
       });
     }
 
+
     if (req.method === 'POST') {
       // Добавление нового друга
       const { friendUsername } = req.body as { friendUsername?: string };
@@ -172,13 +173,34 @@ export default async function handler(
 
       await supabase.from('friends').insert([newFriend]);
 
-      // Возвращаем успешный статус без повторного запроса
+      // Дополнительно запрашиваем профиль нового друга
+      const { data: friendDetails, error: detailError } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, username, burnout_level, coins, updated_at')
+        .eq('id', newFriend.friend_id)
+        .single();
+
+      if (detailError || !friendDetails) {
+        return res.status(500).json({ success: false, error: 'Could not retrieve friend details' });
+      }
+
+      // Формируем ответ
       return res.status(201).json({
         success: true,
         message: 'Friend successfully added',
         data: {
-          id: newFriend.user_id,
-          friend_id: newFriend.friend_id
+          id: newFriend.id,
+          created_at: newFriend.created_at,
+          friend_id: newFriend.friend_id,
+          friend: {
+            id: friendDetails.id,
+            first_name: friendDetails.first_name,
+            last_name: friendDetails.last_name || null,
+            username: friendDetails.username || null,
+            burnout_level: friendDetails.burnout_level,
+            coins: friendDetails.coins || 0,
+            updated_at: friendDetails.updated_at
+          }
         }
       });
     }
