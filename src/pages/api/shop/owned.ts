@@ -1,101 +1,81 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
-import { validateTelegramInitData } from '@/lib/telegramAuth';
+import { validateTelegramInitData, extractTelegramUser } from '@/lib/telegramAuth';
+
+interface OwnedResponse {
+  success: boolean;
+  data?: number[];
+  error?: string;
+}
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<OwnedResponse>
 ) {
-  console.log('[Shop/Owned] Request received. Method:', req.method);
-
   const initData = req.headers['x-telegram-init-data'] as string;
   if (!initData || !validateTelegramInitData(initData)) {
-    console.log('[Shop/Owned] Unauthorized: missing or invalid init data');
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
 
-  // Парсинг initData для получения ID пользователя
-  const params = new URLSearchParams(initData);
-  const userString = params.get('user');
-  if (!userString) {
-    console.log('[Shop/Owned] Unauthorized: user not found in init data');
-    return res.status(401).json({ error: 'Unauthorized' });
+  // Извлекаем пользователя Telegram
+  const telegramUser = extractTelegramUser(initData);
+  if (!telegramUser?.id) {
+    return res.status(400).json({ success: false, error: 'Invalid user data' });
   }
 
-  let telegramUser;
-  try {
-    telegramUser = JSON.parse(userString);
-  } catch (e) {
-    console.log('[Shop/Owned] Unauthorized: failed to parse user data');
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  if (!telegramUser || !telegramUser.id) {
-    console.log('[Shop/Owned] Unauthorized: user not found in init data');
-    return res.status(401).json({ error: 'Unauthorized' });
+  const telegramId = Number(telegramUser.id);
+  if (isNaN(telegramId)) {
+    return res.status(400).json({ success: false, error: 'Invalid Telegram ID format' });
   }
 
   if (req.method !== 'GET') {
-    console.log(`[Shop/Owned] Method not allowed: ${req.method}`);
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
-  const telegramId = req.query.telegramId as string;
-  console.log('[Shop/Owned] telegramId from query:', telegramId);
-  
-  if (!telegramId) {
-    console.log('[Shop/Owned] Bad request: telegramId is required');
-    return res.status(400).json({ error: 'telegramId required' });
+  const queryTelegramId = req.query.telegramId as string;
+  if (!queryTelegramId) {
+    return res.status(400).json({ success: false, error: 'telegramId required' });
+  }
+
+  const queryTelegramIdNum = parseInt(queryTelegramId, 10);
+  if (isNaN(queryTelegramIdNum)) {
+    return res.status(400).json({ success: false, error: 'Invalid telegramId format' });
+  }
+
+  // Проверяем, что запрашиваемый telegramId совпадает с авторизованным
+  if (queryTelegramIdNum !== telegramId) {
+    return res.status(403).json({ success: false, error: 'Forbidden' });
   }
 
   try {
-    const telegramId = req.query.telegramId as string;
-    if (!telegramId) {
-      return res.status(400).json({ error: 'telegramId required' });
-    }
-
-    const telegramIdNumber = parseInt(telegramId, 10);
-    if (isNaN(telegramIdNumber)) {
-      return res.status(400).json({ error: 'Invalid telegramId format' });
-    }
-
-
-    // Установка контекста пользователя для RLS
-    await supabase.rpc('set_current_user', { user_id: telegramIdNumber.toString() });
-    console.log('[Shop/Owned] User context set for Telegram user:', telegramIdNumber);
-
-    // Получаем внутренний ID пользователя
+    // Находим внутренний ID пользователя
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('id')
-      .eq('telegram_id', telegramIdNumber)
+      .eq('telegram_id', telegramId)
       .single();
 
     if (userError || !userData) {
-      throw new Error('User not found');
+      return res.status(404).json({ success: false, error: 'User not found' });
     }
 
     // Получаем список купленных спрайтов
-    const { data, error: dbError } = await supabase
+    const { data: userSprites, error: dbError } = await supabase
       .from('user_sprites')
       .select('sprite_id')
       .eq('user_id', userData.id);
 
     if (dbError) {
-      console.error('[Shop/Owned] Database error:', dbError);
       throw dbError;
     }
 
-    console.log(`[Shop/Owned] Retrieved ${data?.length} sprites for user ${telegramIdNumber}`);
-    
-     const spriteIds = data ? data.map(item => item.sprite_id) : [];
+    const spriteIds = userSprites?.map(item => item.sprite_id) || [];
     return res.status(200).json({ success: true, data: spriteIds });
   } catch (error) {
-    console.error('[Shop/Owned] Error:', error);
-    // При ошибке возвращаем пустой массив
-    return res.status(200).json({ 
-      success: true, 
-      data: [] 
+    console.error('Error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
     });
   }
 }
