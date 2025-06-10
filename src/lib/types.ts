@@ -53,8 +53,8 @@ export interface Friend {
   friend: {
     id: number;
     first_name: string;
-    last_name?: string | null; // Разрешаем null
-    username?: string | null;  // Разрешаем null
+    last_name?: string;
+    username?: string;
     burnout_level: number;
     coins: number;
     updated_at: string;
