@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
-import { UserProfil, Sprite } from '../lib/types';
+import { UserProfile, Sprite } from '../lib/types';
 
 export default function Shop() {
   const router = useRouter();
