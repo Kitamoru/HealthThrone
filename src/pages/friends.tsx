@@ -207,7 +207,7 @@ export default function Friends() {
         )}
       </div>
 
-      <div className="menu">
+       <div className="menu">
         <Link href="/" passHref>
           <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>
             📊
@@ -218,12 +218,12 @@ export default function Friends() {
             📈
           </button>
         </Link>
-        <Link href="/settings" passHref>
-          <button className="menu-btn">⚙️</button>
+        <Link href="/shop" passHref>
+          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>
+            🛍️
+          </button>
         </Link>
-        <Link href="/info" passHref>
-          <button className="menu-btn">ℹ️</button>
-        </Link>
+        <button className="menu-btn">ℹ️</button>
       </div>
     </div>
   );
