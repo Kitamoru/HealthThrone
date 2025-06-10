@@ -49,12 +49,12 @@ export interface UserProfile {
 export interface Friend {
   id: number;
   created_at: string;
-  friend_id?: number;
+  // Удаляем friend_id (дублирует friend.id)
   friend: {
     id: number;
     first_name: string;
-    last_name?: string;
-    username?: string;
+    last_name?: string | null; // Разрешаем null
+    username?: string | null;  // Разрешаем null
     burnout_level: number;
     coins: number;
     updated_at: string;
