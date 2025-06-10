@@ -72,6 +72,7 @@ export default async function handler(
       )
     `)
     .eq('user_id', userId);
+      .single();
 
   if (error) {
     console.error('Database error:', error);
@@ -100,7 +101,7 @@ export default async function handler(
         updated_at: f.friend.updated_at,
       },
     };
-  });
+  }).filter(Boolean) as Friend[]; // Фильтруем null-значения
 
   return res.status(200).json({
     success: true,
