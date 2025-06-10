@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import { validateTelegramInitData, extractTelegramUser } from '@/lib/telegramAuth';
-import { Friend, UserProfile } from '@/lib/types';
+import { Friend } from '@/lib/types';
 
 interface FriendsResponse {
   success: boolean;
@@ -13,6 +13,21 @@ interface AddFriendResponse {
   success: boolean;
   data?: Friend;
   error?: string;
+}
+
+// Новый тип для результата запроса с join
+interface FriendRecord {
+  id: number;
+  created_at: string;
+  friend: {
+    id: number;
+    first_name: string;
+    last_name: string | null;
+    username: string | null;
+    burnout_level: number;
+    coins: number;
+    updated_at: string;
+  };
 }
 
 export default async function handler(
@@ -54,10 +69,10 @@ export default async function handler(
     const userId = currentUser.id;
 
     if (req.method === 'GET') {
-      // Получаем список друзей
+      // Получаем список друзей с типизацией
       const { data: friends, error } = await supabase
         .from('friends')
-        .select(`
+        .select<FriendRecord>(`
           id, 
           created_at,
           friend:friend_id (
@@ -84,6 +99,7 @@ export default async function handler(
       const formattedFriends: Friend[] = (friends || []).map(f => ({
         id: f.id,
         created_at: f.created_at,
+        friend_id: f.friend.id, // Добавлено для соответствия интерфейсу
         friend: {
           id: f.friend.id,
           first_name: f.friend.first_name,
@@ -179,7 +195,7 @@ export default async function handler(
             updated_at
           )
         `)
-        .single();
+        .single() as { data: FriendRecord }; // Явное преобразование типа
 
       if (insertError) {
         console.error('Insert friendship error:', insertError);
@@ -193,6 +209,7 @@ export default async function handler(
       const formattedFriend: Friend = {
         id: insertedFriend.id,
         created_at: insertedFriend.created_at,
+        friend_id: insertedFriend.friend.id, // Добавлено для соответствия интерфейсу
         friend: {
           id: insertedFriend.friend.id,
           first_name: insertedFriend.friend.first_name,
