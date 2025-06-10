@@ -49,7 +49,7 @@ export interface UserProfile {
 export interface Friend {
   id: number;
   created_at: string;
-  // Удаляем friend_id (дублирует friend.id)
+  friend_id: number;
   friend: {
     id: number;
     first_name: string;
