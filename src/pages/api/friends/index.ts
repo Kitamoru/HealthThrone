@@ -80,20 +80,22 @@ export default async function handler(
         });
       }
       
-      // Форматируем данные для ответа
-      const formattedFriends: Friend[] = (friends || []).map(f => ({
-        id: f.id,
-        created_at: f.created_at,
-        friend: {
-          id: f.friend.id,
-          first_name: f.friend.first_name,
-          last_name: f.friend.last_name || null,
-          username: f.friend.username || null,
-          burnout_level: f.friend.burnout_level,
-          coins: f.friend.coins || 0,
-          updated_at: f.friend.updated_at
-        }
-      }));
+      // Форматируем данные для ответа с проверкой на null
+      const formattedFriends: Friend[] = (friends || [])
+        .filter(f => f.friend !== null) // Фильтруем записи без друга
+        .map(f => ({
+          id: f.id,
+          created_at: f.created_at,
+          friend: {
+            id: f.friend.id,
+            first_name: f.friend.first_name,
+            last_name: f.friend.last_name || null,
+            username: f.friend.username || null,
+            burnout_level: f.friend.burnout_level,
+            coins: f.friend.coins || 0,
+            updated_at: f.friend.updated_at
+          }
+        }));
 
       return res.status(200).json({
         success: true,
