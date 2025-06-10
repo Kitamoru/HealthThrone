@@ -42,7 +42,7 @@ export default async function handler(
       .from('users')
       .select('id')
       .eq('telegram_id', telegramId)
-      .single();
+      .single(); // single() гарантирует получение одной записи
 
     if (userError || !currentUser) {
       return res.status(404).json({ 
@@ -72,21 +72,32 @@ export default async function handler(
         });
       }
       
-      // Форматируем данные для ответа
-      const formattedFriends: Friend[] = (friends || []).map(f => ({
-        id: f.id,
-        created_at: f.created_at,
-        friend_id: f.friend.id, // Используем поле id объекта friend
-        friend: {
-          id: f.friend.id,
-          first_name: f.friend.first_name,
-          last_name: f.friend.last_name || null,
-          username: f.friend.username || null,
-          burnout_level: f.friend.burnout_level,
-          coins: f.friend.coins || 0,
-          updated_at: f.friend.updated_at
-        }
-      }));
+      // Проверяем, чтобы friend был одним объектом, а не массивом
+      const formattedFriends: Friend[] = (friends || [])
+        .filter(f => Array.isArray(f.friend) ? f.friend.length : true)
+        .map(f => {
+          let friendObj = f.friend;
+          
+          // Если friend - массив, берём первую запись
+          if (Array.isArray(friendObj)) {
+            friendObj = friendObj[0];
+          }
+
+          return {
+            id: f.id,
+            created_at: f.created_at,
+            friend_id: friendObj.id,
+            friend: {
+              id: friendObj.id,
+              first_name: friendObj.first_name,
+              last_name: friendObj.last_name || null,
+              username: friendObj.username || null,
+              burnout_level: friendObj.burnout_level,
+              coins: friendObj.coins || 0,
+              updated_at: friendObj.updated_at
+            }
+          };
+        });
 
       return res.status(200).json({
         success: true,
@@ -110,7 +121,7 @@ export default async function handler(
         .from('users')
         .select('id, telegram_id')
         .eq('username', friendUsername)
-        .single();
+        .single(); // single() гарантирует получение одной записи
 
       if (friendError || !friendUser) {
         return res.status(404).json({ 
@@ -149,7 +160,7 @@ export default async function handler(
         });
       }
 
-      // Добавляем связь
+      // Добавляем новую дружбу
       const newFriend = {
         user_id: userId,
         friend_id: friendUser.id,
@@ -158,10 +169,12 @@ export default async function handler(
 
       await supabase.from('friends').insert([newFriend]);
 
-      // Запрашиваем обновленные данные
+      // Повторно получаем свежую запись из БД
       const { data: insertedFriend, error: selectError } = await supabase
         .from('friends')
-        .select(`*, friend (*)`).eq('user_id', userId).eq('friend_id', friendUser.id);
+        .select(`*, friend (*)`) // Включаем вложенные данные друга
+        .eq('user_id', userId)
+        .eq('friend_id', friendUser.id);
 
       if (selectError) {
         console.error('Select friendship error:', selectError);
@@ -171,7 +184,7 @@ export default async function handler(
         });
       }
 
-      // Форматируем ответ
+      // Предполагаем, что result.data - это массив из одной записи
       const formattedFriend: Friend = {
         id: insertedFriend[0].id,
         created_at: insertedFriend[0].created_at,
