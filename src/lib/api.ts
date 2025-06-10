@@ -97,13 +97,126 @@ class Api {
     }
   }
 
-  // Оставшиеся методы остаются такими же, как и были ранее...
+  // User-related methods
+  async initUser(initData: string, startParam?: string) {
+    return this.makeRequest('/init', 'POST', { initData, ref: startParam });
+  }
 
+  async getUserData(telegramId: number, initData?: string): Promise<ApiResponse<UserProfile>> {
+    return this.makeRequest<UserProfile>(
+      `/data?telegramId=${telegramId}`, 
+      'GET', 
+      undefined, 
+      initData
+    );
+  }
+
+  async updateBurnoutLevel(telegramId: number, level: number, initData?: string) {
+    return this.makeRequest(
+      '/update', 
+      'POST', 
+      { telegramId, burnoutLevel: level },
+      initData
+    );
+  }
+
+  // Friends methods
+  async getFriends(telegramId: number, initData?: string): Promise<ApiResponse<Friend[]>> {
+    return this.makeRequest<Friend[]>(
+      `/friends?telegramId=${telegramId}`, 
+      'GET', 
+      undefined, 
+      initData
+    );
+  }
+
+  async addFriend(friendUsername: string, initData?: string): Promise<ApiResponse> {
+    return this.makeRequest(
+      '/friends', 
+      'POST', 
+      { friendUsername },
+      initData
+    );
+  }
+
+  async deleteFriend(friendId: number, initData?: string): Promise<ApiResponse> {
+    return this.makeRequest(
+      `/friends/${friendId}`, 
+      'DELETE', 
+      undefined, 
+      initData
+    );
+  }
+
+  // Shop methods
   async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
     return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
   }
 
-  // Остальные методы остаются прежними...
+  
+  async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
+    return this.makeRequest<Sprite>(
+      `/shop/sprites/${spriteId}`, 
+      'GET', 
+      undefined, 
+      initData
+    );
+  }
+
+  async purchaseSprite(
+    telegramId: number, 
+    spriteId: number, 
+    initData?: string
+  ): Promise<ApiResponse> {
+    return this.makeRequest(
+      '/shop/purchase', 
+      'POST', 
+      { telegramId, spriteId },
+      initData
+    );
+  }
+
+  async getOwnedSprites(
+    telegramId: number, 
+    initData?: string
+  ): Promise<ApiResponse<number[]>> {
+    return this.makeRequest<number[]>(
+      `/shop/owned?telegramId=${telegramId}`, 
+      'GET', 
+      undefined, 
+      initData
+    );
+  }
+
+  async equipSprite(
+    telegramId: number, 
+    spriteId: number, 
+    initData?: string
+  ): Promise<ApiResponse> {
+    return this.makeRequest(
+      '/shop/equip', 
+      'POST', 
+      { telegramId, spriteId },
+      initData
+    );
+  }
+  
+  // Survey methods
+  async submitSurvey(params: {
+    telegramId: number;
+    newScore: number;
+    initData?: string;
+  }): Promise<ApiResponse<UserProfile>> {
+    return this.makeRequest<UserProfile>(
+      '/updateBurnout', 
+      'POST', 
+      {
+        telegramId: params.telegramId,
+        newScore: params.newScore
+      },
+      params.initData
+    );
+  }
 }
 
 export const api = new Api();
