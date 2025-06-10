@@ -84,7 +84,7 @@ export default async function handler(
       const formattedFriends: Friend[] = (friends || []).map(f => ({
         id: f.id,
         created_at: f.created_at,
-        friend_id: f.friend_id
+        friend_id: f.friend_id, // ПРАВИЛЬНАЯ ФОРМА
         friend: {
           id: f.friend.id,
           first_name: f.friend.first_name,
@@ -157,51 +157,43 @@ export default async function handler(
         });
       }
 
-      // Добавляем связь
+      // Добавляем новую запись
       const newFriend = {
         user_id: userId,
         friend_id: friendUser.id,
         created_at: new Date().toISOString()
       };
 
-      const { data: insertedFriend, error: insertError } = await supabase
-        .from('friends')
-        .insert(newFriend)
-        .select(`
-          id,
-          created_at,
-          friend:friend_id (
-            id, 
-            first_name, 
-            last_name, 
-            username, 
-            burnout_level,
-            coins,
-            updated_at
-          )
-        `)
-        .single();
+      await supabase.from('friends').insert([newFriend]); // Сначала вставляем данные
 
-      if (insertError) {
-        console.error('Insert friendship error:', insertError);
+      // Далее выполняем выборку заново для формирования правильного формата
+      const { data: insertedFriend, error: selectError } = await supabase
+        .from('friends')
+        .select(`*, friend:friend_id (*)`)
+        .eq('user_id', userId)
+        .eq('friend_id', friendUser.id);
+
+      if (selectError) {
+        console.error('Select friendship error:', selectError);
         return res.status(500).json({ 
           success: false,
-          error: 'Failed to add friend' 
+          error: 'Database error' 
         });
       }
 
-      // Форматируем ответ
+      // Формируем правильный ответ
       const formattedFriend: Friend = {
-        id: insertedFriend.id,
-        created_at: insertedFriend.created_at,
+        id: insertedFriend[0].id,
+        created_at: insertedFriend[0].created_at,
+        friend_id: insertedFriend[0].friend_id,
         friend: {
-          id: insertedFriend.friend.id,
-          first_name: insertedFriend.friend.first_name,
-          last_name: insertedFriend.friend.last_name || null,
-          username: insertedFriend.friend.username || null,
-          burnout_level: insertedFriend.friend.burnout_level,
-          coins: insertedFriend.friend.coins || 0,
-          updated_at: insertedFriend.friend.updated_at
+          id: insertedFriend[0].friend.id,
+          first_name: insertedFriend[0].friend.first_name,
+          last_name: insertedFriend[0].friend.last_name || null,
+          username: insertedFriend[0].friend.username || null,
+          burnout_level: insertedFriend[0].friend.burnout_level,
+          coins: insertedFriend[0].friend.coins || 0,
+          updated_at: insertedFriend[0].friend.updated_at
         }
       };
 
