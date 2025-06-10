@@ -21,18 +21,6 @@ export default function Shop() {
     return () => console.log("[Shop] Component unmounted");
   }, []);
 
-  const updateCoins = async () => {
-    if (!user?.id) return;
-
-    const response = await api.getUserData(Number(user.id), initData);
-
-    if (response.success && response.data) {
-      setCoins(response.data.coins || 0);
-    } else {
-      setError(response.error || 'Не удалось обновить баланс');
-    }
-  };
-
   useEffect(() => {
     if (!isReady || !user?.id) return;
 
@@ -77,6 +65,11 @@ export default function Shop() {
 
     fetchData();
   }, [isReady, user, initData]);
+
+  // Обновление информации о монетах при изменении состояния
+  useEffect(() => {
+    console.log("Current coins value:", coins);
+  }, [coins]);
 
   const handlePurchase = async (spriteId: number) => {
     if (!user?.id) {
