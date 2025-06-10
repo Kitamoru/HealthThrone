@@ -14,7 +14,7 @@ export default async function handler(
   res: NextApiResponse<DataResponse>
 ) {
   console.log('[Data API] Received request', req.method, req.url);
-  
+
   // Заголовки для предотвращения кеширования
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.setHeader('Pragma', 'no-cache');
@@ -32,9 +32,9 @@ export default async function handler(
   }
 
   try {
-    // Извлекаем telegramId из query параметров
+    // Извлекаем telegramId из query-параметров
     const telegramId = req.query.telegramId as string;
-    
+
     console.log('[Data API] Raw telegramId:', telegramId);
 
     if (!telegramId) {
@@ -42,7 +42,7 @@ export default async function handler(
       return res.status(400).json({ success: false, error: 'telegramId required' });
     }
 
-    // Преобразование в число
+    // Преобразуем telegramId в число
     const telegramIdNumber = Number(telegramId);
     if (isNaN(telegramIdNumber)) {
       console.error('[Data API] Invalid telegramId format:', telegramId);
@@ -57,8 +57,8 @@ export default async function handler(
     }
 
     console.log(`[Data API] Fetching user data for ID: ${telegramIdNumber}`);
-    
-    // Установка контекста пользователя для RLS
+
+    // Устанавливаем контекст пользователя для RLS
     const setUserResult = await supabase.rpc('set_current_user', { 
       user_id: telegramIdNumber.toString() 
     });
@@ -71,6 +71,7 @@ export default async function handler(
       });
     }
 
+    // Запрашиваем данные пользователя из базы данных
     const { data: user, error: dbError } = await supabase
       .from('users')
       .select('*')
@@ -85,6 +86,9 @@ export default async function handler(
       });
     }
 
+    // Дополнительный лог: печатаем сырые данные пользователя
+    console.log('[Data API] Retrieved raw user data:', user);
+
     // Формируем данные пользователя для ответа
     const userData: UserProfile = {
       id: user.id,
@@ -95,14 +99,15 @@ export default async function handler(
       last_name: user.last_name,
       burnout_level: user.burnout_level || 0,
       last_attempt_date: user.last_attempt_date,
-      coins: user.coins || 0,
+      coins: user.coins || 0, // <--- особое внимание на это поле
       updated_at: user.updated_at,
       current_sprite_id: user.current_sprite_id,
       last_login_date: user.last_login_date
     };
 
-    console.log('[Data API] Returning user data');
-    
+    console.log('[Data API] Final user profile:', userData);
+
+    // Возвращаем сформированный профиль пользователя
     return res.status(200).json({
       success: true,
       data: userData
