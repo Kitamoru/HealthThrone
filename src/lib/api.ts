@@ -5,7 +5,7 @@ class Api {
   private defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json'
   };
-
+  
   private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
     const responseTime = Date.now();
     const status = response.status;
