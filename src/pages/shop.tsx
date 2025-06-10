@@ -23,9 +23,9 @@ export default function Shop() {
 
   const updateCoins = async () => {
     if (!user?.id) return;
-    
+
     const response = await api.getUserData(Number(user.id), initData);
-    
+
     if (response.success && response.data) {
       setCoins(response.data.coins || 0);
     } else {
@@ -40,14 +40,14 @@ export default function Shop() {
       try {
         setLoading(true);
         setError(null);
-        
+
         const [userResponse, spritesResponse, ownedResponse] = await Promise.all([
           api.getUserData(Number(user.id), initData),
           api.getSprites(initData),
           api.getOwnedSprites(Number(user.id), initData)
         ]);
 
-        // Обработка пользовательских данных
+        // Обрабатываем пользовательские данные
         if (userResponse.success && userResponse.data) {
           setCoins(userResponse.data.coins || 0);
           setCurrentSprite(userResponse.data.current_sprite_id || null);
@@ -55,14 +55,14 @@ export default function Shop() {
           setError(userResponse.error);
         }
 
-        // Обработка спрайтов
+        // Обрабатываем спрайты
         if (spritesResponse.success && Array.isArray(spritesResponse.data)) {
           setSprites(spritesResponse.data);
         } else if (spritesResponse.error) {
           setError(spritesResponse.error);
         }
 
-        // Обработка купленных спрайтов
+        // Обрабатываем купленные спрайты
         if (ownedResponse.success && Array.isArray(ownedResponse.data)) {
           setOwnedSprites(ownedResponse.data);
         } else if (ownedResponse.error) {
@@ -74,13 +74,13 @@ export default function Shop() {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [isReady, user, initData]);
 
   const handlePurchase = async (spriteId: number) => {
     if (!user?.id) {
-      setError('Пользователь не определен');
+      setError('Пользователь не определён');
       return;
     }
 
@@ -88,28 +88,24 @@ export default function Shop() {
       setError('Уже куплено');
       return;
     }
-    
-    const sprite = sprites.find(s => s.id === spriteId);
+
+    const sprite = sprites.find((s) => s.id === spriteId);
     if (!sprite) {
       setError('Спрайт не найден');
       return;
     }
-    
+
     if (coins < sprite.price) {
       setError('Недостаточно монет');
       return;
     }
-    
+
     try {
-      const response = await api.purchaseSprite(
-        Number(user.id), 
-        spriteId, 
-        initData
-      );
+      const response = await api.purchaseSprite(Number(user.id), spriteId, initData);
 
       if (response.success) {
-        setOwnedSprites(prev => [...prev, spriteId]);
-        setCoins(prev => prev - sprite.price);
+        setOwnedSprites((prev) => [...prev, spriteId]);
+        setCoins((prev) => prev - sprite.price);
         setError(null);
       } else {
         setError(response.error || 'Ошибка покупки');
@@ -121,16 +117,12 @@ export default function Shop() {
 
   const handleEquip = async (spriteId: number) => {
     if (!user?.id) {
-      setError('Пользователь не определен');
+      setError('Пользователь не определён');
       return;
     }
-    
+
     try {
-      const response = await api.equipSprite(
-        Number(user.id), 
-        spriteId, 
-        initData
-      );
+      const response = await api.equipSprite(Number(user.id), spriteId, initData);
 
       if (response.success) {
         setCurrentSprite(spriteId);
@@ -154,9 +146,9 @@ export default function Shop() {
           <h2>Магазин спрайтов</h2>
           <div className="coins-display">Монеты: {coins}</div>
         </div>
-        
+
         {error && <div className="error">{error}</div>}
-        
+
         {!user?.id ? (
           <div className="error">
             Пользователь не идентифицирован. Обновите страницу.
@@ -165,30 +157,32 @@ export default function Shop() {
           <div className="info">Нет доступных спрайтов</div>
         ) : (
           <div className="sprites-grid">
-            {sprites.map(sprite => {
+            {sprites.map((sprite) => {
               const isOwned = ownedSprites.includes(sprite.id);
               const isEquipped = currentSprite === sprite.id;
-              
+
               return (
                 <div key={sprite.id} className="sprite-card">
-                  <img 
-                    src={sprite.image_url} 
-                    alt={sprite.name} 
+                  <img
+                    src={sprite.image_url}
+                    alt={sprite.name}
                     className="sprite-image"
-                    onError={(e) => e.currentTarget.src = '/default-sprite.png'}
+                    onError={(e) =>
+                      (e.currentTarget.src =
+                        'https://via.placeholder.com/150?text=No+Image')}
                   />
                   <div className="sprite-info">
                     <h3>{sprite.name}</h3>
                     <div className="sprite-price">
-                      Цена: {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'}
+                      Цена:{' '}
+                      {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'}
                     </div>
                     <div className="sprite-actions">
                       {!isOwned ? (
                         coins >= sprite.price ? (
-                          <button 
+                          <button
                             className="buy-btn"
-                            onClick={() => handlePurchase(sprite.id)}
-                          >
+                            onClick={() => handlePurchase(sprite.id)}>
                             Купить
                           </button>
                         ) : (
@@ -197,11 +191,10 @@ export default function Shop() {
                           </button>
                         )
                       ) : (
-                        <button 
+                        <button
                           className="equip-btn"
                           onClick={() => handleEquip(sprite.id)}
-                          disabled={isEquipped}
-                        >
+                          disabled={isEquipped}>
                           {isEquipped ? 'Применён' : 'Применить'}
                         </button>
                       )}
