@@ -84,6 +84,7 @@ export default async function handler(
       const formattedFriends: Friend[] = (friends || []).map(f => ({
         id: f.id,
         created_at: f.created_at,
+        friend_id: f.friend.id,
         friend: {
           id: f.friend.id,
           first_name: f.friend.first_name,
