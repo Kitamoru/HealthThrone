@@ -49,7 +49,6 @@ export interface UserProfile {
 export interface Friend {
   id: number;
   created_at: string;
-  friend_id: number;
   friend: {
     id: number;
     first_name: string;
