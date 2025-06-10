@@ -54,54 +54,55 @@ export default async function handler(
     const userId = currentUser.id;
 
     if (req.method === 'GET') {
-      // Получаем список друзей
-      const { data: friends, error } = await supabase
-        .from('friends')
-        .select(`
-          id, 
-          created_at,
-          friend:friend_id (
-            id, 
-            first_name, 
-            last_name, 
-            username, 
-            burnout_level,
-            coins,
-            updated_at
-          )
-        `)
-        .eq('user_id', userId);
+  // Получаем список друзей
+  const { data: friends, error } = await supabase
+    .from('friends')
+    .select(`
+      id, 
+      created_at,
+      friend_id, // Добавляем прямое поле friend_id
+      friend:friend_id (
+        id, 
+        first_name, 
+        last_name, 
+        username, 
+        burnout_level,
+        coins,
+        updated_at
+      )
+    `)
+    .eq('user_id', userId);
 
-      if (error) {
-        console.error('Database error:', error);
-        return res.status(500).json({ 
-          success: false,
-          error: 'Database error' 
-        });
-      }
-      
-      // Форматируем данные для ответа с проверкой на null
-      const formattedFriends: Friend[] = (friends || [])
-        .filter(f => f.friend !== null) // Фильтруем записи без друга
-        .map(f => ({
-          id: f.id,
-          created_at: f.created_at,
-          friend: {
-            id: f.friend.id,
-            first_name: f.friend.first_name,
-            last_name: f.friend.last_name || null,
-            username: f.friend.username || null,
-            burnout_level: f.friend.burnout_level,
-            coins: f.friend.coins || 0,
-            updated_at: f.friend.updated_at
-          }
-        }));
-
-      return res.status(200).json({
-        success: true,
-        data: formattedFriends
-      });
+  if (error) {
+    console.error('Database error:', error);
+    return res.status(500).json({ 
+      success: false,
+      error: 'Database error' 
+    });
+  }
+  
+  // Форматируем данные для ответа
+  const formattedFriends: Friend[] = (friends || []).map(f => ({
+    id: f.id,
+    created_at: f.created_at,
+    friend_id: f.friend_id, // Используем прямое поле из запроса
+    friend: {
+      id: f.friend.id,
+      first_name: f.friend.first_name,
+      last_name: f.friend.last_name || undefined, // Конвертируем null в undefined
+      username: f.friend.username || undefined,
+      burnout_level: f.friend.burnout_level,
+      coins: f.friend.coins || 0,
+      updated_at: f.friend.updated_at
     }
+  }));
+
+  return res.status(200).json({
+    success: true,
+    data: formattedFriends
+  });
+}
+
 
     if (req.method === 'POST') {
       // Добавление нового друга
@@ -166,22 +167,23 @@ export default async function handler(
       };
 
       const { data: insertedFriend, error: insertError } = await supabase
-        .from('friends')
-        .insert(newFriend)
-        .select(`
-          id,
-          created_at,
-          friend:friend_id (
-            id, 
-            first_name, 
-            last_name, 
-            username, 
-            burnout_level,
-            coins,
-            updated_at
-          )
-        `)
-        .single();
+    .from('friends')
+    .insert(newFriend)
+    .select(`
+      id,
+      created_at,
+      friend_id, // Добавляем friend_id
+      friend:friend_id (
+        id, 
+        first_name, 
+        last_name, 
+        username, 
+        burnout_level,
+        coins,
+        updated_at
+      )
+    `)
+    .single();
 
       if (insertError) {
         console.error('Insert friendship error:', insertError);
@@ -192,25 +194,26 @@ export default async function handler(
       }
 
       // Форматируем ответ
-      const formattedFriend: Friend = {
-        id: insertedFriend.id,
-        created_at: insertedFriend.created_at,
-        friend: {
-          id: insertedFriend.friend.id,
-          first_name: insertedFriend.friend.first_name,
-          last_name: insertedFriend.friend.last_name || null,
-          username: insertedFriend.friend.username || null,
-          burnout_level: insertedFriend.friend.burnout_level,
-          coins: insertedFriend.friend.coins || 0,
-          updated_at: insertedFriend.friend.updated_at
-        }
-      };
-
-      return res.status(201).json({
-        success: true,
-        data: formattedFriend
-      });
+  const formattedFriend: Friend = {
+    id: insertedFriend.id,
+    created_at: insertedFriend.created_at,
+    friend_id: insertedFriend.friend_id, // Используем прямое поле
+    friend: {
+      id: insertedFriend.friend.id,
+      first_name: insertedFriend.friend.first_name,
+      last_name: insertedFriend.friend.last_name || undefined,
+      username: insertedFriend.friend.username || undefined,
+      burnout_level: insertedFriend.friend.burnout_level,
+      coins: insertedFriend.friend.coins || 0,
+      updated_at: insertedFriend.friend.updated_at
     }
+  };
+
+  return res.status(201).json({
+    success: true,
+    data: formattedFriend
+  });
+}
 
     return res.status(405).json({ 
       success: false,
