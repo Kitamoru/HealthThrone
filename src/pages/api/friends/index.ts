@@ -81,19 +81,25 @@ export default async function handler(
       }
       
       // Форматируем данные для ответа
-       const formattedFriends: Friend[] = (friends || []).map(f => ({
-        id: f.id,
-        created_at: f.created_at,
-        friend_id: f.friend.id,
-        friend: {
-          id: f.friend.id,
-          first_name: f.friend.first_name,
-          last_name: f.friend.last_name || null,
-          username: f.friend.username || null,
-          burnout_level: f.friend.burnout_level,
-          coins: f.friend.coins || 0,
-          updated_at: f.friend.updated_at
-        }
+      const formattedFriends: Friend[] = (friends || []).map(f => {
+        if (!f.friend || typeof f.friend.id === 'undefined') {
+          throw new Error('Friend data is missing or incomplete');
+            }
+            return {
+      id: f.id,
+      created_at: f.created_at,  
+      friend_id: f.friend.id,
+      friend: {
+      id: f.friend.id,
+      first_name: f.friend.first_name,
+      last_name: f.friend.last_name,
+      username: f.friend.username,
+      burnout_level: f.friend.burnout_level,
+      coins: f.friend.coins,
+      updated_at: f.friend.updated_at,
+    },
+  };
+});
       }));
 
       return res.status(200).json({
