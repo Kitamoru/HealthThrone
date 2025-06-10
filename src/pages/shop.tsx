@@ -58,6 +58,7 @@ export default function Shop() {
         // Обрабатываем спрайты
         if (spritesResponse.success && Array.isArray(spritesResponse.data)) {
           setSprites(spritesResponse.data);
+          console.log('Setting sprites:', spritesResponse.data); // 👇 Логируем установку спрайтов
         } else if (spritesResponse.error) {
           setError(spritesResponse.error);
         }
