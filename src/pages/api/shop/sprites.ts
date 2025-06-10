@@ -1,43 +1,46 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import { validateTelegramInitData } from '@/lib/telegramAuth';
+import { Sprite } from '@/lib/types';
+
+interface SpritesResponse {
+  success: boolean;
+  data?: Sprite[];
+  error?: string;
+}
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<SpritesResponse>
 ) {
   const initData = req.headers['x-telegram-init-data'] as string;
-  
   if (!initData || !validateTelegramInitData(initData)) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
 
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
   try {
     const { data: sprites, error } = await supabase
       .from('sprites')
-      .select('*');
+      .select('*')
+      .order('price', { ascending: true });
 
     if (error) {
-      console.error('Supabase error:', error);
-      return res.status(500).json({ error: 'Database error' });
+      throw error;
     }
 
-    // Гарантируем что вернем массив (даже пустой)
-    const resultData = Array.isArray(sprites) ? sprites : [];
-    
     return res.status(200).json({ 
       success: true, 
-      data: resultData 
+      data: sprites || [] 
     });
   } catch (error) {
-    console.error('Unexpected error:', error);
+    console.error('Error:', error);
     return res.status(500).json({ 
-      error: 'Internal server error',
-      data: [] // Всегда возвращаем массив
+      success: false, 
+      error: 'Internal server error' 
     });
   }
 }
