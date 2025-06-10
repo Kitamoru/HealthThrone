@@ -99,7 +99,7 @@ export default async function handler(
       last_name: user.last_name,
       burnout_level: user.burnout_level || 0,
       last_attempt_date: user.last_attempt_date,
-      coins: user.coins || 0, // <--- особое внимание на это поле
+      coins: user.coins !== null ? user.coins : 0,
       updated_at: user.updated_at,
       current_sprite_id: user.current_sprite_id,
       last_login_date: user.last_login_date
