@@ -71,7 +71,7 @@ export default async function handler(
         updated_at
       )
     `)
-    .eq('user_id', userId);
+    .eq('user_id', userId)
       .single();
 
   if (error) {
