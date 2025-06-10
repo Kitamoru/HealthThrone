@@ -11,7 +11,7 @@ export default function Shop() {
   const { user, isReady, initData } = useTelegram();
   const [sprites, setSprites] = useState<Sprite[]>([]);
   const [loading, setLoading] = useState(true);
-  const [coins, setCoins] = useState<number | null>(null); // Nullable
+  const [coins, setCoins] = useState(0);
   const [currentSprite, setCurrentSprite] = useState<number | null>(null);
   const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +20,18 @@ export default function Shop() {
     console.log("[Shop] Component mounted");
     return () => console.log("[Shop] Component unmounted");
   }, []);
+
+  const updateCoins = async () => {
+    if (!user?.id) return;
+
+    const response = await api.getUserData(Number(user.id), initData);
+
+    if (response.success && response.data) {
+      setCoins(response.data.coins || 0);
+    } else {
+      setError(response.error || 'Не удалось обновить баланс');
+    }
+  };
 
   useEffect(() => {
     if (!isReady || !user?.id) return;
@@ -83,8 +95,7 @@ export default function Shop() {
       return;
     }
 
-    // Проверка наличия coins перед покупкой
-    if (coins !== null && coins < sprite.price) {
+    if (coins < sprite.price) {
       setError('Недостаточно монет');
       return;
     }
@@ -94,8 +105,7 @@ export default function Shop() {
 
       if (response.success) {
         setOwnedSprites((prev) => [...prev, spriteId]);
-        setCoins((prev) => prev !== null ? prev - sprite.price : 0);
- // Новая логика обработки
+        setCoins((prev) => prev - sprite.price);
         setError(null);
       } else {
         setError(response.error || 'Ошибка покупки');
@@ -134,9 +144,7 @@ export default function Shop() {
       <div className="scrollable-content">
         <div className="header">
           <h2>Магазин спрайтов</h2>
-          <div className="coins-display">
-            Монеты: {coins != null ? coins : 'Загружаю...'}
-          </div>
+          <div className="coins-display">Монеты: {coins}</div>
         </div>
 
         {error && <div className="error">{error}</div>}
@@ -171,7 +179,7 @@ export default function Shop() {
                     </div>
                     <div className="sprite-actions">
                       {!isOwned ? (
-                        coins !== null && coins >= sprite.price ? ( // Проверка наличия coins
+                        coins >= sprite.price ? (
                           <button
                             className="buy-btn"
                             onClick={() => handlePurchase(sprite.id)}>
