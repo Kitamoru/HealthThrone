@@ -4,7 +4,6 @@ import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
-import { Friend } from '../lib/types';
 
 interface Friend {
   id: number;
