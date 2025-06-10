@@ -33,18 +33,10 @@ export default async function handler(
   }
 
   // Проверяем тело запроса
-  const { telegramId: bodyTelegramId, spriteId } = req.body as { 
-    telegramId?: number; 
-    spriteId?: number 
-  };
+  const { spriteId } = req.body as { spriteId: number }; // Только spriteId нужен
 
-  if (bodyTelegramId === undefined || spriteId === undefined) {
+  if (spriteId === undefined) {
     return res.status(400).json({ success: false, error: 'Missing parameters' });
-  }
-
-  // Проверяем соответствие telegramId из тела запроса и из initData
-  if (bodyTelegramId !== telegramId) {
-    return res.status(403).json({ success: false, error: 'Forbidden' });
   }
 
   try {
@@ -70,6 +62,7 @@ export default async function handler(
       .single();
 
     if (ownershipError || !ownership) {
+      console.error('[Equip API] Ownership check failed:', ownershipError || 'Not owned');
       return res.status(400).json({ success: false, error: 'Sprite not owned by user' });
     }
 
