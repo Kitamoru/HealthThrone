@@ -83,7 +83,7 @@ export default function Shop() {
       return;
     }
 
-    // Проверка существования coins перед сравнением
+    // Проверка наличия coins перед покупкой
     if (coins !== null && coins < sprite.price) {
       setError('Недостаточно монет');
       return;
@@ -94,7 +94,7 @@ export default function Shop() {
 
       if (response.success) {
         setOwnedSprites((prev) => [...prev, spriteId]);
-        setCoins((prev) => prev - sprite.price); // Уменьшаем кол-во монет
+        setCoins((prev: number) => prev - sprite.price); // Явное указание типа
         setError(null);
       } else {
         setError(response.error || 'Ошибка покупки');
@@ -170,7 +170,7 @@ export default function Shop() {
                     </div>
                     <div className="sprite-actions">
                       {!isOwned ? (
-                        coins !== null && coins >= sprite.price ? ( // Проверка на наличие coins
+                        coins !== null && coins >= sprite.price ? ( // Проверка наличия coins
                           <button
                             className="buy-btn"
                             onClick={() => handlePurchase(sprite.id)}>
