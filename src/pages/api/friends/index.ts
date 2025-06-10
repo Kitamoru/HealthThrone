@@ -3,16 +3,19 @@ import { supabase } from '@/lib/supabase';
 import { validateTelegramInitData, extractTelegramUser } from '@/lib/telegramAuth';
 import { Friend, UserProfile } from '@/lib/types';
 
+// Модифицированные интерфейсы с добавлением поля message
 interface FriendsResponse {
   success: boolean;
   data?: Friend[];
   error?: string;
+  message?: string; // Новое поле
 }
 
 interface AddFriendResponse {
   success: boolean;
   data?: Friend;
   error?: string;
+  message?: string; // Новое поле
 }
 
 export default async function handler(
@@ -53,7 +56,7 @@ export default async function handler(
     
     const userId = currentUser.id;
 
-    if (req.method === 'GET') {
+     if (req.method === 'GET') {
       // Получаем список друзей
       const { data: rawFriends, error } = await supabase
         .from('friends')
@@ -106,7 +109,6 @@ export default async function handler(
         data: formattedFriends
       });
     }
-
 
     if (req.method === 'POST') {
       // Добавление нового друга
@@ -187,7 +189,7 @@ export default async function handler(
       // Формируем ответ
       return res.status(201).json({
         success: true,
-        message: 'Friend successfully added',
+        message: 'Friend successfully added', // Поле message стало валидным благодаря изменениям интерфейса
         data: {
           id: newFriend.id,
           created_at: newFriend.created_at,
