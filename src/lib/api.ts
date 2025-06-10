@@ -150,16 +150,16 @@ class Api {
 
   // Shop methods
   async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
-    return this.makeRequest<Sprite[]>(
-      '/shop/sprites', 
+    return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
+  }
+  
+   async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
+    return this.makeRequest<Sprite>(
+      `/shop/sprites/${spriteId}`, 
       'GET', 
       undefined, 
       initData
     );
-  }
-  
-  async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
-    return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
   }
 
 
