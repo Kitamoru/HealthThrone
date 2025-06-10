@@ -94,7 +94,8 @@ export default function Shop() {
 
       if (response.success) {
         setOwnedSprites((prev) => [...prev, spriteId]);
-        setCoins((prev: number) => prev - sprite.price); // Явное указание типа
+        setCoins((prev) => prev !== null ? prev - sprite.price : 0);
+ // Новая логика обработки
         setError(null);
       } else {
         setError(response.error || 'Ошибка покупки');
