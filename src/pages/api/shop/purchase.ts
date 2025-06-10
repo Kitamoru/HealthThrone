@@ -31,18 +31,10 @@ export default async function handler(
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
-  const { telegramId: bodyTelegramId, spriteId } = req.body as { 
-    telegramId?: number; 
-    spriteId?: number 
-  };
+  const { spriteId } = req.body as { spriteId: number }; // Только spriteId нужен
 
-  if (bodyTelegramId === undefined || spriteId === undefined) {
+  if (spriteId === undefined) {
     return res.status(400).json({ success: false, error: 'Missing parameters' });
-  }
-
-  // Проверяем соответствие telegramId из тела запроса и из initData
-  if (bodyTelegramId !== telegramId) {
-    return res.status(403).json({ success: false, error: 'Forbidden' });
   }
 
   try {
@@ -74,7 +66,7 @@ export default async function handler(
 
     // Проверяем, достаточно ли монет
     if (userRecord.coins < price) {
-      return res.status(400).json({ success: false, error: 'Insufficient coins' });
+      return res.status(400).json({ success: false, error: 'You do not have enough coins' });
     }
 
     // Проверяем, не куплен ли уже спрайт
@@ -101,6 +93,7 @@ export default async function handler(
     });
 
     if (error) {
+      console.error('[Purchase API] Transaction failed:', error);
       throw error;
     }
 
