@@ -54,60 +54,59 @@ export default async function handler(
     const userId = currentUser.id;
 
     if (req.method === 'GET') {
-      // Получаем список друзей
-      const { data: friends, error } = await supabase
-        .from('friends')
-        .select(`
-          id, 
-          created_at,
-          friend_id,
-          friend:friend_id (
-            id, 
-            first_name, 
-            last_name, 
-            username, 
-            burnout_level,
-            coins,
-            updated_at
-          )
-        `)
-        .eq('user_id', userId);
+  // Получаем список друзей
+  const { data: friends, error } = await supabase
+    .from('friends')
+    .select(`
+      id, 
+      created_at,
+      friend_id,
+      friend:friend_id (
+        id, 
+        first_name, 
+        last_name, 
+        username, 
+        burnout_level,
+        coins,
+        updated_at
+      )
+    `)
+    .eq('user_id', userId);
 
-      if (error) {
-        console.error('Database error:', error);
-        return res.status(500).json({ 
-          success: false,
-          error: 'Database error' 
-        });
-      }
-      
-      // Форматируем данные для ответа
-      const formattedFriends: Friend[] = (friends || []).map(f => {
-        if (!f.friend || typeof f.friend.id === 'undefined') {
-          throw new Error('Friend data is missing or incomplete');
-            }
-            return {
-      id: f.id,
-      created_at: f.created_at,  
-      friend_id: f.friend.id,
-      friend: {
-      id: f.friend.id,
-      first_name: f.friend.first_name,
-      last_name: f.friend.last_name,
-      username: f.friend.username,
-      burnout_level: f.friend.burnout_level,
-      coins: f.friend.coins,
-      updated_at: f.friend.updated_at,
-    },
-  };
-});
-      }));
+  if (error) {
+    console.error('Database error:', error);
+    return res.status(500).json({ 
+      success: false,
+      error: 'Database error'
+    });
+  }
 
-      return res.status(200).json({
-        success: true,
-        data: formattedFriends
-      });
+  // Форматируем данные для ответа
+  const formattedFriends: Friend[] = (friends || []).map((f) => {
+    if (!f.friend || typeof f.friend.id === 'undefined') {
+      throw new Error('Friend data is missing or incomplete');
     }
+    return {
+      id: f.id,
+      created_at: f.created_at,
+      friend_id: f.friend_id,
+      friend: {
+        id: f.friend.id,
+        first_name: f.friend.first_name,
+        last_name: f.friend.last_name,
+        username: f.friend.username,
+        burnout_level: f.friend.burnout_level,
+        coins: f.friend.coins,
+        updated_at: f.friend.updated_at,
+      },
+    };
+  });
+
+  return res.status(200).json({
+    success: true,
+    data: formattedFriends,
+  });
+}
 
     if (req.method === 'POST') {
       // Добавление нового друга
