@@ -84,14 +84,8 @@ export default async function handler(
       const formattedFriends: Friend[] = (friends || []).map(f => ({
         id: f.id,
         created_at: f.created_at,
-        friend: {
-          id: f.friend.id,
-          first_name: f.friend.first_name,
-          last_name: f.friend.last_name || null,
-          username: f.friend.username || null,
-          burnout_level: f.friend.burnout_level,
-          coins: f.friend.coins || 0,
-          updated_at: f.friend.updated_at
+        friend: f.friend.id,
+      
         }
       }));
 
