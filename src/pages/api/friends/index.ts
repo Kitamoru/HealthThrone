@@ -60,15 +60,7 @@ export default async function handler(
         .select(`
           id, 
           created_at,
-          friend:friend_id (
-            id, 
-            first_name, 
-            last_name, 
-            username, 
-            burnout_level,
-            coins,
-            updated_at
-          )
+          friend (*)
         `)
         .eq('user_id', userId);
 
@@ -84,7 +76,7 @@ export default async function handler(
       const formattedFriends: Friend[] = (friends || []).map(f => ({
         id: f.id,
         created_at: f.created_at,
-        friend_id: f.friend_id, // ПРАВИЛЬНАЯ ФОРМА
+        friend_id: f.friend.id, // Используем поле id объекта friend
         friend: {
           id: f.friend.id,
           first_name: f.friend.first_name,
@@ -157,21 +149,19 @@ export default async function handler(
         });
       }
 
-      // Добавляем новую запись
+      // Добавляем связь
       const newFriend = {
         user_id: userId,
         friend_id: friendUser.id,
         created_at: new Date().toISOString()
       };
 
-      await supabase.from('friends').insert([newFriend]); // Сначала вставляем данные
+      await supabase.from('friends').insert([newFriend]);
 
-      // Далее выполняем выборку заново для формирования правильного формата
+      // Запрашиваем обновленные данные
       const { data: insertedFriend, error: selectError } = await supabase
         .from('friends')
-        .select(`*, friend:friend_id (*)`)
-        .eq('user_id', userId)
-        .eq('friend_id', friendUser.id);
+        .select(`*, friend (*)`).eq('user_id', userId).eq('friend_id', friendUser.id);
 
       if (selectError) {
         console.error('Select friendship error:', selectError);
@@ -181,11 +171,11 @@ export default async function handler(
         });
       }
 
-      // Формируем правильный ответ
+      // Форматируем ответ
       const formattedFriend: Friend = {
         id: insertedFriend[0].id,
         created_at: insertedFriend[0].created_at,
-        friend_id: insertedFriend[0].friend_id,
+        friend_id: insertedFriend[0].friend.id,
         friend: {
           id: insertedFriend[0].friend.id,
           first_name: insertedFriend[0].friend.first_name,
