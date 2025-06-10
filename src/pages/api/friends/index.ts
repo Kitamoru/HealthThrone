@@ -56,7 +56,7 @@ export default async function handler(
     
     const userId = currentUser.id;
 
-     if (req.method === 'GET') {
+   if (req.method === 'GET') {
       // Получаем список друзей
       const { data: rawFriends, error } = await supabase
         .from('friends')
@@ -109,6 +109,7 @@ export default async function handler(
         data: formattedFriends
       });
     }
+
 
     if (req.method === 'POST') {
       // Добавление нового друга
@@ -165,15 +166,18 @@ export default async function handler(
         });
       }
 
-      // Добавляем новую дружбу
-      const newFriend = {
-        user_id: userId,
-        friend_id: friendUser.id,
-        created_at: new Date().toISOString(),
-        status: 'active' // Дополнение статуса, если требуется
-      };
+      // Добавляем новую дружбу и получаем данные обратно
+      const { data: insertedFriend, error: insertError } = await supabase
+        .from('friends')
+        .insert([{ user_id: userId, friend_id: friendUser.id, created_at: new Date().toISOString(), status: 'active' }])
+        .select('*'); // Возвращаем все поля новой записи
 
-      await supabase.from('friends').insert([newFriend]);
+      if (insertError || !insertedFriend || insertedFriend.length === 0) {
+        return res.status(500).json({ success: false, error: 'Could not create a new friend record' });
+      }
+
+      // Используем новую запись с полем id
+      const newFriend = insertedFriend[0];
 
       // Дополнительно запрашиваем профиль нового друга
       const { data: friendDetails, error: detailError } = await supabase
@@ -189,9 +193,9 @@ export default async function handler(
       // Формируем ответ
       return res.status(201).json({
         success: true,
-        message: 'Friend successfully added', // Поле message стало валидным благодаря изменениям интерфейса
+        message: 'Friend successfully added',
         data: {
-          id: newFriend.id,
+          id: newFriend.id, // Теперь доступно поле id
           created_at: newFriend.created_at,
           friend_id: newFriend.friend_id,
           friend: {
