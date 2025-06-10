@@ -71,8 +71,7 @@ export default async function handler(
         updated_at
       )
     `)
-    .eq('user_id', userId)
-      .single();
+    .eq('user_id', userId);
 
   if (error) {
     console.error('Database error:', error);
@@ -81,12 +80,16 @@ export default async function handler(
       error: 'Database error'
     });
   }
-
+      
+  const friendsArray = friends || [];
   // Форматируем данные для ответа
-  const formattedFriends: Friend[] = (friends || []).map((f) => {
-    if (!f.friend || typeof f.friend.id === 'undefined') {
-      throw new Error('Friend data is missing or incomplete');
-    }
+  const formattedFriends: Friend[] = friendsArray.map((f) => {
+          // Проверяем наличие связанных данных
+          if (!f.friend || typeof f.friend.id === 'undefined') {
+            console.error('Incomplete friend data for:', f.friend_id);
+            return null;
+          }
+          
     return {
       id: f.id,
       created_at: f.created_at,
