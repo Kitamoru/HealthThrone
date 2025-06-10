@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import { validateTelegramInitData, extractTelegramUser } from '@/lib/telegramAuth';
-import { Friend, UserProfile } from '@/lib/types';
+import { Friend } from '@/lib/types';
 
 interface FriendsResponse {
   success: boolean;
@@ -15,11 +15,19 @@ interface AddFriendResponse {
   error?: string;
 }
 
-interface FriendRow {
+// Новый тип для результата запроса с join
+interface FriendRecord {
   id: number;
   created_at: string;
-  friend_id: number;
-  friend: UserProfile | null; // Может быть null если данные отсутствуют
+  friend: {
+    id: number;
+    first_name: string;
+    last_name: string | null;
+    username: string | null;
+    burnout_level: number;
+    coins: number;
+    updated_at: string;
+  };
 }
 
 export default async function handler(
@@ -61,13 +69,12 @@ export default async function handler(
     const userId = currentUser.id;
 
     if (req.method === 'GET') {
-      // Получаем список друзей
+      // Получаем список друзей с типизацией
       const { data: friends, error } = await supabase
         .from('friends')
-        .select(`
+        .select<FriendRecord>(`
           id, 
           created_at,
-          friend_id,
           friend:friend_id (
             id, 
             first_name, 
@@ -84,42 +91,29 @@ export default async function handler(
         console.error('Database error:', error);
         return res.status(500).json({ 
           success: false,
-          error: 'Database error'
+          error: 'Database error' 
         });
       }
-
-      // Приводим тип данных к нашему интерфейсу FriendRow
-      const friendRows = (friends as FriendRow[] | null) || [];
-
+      
       // Форматируем данные для ответа
-      const formattedFriends: Friend[] = friendRows
-        .map((row) => {
-          // Проверяем наличие данных о друге
-          if (!row.friend || typeof row.friend.id === 'undefined') {
-            console.error('Incomplete friend data for:', row.friend_id);
-            return null;
-          }
-          
-          return {
-            id: row.id,
-            created_at: row.created_at,
-            friend_id: row.friend_id,
-            friend: {
-              id: row.friend.id,
-              first_name: row.friend.first_name,
-              last_name: row.friend.last_name || null,
-              username: row.friend.username || null,
-              burnout_level: row.friend.burnout_level,
-              coins: row.friend.coins || 0,
-              updated_at: row.friend.updated_at,
-            },
-          };
-        })
-        .filter(Boolean) as Friend[]; // Фильтруем null
+      const formattedFriends: Friend[] = (friends || []).map(f => ({
+        id: f.id,
+        created_at: f.created_at,
+        friend_id: f.friend.id, // Добавлено для соответствия интерфейсу
+        friend: {
+          id: f.friend.id,
+          first_name: f.friend.first_name,
+          last_name: f.friend.last_name || null,
+          username: f.friend.username || null,
+          burnout_level: f.friend.burnout_level,
+          coins: f.friend.coins || 0,
+          updated_at: f.friend.updated_at
+        }
+      }));
 
       return res.status(200).json({
         success: true,
-        data: formattedFriends,
+        data: formattedFriends
       });
     }
 
@@ -191,7 +185,6 @@ export default async function handler(
         .select(`
           id,
           created_at,
-          friend_id,
           friend:friend_id (
             id, 
             first_name, 
@@ -202,7 +195,7 @@ export default async function handler(
             updated_at
           )
         `)
-        .single();
+        .single() as { data: FriendRecord }; // Явное преобразование типа
 
       if (insertError) {
         console.error('Insert friendship error:', insertError);
@@ -212,31 +205,19 @@ export default async function handler(
         });
       }
 
-      // Приводим тип к FriendRow
-      const insertedRow = insertedFriend as unknown as FriendRow;
-      
-      // Проверяем наличие данных о друге
-      if (!insertedRow.friend) {
-        console.error('Incomplete friend data after insert:', insertedRow.friend_id);
-        return res.status(500).json({ 
-          success: false,
-          error: 'Incomplete friend data' 
-        });
-      }
-
       // Форматируем ответ
       const formattedFriend: Friend = {
-        id: insertedRow.id,
-        created_at: insertedRow.created_at,
-        friend_id: insertedRow.friend_id,
+        id: insertedFriend.id,
+        created_at: insertedFriend.created_at,
+        friend_id: insertedFriend.friend.id, // Добавлено для соответствия интерфейсу
         friend: {
-          id: insertedRow.friend.id,
-          first_name: insertedRow.friend.first_name,
-          last_name: insertedRow.friend.last_name || null,
-          username: insertedRow.friend.username || null,
-          burnout_level: insertedRow.friend.burnout_level,
-          coins: insertedRow.friend.coins || 0,
-          updated_at: insertedRow.friend.updated_at
+          id: insertedFriend.friend.id,
+          first_name: insertedFriend.friend.first_name,
+          last_name: insertedFriend.friend.last_name || null,
+          username: insertedFriend.friend.username || null,
+          burnout_level: insertedFriend.friend.burnout_level,
+          coins: insertedFriend.friend.coins || 0,
+          updated_at: insertedFriend.friend.updated_at
         }
       };
 
