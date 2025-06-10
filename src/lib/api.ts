@@ -23,7 +23,6 @@ class Api {
           errorText = 'Failed to parse error response';
         }
       }
-      console.error(`[API] Error ${status}: ${errorText}`); // Логируем ошибки прямо здесь
       return {
         success: false,
         status,
@@ -33,14 +32,12 @@ class Api {
 
     try {
       const data: T = await response.json();
-      console.log(`[API] Success ${status}: Received data`, data); // Логи принимаемых данных
       return { 
         success: true, 
         status,
         data 
       };
     } catch (parseError) {
-      console.error('[API] Failed to parse response:', parseError);
       return {
         success: false,
         status: 500,
@@ -57,7 +54,7 @@ class Api {
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
     const headers: Record<string, string> = { ...this.defaultHeaders };
-
+    
     if (initData) {
       headers['X-Telegram-Init-Data'] = initData;
     }
@@ -77,18 +74,18 @@ class Api {
 
       const result = await this.handleResponse<T>(response);
       const duration = Date.now() - startTime;
-
+      
       if (result.success) {
         console.log(`[API] Success ${result.status} (${duration}ms):`, result.data);
       } else {
         console.error(`[API] Error ${result.status} (${duration}ms): ${result.error}`);
       }
-
+      
       return result;
     } catch (error: any) {
       const duration = Date.now() - startTime;
       console.error(`[API] Network error (${duration}ms):`, error);
-
+      
       return {
         success: false,
         status: 0,
@@ -150,9 +147,13 @@ class Api {
 
   // Shop methods
   async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
-    return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
+    return this.makeRequest<Sprite[]>(
+      '/shop/sprites', 
+      'GET', 
+      undefined, 
+      initData
+    );
   }
-
   
   async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
     return this.makeRequest<Sprite>(
