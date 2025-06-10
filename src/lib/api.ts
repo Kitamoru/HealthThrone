@@ -33,7 +33,7 @@ class Api {
 
     try {
       const data: T = await response.json();
-      console.log(`[API] Success ${status}: Received data`, data); // Логи принимаемых данных
+      console.log(`[API] Success ${status}: Received data`, data); // 👇👇 Лог принимаемых данных
       return { 
         success: true, 
         status,
@@ -66,7 +66,7 @@ class Api {
     console.log(`[API] ${method} ${url}`, {
       headers,
       body: body ? JSON.stringify(body) : undefined
-    });
+    }); // 👇 Лог отправляемых запросов
 
     try {
       const response = await fetch(url, {
@@ -79,15 +79,15 @@ class Api {
       const duration = Date.now() - startTime;
 
       if (result.success) {
-        console.log(`[API] Success ${result.status} (${duration}ms):`, result.data);
+        console.log(`[API] Success ${result.status} (${duration}ms):`, result.data); // 👇 Лог успешных ответов
       } else {
-        console.error(`[API] Error ${result.status} (${duration}ms): ${result.error}`);
+        console.error(`[API] Error ${result.status} (${duration}ms): ${result.error}`); // 👇 Лог ошибок
       }
 
       return result;
     } catch (error: any) {
       const duration = Date.now() - startTime;
-      console.error(`[API] Network error (${duration}ms):`, error);
+      console.error(`[API] Network error (${duration}ms):`, error); // 👇 Лог сетевых ошибок
 
       return {
         success: false,
