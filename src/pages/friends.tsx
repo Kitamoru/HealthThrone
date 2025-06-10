@@ -1,20 +1,25 @@
+// ./src/pages/friends.tsx
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
-import { Friend } from '../lib/types';
 
-interface FriendDisplay {
+interface Friend {
   id: number;
   friend_id: number;
   friend_username: string;
   burnout_level: number;
-  coins: number;
-  updated_at: string;
 }
 
+interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+// Компонент прогресс-бара для отображения уровня выгорания
 interface BurnoutProgressProps {
   level: number;
 }
@@ -37,46 +42,40 @@ export default function Friends() {
   const router = useRouter();
   const { user, isReady, initData, webApp } = useTelegram();
   const [loading, setLoading] = useState(true);
-  const [friends, setFriends] = useState<FriendDisplay[]>([]);
+  const [friends, setFriends] = useState<Friend[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!isReady || !user?.id) return;
-    
+
     const loadFriends = async () => {
       try {
         setLoading(true);
-        setError(null);
-        
-        // Проверка кеша
+
+        // Проверка кэша
         const cached = sessionStorage.getItem(FRIENDS_CACHE_KEY);
         if (cached) {
-          try {
-            const parsedCache = JSON.parse(cached);
-            if (Array.isArray(parsedCache)) {
-              setFriends(parsedCache);
-            }
-          } catch (e) {
+          const parsedCache = JSON.parse(cached);
+          // Проверяем что в кэше массив
+          if (Array.isArray(parsedCache)) {
+            setFriends(parsedCache);
+          } else {
             sessionStorage.removeItem(FRIENDS_CACHE_KEY);
           }
         }
-        
-        // Получение данных с сервера
-        const response = await api.getFriends(Number(user.id), initData);
-        
+
+        const response = await api.getFriends(user.id, initData);
         if (response.success && response.data && Array.isArray(response.data)) {
           const formattedFriends = response.data.map(f => ({
             id: f.id,
             friend_id: f.friend.id,
             friend_username: f.friend.username || 
                             `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
-            burnout_level: f.friend.burnout_level,
-            coins: f.friend.coins || 0,
-            updated_at: f.friend.updated_at || new Date().toISOString()
+            burnout_level: f.friend.burnout_level
           }));
-          
+
           setFriends(formattedFriends);
           sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(formattedFriends));
         } else {
@@ -88,7 +87,7 @@ export default function Friends() {
         setLoading(false);
       }
     };
-    
+
     loadFriends();
   }, [isReady, user, initData]);
 
@@ -100,7 +99,7 @@ export default function Friends() {
         setFriends(updatedFriends);
         sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(updatedFriends));
       } else {
-        setError(response.error || 'Не удалось удалить друга');
+        setError(response.error || 'Failed to delete friend');
       }
     } catch (err) {
       setError('Ошибка при удалении друга');
@@ -108,7 +107,7 @@ export default function Friends() {
   };
 
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
-  const referralCode = user ? `ref_${user.id}` : 'ref_default';
+  const referralCode = `ref_${user?.id || 'default'}`;
   const referralLink = `https://t.me/${botUsername}/HealthBreake?startapp=${referralCode}`;
 
   const handleCopy = () => {
@@ -119,7 +118,7 @@ export default function Friends() {
 
   const handleShare = () => {
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Добро пожаловать на борт!')}`;
-    
+
     if (webApp?.openTelegramLink) {
       webApp.openTelegramLink(shareUrl);
     } else if (webApp?.openLink) {
@@ -166,7 +165,7 @@ export default function Friends() {
             </div>
           )}
         </div>
-        
+
         {showModal && (
           <div className="modal-overlay">
             <div className="modal-card">
@@ -180,7 +179,7 @@ export default function Friends() {
                 </button>
               </div>
               <div className="custom-modal-body">
-                <p>Добавь участника команды</p>
+                <p>Добавь участникакоманды</p>
                 <div className="referral-link-container">
                   <input 
                     type="text" 
@@ -207,7 +206,7 @@ export default function Friends() {
           </div>
         )}
       </div>
-      
+
       <div className="menu">
         <Link href="/" passHref>
           <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>
@@ -219,12 +218,12 @@ export default function Friends() {
             📈
           </button>
         </Link>
-        <Link href="/shop" passHref>
-          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>
-            🛍️
-          </button>
+        <Link href="/settings" passHref>
+          <button className="menu-btn">⚙️</button>
         </Link>
-        <button className="menu-btn">ℹ️</button>
+        <Link href="/info" passHref>
+          <button className="menu-btn">ℹ️</button>
+        </Link>
       </div>
     </div>
   );
