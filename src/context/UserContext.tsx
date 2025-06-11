@@ -6,6 +6,7 @@ type AppContextType = {
   user: UserProfile | null;
   sprites: Sprite[];
   ownedSprites: number[];
+  coins: number; // добавляем сюда coins
   isLoading: boolean;
   error: string | null;
   setUser: (user: UserProfile) => void;
