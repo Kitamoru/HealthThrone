@@ -2,11 +2,9 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import { validateTelegramInitData } from '@/lib/telegramAuth';
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const initData = req.headers['x-telegram-init-data'] as string;
+
   if (!initData || !validateTelegramInitData(initData)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
@@ -16,47 +14,25 @@ export default async function handler(
   }
 
   const { telegramId, newScore } = req.body;
-  
-  if (!telegramId || newScore === undefined) {
-    return res.status(400).json({ error: 'Missing parameters' });
+
+  if (!telegramId || typeof newScore !== 'number') {
+    return res.status(400).json({ error: 'Invalid request body' });
   }
 
   try {
-    // 1. Получаем текущие данные пользователя
-    const { data: userData, error: fetchError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('telegram_id', telegramId)
-      .single();
-
-    if (fetchError) throw fetchError;
-    if (!userData) return res.status(404).json({ error: 'User not found' });
-
-    const currentLevel = userData.burnout_level || 0;
-    const newLevel = Math.max(0, Math.min(100, currentLevel + newScore));
-
-    // 2. Обновляем уровень и дату последней попытки
-    const { data: updatedUser, error: updateError } = await supabase
-      .from('users')
-      .update({
-        burnout_level: newLevel,
-        last_attempt_date: new Date().toISOString()
-      })
-      .eq('telegram_id', telegramId)
-      .select('*')  // Возвращаем все данные пользователя
-      .single();
-
-    if (updateError) throw updateError;
-
-    console.log(`[UpdateBurnout] Updated user ${telegramId}:`, {
-      oldLevel: currentLevel,
-      newLevel,
-      newAttemptDate: updatedUser.last_attempt_date
+    // Вызываем SQL-процедуру для одновременного обновления данных
+    const { data, error } = await supabase.rpc('update_burnout', {
+      p_telegram_id: telegramId,
+      p_score_delta: newScore
     });
+
+    if (error) throw error;
+
+    console.log(`[UpdateBurnout] Updated user ${telegramId}`);
 
     return res.status(200).json({
       success: true,
-      user: updatedUser  // Возвращаем полные данные пользователя
+      user: data
     });
   } catch (e) {
     console.error('Server error:', e);
