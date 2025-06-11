@@ -205,7 +205,7 @@ export default function Home() {
     try {
       const response = await api.submitSurvey({
         telegramId: Number(user.id),
-        scoreDelta: delta,
+        newScore: delta,
         initData
       });
 
