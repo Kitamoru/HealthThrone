@@ -3,148 +3,186 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
-import { api } from '../lib/api';
-import { Sprite, UserProfile, UserSprite } from '../lib/types'; // Импортируйте необходимые типы
+import { api, Sprite } from '../lib/api';
 
-/**
- * Компонент отображающий магазин спрайтов
- */
+interface UserData {
+  telegram_id: number;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  coins: number;
+  burnout_level: number;
+  current_sprite_id?: number | null;
+  last_attempt_date?: string;
+}
+
+type SpriteWithPrice = Omit<Sprite, 'price'> & { price: number };
+
 export default function Shop() {
   const router = useRouter();
-  const { user, isReady, initData } = useTelegram(); // Telegram Web App Data
-  const [sprites, setSprites] = useState<Sprite[]>([]);
+  const { user, isReady, initData } = useTelegram();
+  const [sprites, setSprites] = useState<SpriteWithPrice[]>([]);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<UserProfile | null>(null); // Используем реальный тип профиля
-  const [ownedSprites, setOwnedSprites] = useState<UserSprite[]>([]); // Реальные объекты UserSprite
+  const [coins, setCoins] = useState(0);
+  const [currentSprite, setCurrentSprite] = useState<number | null>(null);
+  const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [purchasingId, setPurchasingId] = useState<number | null>(null);
-  const [equippingId, setEquippingId] = useState<number | null>(null);
 
-  /**
-   * Автоматическое удаление ошибки спустя 3 секунды
-   */
+  // Логирование состояния компонента
   useEffect(() => {
-    let timer: NodeJS.Timeout | undefined;
-    if (error) {
-      timer = setTimeout(() => setError(null), 3000);
+    console.log("[Shop] Component mounted");
+    console.log("[Shop] Telegram user:", user);
+    return () => console.log("[Shop] Component unmounted");
+  }, []);
+
+  // Функция для обновления баланса монет
+  const updateCoins = async () => {
+    if (!user?.id) {
+      console.error("[updateCoins] User ID is missing");
+      return;
     }
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [error]);
+    
+    console.log("[updateCoins] Fetching user data for ID:", user.id);
+    const response = await api.getUserData(user.id, initData);
+    
+    if (response.success && response.data) {
+      const userData = response.data;
+      console.log(`[updateCoins] Received coins: ${userData.coins} (previous: ${coins})`);
+      setCoins(userData.coins || 0);
+    } else {
+      const errorMsg = response.error || 'Failed to update coins';
+      console.error("[updateCoins] Error:", errorMsg);
+      setError(errorMsg);
+    }
+  };
 
-  /**
-   * Фетчинг данных спрайтов и информации о пользователе
-   */
-  useEffect(() => {
-    if (!isReady || !user?.id || !initData) return;
+ useEffect(() => {
+    if (!isReady || !user?.id) return;
 
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
+        
+        const responses = await Promise.allSettled([
+          api.getUserData(user.id, initData),
+          api.getSprites(initData),
+          api.getOwnedSprites(user.id, initData)
+        ]);
 
-        // Загрузка профайла пользователя
-        const profileResponse = await api.getUserData(Number(user.id), initData);
-        if (profileResponse.success && profileResponse.data) {
-          setProfile(profileResponse.data as UserProfile); // Присваиваем реальный тип
-        } else if (profileResponse.error) {
-          setError(profileResponse.error);
+        const [userResponse, spritesResponse, ownedResponse] = responses;
+
+        // Обработка пользовательских данных
+        if (userResponse.status === 'fulfilled' && 
+            userResponse.value.success && 
+            userResponse.value.data) {
+          const userData = userResponse.value.data;
+          setCoins(userData.coins || 0);
+          setCurrentSprite(userData.current_sprite_id || null);
+        } else {
+          // Обработка ошибки
         }
 
-        // Загрузка списка доступных спрайтов
-        const spritesResponse = await api.getSprites(initData);
-        if (spritesResponse.success && Array.isArray(spritesResponse.data)) {
-          setSprites(spritesResponse.data as Sprite[]); // Уточняем тип массива
-        } else if (spritesResponse.error) {
-          setError(spritesResponse.error);
+        // Ключевое исправление: проверка типа данных перед map
+        if (spritesResponse.status === 'fulfilled' && 
+            spritesResponse.value.success) {
+          // Защита от не-массивов
+          const spritesData = Array.isArray(spritesResponse.value.data) 
+            ? spritesResponse.value.data 
+            : [];
+          
+          const spritesWithPrice = spritesData.map(sprite => ({
+            ...sprite,
+            price: sprite.price || 0
+          }));
+          setSprites(spritesWithPrice);
+        } else {
+          // Обработка ошибки
+          setSprites([]);
         }
 
-        // Загрузка спрайтов, принадлежащих пользователю
-        const ownedResponse = await api.getOwnedSprites(Number(user.id), initData);
-        if (ownedResponse.success && Array.isArray(ownedResponse.data)) {
-          setOwnedSprites(ownedResponse.data as UserSprite[]); // Применяем правильный тип
-        } else if (ownedResponse.error) {
-          setError(ownedResponse.error);
+        // Обработка купленных спрайтов
+        if (ownedResponse.status === 'fulfilled' && 
+            ownedResponse.value.success && 
+            Array.isArray(ownedResponse.value.data)) {
+          setOwnedSprites(ownedResponse.value.data);
         }
+        
       } catch (err) {
-        console.error("Ошибка фетчинга:", err);
-        setError('Возникла непредвиденная ошибка.');
+        setError('Unexpected error');
       } finally {
         setLoading(false);
       }
     };
-
+    
     fetchData();
   }, [isReady, user, initData]);
 
-  /**
-   * Покупка спрайта
-   */
+
   const handlePurchase = async (spriteId: number) => {
-    if (!user?.id || !initData) {
-      setError('Пользователь не авторизован');
+    console.log("[Shop] Purchase attempt for sprite:", spriteId);
+    
+    if (!user?.id) {
+      const errorMsg = 'User not defined';
+      setError(errorMsg);
       return;
     }
 
-    const existingSprite = ownedSprites.find((s) => s.sprite_id === spriteId);
-    if (existingSprite) {
-      setError('Вы уже владеете этим спрайтом!');
+    if (ownedSprites.includes(spriteId)) {
+      setError('Already purchased');
       return;
     }
-
-    const sprite = sprites.find((s) => s.id === spriteId);
+    
+    const sprite = sprites.find(s => s.id === spriteId);
     if (!sprite) {
-      setError('Спрайт не найден');
+      setError('Sprite not found');
       return;
     }
-
-    if ((profile?.coins ?? 0) < sprite.price) {
-      setError('Недостаточно монет для покупки');
+    
+    if (coins < sprite.price) {
+      setError('Not enough coins');
       return;
     }
-
+    
     try {
-      setPurchasingId(spriteId);
-      const purchaseResponse = await api.purchaseSprite(Number(user.id), spriteId, initData);
+      const response = await api.purchaseSprite(user.id, spriteId, initData);
+      console.log("[Shop] Purchase response:", response);
 
-      if (purchaseResponse.success) {
-        setOwnedSprites([...ownedSprites, { id: Date.now(), user_id: Number(user.id), sprite_id: spriteId, purchased_at: new Date().toISOString()}]); // Добавляем объект типа UserSprite
-        setProfile({ ...profile!, coins: purchaseResponse.newCoins }); // Изменяем профиль
+      if (response.success) {
+        // Обновляем только необходимые данные
+        setOwnedSprites(prev => [...prev, spriteId]);
+        setCoins(prev => prev - sprite.price);
         setError(null);
       } else {
-        setError(purchaseResponse.error || 'Ошибка при покупке');
+        setError(response.error || 'Purchase failed');
       }
-    } catch (error) {
-      setError('Ошибка сети');
-    } finally {
-      setPurchasingId(null);
+    } catch (error: any) {
+      console.error("[Shop] Purchase error:", error);
+      setError('Network error');
     }
   };
 
-  /**
-   * Экипировка спрайта
-   */
   const handleEquip = async (spriteId: number) => {
-    if (!user?.id || !initData) {
-      setError('Пользователь не авторизован');
+    console.log("[Shop] Equip attempt for sprite:", spriteId);
+    
+    if (!user?.id) {
+      setError('User not defined');
       return;
     }
-
+    
     try {
-      setEquippingId(spriteId);
-      const equipResponse = await api.equipSprite(Number(user.id), spriteId, initData);
+      const response = await api.equipSprite(user.id, spriteId, initData);
+      console.log("[Shop] Equip response:", response);
 
-      if (equipResponse.success) {
-        setProfile({ ...profile!, current_sprite_id: spriteId });
+      if (response.success) {
+        setCurrentSprite(spriteId);
         setError(null);
       } else {
-        setError(equipResponse.error || 'Ошибка при применении спрайта');
+        setError(response.error || 'Equip failed');
       }
-    } catch (error) {
-      setError('Ошибка сети');
-    } finally {
-      setEquippingId(null);
+    } catch (error: any) {
+      console.error("[Shop] Equip error:", error);
+      setError('Network error');
     }
   };
 
@@ -156,69 +194,58 @@ export default function Shop() {
     <div className="container">
       <div className="scrollable-content">
         <div className="header">
-          <h2>Магазин спрайтов</h2>
-          <div className="coins-display">Монеты: {profile?.coins ?? 0}</div>
+          <h2>Sprite Shop</h2>
+          <div className="coins-display">Coins: {coins}</div>
+          {user?.id && <div className="user-id">User ID: {user.id}</div>}
         </div>
         
         {error && <div className="error">{error}</div>}
-
+        
         {!user?.id ? (
           <div className="error">
-            Пользователь не идентифицирован. Пожалуйста, обновите страницу.
+            User not identified. Please try refreshing the page.
           </div>
         ) : sprites.length === 0 ? (
-          <div className="info">Нет доступных спрайтов.</div>
+          <div className="info">No sprites available</div>
         ) : (
           <div className="sprites-grid">
-            {sprites.map((sprite) => {
-              const isOwned = !!ownedSprites.find((s) => s.sprite_id === sprite.id);
-              const isEquipped = profile?.current_sprite_id === sprite.id;
-              const isPurchasing = purchasingId === sprite.id;
-              const isEquipping = equippingId === sprite.id;
-
+            {sprites.map(sprite => {
+              const isOwned = ownedSprites.includes(sprite.id);
+              const isEquipped = currentSprite === sprite.id;
+              
               return (
                 <div key={sprite.id} className="sprite-card">
-                  <img
-                    src={sprite.image_url}
-                    alt={sprite.name}
+                  <img 
+                    src={sprite.image_url} 
+                    alt={sprite.name} 
                     className="sprite-image"
-                    onError={(e) =>
-                      (e.currentTarget.src =
-                        'https://via.placeholder.com/150?text=No+Image')}
                   />
                   <div className="sprite-info">
                     <h3>{sprite.name}</h3>
                     <div className="sprite-price">
-                      Цена:{' '}
-                      {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'}
+                      Price: {sprite.price > 0 ? `${sprite.price} coins` : 'Free'}
                     </div>
-                    
                     <div className="sprite-actions">
                       {!isOwned ? (
-                        (profile?.coins ?? 0) >= sprite.price ? (
-                          <button
-                            className={`buy-btn ${isPurchasing ? 'loading' : ''}`}
+                        coins >= sprite.price ? (
+                          <button 
+                            className="buy-btn"
                             onClick={() => handlePurchase(sprite.id)}
-                            disabled={isPurchasing}
                           >
-                            {isPurchasing ? 'Покупка...' : 'Купить'}
+                            Buy
                           </button>
                         ) : (
                           <button className="buy-btn disabled" disabled>
-                            Недостаточно
+                            Not enough
                           </button>
                         )
                       ) : (
-                        <button
-                          className={`equip-btn ${isEquipped ? 'equipped' : ''}`}
+                        <button 
+                          className="equip-btn"
                           onClick={() => handleEquip(sprite.id)}
-                          disabled={isEquipped || isEquipping}
+                          disabled={isEquipped}
                         >
-                          {isEquipping 
-                            ? 'Применение...'
-                            : isEquipped 
-                              ? 'Применён'
-                              : 'Применить'}
+                          {isEquipped ? 'Equipped' : 'Equip'}
                         </button>
                       )}
                     </div>
@@ -230,7 +257,6 @@ export default function Shop() {
         )}
       </div>
 
-      {/* Навигационное меню */}
       <div className="menu">
         <Link href="/" passHref>
           <button className="menu-btn">📊</button>
