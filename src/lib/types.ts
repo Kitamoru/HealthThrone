@@ -7,21 +7,7 @@ export interface TelegramUser {
   is_premium?: boolean;
   photo_url?: string;
 }
-// Новый тип для успешного ответа при экипировке спрайта
-export type EquipSuccessResponse = {
-  success: true;
-  currentSprite: number; // полe currentSprite добавляется именно сюда
-};
 
-// Тип для ошибки при экипировке
-export type EquipFailureResponse = {
-  success: false;
-  status: number;
-  error: string;
-};
-
-// Объединённый тип для обоих сценариев
-export type EquipResponse = EquipSuccessResponse | EquipFailureResponse;
 
 export interface TelegramContact {
   user_id?: number;
