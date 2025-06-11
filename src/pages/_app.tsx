@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
-import { AppProvider } from '@/context/UserContext';
+import { AppProvider } from '../context/UserContext';
 
 export default function App({ Component, pageProps }: AppProps) {
   const { isReady, initData, startParam } = useTelegram();
