@@ -61,6 +61,12 @@ export interface Friend {
   };
 }
 
+export interface ShopUserProfile {
+  id: number;
+  coins: number;
+  current_sprite_id?: number | null;
+}
+
 export interface UserSprite {
   id: number;
   user_id: number;
