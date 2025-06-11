@@ -1,4 +1,3 @@
-// shop.tsx
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -40,7 +39,7 @@ export default function Shop() {
     }
 
     try {
-      const response = await updateUser(user.id!, '', spriteId); // Передавайте третий аргумент (spriteId)
+      const response = await updateUser(user.id!, ''); // убрали лишний аргумент spriteId
 
       if (response.success) {
         setCurrentSprite(spriteId);
@@ -60,7 +59,7 @@ export default function Shop() {
     }
 
     try {
-      const response = await updateUser(user.id!); // Теперь достаточно передать только ID пользователя
+      const response = await updateUser(user.id!); // Достаточно одного аргумента
 
       if (response.success) {
         setCurrentSprite(spriteId);
