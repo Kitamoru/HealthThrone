@@ -4,17 +4,18 @@ import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
-import { Sprite, ShopUserProfile, EquipResponse } from '../lib/types'; // импортируем новый тип EquipResponse
+import { Sprite, UserProfile, UserSprite } from '../lib/types'; // Импортируйте необходимые типы
 
-// Компонент отображающий магазин спрайтов
+/**
+ * Компонент отображающий магазин спрайтов
+ */
 export default function Shop() {
   const router = useRouter();
   const { user, isReady, initData } = useTelegram(); // Telegram Web App Data
   const [sprites, setSprites] = useState<Sprite[]>([]);
   const [loading, setLoading] = useState(true);
-  const [coins, setCoins] = useState(0);
-  const [currentSprite, setCurrentSprite] = useState<number | null>(null);
-  const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null); // Используем реальный тип профиля
+  const [ownedSprites, setOwnedSprites] = useState<UserSprite[]>([]); // Реальные объекты UserSprite
   const [error, setError] = useState<string | null>(null);
   const [purchasingId, setPurchasingId] = useState<number | null>(null);
   const [equippingId, setEquippingId] = useState<number | null>(null);
@@ -23,7 +24,7 @@ export default function Shop() {
    * Автоматическое удаление ошибки спустя 3 секунды
    */
   useEffect(() => {
-    let timer: NodeJS.Timeout | undefined; // Здесь явно указан тип переменной timer
+    let timer: NodeJS.Timeout | undefined;
     if (error) {
       timer = setTimeout(() => setError(null), 3000);
     }
@@ -44,18 +45,17 @@ export default function Shop() {
         setError(null);
 
         // Загрузка профайла пользователя
-        const userResponse = await api.getUserData(Number(user.id), initData);
-        if (userResponse.success && userResponse.data) {
-          setCoins(userResponse.data.coins);
-          setCurrentSprite(userResponse.data.current_sprite_id || null);
-        } else if (userResponse.error) {
-          setError(userResponse.error);
+        const profileResponse = await api.getUserData(Number(user.id), initData);
+        if (profileResponse.success && profileResponse.data) {
+          setProfile(profileResponse.data as UserProfile); // Присваиваем реальный тип
+        } else if (profileResponse.error) {
+          setError(profileResponse.error);
         }
 
         // Загрузка списка доступных спрайтов
         const spritesResponse = await api.getSprites(initData);
         if (spritesResponse.success && Array.isArray(spritesResponse.data)) {
-          setSprites(spritesResponse.data);
+          setSprites(spritesResponse.data as Sprite[]); // Уточняем тип массива
         } else if (spritesResponse.error) {
           setError(spritesResponse.error);
         }
@@ -63,7 +63,7 @@ export default function Shop() {
         // Загрузка спрайтов, принадлежащих пользователю
         const ownedResponse = await api.getOwnedSprites(Number(user.id), initData);
         if (ownedResponse.success && Array.isArray(ownedResponse.data)) {
-          setOwnedSprites(ownedResponse.data);
+          setOwnedSprites(ownedResponse.data as UserSprite[]); // Применяем правильный тип
         } else if (ownedResponse.error) {
           setError(ownedResponse.error);
         }
@@ -87,7 +87,8 @@ export default function Shop() {
       return;
     }
 
-    if (ownedSprites.includes(spriteId)) {
+    const existingSprite = ownedSprites.find((s) => s.sprite_id === spriteId);
+    if (existingSprite) {
       setError('Вы уже владеете этим спрайтом!');
       return;
     }
@@ -98,7 +99,7 @@ export default function Shop() {
       return;
     }
 
-    if (coins < sprite.price) {
+    if ((profile?.coins ?? 0) < sprite.price) {
       setError('Недостаточно монет для покупки');
       return;
     }
@@ -108,8 +109,8 @@ export default function Shop() {
       const purchaseResponse = await api.purchaseSprite(Number(user.id), spriteId, initData);
 
       if (purchaseResponse.success) {
-        setOwnedSprites([...ownedSprites, spriteId]);
-        setCoins(purchaseResponse.newCoins); // обновляем монеты
+        setOwnedSprites([...ownedSprites, { id: Date.now(), user_id: Number(user.id), sprite_id: spriteId, purchased_at: new Date().toISOString()}]); // Добавляем объект типа UserSprite
+        setProfile({ ...profile!, coins: purchaseResponse.newCoins }); // Изменяем профиль
         setError(null);
       } else {
         setError(purchaseResponse.error || 'Ошибка при покупке');
@@ -132,10 +133,10 @@ export default function Shop() {
 
     try {
       setEquippingId(spriteId);
-      const equipResponse = await api.equipSprite(Number(user.id), spriteId, initData); // ждём отклик от API
+      const equipResponse = await api.equipSprite(Number(user.id), spriteId, initData);
 
       if (equipResponse.success) {
-        setCurrentSprite(equipResponse.currentSprite); // Устанавливаем новый текущий спрайт, учитывая, что currentSprite есть только при успехе
+        setProfile({ ...profile!, current_sprite_id: spriteId });
         setError(null);
       } else {
         setError(equipResponse.error || 'Ошибка при применении спрайта');
@@ -156,7 +157,7 @@ export default function Shop() {
       <div className="scrollable-content">
         <div className="header">
           <h2>Магазин спрайтов</h2>
-          <div className="coins-display">Монеты: {coins}</div>
+          <div className="coins-display">Монеты: {profile?.coins ?? 0}</div>
         </div>
         
         {error && <div className="error">{error}</div>}
@@ -170,8 +171,8 @@ export default function Shop() {
         ) : (
           <div className="sprites-grid">
             {sprites.map((sprite) => {
-              const isOwned = ownedSprites.includes(sprite.id);
-              const isEquipped = currentSprite === sprite.id;
+              const isOwned = !!ownedSprites.find((s) => s.sprite_id === sprite.id);
+              const isEquipped = profile?.current_sprite_id === sprite.id;
               const isPurchasing = purchasingId === sprite.id;
               const isEquipping = equippingId === sprite.id;
 
@@ -194,7 +195,7 @@ export default function Shop() {
                     
                     <div className="sprite-actions">
                       {!isOwned ? (
-                        coins >= sprite.price ? (
+                        (profile?.coins ?? 0) >= sprite.price ? (
                           <button
                             className={`buy-btn ${isPurchasing ? 'loading' : ''}`}
                             onClick={() => handlePurchase(sprite.id)}
