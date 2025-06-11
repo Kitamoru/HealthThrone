@@ -101,13 +101,13 @@ const QUESTIONS: Question[] = [
 const calculateBurnoutLevel = (initialLevel: number, answers: Record<number, boolean>, questions: Question[]) => {
   let delta = 0;
   Object.keys(answers).forEach((key) => {
-    const answerIndex = parseInt(key);
+    const answerIndex = parseInt(key); // Конвертируем строку в число
     const question = questions.find(q => q.id === answerIndex);
-    if (question && answers[key]) {
+    if (question && answers[answerIndex]) { // Теперь используем правильный числовой индекс
       delta += question.weight;
     }
   });
-  return Math.max(0, Math.min(100, initialLevel + delta));
+  return Math.max(0, Math.min(100, initialLevel + delta)); // Ограничиваем уровень от 0 до 100
 };
 
 export default function Home() {
