@@ -27,10 +27,10 @@ const QUESTIONS: Question[] = [
     negative_answer: "Нет",
     weight: 3
   },
-  // Остальные вопросы…
+  // Остальные вопросы...
 ];
 
-// Компонент главной страницы
+// Основной компонент домашней страницы
 export default function Home() {
   const router = useRouter();
   const { user, initData } = useTelegram();
@@ -42,7 +42,7 @@ export default function Home() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
 
-  // Отслеживаем попытку прохождения теста сегодня
+  // Хранит информацию о попытке прохождения теста сегодня
   const [alreadyAttempted, setAlreadyAttempted] = useState(() => {
     if (typeof window !== 'undefined') {
       const lastDate = localStorage.getItem('lastAttemptDate');
@@ -61,16 +61,17 @@ export default function Home() {
 
     try {
       const response = await api.getUserData(Number(user.id), initData);
+
       if (response.success && response.data) {
         const userData = response.data;
         const level = userData.burnout_level ?? 0;
-        setBurnoutLevel(level);
+        setBurnoutLevel(level); // ВСЕГДА устанавливает свежий уровень выгорания
         setInitialBurnoutLevel(level);
 
         if (userData.last_attempt_date) {
           const today = new Date().toISOString().split('T')[0];
           const lastAttempt = new Date(userData.last_attempt_date).toISOString().split('T')[0];
-          setAlreadyAttempted(today === lastAttempt);
+          setAlreadyAttempted(today === lastAttempt); // Устанавливает признак, прошло ли тестирование сегодня
         }
       } else {
         setApiError(response.error || "Ошибка загрузки данных");
@@ -82,13 +83,13 @@ export default function Home() {
     }
   }, [user?.id, initData]);
 
-  // Эффект загрузки данных при монтаже компонента
+  // Запускаем загрузку данных при первой инициализации
   useEffect(() => {
     setLoading(true);
     loadUserData();
   }, [loadUserData]);
 
-  // Обработчик смены маршрутов
+  // Следим за изменениями маршрутов
   useEffect(() => {
     const handleRouteChange = () => {
       if (router.pathname === '/') {
@@ -102,7 +103,7 @@ export default function Home() {
     };
   }, [loadUserData, router]);
 
-  // Обработчик ответа на вопрос
+  // Ответ на вопрос пользователя
   const handleAnswer = (questionId: number, isPositive: boolean) => {
     if (alreadyAttempted || !user) return;
 
@@ -133,7 +134,7 @@ export default function Home() {
     }
   };
 
-  // Метод отправки результатов теста на сервер
+  // Отправка результата опроса на сервер
   const submitSurvey = async (totalScore: number) => {
     if (!user?.id) return;
 
@@ -150,7 +151,7 @@ export default function Home() {
 
         setSurveyCompleted(true);
         setAlreadyAttempted(true);
-        setBurnoutLevel(updatedUser.burnout_level);
+        setBurnoutLevel(updatedUser.burnout_level); // Устанавливаем новый уровень выгорания
 
         if (typeof window !== 'undefined') {
           localStorage.setItem('lastAttemptDate', todayUTC);
@@ -159,7 +160,6 @@ export default function Home() {
         setApiError(response.error || 'Ошибка сохранения результатов');
       }
     } catch (error) {
-      // Исправленное использование ошибки
       if (error instanceof Error) {
         console.error('Ошибка отправки анкеты:', error.message);
         setApiError(error.message || 'Ошибка сервера');
@@ -170,7 +170,7 @@ export default function Home() {
     }
   };
 
-  // Отображение данных
+  // Отображаем контент
   if (!user) {
     return (
       <div className="error-message">
