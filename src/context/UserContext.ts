@@ -1,5 +1,6 @@
 // Правильно объявляем контекст на верхнем уровне файла
 import { createContext, useContext, useState } from 'react';
+import { api } from '../lib/api';
 import { UserProfile, Sprite } from '@/lib/types';
 
 type AppContextType = {
