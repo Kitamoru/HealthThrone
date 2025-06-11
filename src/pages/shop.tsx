@@ -23,14 +23,18 @@ const useFetch = (url: string, options: RequestInit) => {
           setError(null);
         }
       } catch (err) {
-        if (!didCancel) {
-          setError(err.message);
-        }
-      } finally {
-        if (!didCancel) {
-          setLoading(false);
-        }
-      }
+  if (!didCancel) {
+    if (err instanceof Error) {
+      setError(err.message);
+    } else {
+      setError(String(err)); // Если err не является объектом Error, преобразуем его в строку
+    }
+  }
+} finally {
+  if (!didCancel) {
+    setLoading(false);
+  }
+}
     };
 
     fetchData();
