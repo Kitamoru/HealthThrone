@@ -6,11 +6,11 @@ import { api } from '../lib/api';
 import { UserProfile, Sprite } from '../lib/types';
 
 // Вспомогательная функция для обработки запросов API
-const useFetch = (url, options) => {
-  const [data, setData] = useState(null);
+const useFetch = (url: string, options: RequestInit) => {
+  const [data, setData] = useState<unknown | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     let didCancel = false;
 
