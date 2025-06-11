@@ -7,7 +7,6 @@ import { QuestionCard } from '../components/QuestionCard';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { UserProfile } from '../lib/types';
-import { SupabaseUserProfile } from '../lib/supabase';
 import { format, isBefore, addDays, parseISO } from 'date-fns';
 
 interface Question {
