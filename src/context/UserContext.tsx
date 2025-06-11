@@ -9,6 +9,7 @@ type AppContextType = {
   coins: number; // добавляем coins в интерфейс
   isLoading: boolean;
   error: string | null;
+  telegramId: number | null;
   setUser: (user: UserProfile) => void;
   updateUser: (telegramId: number, initData?: string) => Promise<{ success: boolean, error?: string }>; // Изменили сигнатуру
   setSprites: (sprites: Sprite[]) => void;
@@ -31,6 +32,7 @@ const AppContext = createContext<AppContextType>({
   setOwnedSprites: () => {},
   refreshSprites: async () => {},
   refreshOwnedSprites: async () => {},
+  telegramId: null,
 });
 
 // Хук для удобного использования контекста
@@ -38,16 +40,29 @@ export const useAppContext = () => useContext(AppContext);
 
 // Провайдер контекста
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
+  const [telegramId, setTelegramId] = useState<number | null>(null); 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [sprites, setSprites] = useState<Sprite[]>([]);
   const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const initTelegram = useCallback(() => {
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      const tg = window.Telegram.WebApp;
+      tg.ready();
+      setTelegramId(tg.initDataUnsafe.user?.id || null);
+      return tg.initData;
+    }
+    return '';
+  }, []);
+  
   // Обновление данных пользователя
-  const updateUser = useCallback(
-    async (telegramId: number, initData?: string): Promise<{ success: boolean, error?: string }> => {
-      setIsLoading(true);
+   const updateUser = useCallback(
+    async (initData?: string): Promise<{ success: boolean; error?: string }> => {
+      if (!telegramId) {
+        return { success: false, error: 'Telegram ID not available' };
+      }
       try {
         const response = await api.getUserData(telegramId, initData);
         if (response.success && response.data) {
@@ -63,8 +78,17 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         setIsLoading(false);
       }
     },
-    []
+    [telegramId]
   );
+ // Добавляем эффект инициализации
+  useEffect(() => {
+    const initData = initTelegram();
+    if (telegramId) {
+      updateUser(initData);
+      refreshSprites(initData);
+      refreshOwnedSprites(telegramId, initData);
+    }
+  }, [telegramId, initTelegram, updateUser, refreshSprites, refreshOwnedSprites]);
 
   // Загрузка спрайтов магазина
   const refreshSprites = useCallback(async (initData?: string) => {
