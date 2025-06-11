@@ -1,3 +1,4 @@
+// Правильно объявляем контекст на верхнем уровне файла
 import { createContext, useContext, useState } from 'react';
 import { UserProfile, Sprite } from '@/lib/types';
 
@@ -12,7 +13,8 @@ type AppContextType = {
   setOwnedSprites: (spriteIds: number[]) => void;
 };
 
-const AppContext = createContext<AppContextType>({
+// Создаем контекст с начальным состоянием
+export const AppContext = createContext<AppContextType>({
   user: null,
   coins: 0,
   sprites: [],
@@ -20,11 +22,13 @@ const AppContext = createContext<AppContextType>({
   setUser: () => {},
   setCoins: () => {},
   setSprites: () => {},
-  setOwnedSprites: () => {},
+  setOwnedSprites: () => {}
 });
 
+// Используем хук для получения текущего контекста
 export const useAppContext = () => useContext(AppContext);
 
+// Компонент-провайдер контекста
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [coins, setCoins] = useState(0);
@@ -32,7 +36,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
 
   return (
-    <AppContext.Provider value={{
+    <AppContext.Provider value={{ // Теперь context доступен!
       user,
       coins,
       sprites,
