@@ -1,3 +1,4 @@
+import { AppProvider } from '@/context/UserContext';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
@@ -6,7 +7,6 @@ import { useEffect, useState } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
-import { AppProvider } from '../context/UserContext'; // Подключаем провайдер контекста
 
 export default function App({ Component, pageProps }: AppProps) {
   const { isReady, initData, startParam } = useTelegram();
