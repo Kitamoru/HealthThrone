@@ -9,7 +9,6 @@ import { api } from '../lib/api';
 import { UserProfile } from '../lib/types';
 import { format, isBefore, addDays, parseISO } from 'date-fns';
 
-// Интерфейс вопроса
 interface Question {
   id: number;
   text: string;
@@ -18,7 +17,7 @@ interface Question {
   weight: number;
 }
 
-const QUESTIONS: Question[] = [  
+const QUESTIONS: Question[] = [
   {
     id: 1,
     text: "Я чувствую усталость даже после отдыха",
@@ -98,7 +97,19 @@ const QUESTIONS: Question[] = [
   }
 ];
 
-// Основной компонент домашней страницы
+// Функция расчета нового уровня выгорания
+const calculateBurnoutLevel = (initialLevel: number, answers: Record<number, boolean>, questions: Question[]) => {
+  let delta = 0;
+  Object.keys(answers).forEach((key) => {
+    const answerIndex = parseInt(key);
+    const question = questions.find(q => q.id === answerIndex);
+    if (question && answers[key]) {
+      delta += question.weight;
+    }
+  });
+  return Math.max(0, Math.min(100, initialLevel + delta));
+};
+
 export default function Home() {
   const router = useRouter();
   const { user, initData } = useTelegram();
@@ -109,42 +120,26 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
-
-  // Хранит информацию о попытке прохождения теста сегодня
   const [alreadyAttempted, setAlreadyAttempted] = useState(false);
 
-  // Функция расчета текущего уровня выгорания
-  const calculateBurnoutLevel = (currentLevel: number, answers: Record<number, boolean>): number => {
-    let delta = 0;
-    for (let answer of Object.values(answers)) {
-      if (answer) {
-        const foundQuestion = questions.find(q => q.id === parseInt(Object.keys(answers)[Object.values(answers).indexOf(answer)]));
-        if (foundQuestion) {
-          delta += foundQuestion.weight;
-        }
-      }
-    }
-    return Math.max(0, Math.min(currentLevel + delta, 100));
-  };
-
-  // Загрузка данных пользователя
   const loadUserData = useCallback(async () => {
     setApiError(null);
     if (!user?.id) return;
 
     try {
       const response = await api.getUserData(Number(user.id), initData);
-
+      
       if (response.success && response.data) {
         const userData = response.data;
         const level = userData.burnout_level ?? 0;
-        setBurnoutLevel(level); // Всегда устанавливает свежий уровень выгорания
-        setInitialBurnoutLevel(level);
         
+        setBurnoutLevel(level);
+        setInitialBurnoutLevel(level);
+
         if (userData.last_attempt_date) {
           const today = new Date().toISOString().split('T')[0];
           const lastAttempt = new Date(userData.last_attempt_date).toISOString().split('T')[0];
-          setAlreadyAttempted(today === lastAttempt); // Устанавливает признак, пройден ли тест сегодня
+          setAlreadyAttempted(today === lastAttempt);
         }
       } else {
         setApiError(response.error || "Ошибка загрузки данных");
@@ -156,13 +151,11 @@ export default function Home() {
     }
   }, [user?.id, initData]);
 
-  // Запускаем загрузку данных при первой инициализации
   useEffect(() => {
     setLoading(true);
     loadUserData();
   }, [loadUserData]);
 
-  // Следим за изменениями маршрутов
   useEffect(() => {
     const handleRouteChange = () => {
       if (router.pathname === '/') {
@@ -176,7 +169,6 @@ export default function Home() {
     };
   }, [loadUserData, router]);
 
-  // Ответ на вопрос пользователя
   const handleAnswer = (questionId: number, isPositive: boolean) => {
     if (alreadyAttempted || !user) return;
 
@@ -189,44 +181,50 @@ export default function Home() {
     };
     setAnswers(newAnswers);
 
-    const newLevel = calculateBurnoutLevel(initialBurnoutLevel, newAnswers);
+    // Пересчет уровня выгорания
+    const newLevel = calculateBurnoutLevel(initialBurnoutLevel, newAnswers, questions);
     setBurnoutLevel(newLevel);
 
+    // Проверка завершения теста
     const allAnswered = questions.every(q => q.id in newAnswers);
     if (allAnswered && !alreadyAttempted) {
-      submitSurvey(question.weight * (isPositive ? 1 : -1)); // Подсчитываем дельту
+      submitSurvey(newLevel - initialBurnoutLevel);
     }
   };
 
-  // Отправка результата опроса на сервер
-  const submitSurvey = async (delta: number) => {
+  const submitSurvey = async (totalScore: number) => {
     if (!user?.id) return;
 
     try {
       const response = await api.submitSurvey({
         telegramId: Number(user.id),
-        newScore: delta,
+        newScore: totalScore,
         initData
       });
 
       if (response.success && response.data) {
         const updatedUser = response.data;
+        const todayUTC = new Date().toISOString();
+
         setSurveyCompleted(true);
         setAlreadyAttempted(true);
-        setBurnoutLevel(updatedUser.burnout_level); // Устанавливаем новый уровень выгорания
+        setBurnoutLevel(updatedUser.burnout_level);
       } else {
         setApiError(response.error || 'Ошибка сохранения результатов');
       }
     } catch (error) {
-      if (error instanceof Error) {
-        console.error('Ошибка отправки анкеты:', error.message);
-        setApiError(error.message || 'Ошибка сервера');
-      } else {
-        console.error('Ошибка отправки анкеты:', String(error));
-        setApiError(String(error) || 'Ошибка сервера');
-      }
+      console.error('Survey submission failed:', error);
+      setApiError('Ошибка соединения с сервером');
     }
   };
+
+  if (!user) {
+    return (
+      <div className="error-message">
+        Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение.
+      </div>
+    );
+  }
 
   if (loading) {
     return <Loader />;
@@ -250,7 +248,7 @@ export default function Home() {
         ) : surveyCompleted ? (
           <div className="time-message">
             <div className="info-message">
-              🎯 Тест завершён! Ваш уровень выгорания: {burnoutLevel}%
+              🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
             </div>
           </div>
         ) : (
