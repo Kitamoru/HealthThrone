@@ -6,7 +6,7 @@ type AppContextType = {
   user: UserProfile | null;
   sprites: Sprite[];
   ownedSprites: number[];
-  coins: number; // добавляем сюда coins
+  coins: number; // добавляем coins в интерфейс
   isLoading: boolean;
   error: string | null;
   setUser: (user: UserProfile) => void;
@@ -17,10 +17,12 @@ type AppContextType = {
   refreshOwnedSprites: (telegramId: number, initData?: string) => Promise<void>;
 };
 
+// Создаем context с указанием типа
 const AppContext = createContext<AppContextType>({
   user: null,
   sprites: [],
   ownedSprites: [],
+  coins: 0, // устанавливаем начальное значение для coins
   isLoading: false,
   error: null,
   setUser: () => {},
@@ -31,8 +33,10 @@ const AppContext = createContext<AppContextType>({
   refreshOwnedSprites: async () => {},
 });
 
+// Хук для удобного использования контекста
 export const useAppContext = () => useContext(AppContext);
 
+// Провайдер контекста
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [sprites, setSprites] = useState<Sprite[]>([]);
@@ -97,6 +101,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         user,
         sprites,
         ownedSprites,
+        coins: user?.coins ?? 0, // Присваиваем значение coins динамически
         isLoading,
         error,
         setUser,
