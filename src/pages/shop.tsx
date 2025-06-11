@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
-import { UserProfile, Sprite } from '../lib/types';
+import { Sprite, ShopUserProfile } from '../lib/types';
 
 export default function Shop() {
   const router = useRouter();
@@ -27,7 +27,12 @@ export default function Shop() {
     const response = await api.getUserData(Number(user.id), initData);
 
     if (response.success && response.data) {
-      setCoins(response.data.coins || 0);
+      const profile: ShopUserProfile = {
+        id: response.data.id,
+        coins: response.data.coins,
+        current_sprite_id: response.data.current_sprite_id
+      };
+      setCoins(profile.coins);
     } else {
       setError(response.error || 'Не удалось обновить баланс');
     }
@@ -49,8 +54,13 @@ export default function Shop() {
 
         // Обрабатываем пользовательские данные
         if (userResponse.success && userResponse.data) {
-          setCoins(userResponse.data.coins || 0);
-          setCurrentSprite(userResponse.data.current_sprite_id || null);
+          const profile: ShopUserProfile = {
+            id: userResponse.data.id,
+            coins: userResponse.data.coins,
+            current_sprite_id: userResponse.data.current_sprite_id
+          };
+          setCoins(profile.coins);
+          setCurrentSprite(profile.current_sprite_id || null);
         } else if (userResponse.error) {
           setError(userResponse.error);
         }
