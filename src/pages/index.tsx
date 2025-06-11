@@ -9,6 +9,7 @@ import { api } from '../lib/api';
 import { UserProfile } from '../lib/types';
 import { format, isBefore, addDays, parseISO } from 'date-fns';
 
+// Интерфейс вопроса для удобства и ясности
 interface Question {
   id: number;
   text: string;
@@ -17,6 +18,7 @@ interface Question {
   weight: number;
 }
 
+// Массив вопросов вынесем отдельно для удобочитаемости
 const QUESTIONS: Question[] = [
   {
     id: 1,
@@ -97,18 +99,21 @@ const QUESTIONS: Question[] = [
   }
 ];
 
+// Основной компонент страницы
 export default function Home() {
   const router = useRouter();
   const { user, initData } = useTelegram();
+  
+  // Логика управления состоянием приложения
   const [questions] = useState<Question[]>(QUESTIONS);
-  const [answers, setAnswers] = useState<Record<number, boolean>>({});
+  const [answers, setAnswers] = useState<Record<number, boolean>>( {} );
   const [initialBurnoutLevel, setInitialBurnoutLevel] = useState(0);
   const [burnoutLevel, setBurnoutLevel] = useState(0);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
 
-  // Инициализация состояния из localStorage
+  // Управление повторным прохождением теста
   const [alreadyAttempted, setAlreadyAttempted] = useState(() => {
     if (typeof window !== 'undefined') {
       const lastDate = localStorage.getItem('lastAttemptDate');
@@ -120,124 +125,128 @@ export default function Home() {
     return false;
   });
 
+  // Загрузка данных пользователя
   const loadUserData = useCallback(async () => {
-  setApiError(null);
-  if (!user?.id) return;
-
-  try {
-    const response = await api.getUserData(user.id, initData);
-    
-    if (response.success && response.data) {
-    const userData = response.data; 
+    try {
+      setApiError(null);
       
-      // Используем значение burnout_level или 0 по умолчанию
-      const level = userData.burnout_level ?? 0;
-      
-      setBurnoutLevel(level);
-      setInitialBurnoutLevel(level);
+      if (!user?.id) return;
 
-      if (userData.last_attempt_date) {
-        const today = new Date().toISOString().split('T')[0];
-        const lastAttempt = new Date(userData.last_attempt_date).toISOString().split('T')[0];
-        setAlreadyAttempted(today === lastAttempt);
+      const response = await api.getUserData(Number(user.id), initData);
+
+      if (response.success && response.data) {
+        const userData = response.data;
+        const level = userData.burnout_level ?? 0;
+        
+        setBurnoutLevel(level);
+        setInitialBurnoutLevel(level);
+
+        if (userData.last_attempt_date) {
+          const today = new Date().toISOString().split('T')[0];
+          const lastAttempt = new Date(userData.last_attempt_date).toISOString().split('T')[0];
+          
+          setAlreadyAttempted(today === lastAttempt);
+        }
+      } else {
+        setApiError(response.error || "Ошибка загрузки данных");
       }
-    } else {
-      setApiError(response.error || "Ошибка загрузки данных");
+    } catch (err) {
+      setApiError("Ошибка соединения");
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    setApiError("Ошибка соединения");
-  } finally {
-    setLoading(false);
-  }
-}, [user?.id, initData]);
+  }, [user?.id, initData]);
 
+  // Обновление данных при изменении маршрута
   useEffect(() => {
     setLoading(true);
     loadUserData();
   }, [loadUserData]);
 
+  // Наблюдатель за изменениями маршрутов
   useEffect(() => {
     const handleRouteChange = () => {
       if (router.pathname === '/') {
         loadUserData();
       }
     };
-
+    
     router.events.on('routeChangeComplete', handleRouteChange);
+    
     return () => {
       router.events.off('routeChangeComplete', handleRouteChange);
     };
   }, [loadUserData, router]);
 
+  // Функция обработки выбора ответа
   const handleAnswer = (questionId: number, isPositive: boolean) => {
     if (alreadyAttempted || !user) return;
 
     const question = questions.find(q => q.id === questionId);
+
     if (!question) return;
-    
+
     const newAnswers = {
       ...answers,
       [questionId]: isPositive
     };
+
     setAnswers(newAnswers);
 
-    // Рассчитываем дельту на основе ответов
     let answeredDelta = 0;
+
     Object.entries(newAnswers).forEach(([id, ans]) => {
       const qId = parseInt(id);
       const q = questions.find(q => q.id === qId);
+
       if (q && ans) {
         answeredDelta += q.weight;
       }
     });
-    
+
     const newLevel = Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
+
     setBurnoutLevel(newLevel);
 
-    // Проверяем завершение опроса
     const allAnswered = questions.every(q => q.id in newAnswers);
+
     if (allAnswered && !alreadyAttempted) {
       submitSurvey(answeredDelta);
     }
   };
 
-  // src/pages/index.tsx
+  // Отправка результата тестирования
+  const submitSurvey = async (totalScore: number) => {
+    if (!user?.id) return;
 
-const submitSurvey = async (totalScore: number) => {
-  if (!user?.id) return;
-  
-  try {
-    const response = await api.submitSurvey({
-      telegramId: user.id,
-      newScore: totalScore,
-      initData
-    });
-    
-    if (response.success && response.data) {
-    const updatedUser = response.data; // Убираем приведение типа
-      const todayUTC = new Date().toISOString();
-      
-      // Update state with new user data
-      setSurveyCompleted(true);
-      setAlreadyAttempted(true);
-      setBurnoutLevel(updatedUser.burnout_level);
-      
-      // Update localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('lastAttemptDate', todayUTC);
+    try {
+      const response = await api.submitSurvey({
+        telegramId: Number(user.id),
+        newScore: totalScore,
+        initData
+      });
+
+      if (response.success && response.data) {
+        const updatedUser = response.data;
+        const todayUTC = new Date().toISOString();
+
+        setSurveyCompleted(true);
+        setAlreadyAttempted(true);
+        setBurnoutLevel(updatedUser.burnout_level);
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('lastAttemptDate', todayUTC);
+        }
+      } else {
+        setApiError(response.error || 'Ошибка сохранения результатов');
       }
-
-      console.log('Survey submitted successfully. New burnout level:', 
-        updatedUser.burnout_level);
-    } else {
-      setApiError(response.error || 'Ошибка сохранения результатов');
+    } catch (error) {
+      console.error('Survey submission failed:', error);
+      setApiError('Ошибка соединения с сервером');
     }
-  } catch (error) {
-    console.error('Survey submission failed:', error);
-    setApiError('Ошибка соединения с сервером');
-  }
-};
+  };
 
+  // Отображение ошибок и сообщений
   if (!user) {
     return (
       <div className="error-message">
@@ -249,16 +258,15 @@ const submitSurvey = async (totalScore: number) => {
   if (loading) {
     return <Loader />;
   }
-  
+
   return (
     <div className="container">
       <BurnoutProgress level={burnoutLevel} />
-      
       <div className="content">
         {apiError && (
           <div className="error-message">{apiError}</div>
         )}
-        
+
         {alreadyAttempted ? (
           <div className="time-message">
             <div className="info-message">
@@ -273,7 +281,7 @@ const submitSurvey = async (totalScore: number) => {
           </div>
         ) : (
           <div className="questions">
-            {questions.map((question) => (
+            {questions.map(question => (
               <QuestionCard
                 key={question.id}
                 question={question}
@@ -285,21 +293,16 @@ const submitSurvey = async (totalScore: number) => {
         )}
       </div>
 
+      {/* Меню навигации */}
       <div className="menu">
         <Link href="/" passHref>
-          <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>
-            📊
-          </button>
+          <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
         </Link>
         <Link href="/friends" passHref>
-          <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>
-            📈
-          </button>
+          <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
         </Link>
         <Link href="/shop" passHref>
-          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>
-            🛍️
-          </button>
+          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
         </Link>
         <button className="menu-btn">ℹ️</button>
       </div>
