@@ -1,3 +1,4 @@
+/pages/index.tsx 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -7,6 +8,7 @@ import { QuestionCard } from '../components/QuestionCard';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { UserProfile } from '../lib/types';
+import { SupabaseUserProfile } from '../lib/supabase';
 import { format, isBefore, addDays, parseISO } from 'date-fns';
 
 interface Question {
@@ -97,19 +99,6 @@ const QUESTIONS: Question[] = [
   }
 ];
 
-// Функция расчета нового уровня выгорания
-const calculateBurnoutLevel = (initialLevel: number, answers: Record<number, boolean>, questions: Question[]) => {
-  let delta = 0;
-  Object.keys(answers).forEach((key) => {
-    const answerIndex = parseInt(key); // Конвертируем строку в число
-    const question = questions.find(q => q.id === answerIndex);
-    if (question && answers[answerIndex]) { // Теперь используем правильный числовой индекс
-      delta += question.weight;
-    }
-  });
-  return Math.max(0, Math.min(100, initialLevel + delta)); // Ограничиваем уровень от 0 до 100
-};
-
 export default function Home() {
   const router = useRouter();
   const { user, initData } = useTelegram();
@@ -120,36 +109,49 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
-  const [alreadyAttempted, setAlreadyAttempted] = useState(false);
+
+  // Инициализация состояния из localStorage
+  const [alreadyAttempted, setAlreadyAttempted] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const lastDate = localStorage.getItem('lastAttemptDate');
+      if (lastDate) {
+        const today = new Date().toISOString().split('T')[0];
+        return lastDate.split('T')[0] === today;
+      }
+    }
+    return false;
+  });
 
   const loadUserData = useCallback(async () => {
-    setApiError(null);
-    if (!user?.id) return;
+  setApiError(null);
+  if (!user?.id) return;
 
-    try {
-      const response = await api.getUserData(Number(user.id), initData);
+  try {
+    const response = await api.getUserData(user.id, initData);
+    
+    if (response.success && response.data) {
+    const userData = response.data; 
       
-      if (response.success && response.data) {
-        const userData = response.data;
-        const level = userData.burnout_level ?? 0;
-        
-        setBurnoutLevel(level);
-        setInitialBurnoutLevel(level);
+      // Используем значение burnout_level или 0 по умолчанию
+      const level = userData.burnout_level ?? 0;
+      
+      setBurnoutLevel(level);
+      setInitialBurnoutLevel(level);
 
-        if (userData.last_attempt_date) {
-          const today = new Date().toISOString().split('T')[0];
-          const lastAttempt = new Date(userData.last_attempt_date).toISOString().split('T')[0];
-          setAlreadyAttempted(today === lastAttempt);
-        }
-      } else {
-        setApiError(response.error || "Ошибка загрузки данных");
+      if (userData.last_attempt_date) {
+        const today = new Date().toISOString().split('T')[0];
+        const lastAttempt = new Date(userData.last_attempt_date).toISOString().split('T')[0];
+        setAlreadyAttempted(today === lastAttempt);
       }
-    } catch (err) {
-      setApiError("Ошибка соединения");
-    } finally {
-      setLoading(false);
+    } else {
+      setApiError(response.error || "Ошибка загрузки данных");
     }
-  }, [user?.id, initData]);
+  } catch (err) {
+    setApiError("Ошибка соединения");
+  } finally {
+    setLoading(false);
+  }
+}, [user?.id, initData]);
 
   useEffect(() => {
     setLoading(true);
@@ -174,49 +176,69 @@ export default function Home() {
 
     const question = questions.find(q => q.id === questionId);
     if (!question) return;
-
+    
     const newAnswers = {
       ...answers,
       [questionId]: isPositive
     };
     setAnswers(newAnswers);
 
-    // Пересчет уровня выгорания
-    const newLevel = calculateBurnoutLevel(initialBurnoutLevel, newAnswers, questions);
+    // Рассчитываем дельту на основе ответов
+    let answeredDelta = 0;
+    Object.entries(newAnswers).forEach(([id, ans]) => {
+      const qId = parseInt(id);
+      const q = questions.find(q => q.id === qId);
+      if (q && ans) {
+        answeredDelta += q.weight;
+      }
+    });
+    
+    const newLevel = Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
     setBurnoutLevel(newLevel);
 
-    // Проверка завершения теста
+    // Проверяем завершение опроса
     const allAnswered = questions.every(q => q.id in newAnswers);
     if (allAnswered && !alreadyAttempted) {
-      submitSurvey(newLevel - initialBurnoutLevel);
+      submitSurvey(answeredDelta);
     }
   };
 
-  const submitSurvey = async (totalScore: number) => {
-    if (!user?.id) return;
+  // src/pages/index.tsx
 
-    try {
-      const response = await api.submitSurvey({
-        telegramId: Number(user.id),
-        newScore: totalScore,
-        initData
-      });
-
-      if (response.success && response.data) {
-        const updatedUser = response.data;
-        const todayUTC = new Date().toISOString();
-
-        setSurveyCompleted(true);
-        setAlreadyAttempted(true);
-        setBurnoutLevel(updatedUser.burnout_level);
-      } else {
-        setApiError(response.error || 'Ошибка сохранения результатов');
+const submitSurvey = async (totalScore: number) => {
+  if (!user?.id) return;
+  
+  try {
+    const response = await api.submitSurvey({
+      telegramId: user.id,
+      newScore: totalScore,
+      initData
+    });
+    
+    if (response.success && response.data) {
+    const updatedUser = response.data; // Убираем приведение типа
+      const todayUTC = new Date().toISOString();
+      
+      // Update state with new user data
+      setSurveyCompleted(true);
+      setAlreadyAttempted(true);
+      setBurnoutLevel(updatedUser.burnout_level);
+      
+      // Update localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('lastAttemptDate', todayUTC);
       }
-    } catch (error) {
-      console.error('Survey submission failed:', error);
-      setApiError('Ошибка соединения с сервером');
+
+      console.log('Survey submitted successfully. New burnout level:', 
+        updatedUser.burnout_level);
+    } else {
+      setApiError(response.error || 'Ошибка сохранения результатов');
     }
-  };
+  } catch (error) {
+    console.error('Survey submission failed:', error);
+    setApiError('Ошибка соединения с сервером');
+  }
+};
 
   if (!user) {
     return (
@@ -229,16 +251,16 @@ export default function Home() {
   if (loading) {
     return <Loader />;
   }
-
+  
   return (
     <div className="container">
       <BurnoutProgress level={burnoutLevel} />
-
+      
       <div className="content">
         {apiError && (
           <div className="error-message">{apiError}</div>
         )}
-
+        
         {alreadyAttempted ? (
           <div className="time-message">
             <div className="info-message">
