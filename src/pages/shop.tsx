@@ -7,8 +7,20 @@ import { Sprite } from '@/lib/types';
 
 export default function Shop() {
   const router = useRouter();
-  const { user, sprites, ownedSprites, coins, isLoading, error, updateUser } = useAppContext();
+  const { 
+    user, 
+    sprites, 
+    ownedSprites, 
+    coins, 
+    isLoading, 
+    error, 
+    updateUser,
+    telegramId,
+    refreshOwnedSprites
+  } = useAppContext();
+  
   const [currentSprite, setCurrentSprite] = useState<number | null>(null);
+  const [initData, setInitData] = useState<string>('');
 
   useEffect(() => {
     if (user && user.current_sprite_id !== undefined) {
@@ -16,9 +28,16 @@ export default function Shop() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      window.Telegram.WebApp.ready();
+      setInitData(window.Telegram.WebApp.initData);
+    }
+  }, []);
+
   const handlePurchase = async (spriteId: number) => {
-    if (!user?.id) {
-      alert('Пользователь не определен.');
+    if (!telegramId) {
+      alert('Пользователь не идентифицирован.');
       return;
     }
 
@@ -39,8 +58,9 @@ export default function Shop() {
     }
 
     try {
-      const response = await updateUser(user.id!, ''); // вызываем новый метод
+      const response = await updateUser(initData);
       if (response.success) {
+        await refreshOwnedSprites(initData);
         setCurrentSprite(spriteId);
         alert('Покупка успешно совершена!');
       } else {
@@ -52,13 +72,15 @@ export default function Shop() {
   };
 
   const handleEquip = async (spriteId: number) => {
-    if (!user?.id) {
-      alert('Пользователь не определен.');
+    if (!telegramId) {
+      alert('Пользователь не идентифицирован.');
       return;
     }
 
     try {
-      const response = await updateUser(user.id!); // достаточно одного аргумента
+      // Здесь должен быть API вызов для смены спрайта
+      // Временно используем updateUser для обновления данных
+      const response = await updateUser(initData);
       if (response.success) {
         setCurrentSprite(spriteId);
         alert('Экипировка применена!');
@@ -84,7 +106,7 @@ export default function Shop() {
 
         {error && <div className="error">{error}</div>}
 
-        {!user?.id ? (
+        {!telegramId ? (
           <div className="error">
             Пользователь не идентифицирован. Обновите страницу.
           </div>
