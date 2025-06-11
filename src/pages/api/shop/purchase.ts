@@ -1,105 +1,163 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '@/lib/supabase';
-import { validateTelegramInitData, extractTelegramUser } from '@/lib/telegramAuth';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { useAppContext } from '@/context/UserContext';
+import { Loader } from '@/components/Loader';
+import { Sprite } from '@/lib/types';
 
-interface PurchaseResponse {
-  success: boolean;
-  error?: string;
-}
+export default function Shop() {
+  const router = useRouter();
+  const { user, sprites, ownedSprites, coins, isLoading, error, updateUser } = useAppContext();
+  const [currentSprite, setCurrentSprite] = useState<number | null>(null);
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<PurchaseResponse>
-) {
-  const initData = req.headers['x-telegram-init-data'] as string;
-  if (!initData || !validateTelegramInitData(initData)) {
-    return res.status(401).json({ success: false, error: 'Unauthorized' });
-  }
+  useEffect(() => {
+    if (user && user.current_sprite_id !== undefined) {
+      setCurrentSprite(user.current_sprite_id);
+    }
+  }, [user]);
 
-  // Извлекаем пользователя Telegram
-  const telegramUser = extractTelegramUser(initData);
-  if (!telegramUser?.id) {
-    return res.status(400).json({ success: false, error: 'Invalid user data' });
-  }
-
-  const telegramId = Number(telegramUser.id);
-  if (isNaN(telegramId)) {
-    return res.status(400).json({ success: false, error: 'Invalid Telegram ID format' });
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
-  }
-
-  const { spriteId } = req.body as { spriteId: number }; // Только spriteId нужен
-
-  if (spriteId === undefined) {
-    return res.status(400).json({ success: false, error: 'Missing parameters' });
-  }
-
-  try {
-    // Находим пользователя по telegram_id
-    const { data: userRecord, error: userError } = await supabase
-      .from('users')
-      .select('id, coins')
-      .eq('telegram_id', telegramId)
-      .single();
-
-    if (userError || !userRecord) {
-      return res.status(404).json({ success: false, error: 'User not found' });
+  const handlePurchase = async (spriteId: number) => {
+    if (!user?.id) {
+      alert('Пользователь не определен.');
+      return;
     }
 
-    const userId = userRecord.id;
-
-    // Находим спрайт
-    const { data: sprite, error: spriteError } = await supabase
-      .from('sprites')
-      .select('price')
-      .eq('id', spriteId)
-      .single();
-
-    if (spriteError || !sprite) {
-      return res.status(404).json({ success: false, error: 'Sprite not found' });
+    if (ownedSprites.includes(spriteId)) {
+      alert('Вы уже приобрели этот спрайт!');
+      return;
     }
 
-    const price = sprite.price;
-
-    // Проверяем, достаточно ли монет
-    if (userRecord.coins < price) {
-      return res.status(400).json({ success: false, error: 'You do not have enough coins' });
+    const sprite = sprites.find((s) => s.id === spriteId);
+    if (!sprite) {
+      alert('Такой спрайт не существует.');
+      return;
     }
 
-    // Проверяем, не куплен ли уже спрайт
-    const { data: existingOwnership, error: ownershipError } = await supabase
-      .from('user_sprites')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('sprite_id', spriteId)
-      .maybeSingle();
-
-    if (ownershipError) {
-      throw ownershipError;
+    if (coins < sprite.price) {
+      alert('Недостаточно монет для покупки.');
+      return;
     }
 
-    if (existingOwnership) {
-      return res.status(400).json({ success: false, error: 'Sprite already purchased' });
+    try {
+      const response = await updateUser(user.id!, '', spriteId); // Передача нового выбранного спрайта
+
+      if (response.success) {
+        setCurrentSprite(spriteId);
+        alert('Покупка успешно совершена!');
+      } else {
+        alert(`Ошибка при покупке: ${response.error}`);
+      }
+    } catch (error) {
+      alert('Ошибка сети: попробуйте позже.');
+    }
+  };
+
+  const handleEquip = async (spriteId: number) => {
+    if (!user?.id) {
+      alert('Пользователь не определен.');
+      return;
     }
 
-    // Используем транзакцию для атомарности
-    const { error } = await supabase.rpc('purchase_sprite_transaction', {
-      p_user_id: userId,
-      p_sprite_id: spriteId,
-      p_price: price
-    });
+    try {
+      const response = await updateUser(user.id!, '', spriteId); // Экипируем выбранный спрайт
 
-    if (error) {
-      console.error('[Purchase API] Transaction failed:', error);
-      throw error;
+      if (response.success) {
+        setCurrentSprite(spriteId);
+        alert('Экипировка применена!');
+      } else {
+        alert(`Ошибка при применении экипировки: ${response.error}`);
+      }
+    } catch (error) {
+      alert('Ошибка сети: попробуйте позже.');
     }
+  };
 
-    return res.status(200).json({ success: true });
-  } catch (error) {
-    console.error('Purchase error:', error);
-    return res.status(500).json({ success: false, error: 'Purchase failed' });
+  if (isLoading) {
+    return <Loader />;
   }
+
+  return (
+    <div className="container">
+      <div className="scrollable-content">
+        <div className="header">
+          <h2>Магазин спрайтов</h2>
+          <div className="coins-display">Монеты: {coins}</div>
+        </div>
+
+        {error && <div className="error">{error}</div>}
+
+        {!user?.id ? (
+          <div className="error">
+            Пользователь не идентифицирован. Обновите страницу.
+          </div>
+        ) : sprites.length === 0 ? (
+          <div className="info">Нет доступных спрайтов.</div>
+        ) : (
+          <div className="sprites-grid">
+            {sprites.map((sprite) => {
+              const isOwned = ownedSprites.includes(sprite.id);
+              const isEquipped = currentSprite === sprite.id;
+
+              return (
+                <div key={sprite.id} className="sprite-card">
+                  <img
+                    src={sprite.image_url}
+                    alt={sprite.name}
+                    className="sprite-image"
+                    onError={(e) =>
+                      (e.currentTarget.src =
+                        'https://via.placeholder.com/150?text=No+Image')}
+                  />
+                  <div className="sprite-info">
+                    <h3>{sprite.name}</h3>
+                    <div className="sprite-price">
+                      Цена:{' '}
+                      {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'}
+                    </div>
+                    <div className="sprite-actions">
+                      {!isOwned ? (
+                        coins >= sprite.price ? (
+                          <button
+                            className="buy-btn"
+                            onClick={() => handlePurchase(sprite.id)}>
+                            Купить
+                          </button>
+                        ) : (
+                          <button className="buy-btn disabled" disabled>
+                            Недостаточно
+                          </button>
+                        )
+                      ) : (
+                        <button
+                          className={`equip-btn ${isEquipped ? 'disabled' : ''}`}
+                          onClick={() => handleEquip(sprite.id)}
+                          disabled={isEquipped}>
+                          {isEquipped ? 'Применён' : 'Применить'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="menu">
+        <Link href="/" passHref>
+          <button className="menu-btn">📊</button>
+        </Link>
+        <Link href="/friends" passHref>
+          <button className="menu-btn">📈</button>
+        </Link>
+        <Link href="/shop" passHref>
+          <button className="menu-btn active">🛍️</button>
+        </Link>
+        <Link href="/info" passHref>
+          <button className="menu-btn">ℹ️</button>
+        </Link>
+      </div>
+    </div>
+  );
 }
