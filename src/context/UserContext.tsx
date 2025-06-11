@@ -2,8 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { api } from '@/lib/api';
 import { UserProfile, Sprite } from '@/lib/types';
 
-// Интерфейс контекста остается прежним
-interface AppContextType {
+type AppContextType = {
   user: UserProfile | null;
   sprites: Sprite[];
   ownedSprites: number[];
@@ -15,9 +14,8 @@ interface AppContextType {
   setOwnedSprites: (spriteIds: number[]) => void;
   refreshSprites: (initData?: string) => Promise<void>;
   refreshOwnedSprites: (telegramId: number, initData?: string) => Promise<void>;
-}
+};
 
-// Создаем контекст и передаем начальное значение
 const AppContext = createContext<AppContextType>({
   user: null,
   sprites: [],
@@ -32,19 +30,65 @@ const AppContext = createContext<AppContextType>({
   refreshOwnedSprites: async () => {},
 });
 
-// Используем хук для предоставления значения контекста дочерним элементам
 export const useAppContext = () => useContext(AppContext);
 
-// Компонент-провайдер контекста
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
-  // Внутреннее состояние контекста
   const [user, setUser] = useState<UserProfile | null>(null);
   const [sprites, setSprites] = useState<Sprite[]>([]);
   const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // Другие методы и логика обновления состояния
+
+  // Обновление данных пользователя
+  const updateUser = useCallback(async (telegramId: number, initData?: string) => {
+    setIsLoading(true);
+    try {
+      const response = await api.getUserData(telegramId, initData);
+      if (response.success && response.data) {
+        setUser(response.data);
+      } else {
+        throw new Error(response.error || 'Failed to fetch user data');
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Загрузка спрайтов магазина
+  const refreshSprites = useCallback(async (initData?: string) => {
+    setIsLoading(true);
+    try {
+      const response = await api.getSprites(initData);
+      if (response.success && response.data) {
+        setSprites(response.data);
+      } else {
+        throw new Error(response.error || 'Failed to fetch sprites');
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Обновление купленных спрайтов
+  const refreshOwnedSprites = useCallback(async (telegramId: number, initData?: string) => {
+    setIsLoading(true);
+    try {
+      const response = await api.getOwnedSprites(telegramId, initData);
+      if (response.success && response.data) {
+        setOwnedSprites(response.data);
+      } else {
+        throw new Error(response.error || 'Failed to fetch owned sprites');
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   return (
     <AppContext.Provider
@@ -55,11 +99,11 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         isLoading,
         error,
         setUser,
-        updateUser, // реализуйте этот метод
+        updateUser,
         setSprites,
         setOwnedSprites,
-        refreshSprites, // реализуйте этот метод
-        refreshOwnedSprites, // реализуйте этот метод
+        refreshSprites,
+        refreshOwnedSprites,
       }}
     >
       {children}
