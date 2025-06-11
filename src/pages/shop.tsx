@@ -166,4 +166,86 @@ export default function Shop() {
             Пользователь не идентифицирован. Обновите страницу.
           </div>
         ) : sprites.length === 0 ? (
-          <div
+          <div className="info">Нет доступных спрайтов</div>
+        ) : (
+          /* Грид с доступными спрайтами */
+          <div className="sprites-grid">
+            {sprites.map((sprite) => {
+              const isOwned = ownedSprites.includes(sprite.id);    // Проверяем, купил ли пользователь этот спрайт
+              const isEquipped = currentSprite === sprite.id;      // Спрайт применён?
+              const isPurchasing = purchasingId === sprite.id;     // Покупается сейчас?
+              const isEquipping = equippingId === sprite.id;      // Применяется сейчас?
+
+              return (
+                <div key={sprite.id} className="sprite-card">
+                  <img
+                    src={sprite.image_url}
+                    alt={sprite.name}
+                    className="sprite-image"
+                    onError={(e) =>
+                      (e.currentTarget.src =
+                        'https://via.placeholder.com/150?text=No+Image') // Замещающее изображение
+                    }
+                  />
+                  <div className="sprite-info">
+                    <h3>{sprite.name}</h3>
+                    <div className="sprite-price">
+                      Цена: {' '}
+                      {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'} {/* Определяем стоимость спрайта */}
+                    </div>
+                    
+                    <div className="sprite-actions">
+                      {!isOwned ? (
+                        coins >= sprite.price ? (
+                          <button
+                            className={`buy-btn ${isPurchasing ? 'loading' : ''}`}
+                            onClick={() => handlePurchase(sprite.id)} // Нажатие кнопки покупает спрайт
+                            disabled={isPurchasing} // Блокировка пока идет покупка
+                          >
+                            {isPurchasing ? 'Покупка...' : 'Купить'}
+                          </button>
+                        ) : (
+                          <button className="buy-btn disabled" disabled>
+                            Недостаточно
+                          </button>
+                        )
+                      ) : (
+                        <button
+                          className={`equip-btn ${isEquipped ? 'equipped' : ''}`}
+                          onClick={() => handleEquip(sprite.id)} // Кнопка изменения активного спрайта
+                          disabled={isEquipped || isEquipping} // Заблокирована, если применяется другой спрайт
+                        >
+                          {isEquipping 
+                            ? 'Применение...'
+                            : isEquipped 
+                              ? 'Применён'
+                              : 'Применить'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Навигационное меню внизу экрана */}
+      <div className="menu">
+        <Link href="/" passHref>
+          <button className="menu-btn">📊</button>
+        </Link>
+        <Link href="/friends" passHref>
+          <button className="menu-btn">📈</button>
+        </Link>
+        <Link href="/shop" passHref>
+          <button className="menu-btn active">🛍️</button>
+        </Link>
+        <Link href="/info" passHref>
+          <button className="menu-btn">ℹ️</button>
+        </Link>
+      </div>
+    </div>
+  );
+}
