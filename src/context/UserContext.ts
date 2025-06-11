@@ -2,21 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { api } from '@/lib/api';
 import { UserProfile, Sprite } from '@/lib/types';
 
-type AppContextType = {
-  user: UserProfile | null;
-  sprites: Sprite[];
-  ownedSprites: number[];
-  isLoading: boolean;
-  error: string | null;
-  setUser: (user: UserProfile) => void;
-  updateUser: (telegramId: number, initData?: string) => Promise<void>;
-  setSprites: (sprites: Sprite[]) => void;
-  setOwnedSprites: (spriteIds: number[]) => void;
-  refreshSprites: (initData?: string) => Promise<void>;
-  refreshOwnedSprites: (telegramId: number, initData?: string) => Promise<void>;
-};
-
-const AppContext = createContext<AppContextType>({
+const AppContext = createContext({
   user: null,
   sprites: [],
   ownedSprites: [],
