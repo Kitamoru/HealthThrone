@@ -228,25 +228,6 @@ export default function Home() {
     }
   };
 
-  // Переход в начальное состояние после успешного завершения теста
-  useEffect(() => {
-    if (surveyCompleted) {
-      setTimeout(() => {
-        setSurveyCompleted(false);
-        setAnswers({}); // Очищаем ответы
-      }, 5000); // Задержка 5 секунд
-    }
-  }, [surveyCompleted]);
-
-  // Рендер интерфейса
-  if (!user) {
-    return (
-      <div className="error-message">
-        Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение.
-      </div>
-    );
-  }
-
   if (loading) {
     return <Loader />;
   }
