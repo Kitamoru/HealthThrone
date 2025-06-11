@@ -1,52 +1,111 @@
-// Правильно объявляем контекст на верхнем уровне файла
-import { createContext, useContext, useState } from 'react';
-import { api } from '../lib/api';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { api } from '@/lib/api';
 import { UserProfile, Sprite } from '@/lib/types';
 
 type AppContextType = {
   user: UserProfile | null;
-  coins: number;
   sprites: Sprite[];
   ownedSprites: number[];
+  isLoading: boolean;
+  error: string | null;
   setUser: (user: UserProfile) => void;
-  setCoins: (coins: number) => void;
+  updateUser: (telegramId: number, initData?: string) => Promise<void>;
   setSprites: (sprites: Sprite[]) => void;
   setOwnedSprites: (spriteIds: number[]) => void;
+  refreshSprites: (initData?: string) => Promise<void>;
+  refreshOwnedSprites: (telegramId: number, initData?: string) => Promise<void>;
 };
 
-// Создаем контекст с начальным состоянием
-export const AppContext = createContext<AppContextType>({
+const AppContext = createContext<AppContextType>({
   user: null,
-  coins: 0,
   sprites: [],
   ownedSprites: [],
+  isLoading: false,
+  error: null,
   setUser: () => {},
-  setCoins: () => {},
+  updateUser: async () => {},
   setSprites: () => {},
-  setOwnedSprites: () => {}
+  setOwnedSprites: () => {},
+  refreshSprites: async () => {},
+  refreshOwnedSprites: async () => {},
 });
 
-// Используем хук для получения текущего контекста
 export const useAppContext = () => useContext(AppContext);
 
-// Компонент-провайдер контекста
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [coins, setCoins] = useState(0);
   const [sprites, setSprites] = useState<Sprite[]>([]);
   const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Обновление данных пользователя
+  const updateUser = useCallback(async (telegramId: number, initData?: string) => {
+    setIsLoading(true);
+    try {
+      const response = await api.getUserData(telegramId, initData);
+      if (response.success && response.data) {
+        setUser(response.data);
+      } else {
+        throw new Error(response.error || 'Failed to fetch user data');
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Загрузка спрайтов магазина
+  const refreshSprites = useCallback(async (initData?: string) => {
+    setIsLoading(true);
+    try {
+      const response = await api.getSprites(initData);
+      if (response.success && response.data) {
+        setSprites(response.data);
+      } else {
+        throw new Error(response.error || 'Failed to fetch sprites');
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Обновление купленных спрайтов
+  const refreshOwnedSprites = useCallback(async (telegramId: number, initData?: string) => {
+    setIsLoading(true);
+    try {
+      const response = await api.getOwnedSprites(telegramId, initData);
+      if (response.success && response.data) {
+        setOwnedSprites(response.data);
+      } else {
+        throw new Error(response.error || 'Failed to fetch owned sprites');
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   return (
-    <AppContext.Provider value={{ // Теперь context доступен!
-      user,
-      coins,
-      sprites,
-      ownedSprites,
-      setUser,
-      setCoins,
-      setSprites,
-      setOwnedSprites
-    }}>
+    <AppContext.Provider
+      value={{
+        user,
+        sprites,
+        ownedSprites,
+        isLoading,
+        error,
+        setUser,
+        updateUser,
+        setSprites,
+        setOwnedSprites,
+        refreshSprites,
+        refreshOwnedSprites,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );
