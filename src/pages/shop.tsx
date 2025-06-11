@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import Link from 'next/link'; // Для ссылок теперь используется стандартный next/link
+import { usePathname } from 'next/navigation'; // Используем new Router API
+
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
@@ -23,18 +25,18 @@ const useFetch = (url: string, options: RequestInit) => {
           setError(null);
         }
       } catch (err) {
-  if (!didCancel) {
-    if (err instanceof Error) {
-      setError(err.message);
-    } else {
-      setError(String(err)); // Если err не является объектом Error, преобразуем его в строку
-    }
-  }
-} finally {
-  if (!didCancel) {
-    setLoading(false);
-  }
-}
+        if (!didCancel) {
+          if (err instanceof Error) {
+            setError(err.message);
+          } else {
+            setError(String(err)); // Если err не является объектом Error, преобразуем его в строку
+          }
+        }
+      } finally {
+        if (!didCancel) {
+          setLoading(false);
+        }
+      }
     };
 
     fetchData();
@@ -87,7 +89,8 @@ interface UserData extends UserProfile {
 type SpriteWithPrice = Omit<Sprite, 'price'> & { price: number };
 
 export default function Shop() {
-  const router = useRouter();
+  const pathname = usePathname(); // Новое использование навигационного хука
+
   const { user, isReady, initData } = useTelegram();
   const [sprites, setSprites] = useState<SpriteWithPrice[]>([]);
   const [coins, setCoins] = useState(0);
@@ -119,7 +122,7 @@ export default function Shop() {
     if (!sprite) return;
 
     if (coins < sprite.price) {
-      setError("Insufficient funds");
+      setError('Insufficient funds');
       return;
     }
 
@@ -129,7 +132,7 @@ export default function Shop() {
       setCoins(coins - sprite.price);
       setError(null);
     } else {
-      setError(purchaseResult.error || "An unknown error occurred.");
+      setError(purchaseResult.error || 'An unknown error occurred.');
     }
   };
 
@@ -141,7 +144,7 @@ export default function Shop() {
       setCurrentSprite(spriteId);
       setError(null);
     } else {
-      setError(equipResult.error || "An unknown error occurred.");
+      setError(equipResult.error || 'An unknown error occurred.');
     }
   };
 
@@ -192,8 +195,7 @@ export default function Shop() {
                     ) : (
                       <button
                         className={`equip-btn ${isEquipped ? 'disabled' : ''}`}
-                        onClick={() => handleEquip(sprite.id)}
-                        disabled={isEquipped}
+                        onClick={() => handleEquip(sprite. const                        disabled={isEquipped}
                       >
                         {isEquipped ? 'Equipped' : 'Equip'}
                       </button>
