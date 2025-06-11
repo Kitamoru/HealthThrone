@@ -32,7 +32,7 @@ export default async function handler(
     console.log('Fetching sprites from Supabase...');
     const { data: sprites, error } = await supabase
       .from('sprites')
-      .select('*')
+      .select('id, name, image_url, price')
       .order('price', { ascending: true });
 
     if (error) {
