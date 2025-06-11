@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
-import { Sprite, ShopUserProfile } from '../lib/types';
+import { Sprite, ShopUserProfile, EquipResponse } from '../lib/types'; // импортируем новый тип EquipResponse
 
 // Компонент отображающий магазин спрайтов
 export default function Shop() {
@@ -22,21 +22,22 @@ export default function Shop() {
   /**
    * Автоматическое удаление ошибки спустя 3 секунды
    */
- useEffect(() => {
-  let timer: NodeJS.Timeout | undefined; // Здесь явно указан тип переменной timer
-  if (error) {
-    timer = setTimeout(() => setError(null), 3000);
-  }
-  return () => {
-    clearTimeout(timer);
-  };
-}, [error]);
+  useEffect(() => {
+    let timer: NodeJS.Timeout | undefined; // Здесь явно указан тип переменной timer
+    if (error) {
+      timer = setTimeout(() => setError(null), 3000);
+    }
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [error]);
+
   /**
    * Фетчинг данных спрайтов и информации о пользователе
    */
   useEffect(() => {
     if (!isReady || !user?.id || !initData) return;
-    
+
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -108,7 +109,7 @@ export default function Shop() {
 
       if (purchaseResponse.success) {
         setOwnedSprites([...ownedSprites, spriteId]);
-        setCoins(purchaseResponse.newCoins); // получаем новые монеты от сервера
+        setCoins(purchaseResponse.newCoins); // обновляем монеты
         setError(null);
       } else {
         setError(purchaseResponse.error || 'Ошибка при покупке');
@@ -131,10 +132,10 @@ export default function Shop() {
 
     try {
       setEquippingId(spriteId);
-      const equipResponse = await api.equipSprite(Number(user.id), spriteId, initData);
+      const equipResponse = await api.equipSprite(Number(user.id), spriteId, initData); // ждём отклик от API
 
       if (equipResponse.success) {
-        setCurrentSprite(equipResponse.currentSprite); // Устанавливаем новый текущий спрайт
+        setCurrentSprite(equipResponse.currentSprite); // Устанавливаем новый текущий спрайт, учитывая, что currentSprite есть только при успехе
         setError(null);
       } else {
         setError(equipResponse.error || 'Ошибка при применении спрайта');
