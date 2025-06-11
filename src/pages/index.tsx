@@ -238,19 +238,6 @@ export default function Home() {
     }
   }, [surveyCompleted]);
 
-  // Кэширование данных пользователей
-  const cachedUsers = {};
-
-  const fetchUserData = async (telegramId: number) => {
-    if (cachedUsers[telegramId]) {
-      return cachedUsers[telegramId]; // Используем кэшированные данные
-    }
-
-    const response = await api.getUserData(telegramId, initData);
-    cachedUsers[telegramId] = response.data;
-    return response.data;
-  };
-
   // Рендер интерфейса
   if (!user) {
     return (
