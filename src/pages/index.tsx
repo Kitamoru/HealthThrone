@@ -18,7 +18,7 @@ interface Question {
   weight: number;
 }
 
-const QUESTIONS: Question[] = [  {
+const QUESTIONS: Question[] = [  
   {
     id: 1,
     text: "Я чувствую усталость даже после отдыха",
