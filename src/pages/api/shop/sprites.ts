@@ -32,7 +32,7 @@ export default async function handler(
     console.log('Fetching sprites from Supabase...');
     const { data: sprites, error } = await supabase
       .from('sprites')
-      .select('id, name, image_url, price') // ← ОГРАНИЧИВАЕМ ПОЛЯ ТОЛЬКО НУЖНЫМИ
+      .select('*')
       .order('price', { ascending: true });
 
     if (error) {
