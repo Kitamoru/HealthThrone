@@ -20,7 +20,7 @@ export interface ApiResponse<T = any> {
   success: boolean;
   status: number;
   data?: T;
-  newCoins: number; 
+  newCoins?: T;
   error?: string;
 }
 
