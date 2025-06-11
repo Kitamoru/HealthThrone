@@ -17,9 +17,6 @@ interface Question {
   negative_answer: string;
   weight: number;
 }
-
-// Массив вопросов
-const QUESTIONS: Question[] = [
   {
     id: 1,
     text: "Я чувствую усталость даже после отдыха",
@@ -27,7 +24,76 @@ const QUESTIONS: Question[] = [
     negative_answer: "Нет",
     weight: 3
   },
-  // Остальные вопросы...
+  {
+    id: 2,
+    text: "Мне трудно сосредоточиться на работе",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 2
+  },
+  {
+    id: 3,
+    text: "Я часто чувствую раздражение",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 2
+  },
+  {
+    id: 4,
+    text: "У меня снизилась мотивация к работе",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 3
+  },
+  {
+    id: 5,
+    text: "Я испытываю физическое напряжение",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 2
+  },
+  {
+    id: 6,
+    text: "Мне сложно расслабиться",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 2
+  },
+  {
+    id: 7,
+    text: "Я чувствую себя эмоционально истощенным",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 3
+  },
+  {
+    id: 8,
+    text: "У меня есть проблемы со сном",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 2
+  },
+  {
+    id: 9,
+    text: "Я хорошо сплю",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: -2
+  },
+  {
+    id: 10,
+    text: "Я чувствую себя мотивированным",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: -2
+  },
+  {
+    id: 11,
+    text: "У меня хороший аппетит",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: -1
+  }
 ];
 
 // Основной компонент домашней страницы
@@ -43,16 +109,21 @@ export default function Home() {
   const [surveyCompleted, setSurveyCompleted] = useState(false);
 
   // Хранит информацию о попытке прохождения теста сегодня
-  const [alreadyAttempted, setAlreadyAttempted] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const lastDate = localStorage.getItem('lastAttemptDate');
-      if (lastDate) {
-        const today = new Date().toISOString().split('T')[0];
-        return lastDate.split('T')[0] === today;
+  const [alreadyAttempted, setAlreadyAttempted] = useState(false);
+
+  // Функция расчета текущего уровня выгорания
+  const calculateBurnoutLevel = (currentLevel: number, answers: Record<number, boolean>): number => {
+    let delta = 0;
+    for (let answer of Object.values(answers)) {
+      if (answer) {
+        const foundQuestion = questions.find(q => q.id === parseInt(Object.keys(answers)[Object.values(answers).indexOf(answer)]));
+        if (foundQuestion) {
+          delta += foundQuestion.weight;
+        }
       }
     }
-    return false;
-  });
+    return Math.max(0, Math.min(currentLevel + delta, 100));
+  };
 
   // Загрузка данных пользователя
   const loadUserData = useCallback(async () => {
@@ -65,13 +136,13 @@ export default function Home() {
       if (response.success && response.data) {
         const userData = response.data;
         const level = userData.burnout_level ?? 0;
-        setBurnoutLevel(level); // ВСЕГДА устанавливает свежий уровень выгорания
+        setBurnoutLevel(level); // Всегда устанавливает свежий уровень выгорания
         setInitialBurnoutLevel(level);
-
+        
         if (userData.last_attempt_date) {
           const today = new Date().toISOString().split('T')[0];
           const lastAttempt = new Date(userData.last_attempt_date).toISOString().split('T')[0];
-          setAlreadyAttempted(today === lastAttempt); // Устанавливает признак, прошло ли тестирование сегодня
+          setAlreadyAttempted(today === lastAttempt); // Устанавливает признак, пройден ли тест сегодня
         }
       } else {
         setApiError(response.error || "Ошибка загрузки данных");
@@ -116,46 +187,31 @@ export default function Home() {
     };
     setAnswers(newAnswers);
 
-    let answeredDelta = 0;
-    Object.entries(newAnswers).forEach(([id, ans]) => {
-      const qId = parseInt(id);
-      const q = questions.find(q => q.id === qId);
-      if (q && ans) {
-        answeredDelta += q.weight;
-      }
-    });
-
-    const newLevel = Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
+    const newLevel = calculateBurnoutLevel(initialBurnoutLevel, newAnswers);
     setBurnoutLevel(newLevel);
 
     const allAnswered = questions.every(q => q.id in newAnswers);
     if (allAnswered && !alreadyAttempted) {
-      submitSurvey(answeredDelta);
+      submitSurvey(question.weight * (isPositive ? 1 : -1)); // Подсчитываем дельту
     }
   };
 
   // Отправка результата опроса на сервер
-  const submitSurvey = async (totalScore: number) => {
+  const submitSurvey = async (delta: number) => {
     if (!user?.id) return;
 
     try {
       const response = await api.submitSurvey({
         telegramId: Number(user.id),
-        newScore: totalScore,
+        scoreDelta: delta,
         initData
       });
 
       if (response.success && response.data) {
         const updatedUser = response.data;
-        const todayUTC = new Date().toISOString();
-
         setSurveyCompleted(true);
         setAlreadyAttempted(true);
         setBurnoutLevel(updatedUser.burnout_level); // Устанавливаем новый уровень выгорания
-
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('lastAttemptDate', todayUTC);
-        }
       } else {
         setApiError(response.error || 'Ошибка сохранения результатов');
       }
@@ -170,7 +226,30 @@ export default function Home() {
     }
   };
 
-  // Отображаем контент
+  // Переход в начальное состояние после успешного завершения теста
+  useEffect(() => {
+    if (surveyCompleted) {
+      setTimeout(() => {
+        setSurveyCompleted(false);
+        setAnswers({}); // Очищаем ответы
+      }, 5000); // Задержка 5 секунд
+    }
+  }, [surveyCompleted]);
+
+  // Кэширование данных пользователей
+  const cachedUsers = {};
+
+  const fetchUserData = async (telegramId: number) => {
+    if (cachedUsers[telegramId]) {
+      return cachedUsers[telegramId]; // Используем кэшированные данные
+    }
+
+    const response = await api.getUserData(telegramId, initData);
+    cachedUsers[telegramId] = response.data;
+    return response.data;
+  };
+
+  // Рендер интерфейса
   if (!user) {
     return (
       <div className="error-message">
