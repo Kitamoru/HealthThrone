@@ -14,6 +14,8 @@ export default function App({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     if (isReady && initData && !userInitialized) {
+      if (!initData) return; // Проверяем наличие initData
+
       api.initUser(initData, startParam)
         .then(response => {
           if (response.success) {
@@ -22,13 +24,16 @@ export default function App({ Component, pageProps }: AppProps) {
             console.error('Failed to initialize user:', response.error);
           }
         })
-        .finally(() => setUserInitialized(true));
+        .catch(error => {
+          console.error('Ошибка инициализации пользователя:', error);
+        })
+        .finally(() => setUserInitialized(true)); // Устанавливаем true независимо от результата
     }
   }, [isReady, initData, startParam, userInitialized]);
 
   return (
-    <> {/* Всё приложение должно быть обернуто в AppProvider */}
-      <AppProvider> {/* Привязываем провайдер контекста ко всему приложению */}
+    <>
+      <AppProvider> {/* Оборачиваем всё приложение в AppProvider */}
         <Head>
           <title>Burnout Tracker - Отслеживание выгорания</title>
           <meta name="description" content="Telegram Mini App для отслеживания уровня выгорания" />
@@ -52,7 +57,7 @@ export default function App({ Component, pageProps }: AppProps) {
           </div> : 
           <Loader />
         }
-      </AppProvider> {/* Завершаем тег провайдера контекста */}
+      </AppProvider>
     </>
   );
 }
