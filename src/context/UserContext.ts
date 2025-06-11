@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { api } from '@/lib/api';
 import { UserProfile, Sprite } from '@/lib/types';
 
-// Определение интерфейса контекста
+// Интерфейс контекста остается прежним
 interface AppContextType {
   user: UserProfile | null;
   sprites: Sprite[];
@@ -17,7 +17,7 @@ interface AppContextType {
   refreshOwnedSprites: (telegramId: number, initData?: string) => Promise<void>;
 }
 
-// Создание контекста
+// Создаем контекст и передаем начальное значение
 const AppContext = createContext<AppContextType>({
   user: null,
   sprites: [],
@@ -32,19 +32,20 @@ const AppContext = createContext<AppContextType>({
   refreshOwnedSprites: async () => {},
 });
 
-// Хук для подключения контекста
+// Используем хук для предоставления значения контекста дочерним элементам
 export const useAppContext = () => useContext(AppContext);
 
-// Обертка провайдера
+// Компонент-провайдер контекста
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
+  // Внутреннее состояние контекста
   const [user, setUser] = useState<UserProfile | null>(null);
   const [sprites, setSprites] = useState<Sprite[]>([]);
   const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Функционал обработки асинхронных операций и обновление состояния
   
+  // Другие методы и логика обновления состояния
+
   return (
     <AppContext.Provider
       value={{
@@ -54,11 +55,11 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         isLoading,
         error,
         setUser,
-        updateUser,
+        updateUser, // реализуйте этот метод
         setSprites,
         setOwnedSprites,
-        refreshSprites,
-        refreshOwnedSprites,
+        refreshSprites, // реализуйте этот метод
+        refreshOwnedSprites, // реализуйте этот метод
       }}
     >
       {children}
