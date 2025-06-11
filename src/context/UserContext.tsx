@@ -10,7 +10,7 @@ type AppContextType = {
   isLoading: boolean;
   error: string | null;
   setUser: (user: UserProfile) => void;
-  updateUser: (telegramId: number, initData?: string) => Promise<void>;
+  updateUser: (telegramId: number, initData?: string) => Promise<{ success: boolean, error?: string }>; // Изменили сигнатуру
   setSprites: (sprites: Sprite[]) => void;
   setOwnedSprites: (spriteIds: number[]) => void;
   refreshSprites: (initData?: string) => Promise<void>;
@@ -26,7 +26,7 @@ const AppContext = createContext<AppContextType>({
   isLoading: false,
   error: null,
   setUser: () => {},
-  updateUser: async () => {},
+  updateUser: async () => ({ success: false }), // Возвращаем пустой объект по умолчанию
   setSprites: () => {},
   setOwnedSprites: () => {},
   refreshSprites: async () => {},
@@ -45,21 +45,26 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
 
   // Обновление данных пользователя
-  const updateUser = useCallback(async (telegramId: number, initData?: string) => {
-    setIsLoading(true);
-    try {
-      const response = await api.getUserData(telegramId, initData);
-      if (response.success && response.data) {
-        setUser(response.data);
-      } else {
-        throw new Error(response.error || 'Failed to fetch user data');
+  const updateUser = useCallback(
+    async (telegramId: number, initData?: string): Promise<{ success: boolean, error?: string }> => {
+      setIsLoading(true);
+      try {
+        const response = await api.getUserData(telegramId, initData);
+        if (response.success && response.data) {
+          setUser(response.data);
+          return { success: true }; // Добавляем возврат успешного результата
+        } else {
+          throw new Error(response.error || 'Failed to fetch user data');
+        }
+      } catch (err: any) {
+        setError(err.message);
+        return { success: false, error: err.message }; // Добавляем возврат ошибочного результата
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   // Загрузка спрайтов магазина
   const refreshSprites = useCallback(async (initData?: string) => {
