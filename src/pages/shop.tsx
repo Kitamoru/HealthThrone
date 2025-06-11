@@ -22,13 +22,16 @@ export default function Shop() {
   /**
    * Автоматическое удаление ошибки спустя 3 секунды
    */
-  useEffect(() => {
-    let timer;
+ useEffect(() => {
+-   let timer;
++   let timer: NodeJS.Timeout | undefined;
     if (error) {
       timer = setTimeout(() => setError(null), 3000);
     }
-    return () => clearTimeout(timer);
-  }, [error]);
+    return () => {
+      clearTimeout(timer);
+    };
+}, [error]);
 
   /**
    * Фетчинг данных спрайтов и информации о пользователе
