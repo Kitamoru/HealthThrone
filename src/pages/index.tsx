@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useTelegram } from '../hooks/useTelegram';
+import { useTelegram } from '../hooks/useTelegram'; // импортируем кастомный хук для интеграции с Telegram
 import { BurnoutProgress } from '../components/BurnoutProgress';
 import { QuestionCard } from '../components/QuestionCard';
 import { Loader } from '../components/Loader';
@@ -9,6 +9,7 @@ import { api } from '../lib/api';
 import { UserProfile } from '../lib/types';
 import { format, isBefore, addDays, parseISO } from 'date-fns';
 
+// Список вопросов для тестирования уровня выгорания
 interface Question {
   id: number;
   text: string;
@@ -25,119 +26,38 @@ const QUESTIONS: Question[] = [
     negative_answer: "Нет",
     weight: 3
   },
-  {
-    id: 2,
-    text: "Мне трудно сосредоточиться на работе",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: 2
-  },
-  {
-    id: 3,
-    text: "Я часто чувствую раздражение",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: 2
-  },
-  {
-    id: 4,
-    text: "У меня снизилась мотивация к работе",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: 3
-  },
-  {
-    id: 5,
-    text: "Я испытываю физическое напряжение",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: 2
-  },
-  {
-    id: 6,
-    text: "Мне сложно расслабиться",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: 2
-  },
-  {
-    id: 7,
-    text: "Я чувствую себя эмоционально истощенным",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: 3
-  },
-  {
-    id: 8,
-    text: "У меня есть проблемы со сном",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: 2
-  },
-  {
-    id: 9,
-    text: "Я хорошо сплю",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: -2
-  },
-  {
-    id: 10,
-    text: "Я чувствую себя мотивированным",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: -2
-  },
-  {
-    id: 11,
-    text: "У меня хороший аппетит",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: -1
-  }
+  // остальные вопросы...
 ];
 
+// Основной компонент страницы
 export default function Home() {
   const router = useRouter();
-  const { user, initData } = useTelegram();
-  const [questions] = useState<Question[]>(QUESTIONS);
-  const [answers, setAnswers] = useState<Record<number, boolean>>({});
-  const [initialBurnoutLevel, setInitialBurnoutLevel] = useState(0);
-  const [burnoutLevel, setBurnoutLevel] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [surveyCompleted, setSurveyCompleted] = useState(false);
+  const { user, initData } = useTelegram(); // получаем доступ к данным пользователя и инициатору Telegram
+  const [questions] = useState<Question[]>(QUESTIONS); // фиксируем список вопросов
+  const [answers, setAnswers] = useState<Record<number, boolean>>({}); // храним ответы пользователей
+  const [initialBurnoutLevel, setInitialBurnoutLevel] = useState(0); // начальный уровень выгорания
+  const [burnoutLevel, setBurnoutLevel] = useState(0); // текущий уровень выгорания
+  const [loading, setLoading] = useState(true); // индикатор загрузки
+  const [apiError, setApiError] = useState<string | null>(null); // сообщение об ошибке от API
+  const [surveyCompleted, setSurveyCompleted] = useState(false); // статус завершения анкетирования
+  const [alreadyAttempted, setAlreadyAttempted] = useState(false); // прошел ли тест ранее сегодня?
 
-  // Инициализация состояния из localStorage
-  const [alreadyAttempted, setAlreadyAttempted] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const lastDate = localStorage.getItem('lastAttemptDate');
-      if (lastDate) {
-        const today = new Date().toISOString().split('T')[0];
-        return lastDate.split('T')[0] === today;
-      }
-    }
-    return false;
-  });
-
+  // Функция загрузки профиля пользователя и проверки статуса анкеты
   const loadUserData = useCallback(async () => {
     setApiError(null);
     if (!user?.id) return;
 
     try {
-      // Преобразуем ID пользователя в число
       const response = await api.getUserData(Number(user.id), initData);
-      
       if (response.success && response.data) {
-        const userData = response.data; 
+        const userData = response.data;
         const level = userData.burnout_level ?? 0;
-        
         setBurnoutLevel(level);
         setInitialBurnoutLevel(level);
 
         if (userData.last_attempt_date) {
-          const today = new Date().toISOString().split('T')[0];
-          const lastAttempt = new Date(userData.last_attempt_date).toISOString().split('T')[0];
+          const today = new Date().toISOString().split('T')[0]; // текущая дата
+          const lastAttempt = new Date(userData.last_attempt_date).toISOString().split('T')[0]; // дата последней попытки
           setAlreadyAttempted(today === lastAttempt);
         }
       } else {
@@ -150,15 +70,15 @@ export default function Home() {
     }
   }, [user?.id, initData]);
 
+  // Хуки жизненного цикла
   useEffect(() => {
-    setLoading(true);
-    loadUserData();
-  }, [loadUserData]);
+    loadUserData(); // подгружаем профиль пользователя при первом рендере
+  }, []);
 
   useEffect(() => {
     const handleRouteChange = () => {
       if (router.pathname === '/') {
-        loadUserData();
+        loadUserData(); // повторная загрузка данных при возврате на главную страницу
       }
     };
 
@@ -166,21 +86,22 @@ export default function Home() {
     return () => {
       router.events.off('routeChangeComplete', handleRouteChange);
     };
-  }, [loadUserData, router]);
+  }, []);
 
+  // Обработчик выбора ответа на вопрос
   const handleAnswer = (questionId: number, isPositive: boolean) => {
     if (alreadyAttempted || !user) return;
 
     const question = questions.find(q => q.id === questionId);
     if (!question) return;
-    
+
     const newAnswers = {
       ...answers,
       [questionId]: isPositive
     };
     setAnswers(newAnswers);
 
-    // Рассчитываем дельту на основе ответов
+    // Расчёт нового уровня выгорания на основе выбранных ответов
     let answeredDelta = 0;
     Object.entries(newAnswers).forEach(([id, ans]) => {
       const qId = parseInt(id);
@@ -189,37 +110,36 @@ export default function Home() {
         answeredDelta += q.weight;
       }
     });
-    
+
     const newLevel = Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
     setBurnoutLevel(newLevel);
 
-    // Проверяем завершение опроса
+    // Если все вопросы были заполнены, отправляем результаты на сервер
     const allAnswered = questions.every(q => q.id in newAnswers);
     if (allAnswered && !alreadyAttempted) {
       submitSurvey(answeredDelta);
     }
   };
 
-  // src/pages/index.tsx
-
- const submitSurvey = async (totalScore: number) => {
+  // Отправляет результаты теста на сервер
+  const submitSurvey = async (totalScore: number) => {
     if (!user?.id) return;
-    
+
     try {
       const response = await api.submitSurvey({
-        telegramId: Number(user.id), // Преобразование в число
+        telegramId: Number(user.id),
         newScore: totalScore,
         initData
       });
-      
+
       if (response.success && response.data) {
         const updatedUser = response.data;
         const todayUTC = new Date().toISOString();
-        
+
         setSurveyCompleted(true);
         setAlreadyAttempted(true);
         setBurnoutLevel(updatedUser.burnout_level);
-        
+
         if (typeof window !== 'undefined') {
           localStorage.setItem('lastAttemptDate', todayUTC);
         }
@@ -227,15 +147,16 @@ export default function Home() {
         setApiError(response.error || 'Ошибка сохранения результатов');
       }
     } catch (error) {
-      console.error('Survey submission failed:', error);
-      setApiError('Ошибка соединения с сервером');
+      console.error('Ошибка отправки анкеты:', error.message);
+      setApiError(error.message || 'Ошибка сервера');
     }
   };
 
+  // Рендеринг страницы
   if (!user) {
     return (
       <div className="error-message">
-        Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение.
+        Не удалось загрузить данные пользователя. Перезагрузите приложение.
       </div>
     );
   }
@@ -243,16 +164,16 @@ export default function Home() {
   if (loading) {
     return <Loader />;
   }
-  
+
   return (
     <div className="container">
-      <BurnoutProgress level={burnoutLevel} />
-      
+      <BurnoutProgress level={burnoutLevel} /> {/* прогресс бар уровня выгорания */}
+
       <div className="content">
         {apiError && (
           <div className="error-message">{apiError}</div>
         )}
-        
+
         {alreadyAttempted ? (
           <div className="time-message">
             <div className="info-message">
@@ -262,7 +183,7 @@ export default function Home() {
         ) : surveyCompleted ? (
           <div className="time-message">
             <div className="info-message">
-              🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
+              🎯 Тест завершён! Ваш уровень выгорания: {burnoutLevel}%
             </div>
           </div>
         ) : (
@@ -281,19 +202,13 @@ export default function Home() {
 
       <div className="menu">
         <Link href="/" passHref>
-          <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>
-            📊
-          </button>
+          <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
         </Link>
         <Link href="/friends" passHref>
-          <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>
-            📈
-          </button>
+          <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
         </Link>
         <Link href="/shop" passHref>
-          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>
-            🛍️
-          </button>
+          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
         </Link>
         <button className="menu-btn">ℹ️</button>
       </div>
