@@ -1,98 +1,152 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useAppContext } from '@/context/UserContext';
-import { Loader } from '@/components/Loader';
-import { Sprite } from '@/lib/types';
+import { useTelegram } from '../hooks/useTelegram';
+import { Loader } from '../components/Loader';
+import { api } from '../lib/api';
+import { Sprite, ShopUserProfile } from '../lib/types';
 
 export default function Shop() {
   const router = useRouter();
-  const { 
-    user, 
-    sprites, 
-    ownedSprites, 
-    coins, 
-    isLoading, 
-    error, 
-    updateUser,
-    telegramId,
-    refreshOwnedSprites
-  } = useAppContext();
-  
+  const { user, isReady, initData } = useTelegram();
+  const [sprites, setSprites] = useState<Sprite[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [coins, setCoins] = useState(0);
   const [currentSprite, setCurrentSprite] = useState<number | null>(null);
-  const [initData, setInitData] = useState<string>('');
+  const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user && user.current_sprite_id !== undefined) {
-      setCurrentSprite(user.current_sprite_id);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      window.Telegram.WebApp.ready();
-      setInitData(window.Telegram.WebApp.initData);
-    }
+    console.log("[Shop] Component mounted");
+    return () => console.log("[Shop] Component unmounted");
   }, []);
 
+  const updateCoins = async () => {
+    if (!user?.id) return;
+
+    const response = await api.getUserData(Number(user.id), initData);
+
+    if (response.success && response.data) {
+      const profile: ShopUserProfile = {
+        id: response.data.id,
+        coins: response.data.coins,
+        current_sprite_id: response.data.current_sprite_id
+      };
+      setCoins(profile.coins);
+    } else {
+      setError(response.error || 'Не удалось обновить баланс');
+    }
+  };
+
+  useEffect(() => {
+    if (!isReady || !user?.id) return;
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [userResponse, spritesResponse, ownedResponse] = await Promise.all([
+          api.getUserData(Number(user.id), initData),
+          api.getSprites(initData),
+          api.getOwnedSprites(Number(user.id), initData)
+        ]);
+
+        // Обрабатываем пользовательские данные
+        if (userResponse.success && userResponse.data) {
+          const profile: ShopUserProfile = {
+            id: userResponse.data.id,
+            coins: userResponse.data.coins,
+            current_sprite_id: userResponse.data.current_sprite_id
+          };
+          setCoins(profile.coins);
+          setCurrentSprite(profile.current_sprite_id || null);
+        } else if (userResponse.error) {
+          setError(userResponse.error);
+        }
+
+        // Обрабатываем спрайты
+        if (spritesResponse.success && Array.isArray(spritesResponse.data)) {
+          setSprites(spritesResponse.data);
+          console.log('Setting sprites:', spritesResponse.data); // 👇 Логируем установку спрайтов
+        } else if (spritesResponse.error) {
+          setError(spritesResponse.error);
+        }
+
+        // Обрабатываем купленные спрайты
+        if (ownedResponse.success && Array.isArray(ownedResponse.data)) {
+          setOwnedSprites(ownedResponse.data);
+        } else if (ownedResponse.error) {
+          setError(ownedResponse.error);
+        }
+      } catch (err) {
+        setError('Непредвиденная ошибка');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [isReady, user, initData]);
+
   const handlePurchase = async (spriteId: number) => {
-    if (!telegramId) {
-      alert('Пользователь не идентифицирован.');
+    if (!user?.id) {
+      setError('Пользователь не определён');
       return;
     }
 
     if (ownedSprites.includes(spriteId)) {
-      alert('Вы уже приобрели этот спрайт!');
+      setError('Уже куплено');
       return;
     }
 
     const sprite = sprites.find((s) => s.id === spriteId);
     if (!sprite) {
-      alert('Такой спрайт не существует.');
+      setError('Спрайт не найден');
       return;
     }
 
     if (coins < sprite.price) {
-      alert('Недостаточно монет для покупки.');
+      setError('Недостаточно монет');
       return;
     }
 
     try {
-      const response = await updateUser(initData);
+      const response = await api.purchaseSprite(Number(user.id), spriteId, initData);
+
       if (response.success) {
-        await refreshOwnedSprites(initData);
-        setCurrentSprite(spriteId);
-        alert('Покупка успешно совершена!');
+        setOwnedSprites((prev) => [...prev, spriteId]);
+        setCoins((prev) => prev - sprite.price);
+        setError(null);
       } else {
-        alert(`Ошибка при покупке: ${response.error}`);
+        setError(response.error || 'Ошибка покупки');
       }
-    } catch (error) {
-      alert('Ошибка сети: попробуйте позже.');
+    } catch (error: any) {
+      setError('Ошибка сети');
     }
   };
 
   const handleEquip = async (spriteId: number) => {
-    if (!telegramId) {
-      alert('Пользователь не идентифицирован.');
+    if (!user?.id) {
+      setError('Пользователь не определён');
       return;
     }
 
     try {
-      // Здесь должен быть API вызов для смены спрайта
-      // Временно используем updateUser для обновления данных
-      const response = await updateUser(initData);
+      const response = await api.equipSprite(Number(user.id), spriteId, initData);
+
       if (response.success) {
         setCurrentSprite(spriteId);
-        alert('Экипировка применена!');
+        setError(null);
       } else {
-        alert(`Ошибка при применении экипировки: ${response.error}`);
+        setError(response.error || 'Ошибка применения');
       }
-    } catch (error) {
-      alert('Ошибка сети: попробуйте позже.');
+    } catch (error: any) {
+      setError('Ошибка сети');
     }
   };
 
-  if (isLoading) {
+  if (loading) {
     return <Loader />;
   }
 
@@ -106,12 +160,12 @@ export default function Shop() {
 
         {error && <div className="error">{error}</div>}
 
-        {!telegramId ? (
+        {!user?.id ? (
           <div className="error">
             Пользователь не идентифицирован. Обновите страницу.
           </div>
         ) : sprites.length === 0 ? (
-          <div className="info">Нет доступных спрайтов.</div>
+          <div className="info">Нет доступных спрайтов</div>
         ) : (
           <div className="sprites-grid">
             {sprites.map((sprite) => {
@@ -149,7 +203,7 @@ export default function Shop() {
                         )
                       ) : (
                         <button
-                          className={`equip-btn ${isEquipped ? 'disabled' : ''}`}
+                          className="equip-btn"
                           onClick={() => handleEquip(sprite.id)}
                           disabled={isEquipped}>
                           {isEquipped ? 'Применён' : 'Применить'}
