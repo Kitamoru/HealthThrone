@@ -1,3 +1,4 @@
+// shop.tsx
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -18,7 +19,7 @@ export default function Shop() {
 
   const handlePurchase = async (spriteId: number) => {
     if (!user?.id) {
-      alert("Пользователь не определен.");
+      alert("Пользователь не определён.");
       return;
     }
 
@@ -39,7 +40,7 @@ export default function Shop() {
     }
 
     try {
-      const response = await updateUser(user.id!, '');
+      const response = await updateUser(user.id!, '', spriteId); // Передавайте третий аргумент (spriteId)
 
       if (response.success) {
         setCurrentSprite(spriteId);
@@ -54,12 +55,12 @@ export default function Shop() {
 
   const handleEquip = async (spriteId: number) => {
     if (!user?.id) {
-      alert("Пользователь не определен.");
+      alert("Пользователь не определён.");
       return;
     }
 
     try {
-      const response = await updateUser(user.id!, '', spriteId);
+      const response = await updateUser(user.id!); // Теперь достаточно передать только ID пользователя
 
       if (response.success) {
         setCurrentSprite(spriteId);
@@ -106,12 +107,12 @@ export default function Shop() {
                     className="sprite-image"
                     onError={(e) =>
                       (e.currentTarget.src =
-                        'https://via.placeholder.com/150?text=No+Image')} // 👆 Логика обработки отсутствующих изображений
+                        'https://via.placeholder.com/150?text=No+Image')}
                   />
                   <div className="sprite-info">
                     <h3>{sprite.name}</h3>
                     <div className="sprite-price">
-                      Цена: {' '}
+                      Цена:{' '}
                       {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'}
                     </div>
                     <div className="sprite-actions">
@@ -119,15 +120,21 @@ export default function Shop() {
                         coins >= sprite.price ? (
                           <button
                             className="buy-btn"
-                            onClick={() => handlePurchase(sprite.id)}>Купить</button>
+                            onClick={() => handlePurchase(sprite.id)}>
+                            Купить
+                          </button>
                         ) : (
-                          <button className="buy-btn disabled" disabled>Недостаточно</button>
+                          <button className="buy-btn disabled" disabled>
+                            Недостаточно
+                          </button>
                         )
                       ) : (
                         <button
                           className={`equip-btn ${isEquipped ? 'disabled' : ''}`}
                           onClick={() => handleEquip(sprite.id)}
-                          disabled={isEquipped}>{isEquipped ? 'Применён' : 'Применить'}</button>
+                          disabled={isEquipped}>
+                          {isEquipped ? 'Применён' : 'Применить'}
+                        </button>
                       )}
                     </div>
                   </div>
@@ -139,10 +146,18 @@ export default function Shop() {
       </div>
 
       <div className="menu">
-        <Link href="/" passHref><button className="menu-btn">📊</button></Link>
-        <Link href="/friends" passHref><button className="menu-btn">📈</button></Link>
-        <Link href="/shop" passHref><button className="menu-btn active">🛍️</button></Link>
-        <Link href="/info" passHref><button className="menu-btn">ℹ️</button></Link>
+        <Link href="/" passHref>
+          <button className="menu-btn">📊</button>
+        </Link>
+        <Link href="/friends" passHref>
+          <button className="menu-btn">📈</button>
+        </Link>
+        <Link href="/shop" passHref>
+          <button className="menu-btn active">🛍️</button>
+        </Link>
+        <Link href="/info" passHref>
+          <button className="menu-btn">ℹ️</button>
+        </Link>
       </div>
     </div>
   );
