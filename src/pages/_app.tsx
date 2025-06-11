@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
-import { AppProvider } from '../context/UserContext';
+import { AppProvider } from '../context/UserContext'; // Подключаем провайдер контекста
 
 export default function App({ Component, pageProps }: AppProps) {
   const { isReady, initData, startParam } = useTelegram();
@@ -27,30 +27,32 @@ export default function App({ Component, pageProps }: AppProps) {
   }, [isReady, initData, startParam, userInitialized]);
 
   return (
-    <>
-      <Head>
-        <title>Burnout Tracker - Отслеживание выгорания</title>
-        <meta name="description" content="Telegram Mini App для отслеживания уровня выгорания" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <meta name="theme-color" content="#18222d" />
-      </Head>
-      
-      <Script 
-        src="https://telegram.org/js/telegram-web-app.js" 
-        strategy="beforeInteractive" 
-        onLoad={() => {
-          if (window.Telegram?.WebApp) {
-            window.dispatchEvent(new Event('telegram-ready'));
-          }
-        }}
-      />
-      
-      {userInitialized ? 
-        <div className="page-transition">
-          <Component {...pageProps} />
-        </div> : 
-        <Loader />
-      }
+    <> {/* Всё приложение должно быть обернуто в AppProvider */}
+      <AppProvider> {/* Привязываем провайдер контекста ко всему приложению */}
+        <Head>
+          <title>Burnout Tracker - Отслеживание выгорания</title>
+          <meta name="description" content="Telegram Mini App для отслеживания уровня выгорания" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          <meta name="theme-color" content="#18222d" />
+        </Head>
+        
+        <Script 
+          src="https://telegram.org/js/telegram-web-app.js" 
+          strategy="beforeInteractive" 
+          onLoad={() => {
+            if (window.Telegram?.WebApp) {
+              window.dispatchEvent(new Event('telegram-ready'));
+            }
+          }}
+        />
+        
+        {userInitialized ? 
+          <div className="page-transition">
+            <Component {...pageProps} />
+          </div> : 
+          <Loader />
+        }
+      </AppProvider> {/* Завершаем тег провайдера контекста */}
     </>
   );
 }
