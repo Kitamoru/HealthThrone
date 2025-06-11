@@ -20,64 +20,71 @@ export default function Shop() {
 
   useEffect(() => {
     if (error) {
-      const timer = setTimeout(() => setError(null), 3000);
-      return () => clearTimeout(timer);
+      const timer = setTimeout(() => setError(null), 3000); // Убираем ошибку спустя 3 секунды
+      return () => clearTimeout(timer); // Очищаем таймер при выходе из эффекта
     }
   }, [error]);
 
   useEffect(() => {
-    if (!isReady || !user?.id) return;
+    if (!isReady || !user?.id) return; // Если Telegram API ещё не готово или нет пользователя
 
     const fetchData = async () => {
       try {
-        setLoading(true);
-        setError(null);
+        setLoading(true); // Показываем загрузчик перед отправкой запросов
+        setError(null);   // Удаляем возможные предыдущие ошибки
 
-        const [userResponse, spritesResponse, ownedResponse] = await Promise.all([
-          api.getUserData(Number(user.id), // initData передается автоматически
-          api.getSprites(), // initData передается автоматически
-          api.getOwnedSprites(Number(user.id)) // initData передается автоматически
+        // Отправляем три параллельных запроса на получение данных
+        const [
+          userResponse,
+          spritesResponse,
+          ownedResponse
+        ] = await Promise.all([
+          api.getUserData(Number(user.id)),     // Получение данных пользователя
+          api.getSprites(),                     // Получение списка спрайтов
+          api.getOwnedSprites(Number(user.id))  // Получение списка приобретённых спрайтов
         ]);
 
-        // Обрабатываем пользовательские данные
+        // Проверяем успешность каждого запроса отдельно
         if (userResponse.success && userResponse.data) {
-          setCoins(userResponse.data.coins);
-          setCurrentSprite(userResponse.data.current_sprite_id || null);
+          setCoins(userResponse.data.coins);       // Устанавливаем количество монет
+          setCurrentSprite(userResponse.data.current_sprite_id || null); // Текущий выбранный спрайт
         } else if (userResponse.error) {
-          setError(userResponse.error);
+          setError(userResponse.error);           // Отображаем ошибку, если возникла проблема
         }
 
-        // Обрабатываем спрайты
         if (spritesResponse.success && Array.isArray(spritesResponse.data)) {
-          setSprites(spritesResponse.data);
+          setSprites(spritesResponse.data);      // Заполняем список спрайтов
         } else if (spritesResponse.error) {
-          setError(spritesResponse.error);
+          setError(spritesResponse.error);        // Сообщаем об ошибке загрузки спрайтов
         }
 
-        // Обрабатываем купленные спрайты
         if (ownedResponse.success && Array.isArray(ownedResponse.data)) {
-          setOwnedSprites(ownedResponse.data);
+          setOwnedSprites(ownedResponse.data);   // Сохраняем список купленных спрайтов
         } else if (ownedResponse.error) {
-          setError(ownedResponse.error);
+          setError(ownedResponse.error);          // Сообщаем об ошибке получения списка купленных спрайтов
         }
       } catch (err) {
-        setError('Непредвиденная ошибка');
+        console.error(err);                       // Логируем возможную общую ошибку
+        setError('Непредвиденная ошибка');        // Стандартная ошибка на случай непредвиденных ситуаций
       } finally {
-        setLoading(false);
+        setLoading(false);                         // Скрываем загрузчик независимо от результата
       }
     };
 
-    fetchData();
-  }, [isReady, user]);
+    fetchData();                                  // Выполнение асинхронного фетчинга данных
+  }, [isReady, user]);                           // Повторяем при изменении готовности Telegram API и пользователя
 
+  /**
+   * Обработчик покупки спрайта
+   */
   const handlePurchase = async (spriteId: number) => {
     if (!user?.id) {
-      setError('Пользователь не определён');
+      setError('Пользователь не определен');
       return;
     }
 
     if (ownedSprites.includes(spriteId)) {
-      setError('Уже куплено');
+      setError('Этот спрайт уже куплен');
       return;
     }
 
@@ -88,147 +95,75 @@ export default function Shop() {
     }
 
     if (coins < sprite.price) {
-      setError('Недостаточно монет');
+      setError('У вас недостаточно монет');
       return;
     }
 
     try {
-      setPurchasingId(spriteId);
+      setPurchasingId(spriteId);                 // Начинаем процесс покупки
       const response = await api.purchaseSprite(Number(user.id), spriteId);
-
+      
       if (response.success) {
-        setOwnedSprites((prev) => [...prev, spriteId]);
-        setCoins((prev) => prev - sprite.price);
-        setError(null);
+        setOwnedSprites(prev => [...prev, spriteId]); // Добавляем новый спрайт в список купленных
+        setCoins(prev => prev - sprite.price);        // Вычитаем цену спрайта из количества монет
+        setError(null);                               // Сбрасываем сообщение об ошибке
       } else {
         setError(response.error || 'Ошибка покупки');
       }
     } catch (error: any) {
       setError('Ошибка сети');
     } finally {
-      setPurchasingId(null);
+      setPurchasingId(null);                         // Завершаем покупку
     }
   };
 
+  /**
+   * Обработчик смены текущего спрайта
+   */
   const handleEquip = async (spriteId: number) => {
     if (!user?.id) {
-      setError('Пользователь не определён');
+      setError('Пользователь не определен');
       return;
     }
 
     try {
-      setEquippingId(spriteId);
+      setEquippingId(spriteId);                   // Начинаем процесс выбора нового спрайта
       const response = await api.equipSprite(Number(user.id), spriteId);
-
+  
       if (response.success) {
-        setCurrentSprite(spriteId);
-        setError(null);
+        setCurrentSprite(spriteId);               // Меняем текущий спрайт
+        setError(null);                           // Сбрасываем сообщение об ошибке
       } else {
         setError(response.error || 'Ошибка применения');
       }
     } catch (error: any) {
       setError('Ошибка сети');
     } finally {
-      setEquippingId(null);
+      setEquippingId(null);                       // Завершаем выбор спрайта
     }
   };
 
+  // Пока идёт загрузка показываем индикатор
   if (loading) {
     return <Loader />;
   }
 
   return (
     <div className="container">
+      {/* Основная область страницы */}
       <div className="scrollable-content">
         <div className="header">
           <h2>Магазин спрайтов</h2>
           <div className="coins-display">Монеты: {coins}</div>
         </div>
-
+        
+        {/* Отображение ошибок */}
         {error && <div className="error">{error}</div>}
 
+        {/* Контент зависит от наличия авторизованного пользователя и доступности спрайтов */}
         {!user?.id ? (
           <div className="error">
             Пользователь не идентифицирован. Обновите страницу.
           </div>
         ) : sprites.length === 0 ? (
-          <div className="info">Нет доступных спрайтов</div>
-        ) : (
-          <div className="sprites-grid">
-            {sprites.map((sprite) => {
-              const isOwned = ownedSprites.includes(sprite.id);
-              const isEquipped = currentSprite === sprite.id;
-              const isPurchasing = purchasingId === sprite.id;
-              const isEquipping = equippingId === sprite.id;
-
-              return (
-                <div key={sprite.id} className="sprite-card">
-                  <img
-                    src={sprite.image_url}
-                    alt={sprite.name}
-                    className="sprite-image"
-                    onError={(e) =>
-                      (e.currentTarget.src =
-                        'https://via.placeholder.com/150?text=No+Image')
-                    }
-                  />
-                  <div className="sprite-info">
-                    <h3>{sprite.name}</h3>
-                    <div className="sprite-price">
-                      Цена:{' '}
-                      {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'}
-                    </div>
-                    <div className="sprite-actions">
-                      {!isOwned ? (
-                        coins >= sprite.price ? (
-                          <button
-                            className={`buy-btn ${isPurchasing ? 'loading' : ''}`}
-                            onClick={() => handlePurchase(sprite.id)}
-                            disabled={isPurchasing}
-                          >
-                            {isPurchasing ? 'Покупка...' : 'Купить'}
-                          </button>
-                        ) : (
-                          <button className="buy-btn disabled" disabled>
-                            Недостаточно
-                          </button>
-                        )
-                      ) : (
-                        <button
-                          className={`equip-btn ${isEquipped ? 'equipped' : ''}`}
-                          onClick={() => handleEquip(sprite.id)}
-                          disabled={isEquipped || isEquipping}
-                        >
-                          {isEquipping 
-                            ? 'Применение...' 
-                            : isEquipped 
-                              ? 'Применён' 
-                              : 'Применить'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="menu">
-        <Link href="/" passHref>
-          <button className="menu-btn">📊</button>
-        </Link>
-        <Link href="/friends" passHref>
-          <button className="menu-btn">📈</button>
-        </Link>
-        <Link href="/shop" passHref>
-          <button className="menu-btn active">🛍️</button>
-        </Link>
-        <Link href="/info" passHref>
-          <button className="menu-btn">ℹ️</button>
-        </Link>
-      </div>
-    </div>
-  );
-}
+          <div
