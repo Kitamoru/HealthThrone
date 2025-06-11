@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
-import { api, Sprite } from '../lib/api';
+import { api } from '../lib/api';
 import { UserProfile, Sprite } from '../lib/types';
 
 interface UserData {
