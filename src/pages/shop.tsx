@@ -18,57 +18,55 @@ export default function Shop() {
 
   const handlePurchase = async (spriteId: number) => {
     if (!user?.id) {
-      alert("Пользователь не определён.");
+      alert('Пользователь не определен.');
       return;
     }
 
     if (ownedSprites.includes(spriteId)) {
-      alert("Вы уже приобрели этот спрайт!");
+      alert('Вы уже приобрели этот спрайт!');
       return;
     }
 
     const sprite = sprites.find((s) => s.id === spriteId);
     if (!sprite) {
-      alert("Такой спрайт не существует.");
+      alert('Такой спрайт не существует.');
       return;
     }
 
     if (coins < sprite.price) {
-      alert("Недостаточно монет для покупки.");
+      alert('Недостаточно монет для покупки.');
       return;
     }
 
     try {
-      const response = await updateUser(user.id!, ''); // убрали лишний аргумент spriteId
-
+      const response = await updateUser(user.id!, ''); // вызываем новый метод
       if (response.success) {
         setCurrentSprite(spriteId);
-        alert("Покупка успешно совершена!");
+        alert('Покупка успешно совершена!');
       } else {
-        alert("Ошибка при покупке: " + response.error);
+        alert(`Ошибка при покупке: ${response.error}`);
       }
     } catch (error) {
-      alert("Ошибка сети: попробуйте позже.");
+      alert('Ошибка сети: попробуйте позже.');
     }
   };
 
   const handleEquip = async (spriteId: number) => {
     if (!user?.id) {
-      alert("Пользователь не определён.");
+      alert('Пользователь не определен.');
       return;
     }
 
     try {
-      const response = await updateUser(user.id!); // Достаточно одного аргумента
-
+      const response = await updateUser(user.id!); // достаточно одного аргумента
       if (response.success) {
         setCurrentSprite(spriteId);
-        alert("Экипировка применена!");
+        alert('Экипировка применена!');
       } else {
-        alert("Ошибка при применении экипировки: " + response.error);
+        alert(`Ошибка при применении экипировки: ${response.error}`);
       }
     } catch (error) {
-      alert("Ошибка сети: попробуйте позже.");
+      alert('Ошибка сети: попробуйте позже.');
     }
   };
 
