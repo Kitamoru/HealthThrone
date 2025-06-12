@@ -80,13 +80,14 @@ export default function Shop() {
    * @param spriteId ID спрайта для покупки.
    */
   const handlePurchase = async (spriteId: number) => {
-    if (!validateRequiredFields({ user, initData }, ['id', 'initData'], 'Нужны данные для совершения покупки')) return;
+    // Изменение вызова функции validateRequiredFields
+if (!validateRequiredFields({ user, initData }, ['user', 'initData'], 'Необходимо наличие обоих данных')) return;
 
-    const sprite = sprites.find((s) => s.id === spriteId);
-    if (!sprite) {
-      setError('Данный спрайт не существует.');
-      return;
-    }
+// Далее продолжаем нормальную работу с этими данными
+if (!user?.id) {
+  setError('Пользователь не определен');
+  return;
+}
 
     if (ownedSprites.includes(spriteId)) {
       setError('Вы уже приобрели этот спрайт.');
