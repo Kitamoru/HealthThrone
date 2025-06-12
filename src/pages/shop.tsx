@@ -11,6 +11,7 @@ const validateInput = ({ userId, spriteId }: { userId: number, spriteId: number 
   if (!Number.isInteger(userId) || Number.isNaN(userId)) throw new Error("Неверный ID пользователя");
   if (!Number.isInteger(spriteId) || Number.isNaN(spriteId)) throw new Error("Неверный ID спрайта");
 };
+
 // Кэширование полученных данных
 let cachedUserData = {} as UserProfile;           // Объект профиля пользователя
 let cachedSprites: Sprite[] = [];                 // Массив спрайтов
@@ -18,7 +19,8 @@ let cachedOwnedSprites: number[] = [];            // Массив id приоб�
 
 export default function Shop() {
   const router = useRouter();
-  const { user, isReady, initData } = useTelegram();
+  const { user, isReady, initData } = useTelegram(); // Перемещаем объявление вверх
+  
   const [sprites, setSprites] = useState<Sprite[]>(cachedSprites);
   const [loading, setLoading] = useState(true);
   const [coins, setCoins] = useState(cachedUserData.coins ?? 0);
@@ -46,7 +48,7 @@ export default function Shop() {
   };
 
   useEffect(() => {
-    if (!isReady || !user?.id) return;
+    if (!isReady || !user?.id) return; // Переносим условие проверки сюда, сразу после инициализации useTelegram
 
     const fetchData = async () => {
       try {
@@ -81,16 +83,17 @@ export default function Shop() {
         } else if (ownedResponse.error) {
           setError(ownedResponse.error);
         }
-     } catch (err: unknown) {
-  if (err instanceof Error) {
-    setError(err.message || 'Непредвиденная ошибка');
-  } else {
-    setError('Непредвиденная ошибка');
-  }
-}
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message || 'Непредвиденная ошибка');
+        } else {
+          setError('Непредвиденная ошибка');
+        }
+      }
+    };
 
     fetchData();
-  }, [isReady, user, initData]);
+  }, [isReady, user, initData]); // Добавляем зависимости isReady и user в массив зависимостей
 
   const handlePurchase = async (spriteId: number) => {
     if (!user?.id) {
