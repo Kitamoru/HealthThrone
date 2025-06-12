@@ -6,14 +6,27 @@ import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { UserProfile, Sprite } from '../lib/types';
 
+// Валидатор входных данных
+const validateInput = ({ userId, spriteId }) => {
+  if (!Number.isInteger(userId) || Number.isNaN(userId)) throw new Error("Неверный ID пользователя");
+  if (!Number.isInteger(spriteId) || Number.isNaN(spriteId)) throw new Error("Неверный ID спрайта");
+};
+
+// Кэширование полученных данных
+let cachedUserData = {};
+let cachedSprites = [];
+let cachedOwnedSprites = [];
+
 export default function Shop() {
   const router = useRouter();
   const { user, isReady, initData } = useTelegram();
-  const [sprites, setSprites] = useState<Sprite[]>([]);
+  const [sprites, setSprites] = useState<Sprite[]>(cachedSprites);
   const [loading, setLoading] = useState(true);
-  const [coins, setCoins] = useState(0);
-  const [currentSprite, setCurrentSprite] = useState<number | null>(null);
-  const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
+  const [coins, setCoins] = useState(cachedUserData.coins ?? 0);
+  const [currentSprite, setCurrentSprite] = useState<number | null>(
+    cachedUserData.current_sprite_id ?? null
+  );
+  const [ownedSprites, setOwnedSprites] = useState<number[]>(cachedOwnedSprites);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -47,30 +60,30 @@ export default function Shop() {
           api.getOwnedSprites(Number(user.id), initData)
         ]);
 
-        // Обрабатываем пользовательские данные
+        // Проверка успешности каждого отдельного запроса
         if (userResponse.success && userResponse.data) {
+          cachedUserData = userResponse.data;
           setCoins(userResponse.data.coins || 0);
           setCurrentSprite(userResponse.data.current_sprite_id || null);
         } else if (userResponse.error) {
           setError(userResponse.error);
         }
 
-        // Обрабатываем спрайты
         if (spritesResponse.success && Array.isArray(spritesResponse.data)) {
+          cachedSprites = spritesResponse.data;
           setSprites(spritesResponse.data);
-          console.log('Setting sprites:', spritesResponse.data); // 👇 Логируем установку спрайтов
         } else if (spritesResponse.error) {
           setError(spritesResponse.error);
         }
 
-        // Обрабатываем купленные спрайты
         if (ownedResponse.success && Array.isArray(ownedResponse.data)) {
+          cachedOwnedSprites = ownedResponse.data;
           setOwnedSprites(ownedResponse.data);
         } else if (ownedResponse.error) {
           setError(ownedResponse.error);
         }
       } catch (err) {
-        setError('Непредвиденная ошибка');
+        setError(err.message || 'Непредвиденная ошибка');
       } finally {
         setLoading(false);
       }
@@ -102,6 +115,7 @@ export default function Shop() {
     }
 
     try {
+      validateInput({ userId: Number(user.id), spriteId });
       const response = await api.purchaseSprite(Number(user.id), spriteId, initData);
 
       if (response.success) {
@@ -112,7 +126,7 @@ export default function Shop() {
         setError(response.error || 'Ошибка покупки');
       }
     } catch (error: any) {
-      setError('Ошибка сети');
+      setError(error.message || 'Ошибка сети');
     }
   };
 
@@ -123,6 +137,7 @@ export default function Shop() {
     }
 
     try {
+      validateInput({ userId: Number(user.id), spriteId });
       const response = await api.equipSprite(Number(user.id), spriteId, initData);
 
       if (response.success) {
@@ -132,7 +147,7 @@ export default function Shop() {
         setError(response.error || 'Ошибка применения');
       }
     } catch (error: any) {
-      setError('Ошибка сети');
+      setError(error.message || 'Ошибка сети');
     }
   };
 
