@@ -80,39 +80,45 @@ export default function Shop() {
    * @param spriteId ID спрайта для покупки.
    */
   const handlePurchase = async (spriteId: number) => {
-    // Изменение вызова функции validateRequiredFields
-if (!validateRequiredFields({ user, initData }, ['user', 'initData'], 'Необходимо наличие обоих данных')) return;
+  if (!validateRequiredFields({ user, initData }, ['user', 'initData'], 'Необходимо наличие обоих данных')) return;
 
-// Далее продолжаем нормальную работу с этими данными
-if (!user?.id) {
-  setError('Пользователь не определен');
-  return;
-}
+  if (!user?.id) {
+    setError('Пользователь не определен');
+    return;
+  }
 
-    if (ownedSprites.includes(spriteId)) {
-      setError('Вы уже приобрели этот спрайт.');
-      return;
+  // Получаем конкретный спрайт по переданному идентификатору
+  const sprite = sprites.find((item) => item.id === spriteId);  
+
+  if (!sprite) {
+    setError('Спрайт не найден');
+    return;
+  }
+
+  if (ownedSprites.includes(spriteId)) {
+    setError('Вы уже приобрели этот спрайт.');
+    return;
+  }
+
+  if (coins < sprite.price) {
+    setError('У вас недостаточно монет для покупки.');
+    return;
+  }
+
+  try {
+    const purchaseResult = await api.purchaseSprite(Number(user.id), spriteId, initData);
+
+    if (purchaseResult.success) {
+      setOwnedSprites((prev) => [...prev, spriteId]);
+      setCoins((prev) => prev - sprite.price);
+      setError(null);
+    } else {
+      setError(purchaseResult.error || 'Ошибка покупки спрайта.');
     }
-
-    if (coins < sprite.price) {
-      setError('У вас недостаточно монет для покупки.');
-      return;
-    }
-
-    try {
-      const purchaseResult = await api.purchaseSprite(Number(user.id), spriteId, initData);
-
-      if (purchaseResult.success) {
-        setOwnedSprites((prev) => [...prev, spriteId]);
-        setCoins((prev) => prev - sprite.price);
-        setError(null);
-      } else {
-        setError(purchaseResult.error || 'Ошибка покупки спрайта.');
-      }
-    } catch (err) {
-      setError('Возникла проблема с сетью при покупке.');
-    }
-  };
+  } catch (err) {
+    setError('Возникла проблема с сетью при покупке.');
+  }
+};
 
   /**
    * 🎯 Применение выбранного спрайта.
