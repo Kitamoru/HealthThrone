@@ -7,11 +7,10 @@ import { api } from '../lib/api';
 import { UserProfile, Sprite } from '../lib/types';
 
 // Валидатор входных данных
-const validateInput = ({ userId, spriteId }) => {
+const validateInput = ({ userId, spriteId }: { userId: number, spriteId: number }) => {
   if (!Number.isInteger(userId) || Number.isNaN(userId)) throw new Error("Неверный ID пользователя");
   if (!Number.isInteger(spriteId) || Number.isNaN(spriteId)) throw new Error("Неверный ID спрайта");
 };
-
 // Кэширование полученных данных
 let cachedUserData = {};
 let cachedSprites = [];
