@@ -49,12 +49,11 @@ export default function Shop() {
           setError(`Ошибка загрузки профиля: ${userResponse.error}`);
         }
 
-        // Проверяем массив спрайтов
+        // Проверяем массив спрайтов (ИСПРАВЛЕНО)
         if (spritesResponse.success && Array.isArray(spritesResponse.data)) {
-           setSprites(spritesResponse.data);
-        }
+        setSprites(spritesResponse.data);
         } else if (spritesResponse.error) {
-          setError(`Ошибка загрузки спрайтов: ${spritesResponse.error}`);
+        setError(`Ошибка загрузки спрайтов: ${spritesResponse.error}`);
         }
 
         // Обрабатываем список приобретенных спрайтов
