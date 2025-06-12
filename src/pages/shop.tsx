@@ -5,6 +5,7 @@ import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { UserProfile, Sprite } from '../lib/types';
+import { validateRequiredFields } from '../utils/validation';
 
 export default function Shop() {
   const router = useRouter();
