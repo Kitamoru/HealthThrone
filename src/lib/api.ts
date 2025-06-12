@@ -150,12 +150,12 @@ class Api {
 
   // Shop methods
   async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
-    return this.makeRequest<Sprite[]>('/sprites', 'GET', undefined, initData);
+    return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
   }
   
    async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
     return this.makeRequest<Sprite>(
-      `/sprites/${spriteId}`, 
+      `/shop/sprites/${spriteId}`, 
       'GET', 
       undefined, 
       initData
@@ -169,7 +169,7 @@ class Api {
     initData?: string
   ): Promise<ApiResponse> {
     return this.makeRequest(
-      '/purchase', 
+      '/shop/purchase', 
       'POST', 
       { telegramId, spriteId },
       initData
@@ -181,7 +181,7 @@ class Api {
     initData?: string
   ): Promise<ApiResponse<number[]>> {
     return this.makeRequest<number[]>(
-      `/owned?telegramId=${telegramId}`, 
+      `/shop/owned?telegramId=${telegramId}`, 
       'GET', 
       undefined, 
       initData
@@ -194,7 +194,7 @@ class Api {
     initData?: string
   ): Promise<ApiResponse> {
     return this.makeRequest(
-      '/equip', 
+      '/shop/equip', 
       'POST', 
       { telegramId, spriteId },
       initData
