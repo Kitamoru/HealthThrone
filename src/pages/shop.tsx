@@ -47,8 +47,9 @@ export default function Shop() {
           setError(`Ошибка загрузки профиля: ${userResponse.error}`);
         }
 
-        if (spritesResponse.success && Array.isArray(spritesResponse.data)) {
-          setSprites(spritesResponse.data);
+          if (Array.isArray(spritesResponse)) {
+          setSprites(spritesResponse);
+          }
         } else if (spritesResponse.error) {
           setError(`Ошибка загрузки спрайтов: ${spritesResponse.error}`);
         }
