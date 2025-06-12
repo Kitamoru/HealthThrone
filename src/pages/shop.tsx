@@ -12,9 +12,9 @@ const validateInput = ({ userId, spriteId }: { userId: number, spriteId: number 
   if (!Number.isInteger(spriteId) || Number.isNaN(spriteId)) throw new Error("Неверный ID спрайта");
 };
 // Кэширование полученных данных
-let cachedUserData = {};
-let cachedSprites = [];
-let cachedOwnedSprites = [];
+let cachedUserData = {} as UserProfile;           // Объект профиля пользователя
+let cachedSprites: Sprite[] = [];                 // Массив спрайтов
+let cachedOwnedSprites: number[] = [];            // Массив id приобретённых спрайтов
 
 export default function Shop() {
   const router = useRouter();
