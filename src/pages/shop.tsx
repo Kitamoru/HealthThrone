@@ -30,6 +30,7 @@ export default function Shop() {
         setLoading(true);
         setError(null);
 
+        // Запрашиваем сразу три API одновременно
         const [
           userResponse,
           spritesResponse,
@@ -40,6 +41,7 @@ export default function Shop() {
           api.getOwnedSprites(Number(user.id), initData)
         ]);
 
+        // Обрабатываем ответ от API с профилем пользователя
         if (userResponse.success && userResponse.data) {
           setCoins(userResponse.data.coins || 0);
           setCurrentSprite(userResponse.data.current_sprite_id || null);
@@ -47,13 +49,14 @@ export default function Shop() {
           setError(`Ошибка загрузки профиля: ${userResponse.error}`);
         }
 
-          if (Array.isArray(spritesResponse)) {
+        // Проверяем массив спрайтов
+        if (Array.isArray(spritesResponse)) {
           setSprites(spritesResponse);
-          }
         } else if (spritesResponse.error) {
           setError(`Ошибка загрузки спрайтов: ${spritesResponse.error}`);
         }
 
+        // Обрабатываем список приобретенных спрайтов
         if (ownedResponse.success && Array.isArray(ownedResponse.data)) {
           setOwnedSprites(ownedResponse.data);
         } else if (ownedResponse.error) {
