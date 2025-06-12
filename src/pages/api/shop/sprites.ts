@@ -30,10 +30,7 @@ export default async function handler(
 
   try {
     console.log('Fetching sprites from Supabase...');
-    const { data: sprites, error } = await supabase
-      .from('sprites')
-      .select('id, name, image_url, price')
-      .order('price', { ascending: true });
+    const { data: sprites, error } = await supabase.rpc('get_sprites');
 
     if (error) {
       console.error('❌ Supabase error:', error);
