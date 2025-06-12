@@ -39,27 +39,27 @@ export default async function handler(
   }
 
   try {
-    console.log('Fetching sprites from Supabase...');
-    const { data: sprites, error } = await supabase.rpc('get_sprites');
+  console.log('Fetching sprites from Supabase...');
+  const { data: sprites, error } = await supabase.rpc('get_sprites');
 
-    if (error) {
-      console.error('❌ Supabase error:', error);
-      throw error;
-    }
-
-    console.log(`✅ Retrieved ${sprites?.length || 0} sprites`);
-    return res.status(200).json({
-      success: true,
-      status: 200, // Явный статус
-      data: sprites || []
-    });
-
-  } catch (error) {
-    console.error('🔥 Critical error:', error);
-    return res.status(500).json({
-      success: false,
-      status: 500, // Явный статус
-      error: 'Internal server error'
-    });
+  if (error) {
+    console.error('❌ Supabase error:', error);
+    throw error;
   }
+
+  console.log(`✅ Retrieved ${sprites?.length || 0} sprites`);
+  console.log('SPRITES DATA:', sprites); // <- ДОБАЛЕННАЯ СТРОКА
+
+  return res.status(200).json({ 
+    success: true, 
+    status: 200, 
+    data: sprites || [] 
+  });
+
+} catch (error) {
+  console.error('🔥 Critical error:', error);
+  return res.status(500).json({
+    success: false,
+    error: 'Internal server error'
+  });
 }
