@@ -6,174 +6,158 @@ import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { UserProfile, Sprite } from '../lib/types';
 
-// Валидатор входных данных
-const validateInput = ({ userId, spriteId }: { userId: number, spriteId: number }) => {
-  if (!Number.isInteger(userId) || Number.isNaN(userId)) throw new Error("Неверный ID пользователя");
-  if (!Number.isInteger(spriteId) || Number.isNaN(spriteId)) throw new Error("Неверный ID спрайта");
-};
-
-// Кэширование полученных данных
-let cachedUserData = {} as UserProfile;           // Объект профиля пользователя
-let cachedSprites: Sprite[] = [];                 // Массив спрайтов
-let cachedOwnedSprites: number[] = [];            // Массив id приобретённых спрайтов
-
 export default function Shop() {
   const router = useRouter();
-  const { user, isReady, initData } = useTelegram(); // Перемещаем объявление вверх
-  
-  const [sprites, setSprites] = useState<Sprite[]>(cachedSprites);
+  const { user, isReady, initData } = useTelegram();
+  const [sprites, setSprites] = useState<Sprite[]>([]);
   const [loading, setLoading] = useState(true);
-  const [coins, setCoins] = useState(cachedUserData.coins ?? 0);
-  const [currentSprite, setCurrentSprite] = useState<number | null>(
-    cachedUserData.current_sprite_id ?? null
-  );
-  const [ownedSprites, setOwnedSprites] = useState<number[]>(cachedOwnedSprites);
+  const [coins, setCoins] = useState(0);
+  const [currentSprite, setCurrentSprite] = useState<number | null>(null);
+  const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  // 🔥 Логи жизненного цикла компонента
   useEffect(() => {
-    console.log("[Shop] Component mounted");
-    return () => console.log("[Shop] Component unmounted");
+    console.log('[Shop] Component mounted');
+    return () => console.log('[Shop] Component unmounted');
   }, []);
 
-  const updateCoins = async () => {
-    if (!user?.id) return;
-
-    const response = await api.getUserData(Number(user.id), initData);
-
-    if (response.success && response.data) {
-      setCoins(response.data.coins || 0);
-    } else {
-      setError(response.error || 'Не удалось обновить баланс');
-    }
-  };
-
+  /**
+   * ⚙️ Загрузка данных (спрайты, монеты, владелецство).
+   */
   useEffect(() => {
-    if (!isReady || !user?.id) return; // Переносим условие проверки сюда, сразу после инициализации useTelegram
+    if (!isReady || !user?.id || !initData) return;
 
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const [userResponse, spritesResponse, ownedResponse] = await Promise.all([
+        // Выполняем параллельно три запроса к API
+        const [
+          userResponse,
+          spritesResponse,
+          ownedResponse
+        ] = await Promise.all([
           api.getUserData(Number(user.id), initData),
           api.getSprites(initData),
           api.getOwnedSprites(Number(user.id), initData)
         ]);
 
-        // Проверка успешности каждого отдельного запроса
+        // Обработка результатов
         if (userResponse.success && userResponse.data) {
-          cachedUserData = userResponse.data;
           setCoins(userResponse.data.coins || 0);
           setCurrentSprite(userResponse.data.current_sprite_id || null);
         } else if (userResponse.error) {
-          setError(userResponse.error);
+          setError(`Ошибка загрузки профиля: ${userResponse.error}`);
         }
 
         if (spritesResponse.success && Array.isArray(spritesResponse.data)) {
-          cachedSprites = spritesResponse.data;
           setSprites(spritesResponse.data);
         } else if (spritesResponse.error) {
-          setError(spritesResponse.error);
+          setError(`Ошибка загрузки спрайтов: ${spritesResponse.error}`);
         }
 
         if (ownedResponse.success && Array.isArray(ownedResponse.data)) {
-          cachedOwnedSprites = ownedResponse.data;
           setOwnedSprites(ownedResponse.data);
         } else if (ownedResponse.error) {
-          setError(ownedResponse.error);
+          setError(`Ошибка загрузки списка приобретённых спрайтов: ${ownedResponse.error}`);
         }
-      } catch (err: unknown) {
-        if (err instanceof Error) {
-          setError(err.message || 'Непредвиденная ошибка');
-        } else {
-          setError('Непредвиденная ошибка');
-        }
+      } catch (err) {
+        setError('Обнаружилась непредвиденная ошибка');
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
-  }, [isReady, user, initData]); // Добавляем зависимости isReady и user в массив зависимостей
+  }, [isReady, user, initData]);
 
+  /**
+   * ✨ Покупка спрайта.
+   *
+   * @param spriteId ID спрайта для покупки.
+   */
   const handlePurchase = async (spriteId: number) => {
-    if (!user?.id) {
-      setError('Пользователь не определён');
+    if (!validateRequiredFields({ user, initData }, ['id', 'initData'], 'Нужны данные для совершения покупки')) return;
+
+    const sprite = sprites.find((s) => s.id === spriteId);
+    if (!sprite) {
+      setError('Данный спрайт не существует.');
       return;
     }
 
     if (ownedSprites.includes(spriteId)) {
-      setError('Уже куплено');
-      return;
-    }
-
-    const sprite = sprites.find((s) => s.id === spriteId);
-    if (!sprite) {
-      setError('Спрайт не найден');
+      setError('Вы уже приобрели этот спрайт.');
       return;
     }
 
     if (coins < sprite.price) {
-      setError('Недостаточно монет');
+      setError('У вас недостаточно монет для покупки.');
       return;
     }
 
     try {
-      validateInput({ userId: Number(user.id), spriteId });
-      const response = await api.purchaseSprite(Number(user.id), spriteId, initData);
+      const purchaseResult = await api.purchaseSprite(Number(user.id), spriteId, initData);
 
-      if (response.success) {
+      if (purchaseResult.success) {
         setOwnedSprites((prev) => [...prev, spriteId]);
         setCoins((prev) => prev - sprite.price);
         setError(null);
       } else {
-        setError(response.error || 'Ошибка покупки');
+        setError(purchaseResult.error || 'Ошибка покупки спрайта.');
       }
-    } catch (error: any) {
-      setError(error.message || 'Ошибка сети');
+    } catch (err) {
+      setError('Возникла проблема с сетью при покупке.');
     }
   };
 
+  /**
+   * 🎯 Применение выбранного спрайта.
+   *
+   * @param spriteId ID спрайта для установки активным.
+   */
   const handleEquip = async (spriteId: number) => {
-    if (!user?.id) {
-      setError('Пользователь не определён');
-      return;
-    }
+    if (!validateRequiredFields({ user, initData }, ['id', 'initData'], 'Необходимые данные отсутствуют.')) return;
 
     try {
-      validateInput({ userId: Number(user.id), spriteId });
-      const response = await api.equipSprite(Number(user.id), spriteId, initData);
+      const equipResult = await api.equipSprite(Number(user.id), spriteId, initData);
 
-      if (response.success) {
+      if (equipResult.success) {
         setCurrentSprite(spriteId);
         setError(null);
       } else {
-        setError(response.error || 'Ошибка применения');
+        setError(equipResult.error || 'Ошибка при применении спрайта.');
       }
-    } catch (error: any) {
-      setError(error.message || 'Ошибка сети');
+    } catch (err) {
+      setError('Проблема с сетью при попытке применить спрайт.');
     }
   };
 
+  // Если идет загрузка, показываем индикатор ожидания
   if (loading) {
     return <Loader />;
   }
 
   return (
     <div className="container">
+      {/* Верхняя панель */}
       <div className="scrollable-content">
         <div className="header">
           <h2>Магазин спрайтов</h2>
           <div className="coins-display">Монеты: {coins}</div>
         </div>
 
+        {/* Отображение сообщений об ошибке */}
         {error && <div className="error">{error}</div>}
 
+        {/* Основная логика отображения спрайтов */}
         {!user?.id ? (
           <div className="error">
-            Пользователь не идентифицирован. Обновите страницу.
+            Пользователь не авторизован. Перезагрузите страницу.
           </div>
         ) : sprites.length === 0 ? (
-          <div className="info">Нет доступных спрайтов</div>
+          <div className="info">Нет доступных спрайтов.</div>
         ) : (
           <div className="sprites-grid">
             {sprites.map((sprite) => {
@@ -188,7 +172,8 @@ export default function Shop() {
                     className="sprite-image"
                     onError={(e) =>
                       (e.currentTarget.src =
-                        'https://via.placeholder.com/150?text=No+Image')}
+                        'https://via.placeholder.com/150?text=No+Image')
+                    }
                   />
                   <div className="sprite-info">
                     <h3>{sprite.name}</h3>
@@ -201,7 +186,8 @@ export default function Shop() {
                         coins >= sprite.price ? (
                           <button
                             className="buy-btn"
-                            onClick={() => handlePurchase(sprite.id)}>
+                            onClick={() => handlePurchase(sprite.id)}
+                          >
                             Купить
                           </button>
                         ) : (
@@ -213,7 +199,8 @@ export default function Shop() {
                         <button
                           className="equip-btn"
                           onClick={() => handleEquip(sprite.id)}
-                          disabled={isEquipped}>
+                          disabled={isEquipped}
+                        >
                           {isEquipped ? 'Применён' : 'Применить'}
                         </button>
                       )}
@@ -226,6 +213,7 @@ export default function Shop() {
         )}
       </div>
 
+      {/* Меню навигации */}
       <div className="menu">
         <Link href="/" passHref>
           <button className="menu-btn">📊</button>
