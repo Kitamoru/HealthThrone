@@ -17,15 +17,11 @@ export default function Shop() {
   const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // 🔥 Логи жизненного цикла компонента
   useEffect(() => {
     console.log('[Shop] Component mounted');
     return () => console.log('[Shop] Component unmounted');
   }, []);
 
-  /**
-   * ⚙️ Загрузка данных (спрайты, монеты, владелецство).
-   */
   useEffect(() => {
     if (!isReady || !user?.id || !initData) return;
 
@@ -34,7 +30,6 @@ export default function Shop() {
         setLoading(true);
         setError(null);
 
-        // Выполняем параллельно три запроса к API
         const [
           userResponse,
           spritesResponse,
@@ -45,7 +40,6 @@ export default function Shop() {
           api.getOwnedSprites(Number(user.id), initData)
         ]);
 
-        // Обработка результатов
         if (userResponse.success && userResponse.data) {
           setCoins(userResponse.data.coins || 0);
           setCurrentSprite(userResponse.data.current_sprite_id || null);
@@ -74,63 +68,70 @@ export default function Shop() {
     fetchData();
   }, [isReady, user, initData]);
 
-  /**
-   * ✨ Покупка спрайта.
-   *
-   * @param spriteId ID спрайта для покупки.
-   */
   const handlePurchase = async (spriteId: number) => {
-  if (!validateRequiredFields({ user, initData }, ['user', 'initData'], 'Необходимо наличие обоих данных')) return;
-
-  if (!user?.id) {
-    setError('Пользователь не определен');
-    return;
-  }
-
-  // Получаем конкретный спрайт по переданному идентификатору
-  const sprite = sprites.find((item) => item.id === spriteId);  
-
-  if (!sprite) {
-    setError('Спрайт не найден');
-    return;
-  }
-
-  if (ownedSprites.includes(spriteId)) {
-    setError('Вы уже приобрели этот спрайт.');
-    return;
-  }
-
-  if (coins < sprite.price) {
-    setError('У вас недостаточно монет для покупки.');
-    return;
-  }
-
-  try {
-    const purchaseResult = await api.purchaseSprite(Number(user.id), spriteId, initData);
-
-    if (purchaseResult.success) {
-      setOwnedSprites((prev) => [...prev, spriteId]);
-      setCoins((prev) => prev - sprite.price);
-      setError(null);
-    } else {
-      setError(purchaseResult.error || 'Ошибка покупки спрайта.');
+    const validationError = validateRequiredFields(
+      { user, initData },
+      ['user', 'initData'],
+      'Необходимо наличие обоих данных'
+    );
+    if (validationError) {
+      setError(validationError);
+      return;
     }
-  } catch (err) {
-    setError('Возникла проблема с сетью при покупке.');
-  }
-};
 
-  /**
-   * 🎯 Применение выбранного спрайта.
-   *
-   * @param spriteId ID спрайта для установки активным.
-   */
-  const handleEquip = async (spriteId: number) => {
-    if (!validateRequiredFields({ user, initData }, ['id', 'initData'], 'Необходимые данные отсутствуют.')) return;
+    if (!user?.id) {
+      setError('Пользователь не определен');
+      return;
+    }
+
+    const sprite = sprites.find((item) => item.id === spriteId);  
+    if (!sprite) {
+      setError('Спрайт не найден');
+      return;
+    }
+
+    if (ownedSprites.includes(spriteId)) {
+      setError('Вы уже приобрели этот спрайт.');
+      return;
+    }
+
+    if (coins < sprite.price) {
+      setError('У вас недостаточно монет для покупки.');
+      return;
+    }
 
     try {
-      const equipResult = await api.equipSprite(Number(user.id), spriteId, initData);
+      const purchaseResult = await api.purchaseSprite(Number(user.id), spriteId, initData!);
+      if (purchaseResult.success) {
+        setOwnedSprites((prev) => [...prev, spriteId]);
+        setCoins((prev) => prev - sprite.price);
+        setError(null);
+      } else {
+        setError(purchaseResult.error || 'Ошибка покупки спрайта.');
+      }
+    } catch (err) {
+      setError('Возникла проблема с сетью при покупке.');
+    }
+  };
 
+  const handleEquip = async (spriteId: number) => {
+    const validationError = validateRequiredFields(
+      { user, initData },
+      ['user', 'initData'],
+      'Необходимые данные отсутствуют.'
+    );
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    if (!user?.id) {
+      setError('Пользователь не определен');
+      return;
+    }
+
+    try {
+      const equipResult = await api.equipSprite(Number(user.id), spriteId, initData!);
       if (equipResult.success) {
         setCurrentSprite(spriteId);
         setError(null);
@@ -142,24 +143,20 @@ export default function Shop() {
     }
   };
 
-  // Если идет загрузка, показываем индикатор ожидания
   if (loading) {
     return <Loader />;
   }
 
   return (
     <div className="container">
-      {/* Верхняя панель */}
       <div className="scrollable-content">
         <div className="header">
           <h2>Магазин спрайтов</h2>
           <div className="coins-display">Монеты: {coins}</div>
         </div>
 
-        {/* Отображение сообщений об ошибке */}
         {error && <div className="error">{error}</div>}
 
-        {/* Основная логика отображения спрайтов */}
         {!user?.id ? (
           <div className="error">
             Пользователь не авторизован. Перезагрузите страницу.
@@ -221,7 +218,6 @@ export default function Shop() {
         )}
       </div>
 
-      {/* Меню навигации */}
       <div className="menu">
         <Link href="/" passHref>
           <button className="menu-btn">📊</button>
