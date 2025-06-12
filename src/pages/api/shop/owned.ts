@@ -13,7 +13,7 @@ export default async function handler(
   res: NextApiResponse<OwnedResponse>
 ) {
   const initData = req.headers['x-telegram-init-data'] as string;
-  
+
   // Логируем входящий хедер с x-telegram-init-data
   console.log(`Received X-Telegram-Init-Data header: ${initData}`);
 
@@ -43,7 +43,7 @@ export default async function handler(
   try {
     // Логируем попытку поиска пользователя
     console.log(`Attempting to find internal user with Telegram ID: ${telegramId}`);
-    
+
     // Находим внутреннего пользователя
     const { data: userData, error: userError } = await supabase
       .from('users')
@@ -77,10 +77,14 @@ export default async function handler(
 
     return res.status(200).json({ success: true, data: spriteIds });
   } catch (error) {
-    console.error('Error processing request:', error.message || error);
+    if (error instanceof Error) {
+      console.error('Error processing request:', error.message || error.toString());
+    } else {
+      console.error('Unknown error occurred:', typeof error === 'string' ? error : String(error));
+    }
     return res.status(500).json({
       success: false,
-      error: 'Internal server error'
+      error: 'Internal server error',
     });
   }
 }
