@@ -149,14 +149,10 @@ class Api {
   }
 
   // Shop methods
-  async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
+ async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
   if (!initData) throw new Error('Missing required parameter: initData');
 
-  try {
-    return await this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
+  return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
 }
   
    async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
