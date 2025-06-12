@@ -3,8 +3,10 @@ import { supabase } from '@/lib/supabase';
 import { validateTelegramInitData } from '@/lib/telegramAuth';
 import { Sprite } from '@/lib/types';
 
+// Обновленный интерфейс ответа
 interface SpritesResponse {
   success: boolean;
+  status: number; // Добавлено явное поле статуса
   data?: Sprite[];
   error?: string;
 }
@@ -20,12 +22,20 @@ export default async function handler(
 
   if (!initData || !validateTelegramInitData(initData)) {
     console.error('🚫 Authorization failed.');
-    return res.status(401).json({ success: false, error: 'Unauthorized' });
+    return res.status(401).json({
+      success: false,
+      status: 401, // Явный статус
+      error: 'Unauthorized'
+    });
   }
 
   if (req.method !== 'GET') {
     console.error(`🚫 Method not allowed: ${req.method}`);
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({
+      success: false,
+      status: 405, // Явный статус
+      error: 'Method not allowed'
+    });
   }
 
   try {
@@ -37,9 +47,10 @@ export default async function handler(
       throw error;
     }
 
-    console.log(`✅ Retrieved ${sprites?.length || 0} sprites`, sprites); // Отладочная печать результата
-    return res.status(200).json({ 
-      success: true, 
+    console.log(`✅ Retrieved ${sprites?.length || 0} sprites`);
+    return res.status(200).json({
+      success: true,
+      status: 200, // Явный статус
       data: sprites || []
     });
 
@@ -47,6 +58,7 @@ export default async function handler(
     console.error('🔥 Critical error:', error);
     return res.status(500).json({
       success: false,
+      status: 500, // Явный статус
       error: 'Internal server error'
     });
   }
