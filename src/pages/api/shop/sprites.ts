@@ -3,10 +3,9 @@ import { supabase } from '@/lib/supabase';
 import { validateTelegramInitData } from '@/lib/telegramAuth';
 import { Sprite } from '@/lib/types';
 
-// Обновленный интерфейс ответа
 interface SpritesResponse {
   success: boolean;
-  status: number; // Добавлено явное поле статуса
+  status?: number;
   data?: Sprite[];
   error?: string;
 }
@@ -22,44 +21,37 @@ export default async function handler(
 
   if (!initData || !validateTelegramInitData(initData)) {
     console.error('🚫 Authorization failed.');
-    return res.status(401).json({
-      success: false,
-      status: 401, // Явный статус
-      error: 'Unauthorized'
-    });
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
 
   if (req.method !== 'GET') {
     console.error(`🚫 Method not allowed: ${req.method}`);
-    return res.status(405).json({
-      success: false,
-      status: 405, // Явный статус
-      error: 'Method not allowed'
-    });
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
   try {
-  console.log('Fetching sprites from Supabase...');
-  const { data: sprites, error } = await supabase.rpc('get_sprites');
+    console.log('Fetching sprites from Supabase...');
+    const { data: sprites, error } = await supabase.rpc('get_sprites');
 
-  if (error) {
-    console.error('❌ Supabase error:', error);
-    throw error;
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      throw error;
+    }
+
+    console.log(`✅ Retrieved ${sprites?.length || 0} sprites`);
+    console.log('SPRITES DATA:', sprites); // Логируем данные
+
+    return res.status(200).json({ 
+      success: true, 
+      status: 200, 
+      data: sprites || []
+    });
+
+  } catch (error) {
+    console.error('🔥 Critical error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
   }
-
-  console.log(`✅ Retrieved ${sprites?.length || 0} sprites`);
-  console.log('SPRITES DATA:', sprites); // <- ДОБАЛЕННАЯ СТРОКА
-
-  return res.status(200).json({ 
-    success: true, 
-    status: 200, 
-    data: sprites || [] 
-  });
-
-} catch (error) {
-  console.error('🔥 Critical error:', error);
-  return res.status(500).json({
-    success: false,
-    error: 'Internal server error'
-  });
 }
