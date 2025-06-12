@@ -81,12 +81,13 @@ export default function Shop() {
         } else if (ownedResponse.error) {
           setError(ownedResponse.error);
         }
-      } catch (err) {
-        setError(err.message || 'Непредвиденная ошибка');
-      } finally {
-        setLoading(false);
-      }
-    };
+     } catch (err: unknown) {
+  if (err instanceof Error) {
+    setError(err.message || 'Непредвиденная ошибка');
+  } else {
+    setError('Непредвиденная ошибка');
+  }
+}
 
     fetchData();
   }, [isReady, user, initData]);
