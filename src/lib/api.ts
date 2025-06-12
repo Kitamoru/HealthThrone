@@ -153,13 +153,7 @@ class Api {
   if (!initData) throw new Error('Missing required parameter: initData');
 
   try {
-    const result = await this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, { Authorization: initData });
-
-    if (!result.success) {
-      throw new Error(result.error || 'Unknown server error');
-    }
-
-    return result;
+    return await this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
   } catch (error) {
     return { success: false, error: error.message };
   }
