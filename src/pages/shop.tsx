@@ -52,7 +52,7 @@ export default function Shop() {
         // Проверяем массив спрайтов (ИСПРАВЛЕНО)
         if (spritesResponse.success && Array.isArray(spritesResponse.data)) {
         setSprites(spritesResponse.data);
-        console.log ('Спрайты успешно загружены:', responseSprites.data); 
+        console.log ('Спрайты успешно загружены:', spritesResponse.data); 
         } else if (spritesResponse.error) {
         setError(`Ошибка загрузки спрайтов: ${spritesResponse.error}`);
         }
