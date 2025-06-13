@@ -55,7 +55,9 @@ export default function Shop() {
         console.log ('Спрайты успешно загружены:', spritesResponse.data); 
         } else if (spritesResponse.error) {
         setError(`Ошибка загрузки спрайтов: ${spritesResponse.error}`);
-        }
+        } else {
+        setError('Не удалось получить данные о спрайтах.');
+        }    
 
         // Обрабатываем список приобретенных спрайтов
         if (ownedResponse.success && Array.isArray(ownedResponse.data)) {
