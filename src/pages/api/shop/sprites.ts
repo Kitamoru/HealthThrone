@@ -40,7 +40,7 @@ export default async function handler(
     }
 
     console.log(`✅ Retrieved ${sprites?.length || 0} sprites`);
-    console.log('SPRITES DATA:', sprites); // Логируем данные
+    console.log('Response data:', { success: true, data: sprites || [] });
 
     return res.status(200).json({ 
       success: true, 
