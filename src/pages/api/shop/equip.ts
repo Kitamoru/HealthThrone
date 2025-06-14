@@ -4,6 +4,7 @@ import { validateTelegramInitData, extractTelegramUser } from '@/lib/telegramAut
 
 interface EquipResponse {
   success: boolean;
+  data?: any; // Более гибкий тип данных
   error?: string;
 }
 
@@ -11,13 +12,11 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<EquipResponse>
 ) {
-  // Проверка авторизации
   const initData = req.headers['x-telegram-init-data'] as string;
   if (!initData || !validateTelegramInitData(initData)) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
 
-  // Извлекаем пользователя Telegram
   const telegramUser = extractTelegramUser(initData);
   if (!telegramUser?.id) {
     return res.status(400).json({ success: false, error: 'Invalid user data' });
@@ -32,15 +31,13 @@ export default async function handler(
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
-  // Проверяем тело запроса
-  const { spriteId } = req.body as { spriteId: number }; // Только spriteId нужен
+  const { spriteId } = req.body as { spriteId: number };
 
   if (spriteId === undefined) {
     return res.status(400).json({ success: false, error: 'Missing parameters' });
   }
 
   try {
-    // Находим пользователя по telegram_id
     const { data: userRecord, error: userError } = await supabase
       .from('users')
       .select('id')
@@ -53,7 +50,6 @@ export default async function handler(
 
     const userId = userRecord.id;
 
-    // Проверяем, что спрайт принадлежит пользователю
     const { data: ownership, error: ownershipError } = await supabase
       .from('user_sprites')
       .select('id')
@@ -62,11 +58,9 @@ export default async function handler(
       .single();
 
     if (ownershipError || !ownership) {
-      console.error('[Equip API] Ownership check failed:', ownershipError || 'Not owned');
       return res.status(400).json({ success: false, error: 'Sprite not owned by user' });
     }
 
-    // Обновляем текущий спрайт пользователя
     const { error: updateError } = await supabase
       .from('users')
       .update({ current_sprite_id: spriteId })
@@ -76,6 +70,7 @@ export default async function handler(
       throw updateError;
     }
 
+    // Возвращаем правильный формат ответа
     return res.status(200).json({ 
       success: true,
       data: {
@@ -86,6 +81,9 @@ export default async function handler(
     
   } catch (error) {
     console.error('Equip error:', error);
-    return res.status(500).json({ success: false, error: 'Failed to equip sprite' });
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Failed to equip sprite' 
+    });
   }
 }
