@@ -1,11 +1,12 @@
 import { ApiResponse, UserProfile, Sprite, Friend } from './types';
+import { Headers } from 'node-fetch'; // Для Node.js окружения
 
 class Api {
   private baseUrl = '/api';
   private defaultHeaders: HeadersInit = {
     'Content-Type': 'application/json'
   };
-  
+
   private async makeRequest<T>(
     endpoint: string,
     method: string = 'GET',
@@ -14,9 +15,9 @@ class Api {
     signal?: AbortSignal
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
-    const headers: HeadersInit = { ...this.defaultHeaders };
-    
-    if (initData) headers['X-Telegram-Init-Data'] = initData;
+    const headers = new Headers(this.defaultHeaders); // Создаем новый экземпляр Headers
+
+    if (initData) headers.set('X-Telegram-Init-Data', initData); // Добавляем нужный заголовок
 
     try {
       const response = await fetch(url, {
@@ -50,40 +51,38 @@ class Api {
 
   async getUserData(telegramId: number, initData?: string): Promise<ApiResponse<UserProfile>> {
     return this.makeRequest<UserProfile>(
-      `/data?telegramId=${telegramId}`, 
-      'GET', 
-      undefined, 
-      initData,
-      signal 
+      `/data?telegramId=${telegramId}`,
+      'GET',
+      undefined,
+      initData
     );
   }
 
-  // Корректные пути API
   async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
     return this.makeRequest<Sprite[]>('/sprites', 'GET', undefined, initData);
   }
 
   async purchaseSprite(
-    telegramId: number, 
-    spriteId: number, 
+    telegramId: number,
+    spriteId: number,
     initData?: string
   ): Promise<ApiResponse> {
     return this.makeRequest(
-      '/purchase', 
-      'POST', 
+      '/purchase',
+      'POST',
       { telegramId, spriteId },
       initData
     );
   }
 
   async equipSprite(
-    telegramId: number, 
-    spriteId: number, 
+    telegramId: number,
+    spriteId: number,
     initData?: string
   ): Promise<ApiResponse> {
     return this.makeRequest(
-      '/equip', 
-      'POST', 
+      '/equip',
+      'POST',
       { telegramId, spriteId },
       initData
     );
@@ -114,15 +113,14 @@ class Api {
     });
   }
 
-    // Survey methods
   async submitSurvey(params: {
     telegramId: number;
     newScore: number;
     initData?: string;
   }): Promise<ApiResponse<UserProfile>> {
     return this.makeRequest<UserProfile>(
-      '/updateBurnout', 
-      'POST', 
+      '/updateBurnout',
+      'POST',
       {
         telegramId: params.telegramId,
         newScore: params.newScore
