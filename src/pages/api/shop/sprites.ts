@@ -2,9 +2,11 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import { validateTelegramInitData } from '@/lib/telegramAuth';
 import { Sprite } from '@/lib/types';
+import { api } from '@/lib/api';
 
 interface SpritesResponse {
   success: boolean;
+  status?: number;
   data?: Sprite[];
   error?: string;
 }
@@ -13,49 +15,43 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<SpritesResponse>
 ) {
+  console.log('Received request for /api/sprites');
+
   const initData = req.headers['x-telegram-init-data'] as string;
+  console.log('Telegram initData present:', !!initData);
 
   if (!initData || !validateTelegramInitData(initData)) {
-    return res.status(401).json({ 
-      success: false, 
-      error: 'Неавторизованный запрос' 
-    });
+    console.error('🚫 Authorization failed.');
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
 
   if (req.method !== 'GET') {
-    return res.status(405).json({ 
-      success: false, 
-      error: 'Метод не разрешен' 
-    });
+    console.error(`🚫 Method not allowed: ${req.method}`);
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
   try {
-    const { data, error } = await supabase
-      .from('sprites')
-      .select('*')
-      .order('price', { ascending: true });
+    console.log('Fetching sprites from Supabase...');
+    const { data: sprites, error } = await supabase.rpc('get_sprites');
 
-    if (error) throw error;
-
-    // Валидация типа данных
-    const isValid = Array.isArray(data) && data.every(item => 
-      typeof item.id === 'number' && 
-      typeof item.name === 'string'
-    );
-
-    if (!isValid) {
-      throw new Error('Некорректный формат данных спрайтов');
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      throw error;
     }
+
+    console.log(`✅ Retrieved ${sprites?.length || 0} sprites`);
+    console.log('Response data:', { success: true, data: sprites || [] });
 
     return res.status(200).json({ 
       success: true, 
-      data: data as Sprite[] 
+      data: sprites || []
     });
+
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Неизвестная ошибка';
+    console.error('🔥 Critical error:', error);
     return res.status(500).json({
       success: false,
-      error: `Ошибка сервера: ${message}`
+      error: 'Internal server error'
     });
   }
 }
