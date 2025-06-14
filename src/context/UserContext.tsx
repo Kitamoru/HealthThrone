@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode, useRef } from 'react';
 import { api } from '../lib/api';
 import { UserProfile } from '../lib/types';
-import { useTelegram } from './TelegramContext';
+import { useTelegram } from './useTelegram';
 
 interface UserContextType {
   user: UserProfile | null;
