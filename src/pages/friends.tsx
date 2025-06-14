@@ -13,12 +13,6 @@ interface Friend {
   burnout_level: number;
 }
 
-interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
-
 interface BurnoutProgressProps {
   level: number;
 }
@@ -55,20 +49,24 @@ export default function Friends() {
 
         const cached = sessionStorage.getItem(FRIENDS_CACHE_KEY);
         if (cached) {
-          const parsedCache = JSON.parse(cached);
-          if (Array.isArray(parsedCache)) {
-            setFriends(parsedCache);
-          } else {
+          try {
+            const parsedCache = JSON.parse(cached);
+            if (Array.isArray(parsedCache)) {
+              setFriends(parsedCache);
+            }
+          } catch {
             sessionStorage.removeItem(FRIENDS_CACHE_KEY);
           }
         }
 
         const response = await api.getFriends(user.id, initData);
-        if (response.success && response.data && Array.isArray(response.data)) {
+        if (response.success && Array.isArray(response.data)) {
           const formattedFriends = response.data.map(f => ({
             id: f.id,
             friend_id: f.friend.id,
-            friend_username: f.friend.username || 'Неизвестный пользователь',
+            friend_username: f.friend.username || 
+                            `${f.friend.first_name || ''} ${f.friend.last_name || ''}`.trim() || 
+                            'Неизвестный пользователь',
             burnout_level: f.friend.burnout_level
           }));
 
@@ -95,7 +93,7 @@ export default function Friends() {
         setFriends(updatedFriends);
         sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(updatedFriends));
       } else {
-        setError(response.error || 'Failed to delete friend');
+        setError(response.error || 'Ошибка при удалении');
       }
     } catch (err) {
       setError('Ошибка при удалении друга');
@@ -104,7 +102,7 @@ export default function Friends() {
 
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
   const referralCode = `ref_${user?.id || 'default'}`;
-  const referralLink = `https://t.me/${botUsername}/HealthBreake?startapp=${referralCode}`;
+  const referralLink = `https://t.me/${botUsername}?start=${referralCode}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink);
@@ -175,7 +173,7 @@ export default function Friends() {
                 </button>
               </div>
               <div className="custom-modal-body">
-                <p>Добавь участникакоманды</p>
+                <p>Добавь участника команды</p>
                 <div className="referral-link-container">
                   <input 
                     type="text" 
