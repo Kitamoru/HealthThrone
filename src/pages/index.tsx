@@ -97,18 +97,28 @@ const QUESTIONS: Question[] = [
   }
 ];
 
-
 export default function Home() {
   const router = useRouter();
   const { user, initData } = useTelegram();
   
   const [questions] = useState<Question[]>(QUESTIONS);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
-  const [currentBurnoutLevel, setCurrentBurnoutLevel] = useState(0);
+  const [initialBurnoutLevel, setInitialBurnoutLevel] = useState(0);
+  const [burnoutLevel, setBurnoutLevel] = useState(0);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [alreadyAttempted, setAlreadyAttempted] = useState(false);
+
+  // Проверка, является ли дата сегодняшней (в UTC)
+  const isTodayUTC = (date: Date) => {
+    const today = new Date();
+    return (
+      date.getUTCFullYear() === today.getUTCFullYear() &&
+      date.getUTCMonth() === today.getUTCMonth() &&
+      date.getUTCDate() === today.getUTCDate()
+    );
+  };
 
   // Загрузка данных пользователя
   const loadUserData = useCallback(async () => {
@@ -123,12 +133,13 @@ export default function Home() {
         const userData = response.data;
         const level = userData.burnout_level ?? 0;
         
-        setCurrentBurnoutLevel(level);
+        setBurnoutLevel(level);
+        setInitialBurnoutLevel(level);
 
-        // Проверка последней попытки
+        // Проверка последней попытки в UTC
         if (userData.last_attempt_date) {
-          const todayUTC = new Date().toISOString().split('T')[0];
-          setAlreadyAttempted(userData.last_attempt_date === todayUTC);
+          const lastAttempt = parseISO(userData.last_attempt_date);
+          setAlreadyAttempted(isTodayUTC(lastAttempt));
         }
       } else {
         // Обработка специфических ошибок
@@ -147,12 +158,9 @@ export default function Home() {
 
   // Загрузка данных при монтировании
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      await loadUserData();
-    };
-    fetchData();
-  }, []); // Пустой массив зависимостей
+    setLoading(true);
+    loadUserData();
+  }, [loadUserData]);
 
   // Обработка выбора ответа
   const handleAnswer = (questionId: number, isPositive: boolean) => {
@@ -176,8 +184,8 @@ export default function Home() {
       return sum + (q?.weight || 0);
     }, 0);
 
-    const newLevel = Math.max(0, Math.min(100, currentBurnoutLevel + answeredDelta));
-    setCurrentBurnoutLevel(newLevel);
+    const newLevel = Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
+    setBurnoutLevel(newLevel);
 
     // Проверка завершения опроса
     if (questions.every(q => q.id in newAnswers)) {
@@ -197,7 +205,7 @@ export default function Home() {
       });
 
       // Обработка ошибок API
-      if (response.httpStatus === 429) {
+      if (response.status === 429) {
         setApiError('Вы уже проходили опрос сегодня');
         setAlreadyAttempted(true);
         return;
@@ -210,9 +218,10 @@ export default function Home() {
 
       // Успешное завершение
       if (response.data) {
+        const updatedUser = response.data;
         setSurveyCompleted(true);
         setAlreadyAttempted(true);
-        setCurrentBurnoutLevel(response.data.burnout_level);
+        setBurnoutLevel(updatedUser.burnout_level);
       }
     } catch (error) {
       console.error('Survey submission failed:', error);
@@ -236,7 +245,7 @@ export default function Home() {
 
   return (
     <div className="container">
-      <BurnoutProgress level={currentBurnoutLevel} />
+      <BurnoutProgress level={burnoutLevel} />
       <div className="content">
         {apiError && (
           <div className="error-message">{apiError}</div>
@@ -245,13 +254,13 @@ export default function Home() {
         {alreadyAttempted ? (
           <div className="time-message">
             <div className="info-message">
-              Вы уже прошли опрос сегодня. Ваш текущий уровень выгорания: {currentBurnoutLevel}%
+              Вы уже прошли опрос сегодня. Ваш текущий уровень выгорания: {burnoutLevel}%
             </div>
           </div>
         ) : surveyCompleted ? (
           <div className="time-message">
             <div className="info-message">
-              🎯 Тест завершен! Ваш уровень выгорания: {currentBurnoutLevel}%
+              🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
             </div>
           </div>
         ) : (
