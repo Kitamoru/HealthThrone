@@ -7,9 +7,8 @@ import { QuestionCard } from '../components/QuestionCard';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { UserProfile } from '../lib/types';
-import { format, isBefore, addDays, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
-// Интерфейс вопроса для удобства и ясности
 interface Question {
   id: number;
   text: string;
@@ -18,7 +17,6 @@ interface Question {
   weight: number;
 }
 
-// Массив вопросов вынесем отдельно для удобочитаемости
 const QUESTIONS: Question[] = [
   {
     id: 1,
@@ -99,7 +97,6 @@ const QUESTIONS: Question[] = [
   }
 ];
 
-// Основной компонент страницы
 export default function Home() {
   const router = useRouter();
   const { user, initData } = useTelegram();
@@ -112,6 +109,16 @@ export default function Home() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [alreadyAttempted, setAlreadyAttempted] = useState(false);
+
+  // Проверка, является ли дата сегодняшней (в UTC)
+  const isTodayUTC = (date: Date) => {
+    const today = new Date();
+    return (
+      date.getUTCFullYear() === today.getUTCFullYear() &&
+      date.getUTCMonth() === today.getUTCMonth() &&
+      date.getUTCDate() === today.getUTCDate()
+    );
+  };
 
   // Загрузка данных пользователя
   const loadUserData = useCallback(async () => {
@@ -132,7 +139,7 @@ export default function Home() {
         // Проверка последней попытки в UTC
         if (userData.last_attempt_date) {
           const lastAttempt = parseISO(userData.last_attempt_date);
-          setAlreadyAttempted(isToday(lastAttempt));
+          setAlreadyAttempted(isTodayUTC(lastAttempt));
         }
       } else {
         // Обработка специфических ошибок
