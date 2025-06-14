@@ -39,13 +39,13 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const { initData: initDataString } = useTelegram() || {}; // Добавлена защита от отсутствия initData
 
   let initData: TelegramInitData | null = null;
-  if (initDataString) {
-    try {
-      initData = JSON.parse(initDataString); // Улучшена обработка возможного исключения
-    } catch(e) {
-      console.error("Ошибка разбора initData:", e.message);
-    }
+if (initDataString) {
+  try {
+    initData = JSON.parse(initDataString); // Улучшена обработка возможного исключения
+  } catch(e: unknown) {
+    console.error("Ошибка разбора initData:", (e as any)?.message ?? '');
   }
+}
 
   const fetchUser = async (telegramId: number, initData: string) => {
     if (!initData.trim()) { // Проверка на пустоту перед использованием
