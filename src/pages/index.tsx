@@ -7,7 +7,7 @@ import { QuestionCard } from '../components/QuestionCard';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { UserProfile } from '../lib/types';
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
 
 interface Question {
   id: number;
@@ -108,17 +108,27 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
-  const [alreadyAttempted, setAlreadyAttempted] = useState(false);
+  
+  // Состояние для отслеживания прохождения теста сегодня
+  const [alreadyAttemptedToday, setAlreadyAttemptedToday] = useState(false);
 
   // Проверка, является ли дата сегодняшней (в UTC)
-  const isTodayUTC = (date: Date) => {
+  const isTodayUTC = useCallback((date: Date) => {
     const today = new Date();
-    return (
-      date.getUTCFullYear() === today.getUTCFullYear() &&
-      date.getUTCMonth() === today.getUTCMonth() &&
-      date.getUTCDate() === today.getUTCDate()
+    const todayUTC = Date.UTC(
+      today.getUTCFullYear(), 
+      today.getUTCMonth(), 
+      today.getUTCDate()
     );
-  };
+    
+    const dateUTC = Date.UTC(
+      date.getUTCFullYear(), 
+      date.getUTCMonth(), 
+      date.getUTCDate()
+    );
+    
+    return todayUTC === dateUTC;
+  }, []);
 
   // Загрузка данных пользователя
   const loadUserData = useCallback(async () => {
@@ -139,12 +149,15 @@ export default function Home() {
         // Проверка последней попытки в UTC
         if (userData.last_attempt_date) {
           const lastAttempt = parseISO(userData.last_attempt_date);
-          setAlreadyAttempted(isTodayUTC(lastAttempt));
+          if (isTodayUTC(lastAttempt)) {
+            setAlreadyAttemptedToday(true);
+          }
         }
       } else {
         // Обработка специфических ошибок
         if (response.status === 429) {
           setApiError("Вы уже проходили опрос сегодня");
+          setAlreadyAttemptedToday(true);
         } else {
           setApiError(response.error || "Ошибка загрузки данных");
         }
@@ -154,7 +167,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, initData]);
+  }, [user?.id, initData, isTodayUTC]);
 
   // Загрузка данных при монтировании
   useEffect(() => {
@@ -164,7 +177,7 @@ export default function Home() {
 
   // Обработка выбора ответа
   const handleAnswer = (questionId: number, isPositive: boolean) => {
-    if (alreadyAttempted || !user) return;
+    if (alreadyAttemptedToday || !user) return;
 
     const question = questions.find(q => q.id === questionId);
     if (!question) return;
@@ -198,6 +211,9 @@ export default function Home() {
     if (!user?.id) return;
 
     try {
+      // Сбрасываем ошибку перед отправкой
+      setApiError(null);
+      
       const response = await api.submitSurvey({
         telegramId: Number(user.id),
         newScore: totalScore,
@@ -207,7 +223,7 @@ export default function Home() {
       // Обработка ошибок API
       if (response.status === 429) {
         setApiError('Вы уже проходили опрос сегодня');
-        setAlreadyAttempted(true);
+        setAlreadyAttemptedToday(true);
         return;
       }
 
@@ -220,7 +236,7 @@ export default function Home() {
       if (response.data) {
         const updatedUser = response.data;
         setSurveyCompleted(true);
-        setAlreadyAttempted(true);
+        setAlreadyAttemptedToday(true);
         setBurnoutLevel(updatedUser.burnout_level);
       }
     } catch (error) {
@@ -251,7 +267,7 @@ export default function Home() {
           <div className="error-message">{apiError}</div>
         )}
 
-        {alreadyAttempted ? (
+        {alreadyAttemptedToday ? (
           <div className="time-message">
             <div className="info-message">
               Вы уже прошли опрос сегодня. Ваш текущий уровень выгорания: {burnoutLevel}%
