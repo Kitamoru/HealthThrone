@@ -30,8 +30,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     try {
       const response = await api.getUserData(
         telegramId, 
-        initData,
-        controller.signal // Передача сигнала
+        initData
       );
       
       if (response.success && response.data) {
