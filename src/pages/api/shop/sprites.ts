@@ -5,7 +5,6 @@ import { Sprite } from '@/lib/types';
 
 interface SpritesResponse {
   success: boolean;
-  status?: number;
   data?: Sprite[];
   error?: string;
 }
@@ -14,59 +13,49 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<SpritesResponse>
 ) {
-  console.log('[API][Sprites] Received request');
-
   const initData = req.headers['x-telegram-init-data'] as string;
-  const authResult = validateTelegramInitData(initData);
-  
-  if (!authResult.isValid) {
-    console.error('[API][Sprites] 🚫 Authorization failed:', authResult.error);
+
+  if (!initData || !validateTelegramInitData(initData)) {
     return res.status(401).json({ 
       success: false, 
-      error: `Unauthorized: ${authResult.error}` 
+      error: 'Неавторизованный запрос' 
     });
   }
 
   if (req.method !== 'GET') {
-    console.error(`[API][Sprites] 🚫 Method not allowed: ${req.method}`);
     return res.status(405).json({ 
       success: false, 
-      error: 'Method not allowed' 
+      error: 'Метод не разрешен' 
     });
   }
 
   try {
-    console.log('[API][Sprites] Fetching sprites from Supabase...');
-    const { data: sprites, error } = await supabase.rpc('get_sprites');
+    const { data, error } = await supabase
+      .from('sprites')
+      .select('*')
+      .order('price', { ascending: true });
 
-    if (error) {
-      console.error('[API][Sprites] ❌ Supabase error:', error);
-      throw error;
+    if (error) throw error;
+
+    // Валидация типа данных
+    const isValid = Array.isArray(data) && data.every(item => 
+      typeof item.id === 'number' && 
+      typeof item.name === 'string'
+    );
+
+    if (!isValid) {
+      throw new Error('Некорректный формат данных спрайтов');
     }
 
-    // Валидация структуры данных
-    const isValidData = Array.isArray(sprites) && 
-      (sprites.length === 0 || (
-        typeof sprites[0]?.id === 'number' &&
-        typeof sprites[0]?.name === 'string'
-      ));
-
-    if (!isValidData) {
-      console.error('[API][Sprites] ❌ Invalid data structure:', sprites);
-      throw new Error('Invalid sprites data structure from database');
-    }
-
-    console.log(`[API][Sprites] ✅ Retrieved ${sprites.length} sprites`);
     return res.status(200).json({ 
       success: true, 
-      data: sprites 
+      data: data as Sprite[] 
     });
-
-  } catch (error: any) {
-    console.error('[API][Sprites] 🔥 Critical error:', error);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Неизвестная ошибка';
     return res.status(500).json({
       success: false,
-      error: error.message || 'Internal server error'
+      error: `Ошибка сервера: ${message}`
     });
   }
 }
