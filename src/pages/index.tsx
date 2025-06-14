@@ -104,26 +104,14 @@ export default function Home() {
   const router = useRouter();
   const { user, initData } = useTelegram();
   
-  // Логика управления состоянием приложения
   const [questions] = useState<Question[]>(QUESTIONS);
-  const [answers, setAnswers] = useState<Record<number, boolean>>( {} );
+  const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [initialBurnoutLevel, setInitialBurnoutLevel] = useState(0);
   const [burnoutLevel, setBurnoutLevel] = useState(0);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
-
-  // Управление повторным прохождением теста
-  const [alreadyAttempted, setAlreadyAttempted] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const lastDate = localStorage.getItem('lastAttemptDate');
-      if (lastDate) {
-        const today = new Date().toISOString().split('T')[0];
-        return lastDate.split('T')[0] === today;
-      }
-    }
-    return false;
-  });
+  const [alreadyAttempted, setAlreadyAttempted] = useState(false);
 
   // Загрузка данных пользователя
   const loadUserData = useCallback(async () => {
@@ -141,14 +129,18 @@ export default function Home() {
         setBurnoutLevel(level);
         setInitialBurnoutLevel(level);
 
+        // Проверка последней попытки в UTC
         if (userData.last_attempt_date) {
-          const today = new Date().toISOString().split('T')[0];
-          const lastAttempt = new Date(userData.last_attempt_date).toISOString().split('T')[0];
-          
-          setAlreadyAttempted(today === lastAttempt);
+          const lastAttempt = parseISO(userData.last_attempt_date);
+          setAlreadyAttempted(isToday(lastAttempt));
         }
       } else {
-        setApiError(response.error || "Ошибка загрузки данных");
+        // Обработка специфических ошибок
+        if (response.status === 429) {
+          setApiError("Вы уже проходили опрос сегодня");
+        } else {
+          setApiError(response.error || "Ошибка загрузки данных");
+        }
       }
     } catch (err) {
       setApiError("Ошибка соединения");
@@ -157,33 +149,17 @@ export default function Home() {
     }
   }, [user?.id, initData]);
 
-  // Обновление данных при изменении маршрута
+  // Загрузка данных при монтировании
   useEffect(() => {
     setLoading(true);
     loadUserData();
   }, [loadUserData]);
 
-  // Наблюдатель за изменениями маршрутов
-  useEffect(() => {
-    const handleRouteChange = () => {
-      if (router.pathname === '/') {
-        loadUserData();
-      }
-    };
-    
-    router.events.on('routeChangeComplete', handleRouteChange);
-    
-    return () => {
-      router.events.off('routeChangeComplete', handleRouteChange);
-    };
-  }, [loadUserData, router]);
-
-  // Функция обработки выбора ответа
+  // Обработка выбора ответа
   const handleAnswer = (questionId: number, isPositive: boolean) => {
     if (alreadyAttempted || !user) return;
 
     const question = questions.find(q => q.id === questionId);
-
     if (!question) return;
 
     const newAnswers = {
@@ -193,29 +169,24 @@ export default function Home() {
 
     setAnswers(newAnswers);
 
-    let answeredDelta = 0;
-
-    Object.entries(newAnswers).forEach(([id, ans]) => {
+    // Рассчет нового уровня выгорания
+    const answeredDelta = Object.entries(newAnswers).reduce((sum, [id, ans]) => {
+      if (!ans) return sum;
       const qId = parseInt(id);
       const q = questions.find(q => q.id === qId);
-
-      if (q && ans) {
-        answeredDelta += q.weight;
-      }
-    });
+      return sum + (q?.weight || 0);
+    }, 0);
 
     const newLevel = Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
-
     setBurnoutLevel(newLevel);
 
-    const allAnswered = questions.every(q => q.id in newAnswers);
-
-    if (allAnswered && !alreadyAttempted) {
+    // Проверка завершения опроса
+    if (questions.every(q => q.id in newAnswers)) {
       submitSurvey(answeredDelta);
     }
   };
 
-  // Отправка результата тестирования
+  // Отправка результата
   const submitSurvey = async (totalScore: number) => {
     if (!user?.id) return;
 
@@ -226,19 +197,24 @@ export default function Home() {
         initData
       });
 
-      if (response.success && response.data) {
-        const updatedUser = response.data;
-        const todayUTC = new Date().toISOString();
+      // Обработка ошибок API
+      if (response.status === 429) {
+        setApiError('Вы уже проходили опрос сегодня');
+        setAlreadyAttempted(true);
+        return;
+      }
 
+      if (!response.success) {
+        setApiError(response.error || 'Ошибка сохранения результатов');
+        return;
+      }
+
+      // Успешное завершение
+      if (response.data) {
+        const updatedUser = response.data;
         setSurveyCompleted(true);
         setAlreadyAttempted(true);
         setBurnoutLevel(updatedUser.burnout_level);
-
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('lastAttemptDate', todayUTC);
-        }
-      } else {
-        setApiError(response.error || 'Ошибка сохранения результатов');
       }
     } catch (error) {
       console.error('Survey submission failed:', error);
@@ -246,17 +222,18 @@ export default function Home() {
     }
   };
 
-  // Отображение ошибок и сообщений
+  // Отображение состояния загрузки
+  if (loading) {
+    return <Loader />;
+  }
+
+  // Отображение ошибок
   if (!user) {
     return (
       <div className="error-message">
         Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение.
       </div>
     );
-  }
-
-  if (loading) {
-    return <Loader />;
   }
 
   return (
