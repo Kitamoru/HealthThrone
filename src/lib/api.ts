@@ -7,57 +7,32 @@ class Api {
   };
   
   private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
-    const httpStatus = response.status;
-    const responseClone = response.clone();
-    
-    if (!response.ok) {
+  const status = response.status;
+  const responseClone = response.clone();
+  
+  if (!response.ok) {
+    // Обработка ошибок HTTP (4xx, 5xx)
+    try {
+      const errorResponse = await responseClone.json();
+      return {
+        success: false,
+        status,
+        error: errorResponse.error || JSON.stringify(errorResponse)
+      };
+    } catch {
       try {
-        const errorResponse = await responseClone.json();
         return {
           success: false,
-          httpStatus,
-          error: errorResponse.error || JSON.stringify(errorResponse)
+          status,
+          error: await responseClone.text()
         };
-      } catch {
-        try {
-          return {
-            success: false,
-            httpStatus,
-            error: await responseClone.text()
-          };
-        } catch (textError) {
-          return {
-            success: false,
-            httpStatus,
-            error: 'Failed to parse error response'
-          };
-        }
-      }
-    }
-
-    try {
-      const responseData = await response.json();
-      
-      if (responseData.success && responseData.data !== undefined) {
+      } catch (textError) {
         return {
-          success: true,
-          httpStatus,
-          data: responseData.data
+          success: false,
+          status,
+          error: 'Failed to parse error response'
         };
       }
-      
-      return {
-        success: false,
-        httpStatus: 500,
-        error: 'Invalid server response structure'
-      };
-      
-    } catch (parseError) {
-      return {
-        success: false,
-        httpStatus: 500,
-        error: 'Failed to parse response data'
-      };
     }
   }
 
@@ -199,7 +174,7 @@ async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
   
    async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
     return this.makeRequest<Sprite>(
-      `/sprites/${spriteId}`, 
+      `/shop/sprites/${spriteId}`, 
       'GET', 
       undefined, 
       initData
@@ -213,7 +188,7 @@ async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
     initData?: string
   ): Promise<ApiResponse> {
     return this.makeRequest(
-      '/purchase', 
+      '/shop/purchase', 
       'POST', 
       { telegramId, spriteId },
       initData
@@ -225,7 +200,7 @@ async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
     initData?: string
   ): Promise<ApiResponse<number[]>> {
     return this.makeRequest<number[]>(
-      `/owned/owned?telegramId=${telegramId}`, 
+      `/shop/owned/owned?telegramId=${telegramId}`, 
       'GET', 
       undefined, 
       initData
@@ -238,7 +213,7 @@ async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
     initData?: string
   ): Promise<ApiResponse> {
     return this.makeRequest(
-      '/equip', 
+      '/shop/equip', 
       'POST', 
       { telegramId, spriteId },
       initData
