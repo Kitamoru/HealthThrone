@@ -23,7 +23,7 @@ class Api {
           errorText = 'Failed to parse error response';
         }
       }
-      console.error(`[API] Error ${status}: ${errorText}`);
+      console.error(`[API] Error ${status}: ${errorText}`); // Логируем ошибки прямо здесь
       return {
         success: false,
         status,
@@ -33,7 +33,7 @@ class Api {
 
     try {
       const data: T = await response.json();
-      console.log(`[API] Success ${status}: Received data`, data);
+      console.log(`[API] Success ${status}: Received data`, data); // 👇👇 Лог принимаемых данных
       return { 
         success: true, 
         status,
@@ -66,7 +66,7 @@ class Api {
     console.log(`[API] ${method} ${url}`, {
       headers,
       body: body ? JSON.stringify(body) : undefined
-    });
+    }); // 👇 Лог отправляемых запросов
 
     try {
       const response = await fetch(url, {
@@ -79,15 +79,15 @@ class Api {
       const duration = Date.now() - startTime;
 
       if (result.success) {
-        console.log(`[API] Success ${result.status} (${duration}ms):`, result.data);
+        console.log(`[API] Success ${result.status} (${duration}ms):`, result.data); // 👇 Лог успешных ответов
       } else {
-        console.error(`[API] Error ${result.status} (${duration}ms): ${result.error}`);
+        console.error(`[API] Error ${result.status} (${duration}ms): ${result.error}`); // 👇 Лог ошибок
       }
 
       return result;
     } catch (error: any) {
       const duration = Date.now() - startTime;
-      console.error(`[API] Network error (${duration}ms):`, error);
+      console.error(`[API] Network error (${duration}ms):`, error); // 👇 Лог сетевых ошибок
 
       return {
         success: false,
@@ -149,25 +149,21 @@ class Api {
   }
 
   // Shop methods
-  async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
-    if (!initData) {
-      return {
-        success: false,
-        status: 400,
-        error: 'Missing required parameter: initData'
-      };
-    }
-    return this.makeRequest<Sprite[]>('/sprites', 'GET', undefined, initData);
-  }
+ async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
+  if (!initData) throw new Error('Missing required parameter: initData');
+
+  return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
+}
   
-  async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
+   async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
     return this.makeRequest<Sprite>(
-      `/sprites/${spriteId}`, 
+      `/shop/sprites/${spriteId}`, 
       'GET', 
       undefined, 
       initData
     );
   }
+
 
   async purchaseSprite(
     telegramId: number, 
@@ -175,7 +171,7 @@ class Api {
     initData?: string
   ): Promise<ApiResponse> {
     return this.makeRequest(
-      '/purchase',
+      '/shop/purchase', 
       'POST', 
       { telegramId, spriteId },
       initData
@@ -187,7 +183,7 @@ class Api {
     initData?: string
   ): Promise<ApiResponse<number[]>> {
     return this.makeRequest<number[]>(
-      `/owned?telegramId=${telegramId}`, 
+      `/shop/owned?telegramId=${telegramId}`, 
       'GET', 
       undefined, 
       initData
@@ -200,7 +196,7 @@ class Api {
     initData?: string
   ): Promise<ApiResponse> {
     return this.makeRequest(
-      '/equip',
+      '/shop/equip', 
       'POST', 
       { telegramId, spriteId },
       initData
@@ -226,3 +222,88 @@ class Api {
 }
 
 export const api = new Api();
+UserContext.tsx
+import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import { api } from '../lib/api';
+import { UserProfile } from '../lib/types';
+import { useTelegram } from './TelegramContext';
+
+interface UserContextType {
+  user: UserProfile | null;
+  isLoading: boolean;
+  fetchUser: (telegramId: number, initData: string) => Promise<{ success: boolean; error?: string }>;
+  updateUser: (updatedUser: Partial<UserProfile>) => void;
+}
+
+const UserContext = createContext<UserContextType | undefined>(undefined);
+
+interface UserProviderProps {
+  children: ReactNode;
+}
+
+export const UserProvider = ({ children }: UserProviderProps) => {
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { initData } = useTelegram();
+
+  // Функция для получения данных пользователя
+  const fetchUser = async (telegramId: number, initData: string) => {
+    setIsLoading(true);
+    try {
+      const response = await api.getUserData(telegramId, initData);
+      
+      if (response.success && response.data) {
+        setUser(response.data);
+        return { success: true };
+      } else {
+        console.error('Failed to fetch user data:', response.error);
+        return { success: false, error: response.error };
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      return { success: false, error: 'Network error' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Функция для обновления локального состояния пользователя
+  const updateUser = (updatedUser: Partial<UserProfile>) => {
+    if (user) {
+      setUser({ ...user, ...updatedUser });
+    }
+  };
+
+  // Автоматическая загрузка данных пользователя при монтировании
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (initData && initData.user?.id) {
+        const telegramId = initData.user.id;
+        await fetchUser(telegramId, initData);
+      }
+    };
+
+    loadUserData();
+  }, [initData]);
+
+  const value = {
+    user,
+    isLoading,
+    fetchUser,
+    updateUser
+  };
+
+  return (
+    <UserContext.Provider value={value}>
+      {children}
+    </UserContext.Provider>
+  );
+};
+
+export const useUser = () => {
+  const context = useContext(UserContext);
+  if (context === undefined) {
+    throw new Error('useUser must be used within a UserProvider');
+  }
+  return context;
+};
