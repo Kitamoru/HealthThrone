@@ -82,6 +82,27 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     },
     [telegramId]
   );
+  
+  const fetchUser = async (telegramId: number, initData: string) => {
+    setIsLoading(true);
+    try {
+      // Передаем initData как второй параметр
+      const response = await api.getUserData(telegramId, initData);
+      
+      if (response.success && response.data) {
+        setUser(response.data);
+        return { success: true };
+      } else {
+        console.error('Failed to fetch user data:', response.error);
+        return { success: false, error: response.error };
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      return { success: false, error: 'Network error' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const refreshSprites = useCallback(async (initData?: string) => {
     setIsLoading(true);
