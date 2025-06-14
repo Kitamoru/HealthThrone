@@ -52,36 +52,38 @@ export default function Friends() {
     if (!isReady || !user?.id) return;
 
     const loadFriends = async () => {
-      try {
-        setLoading(true);
-
-        // Check cache
-        const cached = sessionStorage.getItem(FRIENDS_CACHE_KEY);
-        if (cached) {
-          try {
-            const parsedCache = JSON.parse(cached);
-            if (Array.isArray(parsedCache)) {
-              setFriends(parsedCache);
-            }
-          } catch (e) {
-            sessionStorage.removeItem(FRIENDS_CACHE_KEY);
-          }
-        }
-
-        // Fetch friends from API
-        const response = await api.getFriends(user.id, initData);
-        if (response.success && Array.isArray(response.data)) {
-          setFriends(response.data);
-          sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(response.data));
-        } else {
-          setError(response.error || 'Не удалось загрузить друзей');
-        }
-      } catch (err) {
-        setError('Ошибка сети');
-      } finally {
-        setLoading(false);
+  try {
+    setLoading(true);
+    const cached = sessionStorage.getItem(FRIENDS_CACHE_KEY);
+    if (cached) {
+      const parsedCache = JSON.parse(cached);
+      if (Array.isArray(parsedCache)) {
+        setFriends(parsedCache);
+      } else {
+        sessionStorage.removeItem(FRIENDS_CACHE_KEY);
       }
-    };
+    }
+
+    const response = await api.getFriends(user.id, initData);
+    if (response.success && Array.isArray(response.data)) {
+      const formattedFriends = response.data.map(f => ({
+        id: f.id,
+        friend_id: f.friend.id,
+        friend_username: f.friend.username,
+        burnout_level: f.friend.burnout_level
+      }));
+
+      setFriends(formattedFriends);
+      sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(formattedFriends));
+    } else {
+      setError(response.error || 'Не удалось загрузить друзей');
+    }
+  } catch (err) {
+    setError('Ошибка сети');
+  } finally {
+    setLoading(false);
+  }
+};
 
     loadFriends();
   }, [isReady, user, initData]);
