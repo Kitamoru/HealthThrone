@@ -200,7 +200,7 @@ async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
     initData?: string
   ): Promise<ApiResponse<number[]>> {
     return this.makeRequest<number[]>(
-      `/shop/owned/owned?telegramId=${telegramId}`, 
+      `/shop/owned?telegramId=${telegramId}`, 
       'GET', 
       undefined, 
       initData
