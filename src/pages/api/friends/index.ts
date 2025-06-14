@@ -37,18 +37,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .eq('user_id', userId);
 
       if (error) {
+        console.error('Database error:', error);
         return res.status(500).json({ success: false, error: 'Database error' });
       }
       
+      // Обработка структуры данных Supabase
+      const formattedFriends = friends.map(f => ({
+        id: f.id,
+        friend: f.friend[0] // Берем первый элемент массива
+      })).filter(f => f.friend); // Фильтруем невалидные записи
+
       return res.status(200).json({ 
         success: true, 
-        data: friends.map(f => ({
+        data: formattedFriends.map(f => ({
           id: f.id,
           friend: {
-            id: f.friend[0].id,
-            username: f.friend[0].username || 
-                      `${f.friend[0].first_name} ${f.friend[0].last_name || ''}`.trim(),
-            burnout_level: f.friend[0].burnout_level
+            id: f.friend.id,
+            username: f.friend.username || 
+                      `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
+            burnout_level: f.friend.burnout_level
           }
         })) 
       });
@@ -61,10 +68,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ success: false, error: 'Friend username is required' });
       }
 
+      // Ищем пользователя по username (регистронезависимо)
       const { data: friendUser, error: friendError } = await supabase
         .from('users')
         .select('id')
-        .eq('username', friendUsername)
+        .ilike('username', friendUsername) // ILIKE для case-insensitive
         .single();
 
       if (friendError || !friendUser) {
@@ -75,17 +83,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ success: false, error: 'You cannot add yourself' });
       }
 
-      const { count } = await supabase
+      // Проверка существования связи
+      const { data: existingFriendship, error: checkError } = await supabase
         .from('friends')
-        .select('*', { count: 'exact' })
+        .select('id')
         .eq('user_id', userId)
-        .eq('friend_id', friendUser.id);
+        .eq('friend_id', friendUser.id)
+        .maybeSingle();
 
-      if (count && count > 0) {
+      if (checkError) {
+        console.error('Check friendship error:', checkError);
+        return res.status(500).json({ success: false, error: 'Database error' });
+      }
+
+      if (existingFriendship) {
         return res.status(400).json({ success: false, error: 'Friend already added' });
       }
 
-      const { data: newFriend, error: insertError } = await supabase
+      // Создаем связь
+      const { data: newFriendship, error: insertError } = await supabase
         .from('friends')
         .insert([{
           user_id: userId,
@@ -98,18 +114,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .single();
 
       if (insertError) {
+        console.error('Insert error:', insertError);
         return res.status(500).json({ success: false, error: 'Failed to add friend' });
       }
 
+      // Проверка структуры ответа
+      if (!newFriendship.friend || !Array.isArray(newFriendship.friend) || newFriendship.friend.length === 0) {
+        console.error('Invalid friend data structure:', newFriendship);
+        return res.status(500).json({ success: false, error: 'Invalid friend data' });
+      }
+
+      const friendData = newFriendship.friend[0];
       return res.status(201).json({ 
         success: true,
         data: {
-          id: newFriend.id,
+          id: newFriendship.id,
           friend: {
-            id: newFriend.friend[0].id,
-            username: newFriend.friend[0].username || 
-                      `${newFriend.friend[0].first_name} ${newFriend.friend[0].last_name || ''}`.trim(),
-            burnout_level: newFriend.friend[0].burnout_level
+            id: friendData.id,
+            username: friendData.username || 
+                      `${friendData.first_name} ${friendData.last_name || ''}`.trim(),
+            burnout_level: friendData.burnout_level
           }
         }
       });
@@ -117,6 +141,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   } catch (error) {
+    console.error('Unhandled error:', error);
     return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 }
@@ -127,6 +152,7 @@ function extractUserFromInitData(initData: string) {
     const userJson = params.get('user');
     return userJson ? JSON.parse(userJson) : null;
   } catch (error) {
+    console.error('Error parsing user data:', error);
     return null;
   }
 }
