@@ -66,7 +66,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ 
+      success: true,
+      data: {
+        coins: userData.coins - price,
+        spriteId
+      }
+    });
+    
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err)); // Приведение типа ошибки
     console.error('Purchase error:', error.message);
