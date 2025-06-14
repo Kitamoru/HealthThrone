@@ -1,3 +1,4 @@
+Shop.tsx
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -30,6 +31,7 @@ export default function Shop() {
         setLoading(true);
         setError(null);
 
+        // Запрашиваем сразу три API одновременно
         const [
           userResponse,
           spritesResponse,
@@ -40,6 +42,7 @@ export default function Shop() {
           api.getOwnedSprites(Number(user.id), initData)
         ]);
 
+        // Обрабатываем ответ от API с профилем пользователя
         if (userResponse.success && userResponse.data) {
           setCoins(userResponse.data.coins || 0);
           setCurrentSprite(userResponse.data.current_sprite_id || null);
@@ -47,15 +50,17 @@ export default function Shop() {
           setError(`Ошибка загрузки профиля: ${userResponse.error}`);
         }
 
-        // Упрощенная проверка загрузки спрайтов
-        if (spritesResponse.success) {
-          setSprites(spritesResponse.data || []);
+        // Проверяем массив спрайтов (ИСПРАВЛЕНО)
+        if (spritesResponse.success && Array.isArray(spritesResponse.data)) {
+        setSprites(spritesResponse.data);
+        console.log ('Спрайты успешно загружены:', spritesResponse.data); 
         } else if (spritesResponse.error) {
-          setError(`Ошибка загрузки спрайтов: ${spritesResponse.error}`);
+        setError(`Ошибка загрузки спрайтов: ${spritesResponse.error}`);
         } else {
-          setError('Не удалось получить данные о спрайтах.');
-        }
+        setError('Не удалось получить данные о спрайтах.');
+        }    
 
+        // Обрабатываем список приобретенных спрайтов
         if (ownedResponse.success && Array.isArray(ownedResponse.data)) {
           setOwnedSprites(ownedResponse.data);
         } else if (ownedResponse.error) {
@@ -87,7 +92,6 @@ export default function Shop() {
       return;
     }
 
-    // Явная проверка существования спрайта
     const sprite = sprites.find((item) => item.id === spriteId);  
     if (!sprite) {
       setError('Спрайт не найден');
