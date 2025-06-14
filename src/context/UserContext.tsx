@@ -68,7 +68,6 @@ if (initDataString) {
     (error as Error).message
   );
   return { success: false, error: 'Network error' };
-}
     } finally {
       setIsLoading(false);
     }
