@@ -6,12 +6,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const initData = req.headers['x-telegram-init-data'] as string;
 
   if (!initData || !validateTelegramInitData(initData)) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
 
   const user = extractUserFromInitData(initData);
   if (!user?.id) {
-    return res.status(400).json({ error: 'Invalid user data' });
+    return res.status(400).json({ success: false, error: 'Invalid user data' });
   }
 
   // Получаем внутренний ID пользователя
@@ -22,36 +22,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     .single();
 
   if (userError || !currentUser) {
-    return res.status(500).json({ error: 'User not found in database' });
+    return res.status(500).json({ success: false, error: 'User not found' });
   }
   const userId = currentUser.id;
 
   if (req.method === 'GET') {
-  try {
-    // Получаем друзей с актуальными данными из users
-    const { data: friends, error } = await supabase
-      .from('friends')
-      .select(`
-        id, 
-        created_at,
-        friend:friend_id (id, first_name, last_name, username, burnout_level)
-      `)
-      .eq('user_id', userId);
+    try {
+      const { data: friends, error } = await supabase
+        .from('friends')
+        .select(`
+          id,
+          friend:friend_id (id, first_name, last_name, username, burnout_level)
+        `)
+        .eq('user_id', userId);
 
-    if (error) throw error;
+      if (error) throw error;
 
-    // Возвращаем данные с вложенной структурой
-    return res.status(200).json(friends);
-  } catch (error) {
-    return res.status(500).json({ error: 'Database error' });
+      // Форматируем ответ в плоскую структуру
+      const formattedFriends = friends.map(f => ({
+        id: f.id,
+        ...f.friend
+      }));
+
+      return res.status(200).json({ 
+        success: true, 
+        data: formattedFriends 
+      });
+    } catch (error) {
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Database error' 
+      });
+    }
   }
-}
 
   if (req.method === 'POST') {
     const { friendUsername } = req.body;
 
     if (!friendUsername) {
-      return res.status(400).json({ error: 'Friend username is required' });
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Username required' 
+      });
     }
 
     try {
@@ -63,12 +75,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .single();
 
       if (friendError || !friendUser) {
-        return res.status(404).json({ error: 'User not found' });
+        return res.status(404).json({ 
+          success: false, 
+          error: 'User not found' 
+        });
       }
 
-      // Проверяем, что друг не является самим пользователем
       if (friendUser.id === userId) {
-        return res.status(400).json({ error: 'You cannot add yourself' });
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Cannot add yourself' 
+        });
       }
 
       // Проверяем существование связи
@@ -79,7 +96,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .eq('friend_id', friendUser.id);
 
       if (count && count > 0) {
-        return res.status(400).json({ error: 'Friend already added' });
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Already added' 
+        });
       }
 
       // Добавляем связь
@@ -92,16 +112,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .single();
 
       if (insertError) throw insertError;
-      return res.status(201).json(newFriend);
+      
+      return res.status(201).json({ 
+        success: true, 
+        data: newFriend 
+      });
     } catch (error) {
-      return res.status(500).json({ error: 'Failed to add friend' });
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Add friend failed' 
+      });
     }
   }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+  return res.status(405).json({ 
+    success: false, 
+    error: 'Method not allowed' 
+  });
 }
 
-// Вспомогательная функция для извлечения пользователя
 function extractUserFromInitData(initData: string) {
   try {
     const params = new URLSearchParams(initData);
