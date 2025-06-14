@@ -29,42 +29,33 @@ export default function Shop() {
       try {
         setLoading(true);
         setError(null);
-
-        // Запрашиваем сразу три API одновременно
-        const [
-          userResponse,
-          spritesResponse,
-          ownedResponse
-        ] = await Promise.all([
+        
+        // Запускаем запросы параллельно с отслеживанием результата
+        const results = await Promise.allSettled([
           api.getUserData(Number(user.id), initData),
           api.getSprites(initData),
           api.getOwnedSprites(Number(user.id), initData)
         ]);
 
-        // Обрабатываем ответ от API с профилем пользователя
-        if (userResponse.success && userResponse.data) {
-          setCoins(userResponse.data.coins || 0);
-          setCurrentSprite(userResponse.data.current_sprite_id || null);
-        } else if (userResponse.error) {
-          setError(`Ошибка загрузки профиля: ${userResponse.error}`);
-        }
-
-        // Проверяем массив спрайтов (ИСПРАВЛЕНО)
-        if (spritesResponse.success && Array.isArray(spritesResponse.data)) {
-        setSprites(spritesResponse.data);
-        console.log ('Спрайты успешно загружены:', spritesResponse.data); 
-        } else if (spritesResponse.error) {
-        setError(`Ошибка загрузки спрайтов: ${spritesResponse.error}`);
-        } else {
-        setError('Не удалось получить данные о спрайтах.');
-        }    
-
-        // Обрабатываем список приобретенных спрайтов
-        if (ownedResponse.success && Array.isArray(ownedResponse.data)) {
-          setOwnedSprites(ownedResponse.data);
-        } else if (ownedResponse.error) {
-          setError(`Ошибка загрузки списка приобретённых спрайтов: ${ownedResponse.error}`);
-        }
+        results.forEach(({ status, value }) => {
+          if (status === 'rejected') {
+            setError(value.message);
+            return;
+          }
+          
+          if (value.success) {
+            if (value.url === '/api/data') {
+              setCoins(value.data.coins || 0);
+              setCurrentSprite(value.data.current_sprite_id || null);
+            } else if (value.url === '/api/shop/sprites') {
+              setSprites(Array.isArray(value.data) ? value.data : []);
+            } else if (value.url === '/api/shop/owned') {
+              setOwnedSprites(Array.isArray(value.data) ? value.data : []);
+            }
+          } else {
+            setError(value.error || 'Ошибка загрузки данных.');
+          }
+        });
       } catch (err) {
         setError('Обнаружилась непредвиденная ошибка');
       } finally {
