@@ -1,4 +1,3 @@
-// ./src/pages/friends.tsx
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -7,9 +6,11 @@ import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 
 interface Friend {
-  id: number;
-  friend_id: number;
-  friend_username: string;
+  id: number;         // ID friendship record
+  friend_id: number;  // ID of the friend user
+  first_name: string;
+  last_name: string;
+  username: string;
   burnout_level: number;
 }
 
@@ -19,7 +20,7 @@ interface ApiResponse<T = any> {
   error?: string;
 }
 
-// Компонент прогресс-бара для отображения уровня выгорания
+// Burnout progress bar component
 interface BurnoutProgressProps {
   level: number;
 }
@@ -54,30 +55,24 @@ export default function Friends() {
       try {
         setLoading(true);
 
-        // Проверка кэша
+        // Check cache
         const cached = sessionStorage.getItem(FRIENDS_CACHE_KEY);
         if (cached) {
-          const parsedCache = JSON.parse(cached);
-          // Проверяем что в кэше массив
-          if (Array.isArray(parsedCache)) {
-            setFriends(parsedCache);
-          } else {
+          try {
+            const parsedCache = JSON.parse(cached);
+            if (Array.isArray(parsedCache)) {
+              setFriends(parsedCache);
+            }
+          } catch (e) {
             sessionStorage.removeItem(FRIENDS_CACHE_KEY);
           }
         }
 
+        // Fetch friends from API
         const response = await api.getFriends(user.id, initData);
-        if (response.success && response.data && Array.isArray(response.data)) {
-          const formattedFriends = response.data.map(f => ({
-            id: f.id,
-            friend_id: f.friend.id,
-            friend_username: f.friend.username || 
-                            `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
-            burnout_level: f.friend.burnout_level
-          }));
-
-          setFriends(formattedFriends);
-          sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(formattedFriends));
+        if (response.success && Array.isArray(response.data)) {
+          setFriends(response.data);
+          sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(response.data));
         } else {
           setError(response.error || 'Не удалось загрузить друзей');
         }
@@ -99,7 +94,7 @@ export default function Friends() {
         setFriends(updatedFriends);
         sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(updatedFriends));
       } else {
-        setError(response.error || 'Failed to delete friend');
+        setError(response.error || 'Не удалось удалить друга');
       }
     } catch (err) {
       setError('Ошибка при удалении друга');
@@ -152,7 +147,9 @@ export default function Friends() {
             <div className="friends-grid">
               {friends.map((friend) => (
                 <div key={friend.id} className="friend-card">
-                  <div className="friend-name">{friend.friend_username}</div>
+                  <div className="friend-name">
+                    {friend.username || `${friend.first_name} ${friend.last_name || ''}`.trim()}
+                  </div>
                   <BurnoutProgress level={friend.burnout_level} />
                   <button 
                     className="delete-btn"
@@ -207,7 +204,7 @@ export default function Friends() {
         )}
       </div>
 
-       <div className="menu">
+      <div className="menu">
         <Link href="/" passHref>
           <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>
             📊
