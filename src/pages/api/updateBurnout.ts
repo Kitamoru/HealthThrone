@@ -67,7 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json({
       success: true,
-      user: updatedUser
+      data: updatedUser
     });
   } catch (e) {
     console.error('Unhandled server error:', e);
