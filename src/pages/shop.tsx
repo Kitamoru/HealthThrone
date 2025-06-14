@@ -50,14 +50,14 @@ export default function Shop() {
         }
 
         // Проверяем массив спрайтов (ИСПРАВЛЕНО)
-        if (spritesResponse.success && Array.isArray(spritesResponse.data)) {
-        setSprites(spritesResponse.data);
-        console.log ('Спрайты успешно загружены:', spritesResponse.data); 
+        if (spritesResponse.success) {
+          setSprites(spritesResponse.data || []);  
+        console.log('Спрайты успешно загружены:', spritesResponse.data || []); 
         } else if (spritesResponse.error) {
-        setError(`Ошибка загрузки спрайтов: ${spritesResponse.error}`);
+          setError(`Ошибка загрузки спрайтов: ${spritesResponse.error}`);
         } else {
-        setError('Не удалось получить данные о спрайтах.');
-        }    
+          setError('Не удалось получить данные о спрайтах.');
+        }
 
         // Обрабатываем список приобретенных спрайтов
         if (ownedResponse.success && Array.isArray(ownedResponse.data)) {
