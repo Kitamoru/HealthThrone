@@ -7,47 +7,66 @@ class Api {
   };
   
   private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
-    const responseTime = Date.now();
-    const status = response.status;
-    const responseClone = response.clone();
-
-    if (!response.ok) {
-      let errorText = 'Unknown error';
-      try {
-        const errorResponse = await responseClone.json();
-        errorText = errorResponse.error || JSON.stringify(errorResponse);
-      } catch {
-        try {
-          errorText = await responseClone.text();
-        } catch (textError) {
-          errorText = 'Failed to parse error response';
-        }
-      }
-      console.error(`[API] Error ${status}: ${errorText}`); // Логируем ошибки прямо здесь
-      return {
-        success: false,
-        status,
-        error: errorText
-      };
-    }
-
+  const status = response.status;
+  const responseClone = response.clone();
+  
+  if (!response.ok) {
+    // Обработка ошибок HTTP (4xx, 5xx)
     try {
-      const data: T = await response.json();
-      console.log(`[API] Success ${status}: Received data`, data); // 👇👇 Лог принимаемых данных
-      return { 
-        success: true, 
-        status,
-        data 
-      };
-    } catch (parseError) {
-      console.error('[API] Failed to parse response:', parseError);
+      const errorResponse = await responseClone.json();
       return {
         success: false,
-        status: 500,
-        error: 'Failed to parse response data'
+        status,
+        error: errorResponse.error || JSON.stringify(errorResponse)
       };
+    } catch {
+      try {
+        return {
+          success: false,
+          status,
+          error: await responseClone.text()
+        };
+      } catch (textError) {
+        return {
+          success: false,
+          status,
+          error: 'Failed to parse error response'
+        };
+      }
     }
   }
+
+  // Успешные ответы (2xx)
+  try {
+    const responseData = await response.json();
+    
+    // Проверяем структуру успешного ответа
+    if (responseData.success && responseData.data !== undefined) {
+      console.log(`[API] Success ${status}: Received data`, responseData.data);
+      return {
+        success: true,
+        status,
+        data: responseData.data
+      };
+    }
+    
+    // Если в ответе нет ожидаемой структуры
+    console.error('[API] Invalid response structure:', responseData);
+    return {
+      success: false,
+      status: 500,
+      error: 'Invalid server response structure'
+    };
+    
+  } catch (parseError) {
+    console.error('[API] Failed to parse response:', parseError);
+    return {
+      success: false,
+      status: 500,
+      error: 'Failed to parse response data'
+    };
+  }
+}
 
   private async makeRequest<T>(
     endpoint: string,
