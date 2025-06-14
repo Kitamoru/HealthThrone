@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { api } from '../lib/api';
 import { UserProfile } from '../lib/types';
-import { useTelegram } from './TelegramContext';
+import { useTelegram } from '../hooks/useTelegram';
 
 // Определяем тип для initData
 interface TelegramInitData {
