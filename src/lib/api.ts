@@ -48,6 +48,15 @@ class Api {
     }
   }
 
+  async getUserData(telegramId: number, initData?: string): Promise<ApiResponse<UserProfile>> {
+    return this.makeRequest<UserProfile>(
+      `/data?telegramId=${telegramId}`, 
+      'GET', 
+      undefined, 
+      initData
+    );
+  }
+
   // Корректные пути API
   async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
     return this.makeRequest<Sprite[]>('/sprites', 'GET', undefined, initData);
