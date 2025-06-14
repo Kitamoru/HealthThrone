@@ -21,7 +21,7 @@ export default async function handler(
     });
   }
 
-  // Извлекаем пользователя Telegram
+  // Используем импортированную функцию вместо локальной
   const telegramUser = extractTelegramUser(initData);
   if (!telegramUser?.id) {
     return res.status(400).json({ 
@@ -117,16 +117,5 @@ export default async function handler(
       success: false,
       error: 'Internal server error' 
     });
-  }
-}
-
-function extractTelegramUser(initData: string): any {
-  try {
-    const params = new URLSearchParams(initData);
-    const userJson = params.get('user');
-    return userJson ? JSON.parse(userJson) : null;
-  } catch (error) {
-    console.error('Error parsing Telegram user:', error);
-    return null;
   }
 }
