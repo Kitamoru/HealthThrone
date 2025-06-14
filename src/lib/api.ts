@@ -5,7 +5,7 @@ class Api {
   private defaultHeaders: HeadersInit = {
     'Content-Type': 'application/json'
   };
-  
+
   private async makeRequest<T>(
     endpoint: string,
     method: string = 'GET',
