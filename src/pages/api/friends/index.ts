@@ -45,10 +45,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         data: friends.map(f => ({
           id: f.id,
           friend: {
-            id: f.friend.id,
-            username: f.friend.username || 
-                      `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
-            burnout_level: f.friend.burnout_level
+            id: f.friend[0].id,
+            username: f.friend[0].username || 
+                      `${f.friend[0].first_name} ${f.friend[0].last_name || ''}`.trim(),
+            burnout_level: f.friend[0].burnout_level
           }
         })) 
       });
@@ -106,10 +106,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         data: {
           id: newFriend.id,
           friend: {
-            id: newFriend.friend.id,
-            username: newFriend.friend.username || 
-                      `${newFriend.friend.first_name} ${newFriend.friend.last_name || ''}`.trim(),
-            burnout_level: newFriend.friend.burnout_level
+            id: newFriend.friend[0].id,
+            username: newFriend.friend[0].username || 
+                      `${newFriend.friend[0].first_name} ${newFriend.friend[0].last_name || ''}`.trim(),
+            burnout_level: newFriend.friend[0].burnout_level
           }
         }
       });
