@@ -41,12 +41,12 @@ export default function Shop() {
   if (result.status === 'fulfilled') {
     const value = result.value; // Получаем значение только для успешных обещаний
     if (value.success) {
-      if (value.url === '/api/user') {
+      if (value.url === '/api/data') {
         setCoins(value.data.coins || 0);
         setCurrentSprite(value.data.current_sprite_id || null);
       } else if (value.url === '/api/sprites') {
         setSprites(Array.isArray(value.data) ? value.data : []);
-      } else if (value.url === '/api/owned-sprites') {
+      } else if (value.url === '/api/owned') {
         setOwnedSprites(Array.isArray(value.data) ? value.data : []);
       }
     } else {
