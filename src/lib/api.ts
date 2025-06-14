@@ -7,61 +7,66 @@ class Api {
   };
   
   private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
-    const status = response.status;
-    const responseClone = response.clone();
-    
-    if (!response.ok) {
-      try {
-        const errorResponse = await responseClone.json();
-        return {
-          success: false,
-          status,
-          error: errorResponse.error || JSON.stringify(errorResponse)
-        };
-      } catch {
-        try {
-          return {
-            success: false,
-            status,
-            error: await responseClone.text()
-          };
-        } catch (textError) {
-          return {
-            success: false,
-            status,
-            error: 'Failed to parse error response'
-          };
-        }
-      }
-    }
-
+  const status = response.status;
+  const responseClone = response.clone();
+  
+  if (!response.ok) {
+    // Обработка ошибок HTTP (4xx, 5xx)
     try {
-      const responseData = await response.json();
-      
-      // Разрешаем успешные ответы без data
-      if (responseData.success) {
-        return {
-          success: true,
-          status,
-          data: responseData.data
-        };
-      }
-      
-      // Обрабатываем бизнес-ошибки (success: false)
+      const errorResponse = await responseClone.json();
       return {
         success: false,
         status,
-        error: responseData.error || 'Operation failed'
+        error: errorResponse.error || JSON.stringify(errorResponse)
       };
-      
-    } catch (parseError) {
-      return {
-        success: false,
-        status: 500,
-        error: 'Failed to parse response data'
-      };
+    } catch {
+      try {
+        return {
+          success: false,
+          status,
+          error: await responseClone.text()
+        };
+      } catch (textError) {
+        return {
+          success: false,
+          status,
+          error: 'Failed to parse error response'
+        };
+      }
     }
   }
+
+  // Успешные ответы (2xx)
+  try {
+    const responseData = await response.json();
+    
+    // Проверяем структуру успешного ответа
+    if (responseData.success && responseData.data !== undefined) {
+      console.log(`[API] Success ${status}: Received data`, responseData.data);
+      return {
+        success: true,
+        status,
+        data: responseData.data
+      };
+    }
+    
+    // Если в ответе нет ожидаемой структуры
+    console.error('[API] Invalid response structure:', responseData);
+    return {
+      success: false,
+      status: 500,
+      error: 'Invalid server response structure'
+    };
+    
+  } catch (parseError) {
+    console.error('[API] Failed to parse response:', parseError);
+    return {
+      success: false,
+      status: 500,
+      error: 'Failed to parse response data'
+    };
+  }
+}
 
   private async makeRequest<T>(
     endpoint: string,
@@ -134,7 +139,7 @@ class Api {
     );
   }
 
-   // Friends methods
+  // Friends methods
   async getFriends(telegramId: string, initData?: string): Promise<ApiResponse<Friend[]>> {
     return this.makeRequest<Friend[]>(
       `/friends?telegramId=${telegramId}`, 
@@ -161,7 +166,6 @@ class Api {
       initData
     );
   }
-}
 
   // Shop methods
 async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
