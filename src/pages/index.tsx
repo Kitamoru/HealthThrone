@@ -132,7 +132,7 @@ export default function Home() {
         }
       } else {
         // Обработка специфических ошибок
-        if (response.httpStatus === 429) {
+        if (response.status === 429) {
           setApiError("Вы уже проходили опрос сегодня");
         } else {
           setApiError(response.error || "Ошибка загрузки данных");
