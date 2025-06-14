@@ -63,8 +63,12 @@ if (initDataString) {
         return { success: false, error: response.error };
       }
     } catch (error) {
-      console.error(`Network error while fetching user data for ${telegramId}:`, error.message);
-      return { success: false, error: 'Network error' };
+  console.error(
+    `Network error while fetching user data for ${telegramId}:`,
+    (error as Error).message
+  );
+  return { success: false, error: 'Network error' };
+}
     } finally {
       setIsLoading(false);
     }
