@@ -7,7 +7,6 @@ import { QuestionCard } from '../components/QuestionCard';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { UserProfile } from '../lib/types';
-import { parseISO } from 'date-fns';
 
 interface Question {
   id: number;
@@ -108,26 +107,21 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
-  
-  // Состояние для отслеживания прохождения теста сегодня
   const [alreadyAttemptedToday, setAlreadyAttemptedToday] = useState(false);
 
   // Проверка, является ли дата сегодняшней (в UTC)
-  const isTodayUTC = useCallback((date: Date) => {
+  const isTodayUTC = useCallback((dateStr: string) => {
     const today = new Date();
-    const todayUTC = Date.UTC(
-      today.getUTCFullYear(), 
-      today.getUTCMonth(), 
-      today.getUTCDate()
-    );
+    const todayUTC = [
+      today.getUTCFullYear(),
+      String(today.getUTCMonth() + 1).padStart(2, '0'),
+      String(today.getUTCDate()).padStart(2, '0')
+    ].join('-');
     
-    const dateUTC = Date.UTC(
-      date.getUTCFullYear(), 
-      date.getUTCMonth(), 
-      date.getUTCDate()
-    );
+    // Извлекаем часть с датой (YYYY-MM-DD)
+    const datePart = dateStr.split('T')[0];
     
-    return todayUTC === dateUTC;
+    return todayUTC === datePart;
   }, []);
 
   // Загрузка данных пользователя
@@ -148,15 +142,13 @@ export default function Home() {
 
         // Проверка последней попытки в UTC
         if (userData.last_attempt_date) {
-          const lastAttempt = parseISO(userData.last_attempt_date);
-          if (isTodayUTC(lastAttempt)) {
+          if (isTodayUTC(userData.last_attempt_date)) {
             setAlreadyAttemptedToday(true);
           }
         }
       } else {
         // Обработка специфических ошибок
         if (response.status === 429) {
-          setApiError("Вы уже проходили опрос сегодня");
           setAlreadyAttemptedToday(true);
         } else {
           setApiError(response.error || "Ошибка загрузки данных");
@@ -211,7 +203,6 @@ export default function Home() {
     if (!user?.id) return;
 
     try {
-      // Сбрасываем ошибку перед отправкой
       setApiError(null);
       
       const response = await api.submitSurvey({
@@ -222,7 +213,6 @@ export default function Home() {
 
       // Обработка ошибок API
       if (response.status === 429) {
-        setApiError('Вы уже проходили опрос сегодня');
         setAlreadyAttemptedToday(true);
         return;
       }
@@ -234,10 +224,9 @@ export default function Home() {
 
       // Успешное завершение
       if (response.data) {
-        const updatedUser = response.data;
         setSurveyCompleted(true);
         setAlreadyAttemptedToday(true);
-        setBurnoutLevel(updatedUser.burnout_level);
+        setBurnoutLevel(response.data.burnout_level);
       }
     } catch (error) {
       console.error('Survey submission failed:', error);
@@ -263,7 +252,7 @@ export default function Home() {
     <div className="container">
       <BurnoutProgress level={burnoutLevel} />
       <div className="content">
-        {apiError && (
+        {apiError && !alreadyAttemptedToday && (
           <div className="error-message">{apiError}</div>
         )}
 
