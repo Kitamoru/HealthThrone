@@ -99,12 +99,17 @@ class Api {
     return this.makeRequest<Sprite[]>('/sprites', 'GET', undefined, initData);
   }
 
-  async getUserData(telegramId: number): Promise<ApiResponse<UserProfile>> {
-    return this.makeRequest<UserProfile>(
-      `/data?telegramId=${telegramId}`, 
-      'GET'
-    );
-  }
+  async getUserData(
+  telegramId: number,
+  initData?: string
+): Promise<ApiResponse<UserProfile>> {
+  return this.makeRequest<UserProfile>(
+    `/data?telegramId=${telegramId}`, 
+    'GET', 
+    undefined, 
+    initData
+  );
+}
 
   async getOwnedSprites(
     telegramId: number
