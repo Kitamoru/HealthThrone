@@ -2,9 +2,15 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import { validateTelegramInitData, extractTelegramUser } from '@/lib/telegramAuth';
 
+interface DeleteFriendResponse {
+  success: boolean;
+  data?: null;
+  error?: string;
+}
+
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<DeleteFriendResponse>
 ) {
   const initData = req.headers['x-telegram-init-data'] as string;
   
@@ -19,7 +25,7 @@ export default async function handler(
 
   const telegramId = Number(telegramUser.id);
   if (isNaN(telegramId)) {
-    return res.status(400).json({ success: false, error: 'Invalid Telegram ID' });
+    return res.status(400).json({ success: false, error: 'Invalid Telegram ID format' });
   }
 
   if (req.method !== 'DELETE') {
@@ -27,7 +33,6 @@ export default async function handler(
   }
 
   try {
-    // Получаем внутренний ID пользователя
     const { data: currentUser, error: userError } = await supabase
       .from('users')
       .select('id')
@@ -37,7 +42,7 @@ export default async function handler(
     if (userError || !currentUser) {
       return res.status(404).json({ 
         success: false, 
-        error: 'User not found' 
+        error: 'User not found in database' 
       });
     }
     
@@ -47,29 +52,48 @@ export default async function handler(
     if (isNaN(friendId)) {
       return res.status(400).json({ 
         success: false,
-        error: 'Invalid friend ID' 
+        error: 'Invalid friend ID format' 
       });
     }
 
-    // Удаляем друга
+    const { data: friendship, error: fetchError } = await supabase
+      .from('friends')
+      .select('id')
+      .eq('id', friendId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError) {
+      return res.status(500).json({ 
+        success: false,
+        error: 'Database error' 
+      });
+    }
+    
+    if (!friendship) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Friendship not found' 
+      });
+    }
+
     const { error: deleteError } = await supabase
       .from('friends')
       .delete()
-      .eq('id', friendId)
-      .eq('user_id', userId);
+      .eq('id', friendId);
 
     if (deleteError) {
       return res.status(500).json({ 
         success: false,
-        error: 'Delete failed' 
+        error: 'Failed to delete friend' 
       });
     }
 
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ success: true, data: null });
   } catch (error) {
     return res.status(500).json({ 
       success: false,
-      error: 'Server error' 
+      error: 'Internal server error' 
     });
   }
 }
