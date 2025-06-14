@@ -3,7 +3,8 @@ import { api } from '../lib/api';
 import { UserProfile } from '../lib/types';
 import { useTelegram } from '../hooks/useTelegram';
 
-// Определяем тип для initData
+// Типы определены корректно
+
 interface TelegramInitData {
   user?: {
     id: number;
@@ -35,27 +36,34 @@ interface UserProviderProps {
 export const UserProvider = ({ children }: UserProviderProps) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { initData: initDataString } = useTelegram();
+  const { initData: initDataString } = useTelegram() || {}; // Добавлена защита от отсутствия initData
 
-  // Парсим initData из строки в объект
-  const initData: TelegramInitData | null = initDataString 
-    ? JSON.parse(initDataString) 
-    : null;
+  let initData: TelegramInitData | null = null;
+  if (initDataString) {
+    try {
+      initData = JSON.parse(initDataString); // Улучшена обработка возможного исключения
+    } catch(e) {
+      console.error("Ошибка разбора initData:", e.message);
+    }
+  }
 
   const fetchUser = async (telegramId: number, initData: string) => {
+    if (!initData.trim()) { // Проверка на пустоту перед использованием
+      return { success: false, error: 'Empty or invalid initData provided.' };
+    }
+    
     setIsLoading(true);
     try {
       const response = await api.getUserData(telegramId, initData);
-      
       if (response.success && response.data) {
         setUser(response.data);
         return { success: true };
       } else {
-        console.error('Failed to fetch user data:', response.error);
+        console.error(`API error while fetching user data for ${telegramId}:`, response.error);
         return { success: false, error: response.error };
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error(`Network error while fetching user data for ${telegramId}:`, error.message);
       return { success: false, error: 'Network error' };
     } finally {
       setIsLoading(false);
@@ -70,10 +78,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
   useEffect(() => {
     const loadUserData = async () => {
-      // Используем распарсенный initData
       if (initData && initData.user?.id) {
         const telegramId = initData.user.id;
-        // Передаем оригинальную строку initData
         await fetchUser(telegramId, initDataString!);
       }
     };
