@@ -153,6 +153,7 @@ class Api {
     if (!initData) {
       return {
         success: false,
+        status: 400,
         error: 'Missing required parameter: initData'
       };
     }
