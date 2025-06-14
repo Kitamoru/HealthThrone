@@ -152,12 +152,12 @@ class Api {
  async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
   if (!initData) throw new Error('Missing required parameter: initData');
 
-  return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
+  return this.makeRequest<Sprite[]>('/sprites', 'GET', undefined, initData);
 }
   
    async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
     return this.makeRequest<Sprite>(
-      `/shop/sprites/${spriteId}`, 
+      `/sprites/${spriteId}`, 
       'GET', 
       undefined, 
       initData
@@ -171,7 +171,7 @@ class Api {
     initData?: string
   ): Promise<ApiResponse> {
     return this.makeRequest(
-      '/shop/purchase', 
+      '/purchase', 
       'POST', 
       { telegramId, spriteId },
       initData
@@ -183,7 +183,7 @@ class Api {
     initData?: string
   ): Promise<ApiResponse<number[]>> {
     return this.makeRequest<number[]>(
-      `/shop/owned?telegramId=${telegramId}`, 
+      `/owned/owned?telegramId=${telegramId}`, 
       'GET', 
       undefined, 
       initData
@@ -196,7 +196,7 @@ class Api {
     initData?: string
   ): Promise<ApiResponse> {
     return this.makeRequest(
-      '/shop/equip', 
+      '/equip', 
       'POST', 
       { telegramId, spriteId },
       initData
