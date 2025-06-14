@@ -37,24 +37,24 @@ export default function Shop() {
           api.getOwnedSprites(Number(user.id), initData)
         ]);
 
-        results.forEach(({ status, value }) => {
-          if (status === 'rejected') {
-            setError(value.message);
-            return;
-          }
-          
-          if (value.success) {
-            if (value.url === '/api/data') {
-              setCoins(value.data.coins || 0);
-              setCurrentSprite(value.data.current_sprite_id || null);
-            } else if (value.url === '/api/shop/sprites') {
-              setSprites(Array.isArray(value.data) ? value.data : []);
-            } else if (value.url === '/api/shop/owned') {
-              setOwnedSprites(Array.isArray(value.data) ? value.data : []);
-            }
-          } else {
-            setError(value.error || 'Ошибка загрузки данных.');
-          }
+        results.forEach(result => {
+  if (result.status === 'fulfilled') {
+    const value = result.value; // Получаем значение только для успешных обещаний
+    if (value.success) {
+      if (value.url === '/api/user') {
+        setCoins(value.data.coins || 0);
+        setCurrentSprite(value.data.current_sprite_id || null);
+      } else if (value.url === '/api/sprites') {
+        setSprites(Array.isArray(value.data) ? value.data : []);
+      } else if (value.url === '/api/owned-sprites') {
+        setOwnedSprites(Array.isArray(value.data) ? value.data : []);
+      }
+    } else {
+      setError(value.error || 'Ошибка загрузки данных.');
+    }
+  } else if (result.status === 'rejected') {
+    setError(result.reason.message);
+  }
         });
       } catch (err) {
         setError('Обнаружилась непредвиденная ошибка');
