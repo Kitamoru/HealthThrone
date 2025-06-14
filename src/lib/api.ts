@@ -53,7 +53,8 @@ class Api {
       `/data?telegramId=${telegramId}`, 
       'GET', 
       undefined, 
-      initData
+      initData,
+      signal 
     );
   }
 
