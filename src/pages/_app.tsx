@@ -13,8 +13,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     if (isReady && initData && !userInitialized) {
-      if (!initData) return; // Проверяем наличие initData
-
+      console.log('Initializing user with startParam:', startParam);
       api.initUser(initData, startParam)
         .then(response => {
           if (response.success) {
@@ -23,40 +22,35 @@ export default function App({ Component, pageProps }: AppProps) {
             console.error('Failed to initialize user:', response.error);
           }
         })
-        .catch(error => {
-          console.error('Ошибка инициализации пользователя:', error);
-        })
-        .finally(() => setUserInitialized(true)); // Устанавливаем true независимо от результата
+        .finally(() => setUserInitialized(true));
     }
   }, [isReady, initData, startParam, userInitialized]);
 
   return (
     <>
-      <AppProvider> {/* Оборачиваем всё приложение в AppProvider */}
-        <Head>
-          <title>Burnout Tracker - Отслеживание выгорания</title>
-          <meta name="description" content="Telegram Mini App для отслеживания уровня выгорания" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-          <meta name="theme-color" content="#18222d" />
-        </Head>
-        
-        <Script 
-          src="https://telegram.org/js/telegram-web-app.js" 
-          strategy="beforeInteractive" 
-          onLoad={() => {
-            if (window.Telegram?.WebApp) {
-              window.dispatchEvent(new Event('telegram-ready'));
-            }
-          }}
-        />
-        
-        {userInitialized ? 
-          <div className="page-transition">
-            <Component {...pageProps} />
-          </div> : 
-          <Loader />
-        }
-      </AppProvider>
+      <Head>
+        <title>Burnout Tracker - Отслеживание выгорания</title>
+        <meta name="description" content="Telegram Mini App для отслеживания уровня выгорания" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta name="theme-color" content="#18222d" />
+      </Head>
+
+      <Script 
+        src="https://telegram.org/js/telegram-web-app.js" 
+        strategy="beforeInteractive" 
+        onLoad={() => {
+          if (window.Telegram?.WebApp) {
+            window.dispatchEvent(new Event('telegram-ready'));
+          }
+        }}
+      />
+
+      {userInitialized ? 
+        <div className="page-transition">
+          <Component {...pageProps} />
+        </div> : 
+        <Loader />
+      }
     </>
   );
 }
