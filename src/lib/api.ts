@@ -174,7 +174,7 @@ class Api {
     initData?: string
   ): Promise<ApiResponse> {
     return this.makeRequest(
-      '/sprites/purchase',
+      '/purchase',
       'POST', 
       { telegramId, spriteId },
       initData
@@ -186,7 +186,7 @@ class Api {
     initData?: string
   ): Promise<ApiResponse<number[]>> {
     return this.makeRequest<number[]>(
-      `/sprites/owned?telegramId=${telegramId}`, 
+      `/owned?telegramId=${telegramId}`, 
       'GET', 
       undefined, 
       initData
@@ -199,7 +199,7 @@ class Api {
     initData?: string
   ): Promise<ApiResponse> {
     return this.makeRequest(
-      '/sprites/equip',
+      '/equip',
       'POST', 
       { telegramId, spriteId },
       initData
