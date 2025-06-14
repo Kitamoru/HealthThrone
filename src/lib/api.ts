@@ -1,12 +1,11 @@
 import { ApiResponse, UserProfile, Sprite, Friend } from './types';
-import { Headers } from 'node-fetch'; // Для Node.js окружения
 
 class Api {
   private baseUrl = '/api';
   private defaultHeaders: HeadersInit = {
     'Content-Type': 'application/json'
   };
-
+  
   private async makeRequest<T>(
     endpoint: string,
     method: string = 'GET',
@@ -15,9 +14,9 @@ class Api {
     signal?: AbortSignal
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
-    const headers = new Headers(this.defaultHeaders); // Создаем новый экземпляр Headers
-
-    if (initData) headers.set('X-Telegram-Init-Data', initData); // Добавляем нужный заголовок
+    const headers: HeadersInit = { ...this.defaultHeaders };
+    
+    if (initData) headers['X-Telegram-Init-Data'] = initData;
 
     try {
       const response = await fetch(url, {
@@ -48,6 +47,7 @@ class Api {
       };
     }
   }
+
 
   async getUserData(telegramId: number, initData?: string): Promise<ApiResponse<UserProfile>> {
     return this.makeRequest<UserProfile>(
