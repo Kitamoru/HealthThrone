@@ -44,9 +44,9 @@ export default function Shop() {
       if (value.url === '/api/data') {
         setCoins(value.data.coins || 0);
         setCurrentSprite(value.data.current_sprite_id || null);
-      } else if (value.url === '/api/sprites') {
+      } else if (value.url === '/api/shop/sprites') {
         setSprites(Array.isArray(value.data) ? value.data : []);
-      } else if (value.url === '/api/owned') {
+      } else if (value.url === '/api/shop/owned') {
         setOwnedSprites(Array.isArray(value.data) ? value.data : []);
       }
     } else {
