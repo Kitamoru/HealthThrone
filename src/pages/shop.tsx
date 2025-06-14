@@ -25,45 +25,79 @@ export default function Shop() {
   useEffect(() => {
     if (!isReady || !user?.id || !initData) return;
 
+    let isMounted = true; // Флаг для отслеживания монтирования компонента
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        
-        // Запускаем запросы параллельно с отслеживанием результата
-        const results = await Promise.allSettled([
-          api.getUserData(Number(user.id), initData),
+        console.log('[Shop] Starting data fetch...');
+
+        // Запрашиваем три API одновременно
+        const [
+          userResponse,
+          spritesResponse,
+          ownedResponse
+        ] = await Promise.all([
+          api.getUserData(Number(user.id), // initData передается через заголовки в api.ts
           api.getSprites(initData),
-          api.getOwnedSprites(Number(user.id), initData)
+          api.getOwnedSprites(Number(user.id), // initData передается через заголовки в api.ts
         ]);
 
-        results.forEach(result => {
-  if (result.status === 'fulfilled') {
-    const value = result.value; // Получаем значение только для успешных обещаний
-    if (value.success) {
-      if (value.url === '/data?telegramId=${telegramId}') {
-        setCoins(value.data.coins || 0);
-        setCurrentSprite(value.data.current_sprite_id || null);
-      } else if (value.url === '/api/shop/sprites') {
-        setSprites(Array.isArray(value.data) ? value.data : []);
-      } else if (value.url === '/api/shop/owned') {
-        setOwnedSprites(Array.isArray(value.data) ? value.data : []);
-      }
-    } else {
-      setError(value.error || 'Ошибка загрузки данных.');
-    }
-  } else if (result.status === 'rejected') {
-    setError(result.reason.message);
-  }
+        console.log('[Shop] API responses:', {
+          userResponse,
+          spritesResponse,
+          ownedResponse
         });
+
+        // Проверяем, что компонент все еще смонтирован
+        if (!isMounted) return;
+
+        // Обработка профиля пользователя
+        if (userResponse.success && userResponse.data) {
+          setCoins(userResponse.data.coins || 0);
+          setCurrentSprite(userResponse.data.current_sprite_id || null);
+        } else if (userResponse.error) {
+          setError(`Ошибка загрузки профиля: ${userResponse.error}`);
+        }
+
+        // Улучшенная обработка спрайтов
+        if (spritesResponse.success) {
+          if (Array.isArray(spritesResponse.data)) {
+            setSprites(spritesResponse.data);
+            console.log('[Shop] Sprites loaded:', spritesResponse.data);
+          } else {
+            console.error('[Shop] Invalid sprites data format:', spritesResponse.data);
+            setError('Некорректный формат данных спрайтов');
+          }
+        } else {
+          setError(spritesResponse.error || 'Не удалось получить данные о спрайтах');
+        }
+
+        // Обработка приобретенных спрайтов
+        if (ownedResponse.success && Array.isArray(ownedResponse.data)) {
+          setOwnedSprites(ownedResponse.data);
+        } else if (ownedResponse.error) {
+          setError(`Ошибка загрузки списка спрайтов: ${ownedResponse.error}`);
+        }
       } catch (err) {
-        setError('Обнаружилась непредвиденная ошибка');
+        console.error('[Shop] Unhandled fetch error:', err);
+        if (isMounted) {
+          setError('Внутренняя ошибка сервера');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
+
+    // Функция очистки для отмены запросов
+    return () => {
+      isMounted = false;
+      console.log('[Shop] Data fetch cancelled');
+    };
   }, [isReady, user, initData]);
 
   const handlePurchase = async (spriteId: number) => {
