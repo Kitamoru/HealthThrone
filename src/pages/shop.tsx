@@ -41,7 +41,7 @@ export default function Shop() {
   if (result.status === 'fulfilled') {
     const value = result.value; // Получаем значение только для успешных обещаний
     if (value.success) {
-      if (value.url === '/api/data') {
+      if (value.url === '/data?telegramId=${telegramId}') {
         setCoins(value.data.coins || 0);
         setCurrentSprite(value.data.current_sprite_id || null);
       } else if (value.url === '/api/shop/sprites') {
