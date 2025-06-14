@@ -76,7 +76,14 @@ export default async function handler(
       throw updateError;
     }
 
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ 
+      success: true,
+      data: {
+        spriteId,
+        userId
+      }
+    });
+    
   } catch (error) {
     console.error('Equip error:', error);
     return res.status(500).json({ success: false, error: 'Failed to equip sprite' });
