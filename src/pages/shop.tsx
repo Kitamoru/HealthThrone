@@ -22,26 +22,25 @@ export default function Shop() {
     return () => console.log('[Shop] Component unmounted');
   }, []);
 
-  useEffect(() => {
-    if (!isReady || !user?.id || !initData) return;
+ useEffect(() => {
+  if (!isReady || !user?.id || !initData) return;
 
-    let isMounted = true; // Флаг для отслеживания монтирования компонента
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        console.log('[Shop] Starting data fetch...');
-
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
         // Запрашиваем три API одновременно
         const [
           userResponse,
           spritesResponse,
           ownedResponse
         ] = await Promise.all([
-          api.getUserData(Number(user.id), // initData передается через заголовки в api.ts
-          api.getSprites(initData),
-          api.getOwnedSprites(Number(user.id), // initData передается через заголовки в api.ts
-        ]);
+        api.getUserData(Number(user.id), initData),
+        api.getSprites(initData),
+        // Передаем initData как второй параметр
+        api.getOwnedSprites(Number(user.id), initData)
+      ]);
+
 
         console.log('[Shop] API responses:', {
           userResponse,
