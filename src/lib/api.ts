@@ -7,44 +7,42 @@ class Api {
   };
   
   private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
-    const responseTime = Date.now();
-    const status = response.status;
     const responseClone = response.clone();
+    const responseText = await responseClone.text();
+    
+    console.log(`[API] Response status: ${response.status}`);
+    console.log(`[API] Response body: ${responseText}`);
 
     if (!response.ok) {
-      let errorText = 'Unknown error';
+      let errorMessage = 'Unknown error';
       try {
-        const errorResponse = await responseClone.json();
-        errorText = errorResponse.error || JSON.stringify(errorResponse);
+        const errorResponse = JSON.parse(responseText);
+        errorMessage = errorResponse.error || responseText;
       } catch {
-        try {
-          errorText = await responseClone.text();
-        } catch (textError) {
-          errorText = 'Failed to parse error response';
-        }
+        errorMessage = responseText;
       }
-      console.error(`[API] Error ${status}: ${errorText}`); // Логируем ошибки прямо здесь
+      
+      console.error(`[API] Error ${response.status}: ${errorMessage}`);
       return {
         success: false,
-        status,
-        error: errorText
+        status: response.status,
+        error: errorMessage
       };
     }
 
     try {
-      const data: T = await response.json();
-      console.log(`[API] Success ${status}: Received data`, data); // 👇👇 Лог принимаемых данных
+      const data: T = JSON.parse(responseText);
       return { 
         success: true, 
-        status,
+        status: response.status,
         data 
       };
     } catch (parseError) {
-      console.error('[API] Failed to parse response:', parseError);
+      console.error('[API] JSON parse error:', parseError, 'Response:', responseText);
       return {
         success: false,
         status: 500,
-        error: 'Failed to parse response data'
+        error: 'Failed to parse JSON response'
       };
     }
   }
@@ -55,18 +53,21 @@ class Api {
     body?: any,
     initData?: string
   ): Promise<ApiResponse<T>> {
-    const url = `${this.baseUrl}${endpoint}`;
+    // Добавляем временную метку для предотвращения кеширования
+    const timestamp = Date.now();
+    const urlParam = endpoint.includes('?') ? '&' : '?';
+    const url = `${this.baseUrl}${endpoint}${urlParam}_t=${timestamp}`;
+    
     const headers: Record<string, string> = { ...this.defaultHeaders };
 
     if (initData) {
       headers['X-Telegram-Init-Data'] = initData;
     }
 
-    const startTime = Date.now();
     console.log(`[API] ${method} ${url}`, {
       headers,
       body: body ? JSON.stringify(body) : undefined
-    }); // 👇 Лог отправляемых запросов
+    });
 
     try {
       const response = await fetch(url, {
@@ -75,20 +76,9 @@ class Api {
         body: body ? JSON.stringify(body) : undefined
       });
 
-      const result = await this.handleResponse<T>(response);
-      const duration = Date.now() - startTime;
-
-      if (result.success) {
-        console.log(`[API] Success ${result.status} (${duration}ms):`, result.data); // 👇 Лог успешных ответов
-      } else {
-        console.error(`[API] Error ${result.status} (${duration}ms): ${result.error}`); // 👇 Лог ошибок
-      }
-
-      return result;
+      return this.handleResponse<T>(response);
     } catch (error: any) {
-      const duration = Date.now() - startTime;
-      console.error(`[API] Network error (${duration}ms):`, error); // 👇 Лог сетевых ошибок
-
+      console.error('[API] Network error:', error);
       return {
         success: false,
         status: 0,
@@ -97,96 +87,31 @@ class Api {
     }
   }
 
-  // User-related methods
-  async initUser(initData: string, startParam?: string) {
-    return this.makeRequest('/init', 'POST', { initData, ref: startParam });
+  // Обновленные методы
+  async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
+    if (!initData) {
+      console.error('[API] Missing initData in getSprites');
+      return {
+        success: false,
+        error: 'Missing required parameter: initData'
+      };
+    }
+    return this.makeRequest<Sprite[]>('/sprites', 'GET', undefined, initData);
   }
 
-  async getUserData(telegramId: number, initData?: string): Promise<ApiResponse<UserProfile>> {
+  async getUserData(telegramId: number): Promise<ApiResponse<UserProfile>> {
     return this.makeRequest<UserProfile>(
       `/data?telegramId=${telegramId}`, 
-      'GET', 
-      undefined, 
-      initData
-    );
-  }
-
-  async updateBurnoutLevel(telegramId: number, level: number, initData?: string) {
-    return this.makeRequest(
-      '/update', 
-      'POST', 
-      { telegramId, burnoutLevel: level },
-      initData
-    );
-  }
-
-  // Friends methods
-  async getFriends(telegramId: string, initData?: string): Promise<ApiResponse<Friend[]>> {
-    return this.makeRequest<Friend[]>(
-      `/friends?telegramId=${telegramId}`, 
-      'GET', 
-      undefined, 
-      initData
-    );
-  }
-
-  async addFriend(friendUsername: string, initData?: string): Promise<ApiResponse> {
-    return this.makeRequest(
-      '/friends', 
-      'POST', 
-      { friendUsername },
-      initData
-    );
-  }
-
-  async deleteFriend(friendId: number, initData?: string): Promise<ApiResponse> {
-    return this.makeRequest(
-      `/friends/${friendId}`, 
-      'DELETE', 
-      undefined, 
-      initData
-    );
-  }
-
-  // Shop methods
- async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
-  if (!initData) throw new Error('Missing required parameter: initData');
-
-  return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
-}
-  
-   async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
-    return this.makeRequest<Sprite>(
-      `/sprites/${spriteId}`, 
-      'GET', 
-      undefined, 
-      initData
-    );
-  }
-
-
-  async purchaseSprite(
-    telegramId: number, 
-    spriteId: number, 
-    initData?: string
-  ): Promise<ApiResponse> {
-    return this.makeRequest(
-      '/purchase', 
-      'POST', 
-      { telegramId, spriteId },
-      initData
+      'GET'
     );
   }
 
   async getOwnedSprites(
-    telegramId: number, 
-    initData?: string
+    telegramId: number
   ): Promise<ApiResponse<number[]>> {
     return this.makeRequest<number[]>(
-      `/owned?telegramId=${telegramId}`, 
-      'GET', 
-      undefined, 
-      initData
+      `/shop/owned?telegramId=${telegramId}`, 
+      'GET'
     );
   }
 
