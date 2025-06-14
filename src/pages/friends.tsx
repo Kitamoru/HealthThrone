@@ -68,7 +68,7 @@ export default function Friends() {
           const formattedFriends = response.data.map(f => ({
             id: f.id,
             friend_id: f.friend.id,
-            friend_username: f.friend.username,
+            friend_username: f.friend.username || 'Неизвестный пользователь',
             burnout_level: f.friend.burnout_level
           }));
 
