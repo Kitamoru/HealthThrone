@@ -2,7 +2,6 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import { validateTelegramInitData } from '@/lib/telegramAuth';
 import { Sprite } from '@/lib/types';
-import { api } from '@/lib/api';
 
 interface SpritesResponse {
   success: boolean;
