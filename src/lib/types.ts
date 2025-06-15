@@ -46,6 +46,7 @@ export interface UserProfile {
   updated_at: string;
   current_sprite_id?: number | null;
   last_login_date?: string;
+  current_sprite_url: string | null;
 }
 
 export interface Friend {
