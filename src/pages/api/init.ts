@@ -52,10 +52,13 @@ export default async function handler(
     const today = format(now, 'yyyy-MM-dd');
     console.log(`[Init API] Current date: ${today}, timestamp: ${now.toISOString()}`);
 
-    // Поиск существующего пользователя
+    // Поиск существующего пользователя с JOIN к спрайтам
     const { data: existingUser, error: userError } = await supabase
       .from('users')
-      .select('id, coins, last_login_date, created_at, burnout_level')
+      .select(`
+        *,
+        sprites:current_sprite_id (image_url)
+      `) // Добавляем JOIN к таблице спрайтов
       .eq('telegram_id', telegramId)
       .maybeSingle();
 
@@ -84,18 +87,30 @@ export default async function handler(
         last_login_date: today,
         updated_at: now.toISOString(),
         burnout_level: existingUser?.burnout_level || 0,
-        created_at: existingUser?.created_at || now.toISOString()
+        created_at: existingUser?.created_at || now.toISOString(),
+        current_sprite_id: existingUser?.current_sprite_id || null // Сохраняем текущий спрайт
       };
 
-      const { data: userRecord, error: upsertError } = await supabase
+      // Выполняем upsert без немедленного возврата данных
+      const { error: upsertError } = await supabase
         .from('users')
         .upsert(updates, {
           onConflict: 'telegram_id',
-        })
-        .select()
-        .single();
+        });
 
       if (upsertError) throw upsertError;
+
+      // Повторно запрашиваем пользователя с JOIN к спрайтам
+      const { data: userRecord, error: selectError } = await supabase
+        .from('users')
+        .select(`
+          *,
+          sprites:current_sprite_id (image_url)
+        `) // Добавляем JOIN к таблице спрайтов
+        .eq('telegram_id', telegramId)
+        .single();
+
+      if (selectError) throw selectError;
 
       console.log('[Init API] User upsert successful:', JSON.stringify(userRecord, null, 2));
 
@@ -171,7 +186,7 @@ export default async function handler(
         }
       }
 
-      // Формируем ответ
+      // Формируем ответ с URL спрайта
       const responseUser: UserProfile = {
         id: userRecord.id,
         telegram_id: userRecord.telegram_id,
@@ -184,7 +199,9 @@ export default async function handler(
         coins: userRecord.coins,
         updated_at: userRecord.updated_at,
         current_sprite_id: userRecord.current_sprite_id,
-        last_login_date: userRecord.last_login_date
+        last_login_date: userRecord.last_login_date,
+        // Добавляем URL активного спрайта
+        current_sprite_url: userRecord.sprites?.image_url || null
       };
 
       console.log('[Init API] Returning success response');
