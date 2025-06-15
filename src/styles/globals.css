@@ -878,3 +878,74 @@ body {
   background: var(--tg-success);
   color: white;
 }
+/* Reference Page Styles */
+.page-title {
+  text-align: center;
+  color: var(--tg-text);
+  margin-bottom: 24px;
+  font-size: 1.8rem;
+  padding-top: 10px;
+}
+
+.reference-section {
+  margin-bottom: 25px;
+  animation: fadeIn 0.5s ease;
+}
+
+.section-title {
+  color: var(--tg-accent);
+  border-bottom: 2px solid var(--tg-accent);
+  padding-bottom: 8px;
+  margin-bottom: 15px;
+  font-size: 1.4rem;
+}
+
+.reference-card, .feature-card {
+  background: var(--tg-secondary);
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  margin-bottom: 15px;
+  border-left: 4px solid var(--tg-accent);
+}
+
+.feature-card.important {
+  border-left: 4px solid var(--tg-danger);
+  background: rgba(231, 76, 60, 0.1);
+}
+
+.feature-list {
+  padding-left: 20px;
+  margin: 12px 0;
+}
+
+.feature-list li {
+  margin-bottom: 10px;
+  line-height: 1.5;
+  color: var(--tg-text);
+}
+
+.hidden-features .section-title {
+  color: var(--tg-danger);
+  border-color: var(--tg-danger);
+}
+
+/* Анимация для плавного появления */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+  .reference-card, .feature-card {
+    padding: 14px;
+  }
+  
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  .section-title {
+    font-size: 1.2rem;
+  }
+}
