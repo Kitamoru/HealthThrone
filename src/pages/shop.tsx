@@ -16,6 +16,7 @@ export default function Shop() {
   const [currentSprite, setCurrentSprite] = useState<number | null>(null);
   const [ownedSprites, setOwnedSprites] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [processing, setProcessing] = useState<number | null>(null);
 
   useEffect(() => {
     console.log('[Shop] Component mounted');
@@ -30,7 +31,6 @@ export default function Shop() {
         setLoading(true);
         setError(null);
 
-        // Запрашиваем сразу три API одновременно
         const [
           userResponse,
           spritesResponse,
@@ -41,7 +41,6 @@ export default function Shop() {
           api.getOwnedSprites(Number(user.id), initData)
         ]);
 
-        // Обрабатываем ответ от API с профилем пользователя
         if (userResponse.success && userResponse.data) {
           setCoins(userResponse.data.coins || 0);
           setCurrentSprite(userResponse.data.current_sprite_id || null);
@@ -49,17 +48,15 @@ export default function Shop() {
           setError(`Ошибка загрузки профиля: ${userResponse.error}`);
         }
 
-        // Проверяем массив спрайтов (ИСПРАВЛЕНО)
         if (spritesResponse.success) {
-          setSprites(spritesResponse.data || []);  
-        console.log('Спрайты успешно загружены:', spritesResponse.data || []); 
+          setSprites(spritesResponse.data || []);
+          console.log('Спрайты успешно загружены:', spritesResponse.data || []);
         } else if (spritesResponse.error) {
           setError(`Ошибка загрузки спрайтов: ${spritesResponse.error}`);
         } else {
           setError('Не удалось получить данные о спрайтах.');
         }
 
-        // Обрабатываем список приобретенных спрайтов
         if (ownedResponse.success && Array.isArray(ownedResponse.data)) {
           setOwnedSprites(ownedResponse.data);
         } else if (ownedResponse.error) {
@@ -91,7 +88,7 @@ export default function Shop() {
       return;
     }
 
-    const sprite = sprites.find((item) => item.id === spriteId);  
+    const sprite = sprites.find((item) => item.id === spriteId);
     if (!sprite) {
       setError('Спрайт не найден');
       return;
@@ -108,6 +105,7 @@ export default function Shop() {
     }
 
     try {
+      setProcessing(spriteId);
       const purchaseResult = await api.purchaseSprite(Number(user.id), spriteId, initData!);
       if (purchaseResult.success) {
         setOwnedSprites((prev) => [...prev, spriteId]);
@@ -118,6 +116,8 @@ export default function Shop() {
       }
     } catch (err) {
       setError('Возникла проблема с сетью при покупке.');
+    } finally {
+      setProcessing(null);
     }
   };
 
@@ -138,6 +138,7 @@ export default function Shop() {
     }
 
     try {
+      setProcessing(spriteId);
       const equipResult = await api.equipSprite(Number(user.id), spriteId, initData!);
       if (equipResult.success) {
         setCurrentSprite(spriteId);
@@ -147,6 +148,8 @@ export default function Shop() {
       }
     } catch (err) {
       setError('Проблема с сетью при попытке применить спрайт.');
+    } finally {
+      setProcessing(null);
     }
   };
 
@@ -175,6 +178,7 @@ export default function Shop() {
             {sprites.map((sprite) => {
               const isOwned = ownedSprites.includes(sprite.id);
               const isEquipped = currentSprite === sprite.id;
+              const isProcessing = processing === sprite.id;
 
               return (
                 <div key={sprite.id} className="sprite-card">
@@ -197,10 +201,15 @@ export default function Shop() {
                       {!isOwned ? (
                         coins >= sprite.price ? (
                           <button
-                            className="buy-btn"
-                            onClick={() => handlePurchase(sprite.id)}
+                            className={`buy-btn ${isProcessing ? 'processing' : ''}`}
+                            onClick={() => !isProcessing && handlePurchase(sprite.id)}
+                            disabled={isProcessing}
                           >
-                            Купить
+                            {isProcessing ? (
+                              <span className="button-loader">⏳</span>
+                            ) : (
+                              'Купить'
+                            )}
                           </button>
                         ) : (
                           <button className="buy-btn disabled" disabled>
@@ -209,11 +218,17 @@ export default function Shop() {
                         )
                       ) : (
                         <button
-                          className="equip-btn"
-                          onClick={() => handleEquip(sprite.id)}
-                          disabled={isEquipped}
+                          className={`equip-btn ${isEquipped ? 'equipped' : ''} ${isProcessing ? 'processing' : ''}`}
+                          onClick={() => !isProcessing && handleEquip(sprite.id)}
+                          disabled={isProcessing || isEquipped}
                         >
-                          {isEquipped ? 'Применён' : 'Применить'}
+                          {isProcessing ? (
+                            <span className="button-loader">⏳</span>
+                          ) : isEquipped ? (
+                            'Применён'
+                          ) : (
+                            'Применить'
+                          )}
                         </button>
                       )}
                     </div>
@@ -235,7 +250,7 @@ export default function Shop() {
         <Link href="/shop" passHref>
           <button className="menu-btn active">🛍️</button>
         </Link>
-       <Link href="/reference" passHref>
+        <Link href="/reference" passHref>
           <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
         </Link>
       </div>
