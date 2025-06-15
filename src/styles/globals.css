@@ -979,4 +979,20 @@ strong {
   .reference-card h3 {
     font-size: 1.1rem;
   }
+
+  .button-loader {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.buy-btn.processing,
+.equip-btn.processing {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
 }
