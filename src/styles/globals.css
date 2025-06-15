@@ -93,7 +93,7 @@ body {
 }
 
 .sprite-container {
-  width: 70px;
+  width: fit-content;
   height: 70px;
   border-radius: 20px;
   overflow: hidden;
