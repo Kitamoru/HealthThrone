@@ -235,8 +235,8 @@ export default function Shop() {
         <Link href="/shop" passHref>
           <button className="menu-btn active">🛍️</button>
         </Link>
-        <Link href="/info" passHref>
-          <button className="menu-btn">ℹ️</button>
+       <Link href="/reference" passHref>
+          <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
         </Link>
       </div>
     </div>
