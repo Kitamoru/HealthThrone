@@ -101,6 +101,8 @@ body {
   flex-shrink: 0;
   z-index: 1;
   transition: transform 0.3s ease;
+  display: flex; /* Для центрирования */
+  justify-content: center;
 }
 
 .sprite-container:hover {
