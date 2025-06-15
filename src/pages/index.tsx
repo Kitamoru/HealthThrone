@@ -303,7 +303,9 @@ export default function Home() {
         <Link href="/shop" passHref>
           <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
         </Link>
-        <button className="menu-btn">ℹ️</button>
+        <Link href="/reference" passHref>
+          <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
+        </Link>
       </div>
     </div>
   );
