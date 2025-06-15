@@ -12,12 +12,12 @@ const ReferencePage = () => {
     <>
       <Head>
         <title>Справочная страница</title>
-        <meta name="description" content="Инструкция о приложении" />
+        <meta name="description" content="О приложении" />
       </Head>
       
       <div className="container">
         <div className="scrollable-content">
-          <h1 className="page-title">📚 Справочный центр</h1>
+          <h1 className="page-title">📚 Что тут есть?</h1>
           
           <div className="reference-section">
             <h2 className="section-title">📊 Главная страница</h2>
@@ -61,20 +61,15 @@ const ReferencePage = () => {
             </div>
           </div>
 
-          <div className="reference-section hidden-features">
+          <div className="reference-section">
             <h2 className="section-title">🎁 Скрытые функции</h2>
-            <div className="feature-card important">
+            <div className="reference-card important">
               <h3>💰 Система монет</h3>
-              <ul>
+              <ul className="feature-list">
                 <li><strong>+100 монет</strong> - за ежедневное прохождение теста</li>
                 <li><strong>+200 монет</strong> - за каждого приглашенного друга</li>
                 <li>Монеты используются для покупки спрайтов в магазине</li>
               </ul>
-              
-              <h3>🔄 Особенности работы</h3>
-              <ul>
-                <li>Аватарки остаются у вас навсегда после покупки</li>
-                <li>Бесплатные спрайты доступны сразу</li>
               </ul>
             </div>
           </div>
@@ -90,7 +85,7 @@ const ReferencePage = () => {
           <Link href="/shop" passHref>
             <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
           </Link>
-          <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
+          <button className={`menu-btn active`}>ℹ️</button>
         </div>
       </div>
     </>
