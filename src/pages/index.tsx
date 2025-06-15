@@ -108,6 +108,7 @@ export default function Home() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [alreadyAttemptedToday, setAlreadyAttemptedToday] = useState(false);
+  const [spriteUrl, setSpriteUrl] = useState<string>('/sprite.gif'); // Состояние для URL спрайта
 
   // Проверка, является ли дата сегодняшней (в UTC)
   const isTodayUTC = useCallback((dateStr: string) => {
@@ -139,6 +140,13 @@ export default function Home() {
         
         setBurnoutLevel(level);
         setInitialBurnoutLevel(level);
+
+        // Обновляем URL спрайта из данных пользователя
+        if (userData.current_sprite_url) {
+          setSpriteUrl(userData.current_sprite_url);
+        } else {
+          setSpriteUrl('/sprite.gif'); // Используем значение по умолчанию
+        }
 
         // Проверка последней попытки в UTC
         if (userData.last_attempt_date) {
@@ -250,7 +258,9 @@ export default function Home() {
 
   return (
     <div className="container">
-      <BurnoutProgress level={burnoutLevel} />
+      {/* Передаем URL спрайта в компонент */}
+      <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
+      
       <div className="content">
         {apiError && !alreadyAttemptedToday && (
           <div className="error-message">{apiError}</div>
