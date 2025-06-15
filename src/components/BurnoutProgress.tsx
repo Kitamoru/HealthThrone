@@ -13,7 +13,15 @@ export const BurnoutProgress: React.FC<BurnoutProgressProps> = ({
     <>
       <div className="header">
         <div className="sprite-container">
-          <img src={spriteUrl} alt="Character" className="sprite" />
+          <img 
+            src={spriteUrl} 
+            alt="Character" 
+            className="sprite"
+            onError={(e) => {
+              // Добавляем обработчик ошибок на случай проблем с загрузкой
+              e.currentTarget.src = '/sprite.gif';
+            }}
+          />
         </div>
 
         <div className="pentagon">
