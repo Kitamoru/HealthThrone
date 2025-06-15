@@ -900,16 +900,18 @@ body {
   font-size: 1.4rem;
 }
 
-.reference-card, .feature-card {
+.reference-card {
   background: var(--tg-secondary);
   border-radius: 12px;
   padding: 18px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.05);
   margin-bottom: 15px;
   border-left: 4px solid var(--tg-accent);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
-.feature-card.important {
+.reference-card.important {
   border-left: 4px solid var(--tg-danger);
   background: rgba(231, 76, 60, 0.1);
 }
@@ -925,9 +927,28 @@ body {
   color: var(--tg-text);
 }
 
-.hidden-features .section-title {
-  color: var(--tg-danger);
-  border-color: var(--tg-danger);
+/* Улучшенные автоматические переносы */
+.reference-section * {
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Отступы для заголовков внутри карточек */
+.reference-card h3 {
+  margin-top: 15px;
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+  color: var(--tg-accent);
+}
+
+.reference-card h3:first-child {
+  margin-top: 0;
+}
+
+/* Выделение важных элементов */
+strong {
+  color: var(--tg-success);
+  font-weight: 600;
 }
 
 /* Анимация для плавного появления */
@@ -937,7 +958,7 @@ body {
 }
 
 @media (max-width: 480px) {
-  .reference-card, .feature-card {
+  .reference-card {
     padding: 14px;
   }
   
@@ -947,5 +968,13 @@ body {
   
   .section-title {
     font-size: 1.2rem;
+  }
+  
+  .feature-list li {
+    font-size: 14px;
+  }
+  
+  .reference-card h3 {
+    font-size: 1.1rem;
   }
 }
