@@ -71,10 +71,13 @@ export default async function handler(
       });
     }
 
-    // Запрашиваем данные пользователя из базы данных
+    // Запрашиваем данные пользователя из базы данных с JOIN к спрайтам
     const { data: user, error: dbError } = await supabase
       .from('users')
-      .select('*')
+      .select(`
+        *,
+        sprites:current_sprite_id (image_url)
+      `) // Добавляем JOIN к таблице спрайтов
       .eq('telegram_id', telegramIdNumber)
       .single();
 
@@ -102,7 +105,9 @@ export default async function handler(
       coins: user.coins,
       updated_at: user.updated_at,
       current_sprite_id: user.current_sprite_id,
-      last_login_date: user.last_login_date
+      last_login_date: user.last_login_date,
+      // Добавляем URL активного спрайта
+      current_sprite_url: user.sprites?.image_url || null
     };
 
     console.log('[Data API] Final user profile:', userData);
