@@ -1,7 +1,16 @@
 import { ApiResponse, UserProfile, Sprite, Friend } from './types';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
 
-// Новые хуки для react-query
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      retry: 1,
+    },
+  },
+});
+
+// Хуки для react-query
 export const useUserData = (telegramId: number, initData?: string) => {
   return useQuery({
     queryKey: ['user', telegramId],
@@ -11,11 +20,11 @@ export const useUserData = (telegramId: number, initData?: string) => {
   });
 };
 
-export const useFriendsData = (initData?: string) => {
+export const useFriendsData = (telegramId: string, initData?: string) => {
   return useQuery({
-    queryKey: ['friends'],
-    queryFn: () => api.getFriends(initData),
-    enabled: !!initData,
+    queryKey: ['friends', telegramId],
+    queryFn: () => api.getFriends(telegramId, initData),
+    enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
   });
 };
@@ -38,20 +47,6 @@ export const useSubmitSurvey = () => {
   });
 };
 
-export const useDeleteFriend = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (params: { 
-      friendId: number; 
-      initData?: string 
-    }) => api.deleteFriend(params.friendId, params.initData),
-    onSuccess: () => {
-      // Исправлено: передаем объект с queryKey
-      queryClient.invalidateQueries({ queryKey: ['friends'] });
-    }
-  });
-};
-
 class Api {
   private baseUrl = '/api';
   private defaultHeaders: Record<string, string> = {
@@ -59,50 +54,50 @@ class Api {
   };
   
   private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
-  const status = response.status;
-  
-  if (!response.ok) {
-    try {
-      const errorResponse = await response.json();
-      return {
-        success: false,
-        status,
-        error: errorResponse.error || JSON.stringify(errorResponse)
-      };
-    } catch {
-      return {
-        success: false,
-        status,
-        error: await response.text()
-      };
+    const status = response.status;
+    
+    if (!response.ok) {
+      try {
+        const errorResponse = await response.json();
+        return {
+          success: false,
+          status,
+          error: errorResponse.error || JSON.stringify(errorResponse)
+        };
+      } catch {
+        return {
+          success: false,
+          status,
+          error: await response.text()
+        };
+      }
     }
-  }
 
-  try {
-    const responseData = await response.json();
-    
-    if (responseData.success && responseData.data !== undefined) {
+    try {
+      const responseData = await response.json();
+      
+      if (responseData.success && responseData.data !== undefined) {
+        return {
+          success: true,
+          status,
+          data: responseData.data
+        };
+      }
+      
       return {
-        success: true,
-        status,
-        data: responseData.data
+        success: false,
+        status: 500,
+        error: 'Invalid server response structure'
+      };
+      
+    } catch (parseError) {
+      return {
+        success: false,
+        status: 500,
+        error: 'Failed to parse response data'
       };
     }
-    
-    return {
-      success: false,
-      status: 500,
-      error: 'Invalid server response structure'
-    };
-    
-  } catch (parseError) {
-    return {
-      success: false,
-      status: 500,
-      error: 'Failed to parse response data'
-    };
   }
-}
 
   private async makeRequest<T>(
     endpoint: string,
@@ -124,7 +119,7 @@ class Api {
         body: body ? JSON.stringify(body) : undefined
       });
 
-      return await this.handleResponse<T>(response);
+      return this.handleResponse<T>(response);
     } catch (error: any) {
       return {
         success: false,
@@ -148,12 +143,30 @@ class Api {
     );
   }
 
+  async updateBurnoutLevel(telegramId: number, level: number, initData?: string) {
+    return this.makeRequest(
+      '/update', 
+      'POST', 
+      { telegramId, burnoutLevel: level },
+      initData
+    );
+  }
+
   // Friends methods
-  async getFriends(initData?: string): Promise<ApiResponse<Friend[]>> {
+  async getFriends(telegramId: string, initData?: string): Promise<ApiResponse<Friend[]>> {
     return this.makeRequest<Friend[]>(
-      `/friends`, 
+      `/friends?telegramId=${telegramId}`, 
       'GET', 
       undefined, 
+      initData
+    );
+  }
+
+  async addFriend(friendUsername: string, initData?: string): Promise<ApiResponse> {
+    return this.makeRequest(
+      '/friends', 
+      'POST', 
+      { friendUsername },
       initData
     );
   }
@@ -170,6 +183,53 @@ class Api {
   // Shop methods
   async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
     return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
+  }
+  
+  async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
+    return this.makeRequest<Sprite>(
+      `/shop/sprites/${spriteId}`, 
+      'GET', 
+      undefined, 
+      initData
+    );
+  }
+
+  async purchaseSprite(
+    telegramId: number, 
+    spriteId: number, 
+    initData?: string
+  ): Promise<ApiResponse> {
+    return this.makeRequest(
+      '/shop/purchase', 
+      'POST', 
+      { telegramId, spriteId },
+      initData
+    );
+  }
+
+  async getOwnedSprites(
+    telegramId: number, 
+    initData?: string
+  ): Promise<ApiResponse<number[]>> {
+    return this.makeRequest<number[]>(
+      `/shop/owned?telegramId=${telegramId}`, 
+      'GET', 
+      undefined, 
+      initData
+    );
+  }
+
+  async equipSprite(
+    telegramId: number, 
+    spriteId: number, 
+    initData?: string
+  ): Promise<ApiResponse> {
+    return this.makeRequest(
+      '/shop/equip', 
+      'POST', 
+      { telegramId, spriteId },
+      initData
+    );
   }
   
   // Survey methods
