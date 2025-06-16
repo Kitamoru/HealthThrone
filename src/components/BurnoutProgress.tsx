@@ -5,10 +5,10 @@ interface BurnoutProgressProps {
   spriteUrl?: string;
 }
 
-export const BurnoutProgress = React.memo(({ level, spriteUrl }: BurnoutProgressProps) => {
-  level,
-  spriteUrl = '/sprite.gif'
-}) => {
+export const BurnoutProgress = React.memo(({ 
+  level, 
+  spriteUrl = '/sprite.gif' // Значение по умолчанию в деструктуризации
+}: BurnoutProgressProps) => {
   return (
     <>
       <div className="header">
@@ -18,7 +18,6 @@ export const BurnoutProgress = React.memo(({ level, spriteUrl }: BurnoutProgress
             alt="Character" 
             className="sprite"
             onError={(e) => {
-              // Добавляем обработчик ошибок на случай проблем с загрузкой
               e.currentTarget.src = '/sprite.gif';
             }}
           />
@@ -45,4 +44,4 @@ export const BurnoutProgress = React.memo(({ level, spriteUrl }: BurnoutProgress
       </div>
     </>
   );
-};
+});
