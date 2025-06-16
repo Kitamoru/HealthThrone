@@ -1,42 +1,5 @@
-import { ApiResponse, UserProfile, Sprite, Friend } from './types';
-import { useQuery, useMutation } from '@tanstack/react-query';
-
-// Новые хуки для react-query
-export const useUserData = (telegramId: number, initData?: string) => {
-  return useQuery({
-    queryKey: ['user', telegramId],
-    queryFn: () => api.getUserData(telegramId, initData),
-    enabled: !!telegramId,
-    staleTime: 5 * 60 * 1000,
-  });
-};
-
-export const useFriendsData = (telegramId: string, initData?: string) => {
-  return useQuery({
-    queryKey: ['friends', telegramId],
-    queryFn: () => api.getFriends(telegramId, initData),
-    enabled: !!telegramId,
-    staleTime: 5 * 60 * 1000,
-  });
-};
-
-export const useSpritesData = (initData?: string) => {
-  return useQuery({
-    queryKey: ['sprites'],
-    queryFn: () => api.getSprites(initData),
-    staleTime: 10 * 60 * 1000,
-  });
-};
-
-export const useSubmitSurvey = () => {
-  return useMutation({
-    mutationFn: (params: { 
-      telegramId: number; 
-      newScore: number; 
-      initData?: string 
-    }) => api.submitSurvey(params),
-  });
-};
+import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
+import type { UserProfile, Sprite, Friend, ApiResponse } from './types';
 
 class Api {
   private baseUrl = '/api';
@@ -45,66 +8,59 @@ class Api {
   };
   
   private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
-  const status = response.status;
-  const responseClone = response.clone();
-  
-  if (!response.ok) {
-    // Обработка ошибок HTTP (4xx, 5xx)
-    try {
-      const errorResponse = await responseClone.json();
-      return {
-        success: false,
-        status,
-        error: errorResponse.error || JSON.stringify(errorResponse)
-      };
-    } catch {
+    const status = response.status;
+    const responseClone = response.clone();
+    
+    if (!response.ok) {
       try {
+        const errorResponse = await responseClone.json();
         return {
           success: false,
           status,
-          error: await responseClone.text()
+          error: errorResponse.error || JSON.stringify(errorResponse)
         };
-      } catch (textError) {
-        return {
-          success: false,
-          status,
-          error: 'Failed to parse error response'
-        };
+      } catch {
+        try {
+          return {
+            success: false,
+            status,
+            error: await responseClone.text()
+          };
+        } catch (textError) {
+          return {
+            success: false,
+            status,
+            error: 'Failed to parse error response'
+          };
+        }
       }
     }
-  }
 
-  // Успешные ответы (2xx)
-  try {
-    const responseData = await response.json();
-    
-    // Проверяем структуру успешного ответа
-    if (responseData.success && responseData.data !== undefined) {
-      console.log(`[API] Success ${status}: Received data`, responseData.data);
+    try {
+      const responseData = await response.json();
+      
+      if (responseData.success && responseData.data !== undefined) {
+        return {
+          success: true,
+          status,
+          data: responseData.data
+        };
+      }
+      
       return {
-        success: true,
-        status,
-        data: responseData.data
+        success: false,
+        status: 500,
+        error: 'Invalid server response structure'
+      };
+      
+    } catch (parseError) {
+      return {
+        success: false,
+        status: 500,
+        error: 'Failed to parse response data'
       };
     }
-    
-    // Если в ответе нет ожидаемой структуры
-    console.error('[API] Invalid response structure:', responseData);
-    return {
-      success: false,
-      status: 500,
-      error: 'Invalid server response structure'
-    };
-    
-  } catch (parseError) {
-    console.error('[API] Failed to parse response:', parseError);
-    return {
-      success: false,
-      status: 500,
-      error: 'Failed to parse response data'
-    };
   }
-}
 
   private async makeRequest<T>(
     endpoint: string,
@@ -119,12 +75,6 @@ class Api {
       headers['X-Telegram-Init-Data'] = initData;
     }
 
-    const startTime = Date.now();
-    console.log(`[API] ${method} ${url}`, {
-      headers,
-      body: body ? JSON.stringify(body) : undefined
-    }); // 👇 Лог отправляемых запросов
-
     try {
       const response = await fetch(url, {
         method,
@@ -132,20 +82,8 @@ class Api {
         body: body ? JSON.stringify(body) : undefined
       });
 
-      const result = await this.handleResponse<T>(response);
-      const duration = Date.now() - startTime;
-
-      if (result.success) {
-        console.log(`[API] Success ${result.status} (${duration}ms):`, result.data); // 👇 Лог успешных ответов
-      } else {
-        console.error(`[API] Error ${result.status} (${duration}ms): ${result.error}`); // 👇 Лог ошибок
-      }
-
-      return result;
+      return this.handleResponse<T>(response);
     } catch (error: any) {
-      const duration = Date.now() - startTime;
-      console.error(`[API] Network error (${duration}ms):`, error); // 👇 Лог сетевых ошибок
-
       return {
         success: false,
         status: 0,
@@ -154,7 +92,6 @@ class Api {
     }
   }
 
-  // User-related methods
   async initUser(initData: string, startParam?: string) {
     return this.makeRequest('/init', 'POST', { initData, ref: startParam });
   }
@@ -177,7 +114,6 @@ class Api {
     );
   }
 
-  // Friends methods
   async getFriends(telegramId: string, initData?: string): Promise<ApiResponse<Friend[]>> {
     return this.makeRequest<Friend[]>(
       `/friends?telegramId=${telegramId}`, 
@@ -205,12 +141,11 @@ class Api {
     );
   }
 
-  // Shop methods
-async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
-  return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
-}
+  async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
+    return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
+  }
   
-   async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
+  async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
     return this.makeRequest<Sprite>(
       `/shop/sprites/${spriteId}`, 
       'GET', 
@@ -218,7 +153,6 @@ async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
       initData
     );
   }
-
 
   async purchaseSprite(
     telegramId: number, 
@@ -258,7 +192,6 @@ async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
     );
   }
   
-  // Survey methods
   async submitSurvey(params: {
     telegramId: number;
     newScore: number;
@@ -277,3 +210,128 @@ async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
 }
 
 export const api = new Api();
+
+// React Query Hooks
+export const useUserData = (telegramId: number, initData?: string) => {
+  return useQuery<UserProfile, Error>({
+    queryKey: ['user', telegramId],
+    queryFn: async () => {
+      const response = await api.getUserData(telegramId, initData);
+      
+      if (!response.success) {
+        throw new Error(response.error || "Ошибка загрузки данных пользователя");
+      }
+      
+      return response.data;
+    },
+    enabled: !!telegramId,
+    staleTime: 5 * 60 * 1000,
+    retry: (failureCount, error) => {
+      // Не повторять для 404 ошибок
+      return error.message !== 'User not found' && failureCount < 2;
+    }
+  });
+};
+
+export const useFriendsData = (telegramId: string, initData?: string) => {
+  return useQuery<Friend[], Error>({
+    queryKey: ['friends', telegramId],
+    queryFn: async () => {
+      const response = await api.getFriends(telegramId, initData);
+      
+      if (!response.success) {
+        throw new Error(response.error || "Ошибка загрузки списка друзей");
+      }
+      
+      return response.data;
+    },
+    enabled: !!telegramId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useSpritesData = (initData?: string) => {
+  return useQuery<Sprite[], Error>({
+    queryKey: ['sprites'],
+    queryFn: async () => {
+      const response = await api.getSprites(initData);
+      
+      if (!response.success) {
+        throw new Error(response.error || "Ошибка загрузки спрайтов");
+      }
+      
+      return response.data;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+};
+
+export const useSubmitSurvey = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation<UserProfile, Error, { 
+    telegramId: number; 
+    newScore: number; 
+    initData?: string 
+  }>({
+    mutationFn: async (params) => {
+      const response = await api.submitSurvey(params);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Ошибка сохранения результатов опроса');
+      }
+      
+      return response.data;
+    },
+    onSuccess: (data, variables) => {
+      // Автоматическое обновление кэша пользователя
+      queryClient.setQueryData(['user', variables.telegramId], data);
+    }
+  });
+};
+
+export const useDeleteFriend = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (params: { friendId: number; initData?: string }) => 
+      api.deleteFriend(params.friendId, params.initData),
+    onSuccess: (_, variables, context) => {
+      // Инвалидация кэша друзей
+      queryClient.invalidateQueries(['friends']);
+    }
+  });
+};
+
+// Prefetch functions
+export const prefetchUserData = (
+  queryClient: QueryClient,
+  telegramId: number,
+  initData?: string
+) => {
+  return queryClient.prefetchQuery({
+    queryKey: ['user', telegramId],
+    queryFn: () => api.getUserData(telegramId, initData),
+  });
+};
+
+export const prefetchFriendsData = (
+  queryClient: QueryClient,
+  telegramId: string,
+  initData?: string
+) => {
+  return queryClient.prefetchQuery({
+    queryKey: ['friends', telegramId],
+    queryFn: () => api.getFriends(telegramId, initData),
+  });
+};
+
+export const prefetchSpritesData = (
+  queryClient: QueryClient,
+  initData?: string
+) => {
+  return queryClient.prefetchQuery({
+    queryKey: ['sprites'],
+    queryFn: () => api.getSprites(initData),
+  });
+};
