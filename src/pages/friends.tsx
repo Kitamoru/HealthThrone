@@ -1,9 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
+import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
+import dynamic from 'next/dynamic';
+
+// Динамический импорт компонентов
+const BurnoutProgress = dynamic(() => 
+  import('../components/BurnoutProgress').then(mod => mod.BurnoutProgress),
+  { ssr: false }
+);
 
 interface Friend {
   id: number;
@@ -12,96 +20,38 @@ interface Friend {
   burnout_level: number;
 }
 
-interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
-
-interface BurnoutProgressProps {
-  level: number;
-}
-
-const BurnoutProgress: React.FC<BurnoutProgressProps> = ({ level }) => {
-  return (
-    <div className="progress-container">
-      <div 
-        className="progress-bar"
-        style={{ width: `${level}%` }}
-      />
-      <span className="progress-text">{level}%</span>
-    </div>
-  );
-};
-
-const FRIENDS_CACHE_KEY = 'friends_cache';
+const FRIENDS_QUERY_KEY = 'friends';
 
 export default function Friends() {
   const router = useRouter();
   const { user, initData, webApp } = useTelegram();
-  const [loading, setLoading] = useState(true);
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    // Убрана проверка isReady - используем только user?.id
-    if (!user?.id) return;
+  // Запрос данных о друзьях с кэшированием
+  const { data: friends = [], isLoading, error } = useQuery<Friend[]>({
+    queryKey: [FRIENDS_QUERY_KEY, user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const response = await api.getFriends(user.id.toString(), initData);
+      return response.success ? response.data : [];
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 минут кэширования
+  });
 
-    const loadFriends = async () => {
-      try {
-        setLoading(true);
-
-        // Проверка кэша
-        const cached = sessionStorage.getItem(FRIENDS_CACHE_KEY);
-        if (cached) {
-          const parsedCache = JSON.parse(cached);
-          if (Array.isArray(parsedCache)) {
-            setFriends(parsedCache);
-          } else {
-            sessionStorage.removeItem(FRIENDS_CACHE_KEY);
-          }
-        }
-
-        const response = await api.getFriends(user.id, initData);
-        if (response.success && response.data && Array.isArray(response.data)) {
-          const formattedFriends = response.data.map(f => ({
-            id: f.id,
-            friend_id: f.friend.id,
-            friend_username: f.friend.username || 
-                            `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
-            burnout_level: f.friend.burnout_level
-          }));
-
-          setFriends(formattedFriends);
-          sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(formattedFriends));
-        } else {
-          setError(response.error || 'Не удалось загрузить друзей');
-        }
-      } catch (err) {
-        setError('Ошибка сети');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadFriends();
-  }, [user, initData]); // Убрана зависимость isReady
-
-  const handleDelete = async (friendId: number) => {
-    try {
-      const response = await api.deleteFriend(friendId, initData);
-      if (response.success) {
-        const updatedFriends = friends.filter(f => f.id !== friendId);
-        setFriends(updatedFriends);
-        sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(updatedFriends));
-      } else {
-        setError(response.error || 'Failed to delete friend');
-      }
-    } catch (err) {
-      setError('Ошибка при удалении друга');
+  // Мутация для удаления друга
+  const deleteMutation = useMutation({
+    mutationFn: (friendId: number) => 
+      api.deleteFriend(friendId, initData),
+    onSuccess: () => {
+      queryClient.invalidateQueries([FRIENDS_QUERY_KEY, user?.id]);
     }
+  });
+
+  const handleDelete = (friendId: number) => {
+    deleteMutation.mutate(friendId);
   };
 
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
@@ -126,7 +76,7 @@ export default function Friends() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return <Loader />;
   }
 
@@ -142,7 +92,10 @@ export default function Friends() {
             Добавить
           </button>
         </div>
-        {error && <div className="error">{error}</div>}
+        {error && <div className="error">{(error as Error).message}</div>}
+        {deleteMutation.isError && (
+          <div className="error">{(deleteMutation.error as Error).message}</div>
+        )}
         <div className="friends-list">
           {friends.length === 0 ? (
             <div className="empty">У вас не добавлены участники команды</div>
@@ -155,8 +108,9 @@ export default function Friends() {
                   <button 
                     className="delete-btn"
                     onClick={() => handleDelete(friend.id)}
+                    disabled={deleteMutation.isLoading}
                   >
-                    Удалить
+                    {deleteMutation.isLoading ? 'Удаление...' : 'Удалить'}
                   </button>
                 </div>
               ))}
@@ -205,23 +159,23 @@ export default function Friends() {
         )}
       </div>
 
-       <div className="menu">
-        <Link href="/" passHref>
+      <div className="menu">
+        <Link href="/" passHref prefetch>
           <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>
             📊
           </button>
         </Link>
-        <Link href="/friends" passHref>
+        <Link href="/friends" passHref prefetch>
           <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>
             📈
           </button>
         </Link>
-        <Link href="/shop" passHref>
+        <Link href="/shop" passHref prefetch>
           <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>
             🛍️
           </button>
         </Link>
-        <Link href="/reference" passHref>
+        <Link href="/reference" passHref prefetch>
           <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
         </Link>
       </div>
