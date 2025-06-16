@@ -177,11 +177,12 @@ export const useUserData = (telegramId: number, initData?: string) => {
 };
 
 export const useFriendsData = (telegramId: string, initData?: string) => {
-  return useQuery({
+  return useQuery<ApiResponse<Friend[]>>({
     queryKey: ['friends', telegramId],
     queryFn: () => api.getFriends(telegramId, initData),
     enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
+    select: (response) => response.success ? response.data ?? [] : [],
   });
 };
 
