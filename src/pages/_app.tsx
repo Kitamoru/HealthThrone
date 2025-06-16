@@ -1,27 +1,30 @@
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
-import '../styles/globals.css';
+import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
-import { Loader } from '../components/Loader';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
+import '../styles/globals.css';
 
-export default function App({ Component, pageProps }: AppProps) {
+// Динамический импорт Loader с SSR: false
+const Loader = dynamic(() => import('../components/Loader'), {
+  ssr: false,
+  loading: () => <div>Загрузка...</div>
+});
+
+function App({ Component, pageProps }: AppProps) {
   const { initData, startParam } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
 
   useEffect(() => {
     if (initData) {
-      console.log('Initializing user with startParam:', startParam);
       api.initUser(initData, startParam)
         .then(response => {
           if (response.success) {
             console.log('User initialized successfully');
-          } else {
-            console.error('Failed to initialize user:', response.error);
           }
         })
         .finally(() => setUserInitialized(true));
@@ -56,3 +59,5 @@ export default function App({ Component, pageProps }: AppProps) {
     </QueryClientProvider>
   );
 }
+
+export default App;
