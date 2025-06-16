@@ -18,7 +18,6 @@ interface ApiResponse<T = any> {
   error?: string;
 }
 
-// Компонент прогресс-бара для отображения уровня выгорания
 interface BurnoutProgressProps {
   level: number;
 }
@@ -47,7 +46,8 @@ export default function Friends() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!isReady || !user?.id) return;
+    // Убрана проверка isReady - используем только user?.id
+    if (!user?.id) return;
 
     const loadFriends = async () => {
       try {
@@ -57,7 +57,6 @@ export default function Friends() {
         const cached = sessionStorage.getItem(FRIENDS_CACHE_KEY);
         if (cached) {
           const parsedCache = JSON.parse(cached);
-          // Проверяем что в кэше массив
           if (Array.isArray(parsedCache)) {
             setFriends(parsedCache);
           } else {
@@ -88,7 +87,7 @@ export default function Friends() {
     };
 
     loadFriends();
-  }, [isReady, user, initData]);
+  }, [user, initData]); // Убрана зависимость isReady
 
   const handleDelete = async (friendId: number) => {
     try {
