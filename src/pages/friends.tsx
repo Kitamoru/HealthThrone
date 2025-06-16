@@ -39,7 +39,7 @@ const FRIENDS_CACHE_KEY = 'friends_cache';
 
 export default function Friends() {
   const router = useRouter();
-  const { user, isReady, initData, webApp } = useTelegram();
+  const { user, initData, webApp } = useTelegram();
   const [loading, setLoading] = useState(true);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [error, setError] = useState<string | null>(null);
