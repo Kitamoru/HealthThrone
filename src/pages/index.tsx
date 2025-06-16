@@ -1,12 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTelegram } from '../hooks/useTelegram';
-import { BurnoutProgress } from '../components/BurnoutProgress';
-import { QuestionCard } from '../components/QuestionCard';
-import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
-import { UserProfile } from '../lib/types';
+import { Loader } from '../components/Loader';
+
+// Динамический импорт компонентов
+const BurnoutProgress = dynamic(() => import('../components/BurnoutProgress'), { 
+  loading: () => <div className="sprite-container">Загрузка...</div>,
+  ssr: false
+});
+
+const QuestionCard = dynamic(() => import('../components/QuestionCard'), {
+  loading: () => <div>Загрузка вопроса...</div>,
+  ssr: false
+});
 
 interface Question {
   id: number;
@@ -96,19 +106,15 @@ const QUESTIONS: Question[] = [
   }
 ];
 
-export default function Home() {
+const Home = () => {
   const router = useRouter();
   const { user, initData } = useTelegram();
+  const queryClient = useQueryClient();
   
   const [questions] = useState<Question[]>(QUESTIONS);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
-  const [initialBurnoutLevel, setInitialBurnoutLevel] = useState(0);
-  const [burnoutLevel, setBurnoutLevel] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [apiError, setApiError] = useState<string | null>(null);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
-  const [alreadyAttemptedToday, setAlreadyAttemptedToday] = useState(false);
-  const [spriteUrl, setSpriteUrl] = useState<string>('/sprite.gif'); // Состояние для URL спрайта
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Проверка, является ли дата сегодняшней (в UTC)
   const isTodayUTC = useCallback((dateStr: string) => {
@@ -119,61 +125,75 @@ export default function Home() {
       String(today.getUTCDate()).padStart(2, '0')
     ].join('-');
     
-    // Извлекаем часть с датой (YYYY-MM-DD)
     const datePart = dateStr.split('T')[0];
-    
     return todayUTC === datePart;
   }, []);
 
-  // Загрузка данных пользователя
-  const loadUserData = useCallback(async () => {
-    try {
-      setApiError(null);
-      
-      if (!user?.id) return;
-
+  // Загрузка данных пользователя с кэшированием
+  const { data: userData, isLoading, isError } = useQuery({
+    queryKey: ['userData', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
       const response = await api.getUserData(Number(user.id), initData);
-
-      if (response.success && response.data) {
-        const userData = response.data;
-        const level = userData.burnout_level ?? 0;
-        
-        setBurnoutLevel(level);
-        setInitialBurnoutLevel(level);
-
-        // Обновляем URL спрайта из данных пользователя
-        if (userData.current_sprite_url) {
-          setSpriteUrl(userData.current_sprite_url);
-        } else {
-          setSpriteUrl('/sprite.gif'); // Используем значение по умолчанию
-        }
-
-        // Проверка последней попытки в UTC
-        if (userData.last_attempt_date) {
-          if (isTodayUTC(userData.last_attempt_date)) {
-            setAlreadyAttemptedToday(true);
-          }
-        }
-      } else {
-        // Обработка специфических ошибок
-        if (response.status === 429) {
-          setAlreadyAttemptedToday(true);
-        } else {
-          setApiError(response.error || "Ошибка загрузки данных");
-        }
+      
+      if (!response.success) {
+        throw new Error(response.error || "Ошибка загрузки данных");
       }
-    } catch (err) {
-      setApiError("Ошибка соединения");
-    } finally {
-      setLoading(false);
+      
+      return response.data;
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 минут кэширования
+    retry: 1,
+    onError: (error) => {
+      setApiError(error.message);
     }
-  }, [user?.id, initData, isTodayUTC]);
+  });
 
-  // Загрузка данных при монтировании
-  useEffect(() => {
-    setLoading(true);
-    loadUserData();
-  }, [loadUserData]);
+  // Мутация для отправки результатов опроса
+  const submitSurveyMutation = useMutation({
+    mutationFn: async (totalScore: number) => {
+      if (!user?.id) throw new Error("Пользователь не определен");
+      
+      const response = await api.submitSurvey({
+        telegramId: Number(user.id),
+        newScore: totalScore,
+        initData
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || 'Ошибка сохранения результатов');
+      }
+      
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(['userData', user?.id], data);
+      setSurveyCompleted(true);
+    },
+    onError: (error) => {
+      setApiError(error.message);
+    }
+  });
+
+  // Вычисляемые значения
+  const initialBurnoutLevel = userData?.burnout_level ?? 0;
+  const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
+  const alreadyAttemptedToday = userData?.last_attempt_date 
+    ? isTodayUTC(userData.last_attempt_date) 
+    : false;
+
+  // Расчет текущего уровня выгорания
+  const burnoutLevel = useMemo(() => {
+    const answeredDelta = Object.entries(answers).reduce((sum, [id, ans]) => {
+      if (!ans) return sum;
+      const qId = parseInt(id);
+      const q = questions.find(q => q.id === qId);
+      return sum + (q?.weight || 0);
+    }, 0);
+
+    return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
+  }, [answers, initialBurnoutLevel, questions]);
 
   // Обработка выбора ответа
   const handleAnswer = (questionId: number, isPositive: boolean) => {
@@ -189,76 +209,32 @@ export default function Home() {
 
     setAnswers(newAnswers);
 
-    // Рассчет нового уровня выгорания
-    const answeredDelta = Object.entries(newAnswers).reduce((sum, [id, ans]) => {
-      if (!ans) return sum;
-      const qId = parseInt(id);
-      const q = questions.find(q => q.id === qId);
-      return sum + (q?.weight || 0);
-    }, 0);
-
-    const newLevel = Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
-    setBurnoutLevel(newLevel);
-
     // Проверка завершения опроса
     if (questions.every(q => q.id in newAnswers)) {
-      submitSurvey(answeredDelta);
-    }
-  };
-
-  // Отправка результата
-  const submitSurvey = async (totalScore: number) => {
-    if (!user?.id) return;
-
-    try {
-      setApiError(null);
+      const totalScore = Object.values(newAnswers).reduce((sum, ans, idx) => {
+        return sum + (ans ? questions[idx].weight : 0);
+      }, 0);
       
-      const response = await api.submitSurvey({
-        telegramId: Number(user.id),
-        newScore: totalScore,
-        initData
-      });
-
-      // Обработка ошибок API
-      if (response.status === 429) {
-        setAlreadyAttemptedToday(true);
-        return;
-      }
-
-      if (!response.success) {
-        setApiError(response.error || 'Ошибка сохранения результатов');
-        return;
-      }
-
-      // Успешное завершение
-      if (response.data) {
-        setSurveyCompleted(true);
-        setAlreadyAttemptedToday(true);
-        setBurnoutLevel(response.data.burnout_level);
-      }
-    } catch (error) {
-      console.error('Survey submission failed:', error);
-      setApiError('Ошибка соединения с сервером');
+      submitSurveyMutation.mutate(totalScore);
     }
   };
 
   // Отображение состояния загрузки
-  if (loading) {
+  if (isLoading) {
     return <Loader />;
   }
 
   // Отображение ошибок
-  if (!user) {
+  if (isError || !user) {
     return (
       <div className="error-message">
-        Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение.
+        {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
       </div>
     );
   }
 
   return (
     <div className="container">
-      {/* Передаем URL спрайта в компонент */}
       <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
       
       <div className="content">
@@ -292,22 +268,25 @@ export default function Home() {
         )}
       </div>
 
-      {/* Меню навигации */}
+      {/* Меню навигации с prefetch */}
       <div className="menu">
         <Link href="/" passHref>
           <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
         </Link>
-        <Link href="/friends" passHref prefetch={true}>
+        <Link href="/friends" passHref prefetch>
           <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
         </Link>
-        <Link href="/shop" passHref prefetch={true}>
+        <Link href="/shop" passHref prefetch>
           <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
         </Link>
-        <Link href="/reference" passHref prefetch={true}>
+        <Link href="/reference" passHref prefetch>
           <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
         </Link>
       </div>
     </div>
   );
-}
+};
+
+export default React.memo(Home);
+
 
