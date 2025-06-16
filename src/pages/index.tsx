@@ -100,7 +100,7 @@ export default function Home() {
   const router = useRouter();
   const { user, initData } = useTelegram();
   
-  const questions = useMemo(() => QUESTIONS, []);
+  const [QUESTIONS] = useMemo(() => QUESTIONS, []);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [initialBurnoutLevel, setInitialBurnoutLevel] = useState(0);
   const [burnoutLevel, setBurnoutLevel] = useState(0);
