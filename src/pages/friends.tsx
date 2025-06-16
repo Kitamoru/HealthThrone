@@ -193,7 +193,7 @@ export default function Friends() {
             onMouseEnter={() => queryClient.prefetchQuery({ 
               queryKey: ['user', user?.id],
               queryFn: () => user?.id && initData 
-                ? api.getUserData(user.id, initData) 
+                ? api.getUserData(Number(user.id), initData)
                 : Promise.resolve(null),
             })}
           >
