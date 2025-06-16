@@ -1,7 +1,4 @@
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
-  enabled: process.env.ANALYZE === 'true',
-});
-
+// Исправленный next.config.js
 const nextConfig = {
   reactStrictMode: true,
   images: {
@@ -42,4 +39,12 @@ const nextConfig = {
   }
 };
 
-module.exports = withBundleAnalyzer(nextConfig);
+// Проверяем наличие анализатора только при необходимости
+if (process.env.ANALYZE) {
+  const withBundleAnalyzer = require('@next/bundle-analyzer')({
+    enabled: process.env.ANALYZE === 'true',
+  });
+  module.exports = withBundleAnalyzer(nextConfig);
+} else {
+  module.exports = nextConfig;
+}
