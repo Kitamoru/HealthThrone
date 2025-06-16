@@ -24,7 +24,6 @@ export default function Shop() {
   }, []);
 
   useEffect(() => {
-    // Убрана проверка isReady - используем только user?.id и initData
     if (!user?.id || !initData) return;
 
     const fetchData = async () => {
@@ -37,9 +36,9 @@ export default function Shop() {
           spritesResponse,
           ownedResponse
         ] = await Promise.all([
-          api.getUserData(Number(user.id), // initData передается автоматически
-          api.getSprites(),
-          api.getOwnedSprites(Number(user.id))
+          api.getUserData(Number(user.id), initData),
+          api.getSprites(initData),
+          api.getOwnedSprites(Number(user.id), initData)
         ]);
 
         if (userResponse.success && userResponse.data) {
@@ -71,7 +70,7 @@ export default function Shop() {
     };
 
     fetchData();
-  }, [user, initData]); // Убрана зависимость isReady
+  }, [user, initData]);
 
   const handlePurchase = async (spriteId: number) => {
     const validationError = validateRequiredFields(
@@ -107,7 +106,11 @@ export default function Shop() {
 
     try {
       setProcessing(spriteId);
-      const purchaseResult = await api.purchaseSprite(Number(user.id), spriteId);
+      const purchaseResult = await api.purchaseSprite(
+        Number(user.id),
+        spriteId,
+        initData
+      );
       if (purchaseResult.success) {
         setOwnedSprites((prev) => [...prev, spriteId]);
         setCoins((prev) => prev - sprite.price);
@@ -140,7 +143,11 @@ export default function Shop() {
 
     try {
       setProcessing(spriteId);
-      const equipResult = await api.equipSprite(Number(user.id), spriteId);
+      const equipResult = await api.equipSprite(
+        Number(user.id),
+        spriteId,
+        initData
+      );
       if (equipResult.success) {
         setCurrentSprite(spriteId);
         setError(null);
