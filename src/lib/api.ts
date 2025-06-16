@@ -177,12 +177,18 @@ export const useUserData = (telegramId: number, initData?: string) => {
 };
 
 export const useFriendsData = (telegramId: string, initData?: string) => {
-  return useQuery<ApiResponse<Friend[]>>({
+  return useQuery<Friend[], Error>({
     queryKey: ['friends', telegramId],
-    queryFn: () => api.getFriends(telegramId, initData),
+    queryFn: async () => {
+      if (!telegramId) return [];
+      const response = await api.getFriends(telegramId, initData);
+      if (response.success) {
+        return response.data ?? [];
+      }
+      throw new Error(response.error || 'Failed to fetch friends');
+    },
     enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
-    select: (response) => response.success ? response.data ?? [] : [],
   });
 };
 
