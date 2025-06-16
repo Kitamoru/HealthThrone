@@ -7,16 +7,18 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { Friend } from '../lib/types';
 
-// Динамический импорт компонентов
-const Loader = dynamic(() => import('../components/Loader'), { ssr: false });
-const BurnoutProgress = dynamic(() => import('../components/BurnoutProgress'), { 
+// Исправленные динамические импорты
+const Loader = dynamic(() => import('../components/Loader').then(mod => mod.default), { 
+  ssr: false,
+  loading: () => <div>Загрузка...</div>
+});
+
+const BurnoutProgress = dynamic(() => import('../components/BurnoutProgress').then(mod => mod.default), { 
   ssr: false,
   loading: () => <div className="progress-container">Загрузка...</div>
 });
 
 const FRIENDS_CACHE_KEY = 'friends_cache';
-
-const MemoizedBurnoutProgress = React.memo(BurnoutProgress);
 
 export default function Friends() {
   const router = useRouter();
@@ -128,7 +130,7 @@ export default function Friends() {
               {friends.map((friend) => (
                 <div key={friend.id} className="friend-card">
                   <div className="friend-name">{friend.friend_username}</div>
-                  <MemoizedBurnoutProgress level={friend.burnout_level} />
+                  <BurnoutProgress level={friend.burnout_level} />
                   <button 
                     className="delete-btn"
                     onClick={() => handleDelete(friend.id)}
