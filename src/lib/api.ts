@@ -46,7 +46,8 @@ export const useDeleteFriend = () => {
       initData?: string 
     }) => api.deleteFriend(params.friendId, params.initData),
     onSuccess: () => {
-      queryClient.invalidateQueries(['friends']);
+      // Исправлено: передаем объект с queryKey вместо массива
+      queryClient.invalidateQueries({ queryKey: ['friends'] });
     }
   });
 };
