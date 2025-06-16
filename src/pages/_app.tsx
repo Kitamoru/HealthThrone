@@ -6,13 +6,15 @@ import { useEffect, useState } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '../lib/queryClient';
 
 export default function App({ Component, pageProps }: AppProps) {
-  const { isReady, initData, startParam } = useTelegram();
+  const { initData, startParam } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
 
   useEffect(() => {
-    if (isReady && initData && !userInitialized) {
+    if (initData) {
       console.log('Initializing user with startParam:', startParam);
       api.initUser(initData, startParam)
         .then(response => {
@@ -24,10 +26,10 @@ export default function App({ Component, pageProps }: AppProps) {
         })
         .finally(() => setUserInitialized(true));
     }
-  }, [isReady, initData, startParam, userInitialized]);
+  }, [initData, startParam]);
 
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       <Head>
         <title>Burnout Tracker - Отслеживание выгорания</title>
         <meta name="description" content="Telegram Mini App для отслеживания уровня выгорания" />
@@ -51,6 +53,6 @@ export default function App({ Component, pageProps }: AppProps) {
         </div> : 
         <Loader />
       }
-    </>
+    </QueryClientProvider>
   );
 }
