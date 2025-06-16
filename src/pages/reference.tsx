@@ -7,7 +7,7 @@ import Head from 'next/head';
 const ReferencePage = () => {
   const router = useRouter();
   const { webApp } = useTelegram();
-
+  
   return (
     <>
       <Head>
