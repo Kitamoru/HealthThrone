@@ -222,12 +222,16 @@ export const useUserData = (telegramId: number, initData?: string) => {
         throw new Error(response.error || "Ошибка загрузки данных пользователя");
       }
       
+      // Явная проверка на наличие данных
+      if (response.data === undefined) {
+        throw new Error("Данные пользователя не получены");
+      }
+      
       return response.data;
     },
     enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
     retry: (failureCount, error) => {
-      // Не повторять для 404 ошибок
       return error.message !== 'User not found' && failureCount < 2;
     }
   });
@@ -241,6 +245,11 @@ export const useFriendsData = (telegramId: string, initData?: string) => {
       
       if (!response.success) {
         throw new Error(response.error || "Ошибка загрузки списка друзей");
+      }
+      
+      // Явная проверка на наличие данных
+      if (response.data === undefined) {
+        throw new Error("Список друзей не получен");
       }
       
       return response.data;
@@ -258,6 +267,11 @@ export const useSpritesData = (initData?: string) => {
       
       if (!response.success) {
         throw new Error(response.error || "Ошибка загрузки спрайтов");
+      }
+      
+      // Явная проверка на наличие данных
+      if (response.data === undefined) {
+        throw new Error("Спрайты не получены");
       }
       
       return response.data;
@@ -281,6 +295,11 @@ export const useSubmitSurvey = () => {
         throw new Error(response.error || 'Ошибка сохранения результатов опроса');
       }
       
+      // Явная проверка на наличие данных
+      if (response.data === undefined) {
+        throw new Error("Данные пользователя не обновлены");
+      }
+      
       return response.data;
     },
     onSuccess: (data, variables) => {
@@ -296,7 +315,7 @@ export const useDeleteFriend = () => {
   return useMutation({
     mutationFn: (params: { friendId: number; initData?: string }) => 
       api.deleteFriend(params.friendId, params.initData),
-    onSuccess: (_, variables, context) => {
+    onSuccess: () => {
       // Инвалидация кэша друзей
       queryClient.invalidateQueries(['friends']);
     }
@@ -311,7 +330,20 @@ export const prefetchUserData = (
 ) => {
   return queryClient.prefetchQuery({
     queryKey: ['user', telegramId],
-    queryFn: () => api.getUserData(telegramId, initData),
+    queryFn: async () => {
+      const response = await api.getUserData(telegramId, initData);
+      
+      if (!response.success) {
+        throw new Error(response.error || "Ошибка предзагрузки данных пользователя");
+      }
+      
+      // Явная проверка на наличие данных
+      if (response.data === undefined) {
+        throw new Error("Данные пользователя не получены");
+      }
+      
+      return response.data;
+    },
   });
 };
 
@@ -322,7 +354,20 @@ export const prefetchFriendsData = (
 ) => {
   return queryClient.prefetchQuery({
     queryKey: ['friends', telegramId],
-    queryFn: () => api.getFriends(telegramId, initData),
+    queryFn: async () => {
+      const response = await api.getFriends(telegramId, initData);
+      
+      if (!response.success) {
+        throw new Error(response.error || "Ошибка предзагрузки списка друзей");
+      }
+      
+      // Явная проверка на наличие данных
+      if (response.data === undefined) {
+        throw new Error("Список друзей не получен");
+      }
+      
+      return response.data;
+    },
   });
 };
 
@@ -332,6 +377,19 @@ export const prefetchSpritesData = (
 ) => {
   return queryClient.prefetchQuery({
     queryKey: ['sprites'],
-    queryFn: () => api.getSprites(initData),
+    queryFn: async () => {
+      const response = await api.getSprites(initData);
+      
+      if (!response.success) {
+        throw new Error(response.error || "Ошибка предзагрузки спрайтов");
+      }
+      
+      // Явная проверка на наличие данных
+      if (response.data === undefined) {
+        throw new Error("Спрайты не получены");
+      }
+      
+      return response.data;
+    },
   });
 };
