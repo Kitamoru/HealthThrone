@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 
 interface Friend {
   id: number;
@@ -51,7 +51,7 @@ export default function Friends() {
   const [copied, setCopied] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: friends, isLoading, error } = useQuery({
+  const { data: friendsResponse, isLoading, error } = useQuery({
     queryKey: ['friends', user?.id],
     queryFn: () => api.getFriends(initData),
     enabled: !!user?.id && !!initData,
@@ -62,7 +62,6 @@ export default function Friends() {
     mutationFn: (friendId: number) => 
       api.deleteFriend(friendId, initData),
     onSuccess: () => {
-      // Исправлено: передаем объект с queryKey
       queryClient.invalidateQueries({ queryKey: ['friends', user?.id] });
     }
   });
@@ -93,6 +92,11 @@ export default function Friends() {
     return <Loader />;
   }
 
+  // Обрабатываем ответ API
+  const friends = friendsResponse?.success ? friendsResponse.data : [];
+  const apiError = friendsResponse && !friendsResponse.success ? friendsResponse.error : null;
+  const errorMessage = (error as Error)?.message || apiError;
+
   return (
     <div className="container">
       <div className="scrollable-content">
@@ -105,9 +109,9 @@ export default function Friends() {
             Добавить
           </button>
         </div>
-        {error && <div className="error">{(error as Error).message}</div>}
+        {errorMessage && <div className="error">{errorMessage}</div>}
         <div className="friends-list">
-          {!friends || friends.length === 0 ? (
+          {friends.length === 0 ? (
             <div className="empty">У вас не добавлены участники команды</div>
           ) : (
             <div className="friends-grid">
