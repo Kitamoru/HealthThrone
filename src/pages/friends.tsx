@@ -7,7 +7,6 @@ import { api, useFriendsData } from '../lib/api';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 
-// Динамический импорт компонентов
 const BurnoutProgress = dynamic(() => 
   import('../components/BurnoutProgress').then(mod => mod.BurnoutProgress),
   { ssr: false }
@@ -22,7 +21,7 @@ export default function Friends() {
   const [copied, setCopied] = useState(false);
   const queryClient = useQueryClient();
 
-  // Используем хук useFriendsData из api.ts
+  // Используем исправленный хук useFriendsData
   const { data: friends = [], isLoading, error } = useFriendsData(
     user?.id?.toString() || '', 
     initData
