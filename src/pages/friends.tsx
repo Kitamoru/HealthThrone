@@ -8,12 +8,12 @@ import { api } from '../lib/api';
 import { Friend } from '../lib/types';
 
 // Исправленные динамические импорты
-const Loader = dynamic(() => import('../components/Loader').then(mod => mod.default), { 
+const Loader = dynamic(() => import('../components/Loader'), { 
   ssr: false,
   loading: () => <div>Загрузка...</div>
 });
 
-const BurnoutProgress = dynamic(() => import('../components/BurnoutProgress').then(mod => mod.default), { 
+const BurnoutProgress = dynamic(() => import('../components/BurnoutProgress'), { 
   ssr: false,
   loading: () => <div className="progress-container">Загрузка...</div>
 });
