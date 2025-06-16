@@ -93,7 +93,7 @@ export default function Friends() {
   }
 
   // Всегда гарантируем, что friends - массив
-  const friends = friendsResponse?.success ? friendsResponse.data : [];
+  const friends: Friend[] = friendsResponse?.success ? friendsResponse.data || [] : [];
   const apiError = friendsResponse && !friendsResponse.success ? friendsResponse.error : null;
   const errorMessage = (error as Error)?.message || apiError;
 
