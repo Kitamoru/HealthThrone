@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -136,7 +136,12 @@ const Home = () => {
   }, []);
 
   // Загрузка данных пользователя с кэшированием
-  const { data: userData, isLoading, isError } = useQuery({
+  const { 
+    data: userData, 
+    isLoading, 
+    isError,
+    error: queryError 
+  } = useQuery({
     queryKey: ['userData', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -151,10 +156,14 @@ const Home = () => {
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000, // 5 минут кэширования
     retry: 1,
-    onError: (error) => {
-      setApiError(error.message);
-    }
   });
+
+  // Обработка ошибок запроса
+  useEffect(() => {
+    if (queryError) {
+      setApiError(queryError.message);
+    }
+  }, [queryError]);
 
   // Мутация для отправки результатов опроса
   const submitSurveyMutation = useMutation({
@@ -177,7 +186,7 @@ const Home = () => {
       queryClient.setQueryData(['userData', user?.id], data);
       setSurveyCompleted(true);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       setApiError(error.message);
     }
   });
