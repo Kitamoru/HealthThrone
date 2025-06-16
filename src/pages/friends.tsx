@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
-import { api } from '../lib/api';
-import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
+import { api, useFriendsData } from '../lib/api';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 
 // Динамический импорт компонентов
@@ -12,13 +12,6 @@ const BurnoutProgress = dynamic(() =>
   import('../components/BurnoutProgress').then(mod => mod.BurnoutProgress),
   { ssr: false }
 );
-
-interface Friend {
-  id: number;
-  friend_id: number;
-  friend_username: string;
-  burnout_level: number;
-}
 
 const FRIENDS_QUERY_KEY = 'friends';
 
@@ -29,24 +22,18 @@ export default function Friends() {
   const [copied, setCopied] = useState(false);
   const queryClient = useQueryClient();
 
-  // Запрос данных о друзьях с кэшированием
-  const { data: friends = [], isLoading, error } = useQuery<Friend[]>({
-    queryKey: [FRIENDS_QUERY_KEY, user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const response = await api.getFriends(user.id.toString(), initData);
-      return response.success ? response.data : [];
-    },
-    enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 минут кэширования
-  });
+  // Используем хук useFriendsData из api.ts
+  const { data: friends = [], isLoading, error } = useFriendsData(
+    user?.id?.toString() || '', 
+    initData
+  );
 
   // Мутация для удаления друга
   const deleteMutation = useMutation({
     mutationFn: (friendId: number) => 
       api.deleteFriend(friendId, initData),
     onSuccess: () => {
-      queryClient.invalidateQueries([FRIENDS_QUERY_KEY, user?.id]);
+      queryClient.invalidateQueries([FRIENDS_QUERY_KEY, user?.id?.toString()]);
     }
   });
 
@@ -131,7 +118,7 @@ export default function Friends() {
                 </button>
               </div>
               <div className="custom-modal-body">
-                <p>Добавь участникакоманды</p>
+                <p>Добавь участника команды</p>
                 <div className="referral-link-container">
                   <input 
                     type="text" 
