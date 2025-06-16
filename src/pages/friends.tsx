@@ -62,7 +62,8 @@ export default function Friends() {
     mutationFn: (friendId: number) => 
       api.deleteFriend(friendId, initData),
     onSuccess: () => {
-      queryClient.invalidateQueries(['friends', user?.id]);
+      // Исправлено: передаем объект с queryKey
+      queryClient.invalidateQueries({ queryKey: ['friends', user?.id] });
     }
   });
 
