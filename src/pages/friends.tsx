@@ -92,7 +92,7 @@ export default function Friends() {
     return <Loader />;
   }
 
-  // Обрабатываем ответ API
+  // Всегда гарантируем, что friends - массив
   const friends = friendsResponse?.success ? friendsResponse.data : [];
   const apiError = friendsResponse && !friendsResponse.success ? friendsResponse.error : null;
   const errorMessage = (error as Error)?.message || apiError;
