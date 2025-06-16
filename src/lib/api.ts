@@ -1,5 +1,5 @@
 import { ApiResponse, UserProfile, Sprite, Friend } from './types';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'; // Добавлен useQueryClient
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 // Новые хуки для react-query
 export const useUserData = (telegramId: number, initData?: string) => {
@@ -46,7 +46,7 @@ export const useDeleteFriend = () => {
       initData?: string 
     }) => api.deleteFriend(params.friendId, params.initData),
     onSuccess: () => {
-      // Исправлено: передаем объект с queryKey вместо массива
+      // Исправлено: передаем объект с queryKey
       queryClient.invalidateQueries({ queryKey: ['friends'] });
     }
   });
