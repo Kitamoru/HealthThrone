@@ -67,44 +67,40 @@ declare global {
 }
 
 export const useTelegram = () => {
-  const [isReady, setIsReady] = useState(false);
-  const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
-  const [initData, setInitData] = useState('');
-  const [user, setUser] = useState<TelegramUser | null>(null);
-  const [startParam, setStartParam] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState({
+    webApp: null as TelegramWebApp | null,
+    initData: '',
+    user: null as TelegramUser | null,
+    startParam: '',
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
     const initTelegram = () => {
       const telegram = window.Telegram;
-      if (!telegram?.WebApp) {
-        setError('Telegram WebApp not initialized');
-        return;
-      }
+      if (!telegram?.WebApp) return;
 
       const tg = telegram.WebApp;
-      setWebApp(tg);
-      setInitData(tg.initData);
-      
-      if (tg.initDataUnsafe?.user) {
-        setUser(tg.initDataUnsafe.user);
-      }
-      
-      if (tg.initDataUnsafe?.start_param) {
-        setStartParam(tg.initDataUnsafe.start_param);
-      }
-
       tg.ready();
       tg.expand();
-      setIsReady(true);
+
+      setState({
+        webApp: tg,
+        initData: tg.initData,
+        user: tg.initDataUnsafe.user || null,
+        startParam: tg.initDataUnsafe.start_param || '',
+      });
     };
 
     if (window.Telegram?.WebApp) {
       initTelegram();
     } else {
-      window.addEventListener('telegram-ready', initTelegram);
+      const handleReady = () => {
+        initTelegram();
+        window.removeEventListener('telegram-ready', handleReady);
+      };
+      window.addEventListener('telegram-ready', handleReady);
     }
 
     return () => {
@@ -112,12 +108,5 @@ export const useTelegram = () => {
     };
   }, []);
 
-  return {
-    user,
-    isReady,
-    initData,
-    startParam,
-    webApp,
-    error
-  };
+  return state;
 };
