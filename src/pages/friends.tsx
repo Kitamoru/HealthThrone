@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Friend {
   id: number;
@@ -13,7 +13,11 @@ interface Friend {
   burnout_level: number;
 }
 
-const BurnoutProgress = React.memo(({ level }: { level: number }) => {
+interface BurnoutProgressProps {
+  level: number;
+}
+
+const BurnoutProgress = React.memo(({ level }: BurnoutProgressProps) => {
   return (
     <div className="progress-container">
       <div 
@@ -25,25 +29,6 @@ const BurnoutProgress = React.memo(({ level }: { level: number }) => {
   );
 });
 
-const FriendCard = React.memo(({ 
-  friend, 
-  onDelete 
-}: { 
-  friend: Friend; 
-  onDelete: (id: number) => void 
-}) => (
-  <div className="friend-card">
-    <div className="friend-name">{friend.friend_username}</div>
-    <BurnoutProgress level={friend.burnout_level} />
-    <button 
-      className="delete-btn"
-      onClick={() => onDelete(friend.id)}
-    >
-      Удалить
-    </button>
-  </div>
-));
-
 export default function Friends() {
   const router = useRouter();
   const { user, initData, webApp } = useTelegram();
@@ -51,20 +36,45 @@ export default function Friends() {
   const [copied, setCopied] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: friendsResponse, isLoading, error } = useQuery({
+  const { 
+    data: friends, 
+    isLoading, 
+    isError,
+    error: queryError
+  } = useQuery({
     queryKey: ['friends', user?.id],
-    queryFn: () => api.getFriends(initData),
+    queryFn: async () => {
+      if (!user?.id || !initData) return [];
+      
+      const response = await api.getFriends(user.id.toString(), initData);
+      if (response.success && response.data) {
+        return response.data.map(f => ({
+          id: f.id,
+          friend_id: f.friend.id,
+          friend_username: f.friend.username || 
+                          `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
+          burnout_level: f.friend.burnout_level
+        }));
+      }
+      throw new Error(response.error || 'Failed to load friends');
+    },
     enabled: !!user?.id && !!initData,
     staleTime: 5 * 60 * 1000,
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (friendId: number) => 
-      api.deleteFriend(friendId, initData),
+  const deleteFriendMutation = useMutation({
+    mutationFn: (friendId: number) => {
+      if (!initData) throw new Error('Init data missing');
+      return api.deleteFriend(friendId, initData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friends', user?.id] });
-    }
+    },
   });
+
+  const handleDelete = (friendId: number) => {
+    deleteFriendMutation.mutate(friendId);
+  };
 
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
   const referralCode = `ref_${user?.id || 'default'}`;
@@ -92,11 +102,6 @@ export default function Friends() {
     return <Loader />;
   }
 
-  // Всегда гарантируем, что friends - массив
-  const friends: Friend[] = friendsResponse?.success ? friendsResponse.data || [] : [];
-  const apiError = friendsResponse && !friendsResponse.success ? friendsResponse.error : null;
-  const errorMessage = (error as Error)?.message || apiError;
-
   return (
     <div className="container">
       <div className="scrollable-content">
@@ -109,18 +114,32 @@ export default function Friends() {
             Добавить
           </button>
         </div>
-        {errorMessage && <div className="error">{errorMessage}</div>}
+        
+        {isError && (
+          <div className="error">{queryError?.message || 'Ошибка загрузки друзей'}</div>
+        )}
+        
+        {deleteFriendMutation.isError && (
+          <div className="error">Ошибка при удалении друга</div>
+        )}
+        
         <div className="friends-list">
-          {friends.length === 0 ? (
+          {!friends || friends.length === 0 ? (
             <div className="empty">У вас не добавлены участники команды</div>
           ) : (
             <div className="friends-grid">
               {friends.map((friend) => (
-                <FriendCard 
-                  key={friend.id} 
-                  friend={friend} 
-                  onDelete={deleteMutation.mutate} 
-                />
+                <div key={friend.id} className="friend-card">
+                  <div className="friend-name">{friend.friend_username}</div>
+                  <BurnoutProgress level={friend.burnout_level} />
+                  <button 
+                    className="delete-btn"
+                    onClick={() => handleDelete(friend.id)}
+                    disabled={deleteFriendMutation.isPending}
+                  >
+                    {deleteFriendMutation.isPending ? 'Удаление...' : 'Удалить'}
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -168,23 +187,39 @@ export default function Friends() {
       </div>
 
       <div className="menu">
-        <Link href="/" passHref prefetch>
-          <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>
+        <Link href="/" passHref>
+          <button 
+            className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}
+            onMouseEnter={() => queryClient.prefetchQuery({ 
+              queryKey: ['user', user?.id],
+              queryFn: () => user?.id && initData 
+                ? api.getUserData(user.id, initData) 
+                : Promise.resolve(null),
+            })}
+          >
             📊
           </button>
         </Link>
-        <Link href="/friends" passHref prefetch>
+        <Link href="/friends" passHref>
           <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>
             📈
           </button>
         </Link>
-        <Link href="/shop" passHref prefetch>
-          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>
+        <Link href="/shop" passHref>
+          <button 
+            className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}
+            onMouseEnter={() => queryClient.prefetchQuery({ 
+              queryKey: ['sprites'],
+              queryFn: () => api.getSprites(initData),
+            })}
+          >
             🛍️
           </button>
         </Link>
-        <Link href="/reference" passHref prefetch>
-          <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
+        <Link href="/reference" passHref>
+          <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>
+            ℹ️
+          </button>
         </Link>
       </div>
     </div>
