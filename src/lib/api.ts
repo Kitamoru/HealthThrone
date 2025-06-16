@@ -1,5 +1,5 @@
 import { ApiResponse, UserProfile, Sprite, Friend } from './types';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'; // Добавлен useQueryClient
 
 // Новые хуки для react-query
 export const useUserData = (telegramId: number, initData?: string) => {
