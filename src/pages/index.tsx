@@ -7,16 +7,22 @@ import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
 
-// Динамический импорт компонентов
-const BurnoutProgress = dynamic(() => import('../components/BurnoutProgress'), { 
-  loading: () => <div className="sprite-container">Загрузка...</div>,
-  ssr: false
-});
+// Исправленные динамические импорты
+const BurnoutProgress = dynamic(
+  () => import('../components/BurnoutProgress').then(mod => mod.BurnoutProgress),
+  { 
+    loading: () => <div className="sprite-container">Загрузка...</div>,
+    ssr: false
+  }
+);
 
-const QuestionCard = dynamic(() => import('../components/QuestionCard'), {
-  loading: () => <div>Загрузка вопроса...</div>,
-  ssr: false
-});
+const QuestionCard = dynamic(
+  () => import('../components/QuestionCard').then(mod => mod.QuestionCard),
+  {
+    loading: () => <div>Загрузка вопроса...</div>,
+    ssr: false
+  }
+);
 
 interface Question {
   id: number;
@@ -288,5 +294,3 @@ const Home = () => {
 };
 
 export default React.memo(Home);
-
-
