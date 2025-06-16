@@ -1,3 +1,4 @@
+Index.tsx 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -100,7 +101,7 @@ export default function Home() {
   const router = useRouter();
   const { user, initData } = useTelegram();
   
-  const [QUESTIONS] = useMemo(() => QUESTIONS, []);
+  const [questions] = useState<Question[]>(QUESTIONS);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [initialBurnoutLevel, setInitialBurnoutLevel] = useState(0);
   const [burnoutLevel, setBurnoutLevel] = useState(0);
