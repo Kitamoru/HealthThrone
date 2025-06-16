@@ -9,11 +9,14 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
-// Динамический импорт Loader с SSR: false
-const Loader = dynamic(() => import('../components/Loader'), {
-  ssr: false,
-  loading: () => <div>Загрузка...</div>
-});
+// Исправленный динамический импорт Loader
+const Loader = dynamic(
+  () => import('../components/Loader').then(mod => mod.Loader),
+  {
+    ssr: false,
+    loading: () => <div>Загрузка...</div>
+  }
+);
 
 function App({ Component, pageProps }: AppProps) {
   const { initData, startParam } = useTelegram();
