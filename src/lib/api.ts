@@ -1,5 +1,12 @@
-import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
-import type { UserProfile, Sprite, Friend, ApiResponse } from './types';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { UserProfile, Sprite, Friend } from './types';
+
+interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  status?: number;
+}
 
 class Api {
   private baseUrl = '/api';
@@ -105,29 +112,11 @@ class Api {
     );
   }
 
-  async updateBurnoutLevel(telegramId: number, level: number, initData?: string) {
-    return this.makeRequest(
-      '/update', 
-      'POST', 
-      { telegramId, burnoutLevel: level },
-      initData
-    );
-  }
-
   async getFriends(telegramId: string, initData?: string): Promise<ApiResponse<Friend[]>> {
     return this.makeRequest<Friend[]>(
       `/friends?telegramId=${telegramId}`, 
       'GET', 
       undefined, 
-      initData
-    );
-  }
-
-  async addFriend(friendUsername: string, initData?: string): Promise<ApiResponse> {
-    return this.makeRequest(
-      '/friends', 
-      'POST', 
-      { friendUsername },
       initData
     );
   }
@@ -145,15 +134,6 @@ class Api {
     return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
   }
   
-  async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
-    return this.makeRequest<Sprite>(
-      `/shop/sprites/${spriteId}`, 
-      'GET', 
-      undefined, 
-      initData
-    );
-  }
-
   async purchaseSprite(
     telegramId: number, 
     spriteId: number, 
@@ -167,31 +147,6 @@ class Api {
     );
   }
 
-  async getOwnedSprites(
-    telegramId: number, 
-    initData?: string
-  ): Promise<ApiResponse<number[]>> {
-    return this.makeRequest<number[]>(
-      `/shop/owned?telegramId=${telegramId}`, 
-      'GET', 
-      undefined, 
-      initData
-    );
-  }
-
-  async equipSprite(
-    telegramId: number, 
-    spriteId: number, 
-    initData?: string
-  ): Promise<ApiResponse> {
-    return this.makeRequest(
-      '/shop/equip', 
-      'POST', 
-      { telegramId, spriteId },
-      initData
-    );
-  }
-  
   async submitSurvey(params: {
     telegramId: number;
     newScore: number;
@@ -213,183 +168,44 @@ export const api = new Api();
 
 // React Query Hooks
 export const useUserData = (telegramId: number, initData?: string) => {
-  return useQuery<UserProfile, Error>({
+  return useQuery({
     queryKey: ['user', telegramId],
-    queryFn: async () => {
-      const response = await api.getUserData(telegramId, initData);
-      
-      if (!response.success) {
-        throw new Error(response.error || "Ошибка загрузки данных пользователя");
-      }
-      
-      // Явная проверка на наличие данных
-      if (response.data === undefined) {
-        throw new Error("Данные пользователя не получены");
-      }
-      
-      return response.data;
-    },
+    queryFn: () => api.getUserData(telegramId, initData),
     enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
-    retry: (failureCount, error) => {
-      return error.message !== 'User not found' && failureCount < 2;
-    }
   });
 };
 
 export const useFriendsData = (telegramId: string, initData?: string) => {
-  return useQuery<Friend[], Error>({
+  return useQuery({
     queryKey: ['friends', telegramId],
-    queryFn: async () => {
-      const response = await api.getFriends(telegramId, initData);
-      
-      if (!response.success) {
-        throw new Error(response.error || "Ошибка загрузки списка друзей");
-      }
-      
-      // Явная проверка на наличие данных
-      if (response.data === undefined) {
-        throw new Error("Список друзей не получен");
-      }
-      
-      return response.data;
-    },
+    queryFn: () => api.getFriends(telegramId, initData),
     enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
   });
 };
 
 export const useSpritesData = (initData?: string) => {
-  return useQuery<Sprite[], Error>({
+  return useQuery({
     queryKey: ['sprites'],
-    queryFn: async () => {
-      const response = await api.getSprites(initData);
-      
-      if (!response.success) {
-        throw new Error(response.error || "Ошибка загрузки спрайтов");
-      }
-      
-      // Явная проверка на наличие данных
-      if (response.data === undefined) {
-        throw new Error("Спрайты не получены");
-      }
-      
-      return response.data;
-    },
+    queryFn: () => api.getSprites(initData),
     staleTime: 10 * 60 * 1000,
   });
 };
 
 export const useSubmitSurvey = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation<UserProfile, Error, { 
-    telegramId: number; 
-    newScore: number; 
-    initData?: string 
-  }>({
-    mutationFn: async (params) => {
-      const response = await api.submitSurvey(params);
-      
-      if (!response.success) {
-        throw new Error(response.error || 'Ошибка сохранения результатов опроса');
-      }
-      
-      // Явная проверка на наличие данных
-      if (response.data === undefined) {
-        throw new Error("Данные пользователя не обновлены");
-      }
-      
-      return response.data;
-    },
-    onSuccess: (data, variables) => {
-      // Автоматическое обновление кэша пользователя
-      queryClient.setQueryData(['user', variables.telegramId], data);
-    }
+  return useMutation({
+    mutationFn: (params: { 
+      telegramId: number; 
+      newScore: number; 
+      initData?: string 
+    }) => api.submitSurvey(params),
   });
 };
 
 export const useDeleteFriend = () => {
-  const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: (params: { friendId: number; initData?: string }) => 
-      api.deleteFriend(params.friendId, params.initData),
-    onSuccess: () => {
-      // Инвалидация кэша друзей
-      queryClient.invalidateQueries(['friends']);
-    }
-  });
-};
-
-// Prefetch functions
-export const prefetchUserData = (
-  queryClient: QueryClient,
-  telegramId: number,
-  initData?: string
-) => {
-  return queryClient.prefetchQuery({
-    queryKey: ['user', telegramId],
-    queryFn: async () => {
-      const response = await api.getUserData(telegramId, initData);
-      
-      if (!response.success) {
-        throw new Error(response.error || "Ошибка предзагрузки данных пользователя");
-      }
-      
-      // Явная проверка на наличие данных
-      if (response.data === undefined) {
-        throw new Error("Данные пользователя не получены");
-      }
-      
-      return response.data;
-    },
-  });
-};
-
-export const prefetchFriendsData = (
-  queryClient: QueryClient,
-  telegramId: string,
-  initData?: string
-) => {
-  return queryClient.prefetchQuery({
-    queryKey: ['friends', telegramId],
-    queryFn: async () => {
-      const response = await api.getFriends(telegramId, initData);
-      
-      if (!response.success) {
-        throw new Error(response.error || "Ошибка предзагрузки списка друзей");
-      }
-      
-      // Явная проверка на наличие данных
-      if (response.data === undefined) {
-        throw new Error("Список друзей не получен");
-      }
-      
-      return response.data;
-    },
-  });
-};
-
-export const prefetchSpritesData = (
-  queryClient: QueryClient,
-  initData?: string
-) => {
-  return queryClient.prefetchQuery({
-    queryKey: ['sprites'],
-    queryFn: async () => {
-      const response = await api.getSprites(initData);
-      
-      if (!response.success) {
-        throw new Error(response.error || "Ошибка предзагрузки спрайтов");
-      }
-      
-      // Явная проверка на наличие данных
-      if (response.data === undefined) {
-        throw new Error("Спрайты не получены");
-      }
-      
-      return response.data;
-    },
+      api.deleteFriend(params.friendId, params.initData)
   });
 };
