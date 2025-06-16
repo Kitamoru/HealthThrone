@@ -100,7 +100,7 @@ export default function Home() {
   const router = useRouter();
   const { user, initData } = useTelegram();
   
-  const [questions] = useState<Question[]>(QUESTIONS);
+  const questions = useMemo(() => QUESTIONS, []);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [initialBurnoutLevel, setInitialBurnoutLevel] = useState(0);
   const [burnoutLevel, setBurnoutLevel] = useState(0);
@@ -297,16 +297,17 @@ export default function Home() {
         <Link href="/" passHref>
           <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
         </Link>
-        <Link href="/friends" passHref>
+        <Link href="/friends" passHref prefetch={true}>
           <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
         </Link>
-        <Link href="/shop" passHref>
+        <Link href="/shop" passHref prefetch={true}>
           <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
         </Link>
-        <Link href="/reference" passHref>
+        <Link href="/reference" passHref prefetch={true}>
           <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
         </Link>
       </div>
     </div>
   );
 }
+
