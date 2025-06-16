@@ -1,4 +1,42 @@
 import { ApiResponse, UserProfile, Sprite, Friend } from './types';
+import { useQuery, useMutation } from '@tanstack/react-query';
+
+// Новые хуки для react-query
+export const useUserData = (telegramId: number, initData?: string) => {
+  return useQuery({
+    queryKey: ['user', telegramId],
+    queryFn: () => api.getUserData(telegramId, initData),
+    enabled: !!telegramId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useFriendsData = (telegramId: string, initData?: string) => {
+  return useQuery({
+    queryKey: ['friends', telegramId],
+    queryFn: () => api.getFriends(telegramId, initData),
+    enabled: !!telegramId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useSpritesData = (initData?: string) => {
+  return useQuery({
+    queryKey: ['sprites'],
+    queryFn: () => api.getSprites(initData),
+    staleTime: 10 * 60 * 1000,
+  });
+};
+
+export const useSubmitSurvey = () => {
+  return useMutation({
+    mutationFn: (params: { 
+      telegramId: number; 
+      newScore: number; 
+      initData?: string 
+    }) => api.submitSurvey(params),
+  });
+};
 
 class Api {
   private baseUrl = '/api';
