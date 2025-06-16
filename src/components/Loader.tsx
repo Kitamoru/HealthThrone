@@ -10,4 +10,4 @@ export const Loader = React.memo(() => {
       <p className="loader-text">Загружаем данные...</p>
     </div>
   );
-};
+};)
