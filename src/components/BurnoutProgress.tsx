@@ -5,7 +5,7 @@ interface BurnoutProgressProps {
   spriteUrl?: string;
 }
 
-export const BurnoutProgress: React.FC<BurnoutProgressProps> = ({ 
+export const BurnoutProgress = React.memo(({ level, spriteUrl }: BurnoutProgressProps) => {
   level,
   spriteUrl = '/sprite.gif'
 }) => {
