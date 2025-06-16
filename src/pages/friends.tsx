@@ -1,18 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
-import { Loader } from '../components/Loader';
-import { api, useFriendsData } from '../lib/api';
-import { useQueryClient, useMutation } from '@tanstack/react-query';
-import dynamic from 'next/dynamic';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { api } from '../lib/api';
+import { Friend } from '../lib/types';
 
-const BurnoutProgress = dynamic(() => 
-  import('../components/BurnoutProgress').then(mod => mod.BurnoutProgress),
-  { ssr: false }
-);
+// Динамический импорт компонентов
+const Loader = dynamic(() => import('../components/Loader'), { ssr: false });
+const BurnoutProgress = dynamic(() => import('../components/BurnoutProgress'), { 
+  ssr: false,
+  loading: () => <div className="progress-container">Загрузка...</div>
+});
 
-const FRIENDS_QUERY_KEY = 'friends';
+const FRIENDS_CACHE_KEY = 'friends_cache';
+
+const MemoizedBurnoutProgress = React.memo(BurnoutProgress);
 
 export default function Friends() {
   const router = useRouter();
@@ -21,36 +25,70 @@ export default function Friends() {
   const [copied, setCopied] = useState(false);
   const queryClient = useQueryClient();
 
-  // Используем исправленный хук useFriendsData
-  const { data: friends = [], isLoading, error } = useFriendsData(
-    user?.id?.toString() || '', 
-    initData
-  );
+  // Prefetch основных страниц
+  React.useEffect(() => {
+    router.prefetch('/');
+    router.prefetch('/shop');
+    router.prefetch('/reference');
+  }, [router]);
+
+  // Загрузка друзей с кэшированием
+  const { data: friendsResponse, isLoading, error } = useQuery({
+    queryKey: ['friends', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { success: false, data: [] };
+      
+      const cached = sessionStorage.getItem(FRIENDS_CACHE_KEY);
+      if (cached) {
+        return { success: true, data: JSON.parse(cached) };
+      }
+      
+      const response = await api.getFriends(initData);
+      if (response.success && response.data && Array.isArray(response.data)) {
+        const formattedFriends = response.data.map(f => ({
+          id: f.id,
+          friend_id: f.friend.id,
+          friend_username: f.friend.username || 
+                          `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
+          burnout_level: f.friend.burnout_level
+        }));
+        
+        sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(formattedFriends));
+        return { success: true, data: formattedFriends };
+      }
+      return response;
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 минут кэширования
+  });
+
+  const friends = friendsResponse?.success ? friendsResponse.data : [];
 
   // Мутация для удаления друга
   const deleteMutation = useMutation({
-    mutationFn: (friendId: number) => 
-      api.deleteFriend(friendId, initData),
-    onSuccess: () => {
-      queryClient.invalidateQueries([FRIENDS_QUERY_KEY, user?.id?.toString()]);
+    mutationFn: (friendId: number) => api.deleteFriend(friendId, initData),
+    onSuccess: (_, friendId) => {
+      const updatedFriends = friends.filter(f => f.id !== friendId);
+      sessionStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(updatedFriends));
+      queryClient.setQueryData(['friends', user?.id], { success: true, data: updatedFriends });
     }
   });
 
-  const handleDelete = (friendId: number) => {
+  const handleDelete = useCallback((friendId: number) => {
     deleteMutation.mutate(friendId);
-  };
+  }, [deleteMutation]);
 
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
   const referralCode = `ref_${user?.id || 'default'}`;
   const referralLink = `https://t.me/${botUsername}/HealthBreake?startapp=${referralCode}`;
 
-  const handleCopy = () => {
+  const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
+  }, [referralLink]);
 
-  const handleShare = () => {
+  const handleShare = useCallback(() => {
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Добро пожаловать на борт!')}`;
 
     if (webApp?.openTelegramLink) {
@@ -60,7 +98,7 @@ export default function Friends() {
     } else {
       window.open(shareUrl, '_blank');
     }
-  };
+  }, [referralLink, webApp]);
 
   if (isLoading) {
     return <Loader />;
@@ -78,9 +116,9 @@ export default function Friends() {
             Добавить
           </button>
         </div>
-        {error && <div className="error">{(error as Error).message}</div>}
-        {deleteMutation.isError && (
-          <div className="error">{(deleteMutation.error as Error).message}</div>
+        {error && <div className="error">{error.toString()}</div>}
+        {!friendsResponse?.success && friendsResponse?.error && (
+          <div className="error">{friendsResponse.error}</div>
         )}
         <div className="friends-list">
           {friends.length === 0 ? (
@@ -90,13 +128,13 @@ export default function Friends() {
               {friends.map((friend) => (
                 <div key={friend.id} className="friend-card">
                   <div className="friend-name">{friend.friend_username}</div>
-                  <BurnoutProgress level={friend.burnout_level} />
+                  <MemoizedBurnoutProgress level={friend.burnout_level} />
                   <button 
                     className="delete-btn"
                     onClick={() => handleDelete(friend.id)}
-                    disabled={deleteMutation.isLoading}
+                    disabled={deleteMutation.isPending}
                   >
-                    {deleteMutation.isLoading ? 'Удаление...' : 'Удалить'}
+                    {deleteMutation.isPending ? 'Удаление...' : 'Удалить'}
                   </button>
                 </div>
               ))}
@@ -117,7 +155,7 @@ export default function Friends() {
                 </button>
               </div>
               <div className="custom-modal-body">
-                <p>Добавь участника команды</p>
+                <p>Добавь участникакоманды</p>
                 <div className="referral-link-container">
                   <input 
                     type="text" 
@@ -146,23 +184,37 @@ export default function Friends() {
       </div>
 
       <div className="menu">
-        <Link href="/" passHref prefetch>
-          <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>
+        <Link href="/" passHref>
+          <button 
+            className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}
+            onMouseEnter={() => router.prefetch('/')}
+          >
             📊
           </button>
         </Link>
-        <Link href="/friends" passHref prefetch>
-          <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>
+        <Link href="/friends" passHref>
+          <button 
+            className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}
+            onMouseEnter={() => router.prefetch('/friends')}
+          >
             📈
           </button>
         </Link>
-        <Link href="/shop" passHref prefetch>
-          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>
+        <Link href="/shop" passHref>
+          <button 
+            className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}
+            onMouseEnter={() => router.prefetch('/shop')}
+          >
             🛍️
           </button>
         </Link>
-        <Link href="/reference" passHref prefetch>
-          <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
+        <Link href="/reference" passHref>
+          <button 
+            className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}
+            onMouseEnter={() => router.prefetch('/reference')}
+          >
+            ℹ️
+          </button>
         </Link>
       </div>
     </div>
