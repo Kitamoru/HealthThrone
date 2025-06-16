@@ -9,7 +9,7 @@ import { validateRequiredFields } from '../utils/validation';
 
 export default function Shop() {
   const router = useRouter();
-  const { user, isReady, initData } = useTelegram();
+  const { user, initData } = useTelegram();
   const [sprites, setSprites] = useState<Sprite[]>([]);
   const [loading, setLoading] = useState(true);
   const [coins, setCoins] = useState(0);
