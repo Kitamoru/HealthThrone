@@ -1,54 +1,23 @@
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
-import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
-import { useTelegram } from '../hooks/useTelegram';
-import { api } from '../lib/api';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
+import { useTelegram } from '../hooks/useTelegram';
 import '../styles/globals.css';
-
-// Prefetch shop data
-const prefetchShopData = (initData?: string) => {
-  if (typeof window !== 'undefined') {
-    queryClient.prefetchQuery({
-      queryKey: ['sprites'],
-      queryFn: () => api.getSprites(initData),
-    });
-  }
-};
-
-const Loader = dynamic(
-  () => import('../components/Loader').then(mod => mod.Loader),
-  {
-    ssr: false,
-    loading: () => <div>Загрузка...</div>
-  }
-);
+import Loader from '../components/Loader';
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp } = useTelegram();
+  const { initData, startParam } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
 
   useEffect(() => {
     if (initData) {
       api.initUser(initData, startParam)
-        .then(response => {
-          if (response.success) {
-            console.log('User initialized successfully');
-          }
-        })
         .finally(() => setUserInitialized(true));
     }
   }, [initData, startParam]);
-
-  useEffect(() => {
-    if (webApp && initData) {
-      // Prefetch shop data when app is ready
-      prefetchShopData(initData);
-    }
-  }, [webApp, initData]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -70,9 +39,7 @@ function App({ Component, pageProps }: AppProps) {
       />
 
       {userInitialized ? 
-        <div className="page-transition">
-          <Component {...pageProps} />
-        </div> : 
+        <Component {...pageProps} /> : 
         <Loader />
       }
     </QueryClientProvider>
