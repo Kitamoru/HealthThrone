@@ -1,5 +1,6 @@
 import { ApiResponse, UserProfile, Sprite, Friend } from './types';
-import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { queryClient } from './queryClient';
 
 export const useUserData = (telegramId: number, initData?: string) => {
   return useQuery({
