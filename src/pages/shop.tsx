@@ -10,9 +10,14 @@ import {
   usePurchaseSprite,
   useEquipSprite
 } from '../lib/api';
-import { Sprite } from '../lib/types';
-import { validateRequiredFields } from '../utils/validation';
 import { queryClient } from '../lib/queryClient';
+
+interface Sprite {
+  id: number;
+  name: string;
+  image_url: string;
+  price: number;
+}
 
 const SpriteCard = React.memo(({ 
   sprite, 
@@ -36,16 +41,12 @@ const SpriteCard = React.memo(({
       src={sprite.image_url}
       alt={sprite.name}
       className="sprite-image"
-      onError={(e) =>
-        (e.currentTarget.src =
-          'https://via.placeholder.com/150?text=No+Image')
-      }
+      onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/150?text=No+Image')}
     />
     <div className="sprite-info">
       <h3>{sprite.name}</h3>
       <div className="sprite-price">
-        Цена:{' '}
-        {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'}
+        Цена: {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'}
       </div>
       <div className="sprite-actions">
         {!isOwned ? (
@@ -55,11 +56,7 @@ const SpriteCard = React.memo(({
               onClick={() => !isProcessing && onPurchase(sprite.id)}
               disabled={isProcessing}
             >
-              {isProcessing ? (
-                <span className="button-loader">⏳</span>
-              ) : (
-                'Купить'
-              )}
+              {isProcessing ? '⏳' : 'Купить'}
             </button>
           ) : (
             <button className="buy-btn disabled" disabled>
@@ -72,13 +69,7 @@ const SpriteCard = React.memo(({
             onClick={() => !isProcessing && onEquip(sprite.id)}
             disabled={isProcessing || isEquipped}
           >
-            {isProcessing ? (
-              <span className="button-loader">⏳</span>
-            ) : isEquipped ? (
-              'Применён'
-            ) : (
-              'Применить'
-            )}
+            {isProcessing ? '⏳' : isEquipped ? 'Применён' : 'Применить'}
           </button>
         )}
       </div>
@@ -88,26 +79,26 @@ const SpriteCard = React.memo(({
 
 export default function Shop() {
   const router = useRouter();
-  const { user, initData } = useTelegram();
+  const { user } = useTelegram();
   const telegramId = Number(user?.id);
   
   const { 
     data: userResponse, 
     isLoading: userLoading, 
     error: userError 
-  } = useUserData(telegramId, initData);
+  } = useUserData(telegramId);
   
   const { 
     data: spritesResponse, 
     isLoading: spritesLoading, 
     error: spritesError 
-  } = useSpritesData(initData);
+  } = useSpritesData();
   
   const { 
     data: ownedResponse, 
     isLoading: ownedLoading, 
     error: ownedError 
-  } = useOwnedSprites(telegramId, initData);
+  } = useOwnedSprites(telegramId);
   
   const purchaseMutation = usePurchaseSprite();
   const equipMutation = useEquipSprite();
@@ -128,22 +119,9 @@ export default function Shop() {
 
   const isLoading = userLoading || spritesLoading || ownedLoading;
   const errorMessage = error || userError?.message || 
-    spritesError?.message || ownedError?.message ||
-    (userResponse && !userResponse.success ? userResponse.error : null) ||
-    (spritesResponse && !spritesResponse.success ? spritesResponse.error : null) ||
-    (ownedResponse && !ownedResponse.success ? ownedResponse.error : null);
+    spritesError?.message || ownedError?.message;
 
   const handlePurchase = useCallback(async (spriteId: number) => {
-    const validationError = validateRequiredFields(
-      { user, initData },
-      ['user', 'initData'],
-      'Необходимо наличие обоих данных'
-    );
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
     if (!user?.id) {
       setError('Пользователь не определен');
       return;
@@ -167,38 +145,23 @@ export default function Shop() {
 
     try {
       setProcessing(spriteId);
-      const purchaseResult = await purchaseMutation.mutateAsync({
+      await purchaseMutation.mutateAsync({
         telegramId: Number(user.id),
-        spriteId,
-        initData
+        spriteId
       });
       
-      if (purchaseResult.success) {
-        // Исправление: правильный формат для invalidateQueries
-        queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] });
-        queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
-        setError(null);
-      } else {
-        setError(purchaseResult.error || 'Ошибка покупки спрайта.');
-      }
+      // Обновление данных
+      queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] });
+      queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
+      setError(null);
     } catch (err) {
-      setError('Возникла проблема с сетью при покупке.');
+      setError('Возникла проблема при покупке');
     } finally {
       setProcessing(null);
     }
-  }, [user, initData, sprites, ownedSprites, coins, purchaseMutation]);
+  }, [user, sprites, ownedSprites, coins, purchaseMutation]);
 
   const handleEquip = useCallback(async (spriteId: number) => {
-    const validationError = validateRequiredFields(
-      { user, initData },
-      ['user', 'initData'],
-      'Необходимые данные отсутствуют.'
-    );
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
     if (!user?.id) {
       setError('Пользователь не определен');
       return;
@@ -206,25 +169,20 @@ export default function Shop() {
 
     try {
       setProcessing(spriteId);
-      const equipResult = await equipMutation.mutateAsync({
+      await equipMutation.mutateAsync({
         telegramId: Number(user.id),
-        spriteId,
-        initData
+        spriteId
       });
       
-      if (equipResult.success) {
-        // Исправление: правильный формат для invalidateQueries
-        queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
-        setError(null);
-      } else {
-        setError(equipResult.error || 'Ошибка при применении спрайта.');
-      }
+      // Обновление данных
+      queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
+      setError(null);
     } catch (err) {
-      setError('Проблема с сетью при попытке применить спрайт.');
+      setError('Проблема при применении спрайта');
     } finally {
       setProcessing(null);
     }
-  }, [user, initData, equipMutation]);
+  }, [user, equipMutation]);
 
   if (isLoading) {
     return <Loader />;
@@ -242,10 +200,10 @@ export default function Shop() {
 
         {!user?.id ? (
           <div className="error">
-            Пользователь не авторизован. Перезагрузите страницу.
+            Пользователь не авторизован
           </div>
         ) : sprites.length === 0 ? (
-          <div className="info">Нет доступных спрайтов.</div>
+          <div className="info">Нет доступных спрайтов</div>
         ) : (
           <div className="sprites-grid">
             {sprites.map((sprite) => (
@@ -275,7 +233,7 @@ export default function Shop() {
           <button className="menu-btn active">🛍️</button>
         </Link>
         <Link href="/reference" passHref>
-          <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
+          <button className="menu-btn">ℹ️</button>
         </Link>
       </div>
     </div>
