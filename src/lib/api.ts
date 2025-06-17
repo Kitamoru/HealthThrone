@@ -1,7 +1,5 @@
 import { ApiResponse, UserProfile, Sprite, Friend } from './types';
-import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
-
-// Используем единый QueryClient из файла queryClient
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient } from './queryClient';
 
 // Хуки для react-query
