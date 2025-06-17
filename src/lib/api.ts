@@ -1,6 +1,9 @@
-import { QueryClient } from '@tanstack/react-query';
+import { 
+  useQuery, 
+  useMutation, 
+  QueryClient 
+} from '@tanstack/react-query';
 
-// Добавленные типы для полноты кода
 export type ApiResponse<T = any> = {
   success: boolean;
   data?: T;
