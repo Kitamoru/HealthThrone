@@ -46,8 +46,8 @@ export default function Shop() {
     mutationFn: (spriteId: number) => 
       api.purchaseSprite(telegramId, spriteId, initData),
     onSuccess: () => {
-      queryClient.invalidateQueries(['user', telegramId]);
-      queryClient.invalidateQueries(['ownedSprites', telegramId]);
+      queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
+      queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] });
     },
   });
 
@@ -55,7 +55,7 @@ export default function Shop() {
     mutationFn: (spriteId: number) => 
       api.equipSprite(telegramId, spriteId, initData),
     onSuccess: () => {
-      queryClient.invalidateQueries(['user', telegramId]);
+      queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
     },
   });
 
@@ -76,13 +76,13 @@ export default function Shop() {
       return;
     }
 
-    const sprite = sprites?.find((item) => item.id === spriteId);
+    const sprite = sprites?.data?.find((item) => item.id === spriteId);
     if (!sprite) {
       setError('Спрайт не найден');
       return;
     }
 
-    if (ownedSprites?.includes(spriteId)) {
+    if (ownedSprites?.data?.includes(spriteId)) {
       setError('Вы уже приобрели этот спрайт.');
       return;
     }
