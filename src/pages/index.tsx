@@ -32,7 +32,83 @@ interface Question {
 }
 
 const QUESTIONS: Question[] = [
-  // ... (вопросы остаются без изменений)
+  {
+    id: 1,
+    text: "Я чувствую усталость даже после отдыха",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 3
+  },
+  {
+    id: 2,
+    text: "Мне трудно сосредоточиться на работе",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 2
+  },
+  {
+    id: 3,
+    text: "Я часто чувствую раздражение",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 2
+  },
+  {
+    id: 4,
+    text: "У меня снизилась мотивация к работе",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 3
+  },
+  {
+    id: 5,
+    text: "Я испытываю физическое напряжение",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 2
+  },
+  {
+    id: 6,
+    text: "Мне сложно расслабиться",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 2
+  },
+  {
+    id: 7,
+    text: "Я чувствую себя эмоционально истощенным",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 3
+  },
+  {
+    id: 8,
+    text: "У меня есть проблемы со сном",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 2
+  },
+  {
+    id: 9,
+    text: "Я хорошо сплю",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: -2
+  },
+  {
+    id: 10,
+    text: "Я чувствую себя мотивированным",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: -2
+  },
+  {
+    id: 11,
+    text: "У меня хороший аппетит",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: -1
+  }
 ];
 
 const Home = () => {
