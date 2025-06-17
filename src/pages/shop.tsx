@@ -12,6 +12,7 @@ import {
 } from '../lib/apiHooks';
 import { queryClient } from '../lib/queryClient';
 
+
 interface Sprite {
   id: number;
   name: string;
