@@ -7,6 +7,7 @@ import { queryClient } from '../lib/queryClient';
 import { useTelegram } from '../hooks/useTelegram';
 import '../styles/globals.css';
 import { Loader } from '../components/Loader';
+import { api } from '../lib/api'; 
 
 function App({ Component, pageProps }: AppProps) {
   const { initData, startParam } = useTelegram();
