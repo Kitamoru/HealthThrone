@@ -34,6 +34,7 @@ export default function Friends() {
   const { user, initData, webApp } = useTelegram();
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [deletingFriends, setDeletingFriends] = useState<number[]>([]); // Новое состояние
   const queryClient = useQueryClient();
 
   const { 
@@ -73,7 +74,15 @@ export default function Friends() {
   });
 
   const handleDelete = (friendId: number) => {
-    deleteFriendMutation.mutate(friendId);
+    // Добавляем друга в список удаляемых
+    setDeletingFriends(prev => [...prev, friendId]);
+    
+    deleteFriendMutation.mutate(friendId, {
+      onSettled: () => {
+        // Убираем друга из списка после завершения
+        setDeletingFriends(prev => prev.filter(id => id !== friendId));
+      }
+    });
   };
 
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
@@ -119,10 +128,6 @@ export default function Friends() {
           <div className="error">{queryError?.message || 'Ошибка загрузки друзей'}</div>
         )}
         
-        {deleteFriendMutation.isError && (
-          <div className="error">Ошибка при удалении друга</div>
-        )}
-        
         <div className="friends-list">
           {!friends || friends.length === 0 ? (
             <div className="empty">У вас не добавлены участники команды</div>
@@ -135,9 +140,9 @@ export default function Friends() {
                   <button 
                     className="delete-btn"
                     onClick={() => handleDelete(friend.id)}
-                    disabled={deleteFriendMutation.isPending}
+                    disabled={deletingFriends.includes(friend.id)} // Блокируем конкретную кнопку
                   >
-                    {deleteFriendMutation.isPending ? 'Удаление...' : 'Удалить'}
+                    {deletingFriends.includes(friend.id) ? 'Удаление...' : 'Удалить'}
                   </button>
                 </div>
               ))}
