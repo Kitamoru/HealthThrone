@@ -9,7 +9,6 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
-// Исправленный динамический импорт Loader
 const Loader = dynamic(
   () => import('../components/Loader').then(mod => mod.Loader),
   {
