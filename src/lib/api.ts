@@ -1,30 +1,17 @@
 import { ApiResponse, UserProfile, Sprite, Friend } from './types';
 import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
 
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,
-      retry: 1,
-    },
-  },
-});
+// Используем единый QueryClient из файла queryClient
+import { queryClient } from './queryClient';
 
+// Хуки для react-query
 export const useUserData = (telegramId: number, initData?: string) => {
   return useQuery({
     queryKey: ['user', telegramId],
     queryFn: () => api.getUserData(telegramId, initData),
     enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
-  });
-};
-
-export const useFriendsData = (telegramId: string, initData?: string) => {
-  return useQuery({
-    queryKey: ['friends', telegramId],
-    queryFn: () => api.getFriends(telegramId, initData),
-    enabled: !!telegramId,
-    staleTime: 5 * 60 * 1000,
+    retry: 1,
   });
 };
 
@@ -33,6 +20,7 @@ export const useSpritesData = (initData?: string) => {
     queryKey: ['sprites'],
     queryFn: () => api.getSprites(initData),
     staleTime: 10 * 60 * 1000,
+    retry: 1,
   });
 };
 
@@ -42,6 +30,7 @@ export const useOwnedSprites = (telegramId: number, initData?: string) => {
     queryFn: () => api.getOwnedSprites(telegramId, initData),
     enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
+    retry: 1,
   });
 };
 
@@ -52,10 +41,6 @@ export const usePurchaseSprite = () => {
       spriteId: number; 
       initData?: string 
     }) => api.purchaseSprite(params.telegramId, params.spriteId, params.initData),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['ownedSprites', variables.telegramId] });
-      queryClient.invalidateQueries({ queryKey: ['user', variables.telegramId] });
-    },
   });
 };
 
@@ -66,9 +51,6 @@ export const useEquipSprite = () => {
       spriteId: number; 
       initData?: string 
     }) => api.equipSprite(params.telegramId, params.spriteId, params.initData),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['user', variables.telegramId] });
-    },
   });
 };
 
@@ -164,6 +146,7 @@ class Api {
     }
   }
 
+  // User-related methods
   async initUser(initData: string, startParam?: string) {
     return this.makeRequest('/init', 'POST', { initData, ref: startParam });
   }
@@ -186,6 +169,7 @@ class Api {
     );
   }
 
+  // Friends methods
   async getFriends(telegramId: string, initData?: string): Promise<ApiResponse<Friend[]>> {
     return this.makeRequest<Friend[]>(
       `/friends?telegramId=${telegramId}`, 
@@ -213,6 +197,7 @@ class Api {
     );
   }
 
+  // Shop methods
   async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
     return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
   }
@@ -264,6 +249,7 @@ class Api {
     );
   }
   
+  // Survey methods
   async submitSurvey(params: {
     telegramId: number;
     newScore: number;
