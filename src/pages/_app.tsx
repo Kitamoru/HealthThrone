@@ -9,6 +9,16 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
+// Prefetch shop data
+const prefetchShopData = (initData?: string) => {
+  if (typeof window !== 'undefined') {
+    queryClient.prefetchQuery({
+      queryKey: ['sprites'],
+      queryFn: () => api.getSprites(initData),
+    });
+  }
+};
+
 const Loader = dynamic(
   () => import('../components/Loader').then(mod => mod.Loader),
   {
@@ -18,7 +28,7 @@ const Loader = dynamic(
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam } = useTelegram();
+  const { initData, startParam, webApp } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
 
   useEffect(() => {
@@ -32,6 +42,13 @@ function App({ Component, pageProps }: AppProps) {
         .finally(() => setUserInitialized(true));
     }
   }, [initData, startParam]);
+
+  useEffect(() => {
+    if (webApp && initData) {
+      // Prefetch shop data when app is ready
+      prefetchShopData(initData);
+    }
+  }, [webApp, initData]);
 
   return (
     <QueryClientProvider client={queryClient}>
