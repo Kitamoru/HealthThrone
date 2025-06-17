@@ -9,7 +9,7 @@ import {
   useOwnedSprites,
   usePurchaseSprite,
   useEquipSprite
-} from '../lib/api';
+} from '../lib/apiHooks';
 import { queryClient } from '../lib/queryClient';
 
 interface Sprite {
@@ -150,7 +150,6 @@ export default function Shop() {
         spriteId
       });
       
-      // Обновление данных
       queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] });
       queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
       setError(null);
@@ -174,7 +173,6 @@ export default function Shop() {
         spriteId
       });
       
-      // Обновление данных
       queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
       setError(null);
     } catch (err) {
