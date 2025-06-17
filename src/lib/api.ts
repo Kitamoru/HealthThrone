@@ -10,7 +10,6 @@ export const queryClient = new QueryClient({
   },
 });
 
-// Хуки для react-query
 export const useUserData = (telegramId: number, initData?: string) => {
   return useQuery({
     queryKey: ['user', telegramId],
@@ -34,6 +33,42 @@ export const useSpritesData = (initData?: string) => {
     queryKey: ['sprites'],
     queryFn: () => api.getSprites(initData),
     staleTime: 10 * 60 * 1000,
+  });
+};
+
+export const useOwnedSprites = (telegramId: number, initData?: string) => {
+  return useQuery({
+    queryKey: ['ownedSprites', telegramId],
+    queryFn: () => api.getOwnedSprites(telegramId, initData),
+    enabled: !!telegramId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const usePurchaseSprite = () => {
+  return useMutation({
+    mutationFn: (params: { 
+      telegramId: number; 
+      spriteId: number; 
+      initData?: string 
+    }) => api.purchaseSprite(params.telegramId, params.spriteId, params.initData),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['ownedSprites', variables.telegramId] });
+      queryClient.invalidateQueries({ queryKey: ['user', variables.telegramId] });
+    },
+  });
+};
+
+export const useEquipSprite = () => {
+  return useMutation({
+    mutationFn: (params: { 
+      telegramId: number; 
+      spriteId: number; 
+      initData?: string 
+    }) => api.equipSprite(params.telegramId, params.spriteId, params.initData),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['user', variables.telegramId] });
+    },
   });
 };
 
@@ -129,7 +164,6 @@ class Api {
     }
   }
 
-  // User-related methods
   async initUser(initData: string, startParam?: string) {
     return this.makeRequest('/init', 'POST', { initData, ref: startParam });
   }
@@ -152,7 +186,6 @@ class Api {
     );
   }
 
-  // Friends methods
   async getFriends(telegramId: string, initData?: string): Promise<ApiResponse<Friend[]>> {
     return this.makeRequest<Friend[]>(
       `/friends?telegramId=${telegramId}`, 
@@ -180,7 +213,6 @@ class Api {
     );
   }
 
-  // Shop methods
   async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
     return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
   }
@@ -232,7 +264,6 @@ class Api {
     );
   }
   
-  // Survey methods
   async submitSurvey(params: {
     telegramId: number;
     newScore: number;
