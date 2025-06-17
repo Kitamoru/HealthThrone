@@ -1,5 +1,40 @@
-import { ApiResponse, UserProfile, Sprite, Friend } from './types';
-import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
+
+// Добавленные типы для полноты кода
+export type ApiResponse<T = any> = {
+  success: boolean;
+  data?: T;
+  error?: string;
+  status?: number;
+};
+
+export type UserProfile = {
+  id: number;
+  telegram_id: number;
+  burnout_level: number;
+  coins: number;
+  current_sprite_id: number | null;
+  current_sprite_url: string | null;
+  last_attempt_date: string;
+};
+
+export type Sprite = {
+  id: number;
+  name: string;
+  image_url: string;
+  price: number;
+};
+
+export type Friend = {
+  id: number;
+  friend: {
+    id: number;
+    username?: string;
+    first_name: string;
+    last_name?: string;
+    burnout_level: number;
+  };
+};
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -11,7 +46,7 @@ export const queryClient = new QueryClient({
 });
 
 export const useUserData = (telegramId: number, initData?: string) => {
-  return useQuery({
+  return useQuery<ApiResponse<UserProfile>, Error>({
     queryKey: ['user', telegramId],
     queryFn: () => api.getUserData(telegramId, initData),
     enabled: !!telegramId,
@@ -20,7 +55,7 @@ export const useUserData = (telegramId: number, initData?: string) => {
 };
 
 export const useFriendsData = (telegramId: string, initData?: string) => {
-  return useQuery({
+  return useQuery<ApiResponse<Friend[]>, Error>({
     queryKey: ['friends', telegramId],
     queryFn: () => api.getFriends(telegramId, initData),
     enabled: !!telegramId,
@@ -29,7 +64,7 @@ export const useFriendsData = (telegramId: string, initData?: string) => {
 };
 
 export const useSpritesData = (initData?: string) => {
-  return useQuery({
+  return useQuery<ApiResponse<Sprite[]>, Error>({
     queryKey: ['sprites'],
     queryFn: () => api.getSprites(initData),
     staleTime: 10 * 60 * 1000,
@@ -37,7 +72,7 @@ export const useSpritesData = (initData?: string) => {
 };
 
 export const useOwnedSprites = (telegramId: number, initData?: string) => {
-  return useQuery({
+  return useQuery<ApiResponse<number[]>, Error>({
     queryKey: ['ownedSprites', telegramId],
     queryFn: () => api.getOwnedSprites(telegramId, initData),
     enabled: !!telegramId,
