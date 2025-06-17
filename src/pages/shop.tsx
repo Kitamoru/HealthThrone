@@ -1,3 +1,4 @@
+Shop.tsx 
 import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -174,6 +175,7 @@ export default function Shop() {
       });
       
       if (purchaseResult.success) {
+        // Исправление: правильный формат для invalidateQueries
         queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] });
         queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
         setError(null);
@@ -212,6 +214,7 @@ export default function Shop() {
       });
       
       if (equipResult.success) {
+        // Исправление: правильный формат для invalidateQueries
         queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
         setError(null);
       } else {
