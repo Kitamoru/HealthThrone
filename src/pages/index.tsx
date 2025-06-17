@@ -196,11 +196,11 @@ const Home = () => {
   }, [user?.id, initData, queryClient]);
 
   const submitSurveyMutation = useMutation({
-    mutationFn: async (totalScore: number) => {
-      if (!user?.id) throw new Error("Пользователь не определен");
+    mutationFn: async (payload: { totalScore: number; userId: number; initData: string }) => {
+      const { totalScore, userId, initData } = payload;
       
       const response = await api.submitSurvey({
-        telegramId: Number(user.id),
+        telegramId: userId,
         newScore: totalScore,
         initData
       });
@@ -211,8 +211,8 @@ const Home = () => {
       
       return response;
     },
-    onSuccess: (data) => {
-      queryClient.setQueryData(['user', user.id], data);
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(['user', variables.userId], data);
       setSurveyCompleted(true);
     },
     onError: (error: Error) => {
@@ -238,7 +238,7 @@ const Home = () => {
   }, [answers, initialBurnoutLevel, questions]);
 
   const handleAnswer = (questionId: number, isPositive: boolean) => {
-    if (alreadyAttemptedToday || !user) return;
+    if (alreadyAttemptedToday || !user || !initData) return;
 
     const question = questions.find(q => q.id === questionId);
     if (!question) return;
@@ -255,7 +255,11 @@ const Home = () => {
         return sum + (ans ? questions[idx].weight : 0);
       }, 0);
       
-      submitSurveyMutation.mutate(totalScore);
+      submitSurveyMutation.mutate({ 
+        totalScore, 
+        userId: user.id, 
+        initData 
+      });
     }
   };
 
