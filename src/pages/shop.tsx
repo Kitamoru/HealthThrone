@@ -174,8 +174,9 @@ export default function Shop() {
       });
       
       if (purchaseResult.success) {
-        queryClient.invalidateQueries(['ownedSprites', telegramId]);
-        queryClient.invalidateQueries(['user', telegramId]);
+        // Исправление: правильный формат для invalidateQueries
+        queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] });
+        queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
         setError(null);
       } else {
         setError(purchaseResult.error || 'Ошибка покупки спрайта.');
@@ -212,7 +213,8 @@ export default function Shop() {
       });
       
       if (equipResult.success) {
-        queryClient.invalidateQueries(['user', telegramId]);
+        // Исправление: правильный формат для invalidateQueries
+        queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
         setError(null);
       } else {
         setError(equipResult.error || 'Ошибка при применении спрайта.');
