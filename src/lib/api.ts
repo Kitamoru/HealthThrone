@@ -1,15 +1,30 @@
 import { ApiResponse, UserProfile, Sprite, Friend } from './types';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient } from './queryClient';
+import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
 
-// Хуки для react-query
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      retry: 1,
+    },
+  },
+});
+
 export const useUserData = (telegramId: number, initData?: string) => {
   return useQuery({
     queryKey: ['user', telegramId],
     queryFn: () => api.getUserData(telegramId, initData),
     enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
-    retry: 1,
+  });
+};
+
+export const useFriendsData = (telegramId: string, initData?: string) => {
+  return useQuery({
+    queryKey: ['friends', telegramId],
+    queryFn: () => api.getFriends(telegramId, initData),
+    enabled: !!telegramId,
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -18,7 +33,6 @@ export const useSpritesData = (initData?: string) => {
     queryKey: ['sprites'],
     queryFn: () => api.getSprites(initData),
     staleTime: 10 * 60 * 1000,
-    retry: 1,
   });
 };
 
@@ -28,27 +42,6 @@ export const useOwnedSprites = (telegramId: number, initData?: string) => {
     queryFn: () => api.getOwnedSprites(telegramId, initData),
     enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
-    retry: 1,
-  });
-};
-
-export const usePurchaseSprite = () => {
-  return useMutation({
-    mutationFn: (params: { 
-      telegramId: number; 
-      spriteId: number; 
-      initData?: string 
-    }) => api.purchaseSprite(params.telegramId, params.spriteId, params.initData),
-  });
-};
-
-export const useEquipSprite = () => {
-  return useMutation({
-    mutationFn: (params: { 
-      telegramId: number; 
-      spriteId: number; 
-      initData?: string 
-    }) => api.equipSprite(params.telegramId, params.spriteId, params.initData),
   });
 };
 
@@ -62,6 +55,26 @@ export const useSubmitSurvey = () => {
   });
 };
 
+export const usePurchaseSprite = () => {
+  return useMutation({
+    mutationFn: (params: {
+      telegramId: number;
+      spriteId: number;
+      initData?: string;
+    }) => api.purchaseSprite(params.telegramId, params.spriteId, params.initData),
+  });
+};
+
+export const useEquipSprite = () => {
+  return useMutation({
+    mutationFn: (params: {
+      telegramId: number;
+      spriteId: number;
+      initData?: string;
+    }) => api.equipSprite(params.telegramId, params.spriteId, params.initData),
+  });
+};
+
 class Api {
   private baseUrl = '/api';
   private defaultHeaders: Record<string, string> = {
@@ -69,42 +82,25 @@ class Api {
   };
   
   private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
-    const status = response.status;
-    
     if (!response.ok) {
       try {
         const errorResponse = await response.json();
         return {
           success: false,
-          status,
+          status: response.status,
           error: errorResponse.error || JSON.stringify(errorResponse)
         };
       } catch {
         return {
           success: false,
-          status,
+          status: response.status,
           error: await response.text()
         };
       }
     }
 
     try {
-      const responseData = await response.json();
-      
-      if (responseData.success && responseData.data !== undefined) {
-        return {
-          success: true,
-          status,
-          data: responseData.data
-        };
-      }
-      
-      return {
-        success: false,
-        status: 500,
-        error: 'Invalid server response structure'
-      };
-      
+      return await response.json();
     } catch (parseError) {
       return {
         success: false,
@@ -144,7 +140,6 @@ class Api {
     }
   }
 
-  // User-related methods
   async initUser(initData: string, startParam?: string) {
     return this.makeRequest('/init', 'POST', { initData, ref: startParam });
   }
@@ -167,7 +162,6 @@ class Api {
     );
   }
 
-  // Friends methods
   async getFriends(telegramId: string, initData?: string): Promise<ApiResponse<Friend[]>> {
     return this.makeRequest<Friend[]>(
       `/friends?telegramId=${telegramId}`, 
@@ -195,7 +189,6 @@ class Api {
     );
   }
 
-  // Shop methods
   async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
     return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
   }
@@ -247,7 +240,6 @@ class Api {
     );
   }
   
-  // Survey methods
   async submitSurvey(params: {
     telegramId: number;
     newScore: number;
