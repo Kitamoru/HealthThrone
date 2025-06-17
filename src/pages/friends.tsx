@@ -34,7 +34,7 @@ export default function Friends() {
   const { user, initData, webApp } = useTelegram();
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [deletingFriends, setDeletingFriends] = useState<number[]>([]);
+  const [deletingFriends, setDeletingFriends] = useState<number[]>([]); // Новое состояние
   const queryClient = useQueryClient();
 
   const { 
@@ -74,10 +74,12 @@ export default function Friends() {
   });
 
   const handleDelete = (friendId: number) => {
+    // Добавляем друга в список удаляемых
     setDeletingFriends(prev => [...prev, friendId]);
     
     deleteFriendMutation.mutate(friendId, {
       onSettled: () => {
+        // Убираем друга из списка после завершения
         setDeletingFriends(prev => prev.filter(id => id !== friendId));
       }
     });
@@ -138,7 +140,7 @@ export default function Friends() {
                   <button 
                     className="delete-btn"
                     onClick={() => handleDelete(friend.id)}
-                    disabled={deletingFriends.includes(friend.id)}
+                    disabled={deletingFriends.includes(friend.id)} // Блокируем конкретную кнопку
                   >
                     {deletingFriends.includes(friend.id) ? 'Удаление...' : 'Удалить'}
                   </button>
@@ -161,7 +163,7 @@ export default function Friends() {
                 </button>
               </div>
               <div className="custom-modal-body">
-                <p>Добавь участникакоманды</p>
+                <p>Добавь участника команды</p>
                 <div className="referral-link-container">
                   <input 
                     type="text" 
@@ -191,7 +193,15 @@ export default function Friends() {
 
       <div className="menu">
         <Link href="/" passHref>
-          <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>
+          <button 
+            className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}
+            onMouseEnter={() => queryClient.prefetchQuery({ 
+              queryKey: ['user', user?.id],
+              queryFn: () => user?.id && initData 
+                ? api.getUserData(Number(user.id), initData)
+                : Promise.resolve(null),
+            })}
+          >
             📊
           </button>
         </Link>
@@ -201,7 +211,13 @@ export default function Friends() {
           </button>
         </Link>
         <Link href="/shop" passHref>
-          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>
+          <button 
+            className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}
+            onMouseEnter={() => queryClient.prefetchQuery({ 
+              queryKey: ['sprites'],
+              queryFn: () => api.getSprites(initData),
+            })}
+          >
             🛍️
           </button>
         </Link>
