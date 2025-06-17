@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Friend {
   id: number;
@@ -13,16 +13,25 @@ interface Friend {
   burnout_level: number;
 }
 
-const BurnoutProgress = React.memo(({ level }: { level: number }) => (
-  <div className="progress-container">
-    <div className="progress-bar" style={{ width: `${level}%` }} />
-    <span className="progress-text">{level}%</span>
-  </div>
-));
+interface BurnoutProgressProps {
+  level: number;
+}
+
+const BurnoutProgress = React.memo(({ level }: BurnoutProgressProps) => {
+  return (
+    <div className="progress-container">
+      <div 
+        className="progress-bar"
+        style={{ width: `${level}%` }}
+      />
+      <span className="progress-text">{level}%</span>
+    </div>
+  );
+});
 
 export default function Friends() {
   const router = useRouter();
-  const { user, webApp } = useTelegram();
+  const { user, initData, webApp } = useTelegram();
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [deletingFriends, setDeletingFriends] = useState<number[]>([]);
@@ -32,13 +41,13 @@ export default function Friends() {
     data: friends, 
     isLoading, 
     isError,
-    error: queryError 
+    error: queryError
   } = useQuery({
     queryKey: ['friends', user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!user?.id || !initData) return [];
       
-      const response = await api.getFriends(user.id.toString());
+      const response = await api.getFriends(user.id.toString(), initData);
       if (response.success && response.data) {
         return response.data.map(f => ({
           id: f.id,
@@ -50,12 +59,15 @@ export default function Friends() {
       }
       throw new Error(response.error || 'Failed to load friends');
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !!initData,
     staleTime: 5 * 60 * 1000,
   });
 
   const deleteFriendMutation = useMutation({
-    mutationFn: (friendId: number) => api.deleteFriend(friendId),
+    mutationFn: (friendId: number) => {
+      if (!initData) throw new Error('Init data missing');
+      return api.deleteFriend(friendId, initData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friends', user?.id] });
     },
@@ -63,6 +75,7 @@ export default function Friends() {
 
   const handleDelete = (friendId: number) => {
     setDeletingFriends(prev => [...prev, friendId]);
+    
     deleteFriendMutation.mutate(friendId, {
       onSettled: () => {
         setDeletingFriends(prev => prev.filter(id => id !== friendId));
@@ -178,16 +191,24 @@ export default function Friends() {
 
       <div className="menu">
         <Link href="/" passHref>
-          <button className="menu-btn">📊</button>
+          <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>
+            📊
+          </button>
         </Link>
         <Link href="/friends" passHref>
-          <button className="menu-btn active">📈</button>
+          <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>
+            📈
+          </button>
         </Link>
         <Link href="/shop" passHref>
-          <button className="menu-btn">🛍️</button>
+          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>
+            🛍️
+          </button>
         </Link>
         <Link href="/reference" passHref>
-          <button className="menu-btn">ℹ️</button>
+          <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>
+            ℹ️
+          </button>
         </Link>
       </div>
     </div>
