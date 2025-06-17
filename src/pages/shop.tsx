@@ -125,12 +125,23 @@ export default function Shop() {
   const sprites = spritesResponse?.data || [];
 
   const isLoading = userLoading || spritesLoading || ownedLoading;
-  const anyError = validationError || 
-                  userError || 
-                  spritesError || 
-                  ownedError || 
-                  purchaseMutation.error || 
-                  equipMutation.error;
+  
+  // Преобразуем все ошибки в строки
+  const getErrorMessage = (error: any): string | null => {
+    if (!error) return null;
+    if (typeof error === 'string') return error;
+    if (error instanceof Error) return error.message;
+    return String(error);
+  };
+  
+  const anyError = [
+    validationError,
+    getErrorMessage(userError),
+    getErrorMessage(spritesError),
+    getErrorMessage(ownedError),
+    getErrorMessage(purchaseMutation.error),
+    getErrorMessage(equipMutation.error)
+  ].filter(Boolean).join('; ');
 
   const handlePurchase = useCallback(async (spriteId: number) => {
     const validationError = validateRequiredFields(
@@ -170,13 +181,17 @@ export default function Shop() {
       equipMutation.reset();
       
       setProcessing(spriteId);
-      await purchaseMutation.mutateAsync({ 
+      const result = await purchaseMutation.mutateAsync({ 
         telegramId: Number(user.id), 
         spriteId, 
         initData 
       });
+      
+      if (!result.success) {
+        setValidationError(result.error || 'Ошибка покупки спрайта');
+      }
     } catch (err) {
-      // Ошибка обрабатывается автоматически через mutation.error
+      setValidationError('Произошла ошибка при покупке');
     } finally {
       setProcessing(null);
     }
@@ -204,13 +219,17 @@ export default function Shop() {
       equipMutation.reset();
       
       setProcessing(spriteId);
-      await equipMutation.mutateAsync({ 
+      const result = await equipMutation.mutateAsync({ 
         telegramId: Number(user.id), 
         spriteId, 
         initData 
       });
+      
+      if (!result.success) {
+        setValidationError(result.error || 'Ошибка при применении спрайта');
+      }
     } catch (err) {
-      // Ошибка обрабатывается автоматически через mutation.error
+      setValidationError('Произошла ошибка при применении спрайта');
     } finally {
       setProcessing(null);
     }
