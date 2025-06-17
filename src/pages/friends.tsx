@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
-import { api } from '../lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../lib/api';
 
 interface Friend {
   id: number;
@@ -13,41 +13,32 @@ interface Friend {
   burnout_level: number;
 }
 
-interface BurnoutProgressProps {
-  level: number;
-}
-
-const BurnoutProgress = React.memo(({ level }: BurnoutProgressProps) => {
-  return (
-    <div className="progress-container">
-      <div 
-        className="progress-bar"
-        style={{ width: `${level}%` }}
-      />
-      <span className="progress-text">{level}%</span>
-    </div>
-  );
-});
+const BurnoutProgress = React.memo(({ level }: { level: number }) => (
+  <div className="progress-container">
+    <div className="progress-bar" style={{ width: `${level}%` }} />
+    <span className="progress-text">{level}%</span>
+  </div>
+));
 
 export default function Friends() {
   const router = useRouter();
-  const { user, initData, webApp } = useTelegram();
+  const { user, webApp } = useTelegram();
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [deletingFriends, setDeletingFriends] = useState<number[]>([]); // Новое состояние
+  const [deletingFriends, setDeletingFriends] = useState<number[]>([]);
   const queryClient = useQueryClient();
 
   const { 
     data: friends, 
     isLoading, 
     isError,
-    error: queryError
+    error: queryError 
   } = useQuery({
     queryKey: ['friends', user?.id],
     queryFn: async () => {
-      if (!user?.id || !initData) return [];
+      if (!user?.id) return [];
       
-      const response = await api.getFriends(user.id.toString(), initData);
+      const response = await api.getFriends(user.id.toString());
       if (response.success && response.data) {
         return response.data.map(f => ({
           id: f.id,
@@ -59,27 +50,21 @@ export default function Friends() {
       }
       throw new Error(response.error || 'Failed to load friends');
     },
-    enabled: !!user?.id && !!initData,
+    enabled: !!user?.id,
     staleTime: 5 * 60 * 1000,
   });
 
   const deleteFriendMutation = useMutation({
-    mutationFn: (friendId: number) => {
-      if (!initData) throw new Error('Init data missing');
-      return api.deleteFriend(friendId, initData);
-    },
+    mutationFn: (friendId: number) => api.deleteFriend(friendId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friends', user?.id] });
     },
   });
 
   const handleDelete = (friendId: number) => {
-    // Добавляем друга в список удаляемых
     setDeletingFriends(prev => [...prev, friendId]);
-    
     deleteFriendMutation.mutate(friendId, {
       onSettled: () => {
-        // Убираем друга из списка после завершения
         setDeletingFriends(prev => prev.filter(id => id !== friendId));
       }
     });
@@ -140,7 +125,7 @@ export default function Friends() {
                   <button 
                     className="delete-btn"
                     onClick={() => handleDelete(friend.id)}
-                    disabled={deletingFriends.includes(friend.id)} // Блокируем конкретную кнопку
+                    disabled={deletingFriends.includes(friend.id)}
                   >
                     {deletingFriends.includes(friend.id) ? 'Удаление...' : 'Удалить'}
                   </button>
@@ -193,38 +178,16 @@ export default function Friends() {
 
       <div className="menu">
         <Link href="/" passHref>
-          <button 
-            className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}
-            onMouseEnter={() => queryClient.prefetchQuery({ 
-              queryKey: ['user', user?.id],
-              queryFn: () => user?.id && initData 
-                ? api.getUserData(Number(user.id), initData)
-                : Promise.resolve(null),
-            })}
-          >
-            📊
-          </button>
+          <button className="menu-btn">📊</button>
         </Link>
         <Link href="/friends" passHref>
-          <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>
-            📈
-          </button>
+          <button className="menu-btn active">📈</button>
         </Link>
         <Link href="/shop" passHref>
-          <button 
-            className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}
-            onMouseEnter={() => queryClient.prefetchQuery({ 
-              queryKey: ['sprites'],
-              queryFn: () => api.getSprites(initData),
-            })}
-          >
-            🛍️
-          </button>
+          <button className="menu-btn">🛍️</button>
         </Link>
         <Link href="/reference" passHref>
-          <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>
-            ℹ️
-          </button>
+          <button className="menu-btn">ℹ️</button>
         </Link>
       </div>
     </div>
