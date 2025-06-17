@@ -1,43 +1,5 @@
-import { 
-  useQuery, 
-  useMutation, 
-  QueryClient 
-} from '@tanstack/react-query';
-
-export type ApiResponse<T = any> = {
-  success: boolean;
-  data?: T;
-  error?: string;
-  status?: number;
-};
-
-export type UserProfile = {
-  id: number;
-  telegram_id: number;
-  burnout_level: number;
-  coins: number;
-  current_sprite_id: number | null;
-  current_sprite_url: string | null;
-  last_attempt_date: string;
-};
-
-export type Sprite = {
-  id: number;
-  name: string;
-  image_url: string;
-  price: number;
-};
-
-export type Friend = {
-  id: number;
-  friend: {
-    id: number;
-    username?: string;
-    first_name: string;
-    last_name?: string;
-    burnout_level: number;
-  };
-};
+import { ApiResponse, UserProfile, Sprite, Friend } from './types';
+import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,7 +11,7 @@ export const queryClient = new QueryClient({
 });
 
 export const useUserData = (telegramId: number, initData?: string) => {
-  return useQuery<ApiResponse<UserProfile>, Error>({
+  return useQuery({
     queryKey: ['user', telegramId],
     queryFn: () => api.getUserData(telegramId, initData),
     enabled: !!telegramId,
@@ -58,7 +20,7 @@ export const useUserData = (telegramId: number, initData?: string) => {
 };
 
 export const useFriendsData = (telegramId: string, initData?: string) => {
-  return useQuery<ApiResponse<Friend[]>, Error>({
+  return useQuery({
     queryKey: ['friends', telegramId],
     queryFn: () => api.getFriends(telegramId, initData),
     enabled: !!telegramId,
@@ -67,7 +29,7 @@ export const useFriendsData = (telegramId: string, initData?: string) => {
 };
 
 export const useSpritesData = (initData?: string) => {
-  return useQuery<ApiResponse<Sprite[]>, Error>({
+  return useQuery({
     queryKey: ['sprites'],
     queryFn: () => api.getSprites(initData),
     staleTime: 10 * 60 * 1000,
@@ -75,7 +37,7 @@ export const useSpritesData = (initData?: string) => {
 };
 
 export const useOwnedSprites = (telegramId: number, initData?: string) => {
-  return useQuery<ApiResponse<number[]>, Error>({
+  return useQuery({
     queryKey: ['ownedSprites', telegramId],
     queryFn: () => api.getOwnedSprites(telegramId, initData),
     enabled: !!telegramId,
@@ -296,3 +258,87 @@ class Api {
 }
 
 export const api = new Api();
+
+_app.tsx
+import type { AppProps } from 'next/app';
+import Head from 'next/head';
+import Script from 'next/script';
+import dynamic from 'next/dynamic';
+import { useEffect, useState } from 'react';
+import { useTelegram } from '../hooks/useTelegram';
+import { api } from '../lib/api';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '../lib/queryClient';
+import '../styles/globals.css';
+
+// Prefetch shop data
+const prefetchShopData = (initData?: string) => {
+  if (typeof window !== 'undefined') {
+    queryClient.prefetchQuery({
+      queryKey: ['sprites'],
+      queryFn: () => api.getSprites(initData),
+    });
+  }
+};
+
+const Loader = dynamic(
+  () => import('../components/Loader').then(mod => mod.Loader),
+  {
+    ssr: false,
+    loading: () => <div>Загрузка...</div>
+  }
+);
+
+function App({ Component, pageProps }: AppProps) {
+  const { initData, startParam, webApp } = useTelegram();
+  const [userInitialized, setUserInitialized] = useState(false);
+
+  useEffect(() => {
+    if (initData) {
+      api.initUser(initData, startParam)
+        .then(response => {
+          if (response.success) {
+            console.log('User initialized successfully');
+          }
+        })
+        .finally(() => setUserInitialized(true));
+    }
+  }, [initData, startParam]);
+
+  useEffect(() => {
+    if (webApp && initData) {
+      // Prefetch shop data when app is ready
+      prefetchShopData(initData);
+    }
+  }, [webApp, initData]);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Head>
+        <title>Burnout Tracker - Отслеживание выгорания</title>
+        <meta name="description" content="Telegram Mini App для отслеживания уровня выгорания" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta name="theme-color" content="#18222d" />
+      </Head>
+
+      <Script 
+        src="https://telegram.org/js/telegram-web-app.js" 
+        strategy="beforeInteractive" 
+        onLoad={() => {
+          if (window.Telegram?.WebApp) {
+            window.dispatchEvent(new Event('telegram-ready'));
+          }
+        }}
+      />
+
+      {userInitialized ? 
+        <div className="page-transition">
+          <Component {...pageProps} />
+        </div> : 
+        <Loader />
+      }
+    </QueryClientProvider>
+  );
+}
+
+export default App;
