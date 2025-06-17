@@ -5,8 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
-import BurnoutProgress from '../components/BurnoutProgress';
-import QuestionCard from '../components/QuestionCard';
+import { BurnoutProgress } from '../components/BurnoutProgress';
+import { QuestionCard } from '../components/QuestionCard';
 
 interface Question {
   id: number;
