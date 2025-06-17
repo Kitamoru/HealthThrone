@@ -4,9 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTelegram } from '../hooks/useTelegram';
-import { api } from '../lib/api';
+import { api, useUserData } from '../lib/api';
 import { Loader } from '../components/Loader';
-import { useUserData } from '../lib/api';
 
 const BurnoutProgress = dynamic(
   () => import('../components/BurnoutProgress').then(mod => mod.BurnoutProgress),
@@ -152,7 +151,7 @@ const Home = () => {
         queryKey: ['friends', user.id],
         queryFn: async () => {
           const response = await api.getFriends(user.id.toString(), initData);
-          if (!response.success) {
+          if (!response.success || !response.data) {
             throw new Error(response.error || 'Failed to load friends');
           }
           return response.data.map(f => ({
@@ -171,7 +170,7 @@ const Home = () => {
         queryKey: ['sprites'],
         queryFn: async () => {
           const response = await api.getSprites(initData);
-          if (!response.success) {
+          if (!response.success || !response.data) {
             throw new Error(response.error || 'Failed to load sprites');
           }
           return response.data;
@@ -184,7 +183,7 @@ const Home = () => {
         queryKey: ['ownedSprites', user.id],
         queryFn: async () => {
           const response = await api.getOwnedSprites(Number(user.id), initData);
-          if (!response.success) {
+          if (!response.success || !response.data) {
             throw new Error(response.error || 'Failed to load owned sprites');
           }
           return response.data;
