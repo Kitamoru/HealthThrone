@@ -1,28 +1,12 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
-
-// Исправленные динамические импорты
-const BurnoutProgress = dynamic(
-  () => import('../components/BurnoutProgress').then(mod => mod.BurnoutProgress),
-  { 
-    loading: () => <div className="sprite-container">Загрузка...</div>,
-    ssr: false
-  }
-);
-
-const QuestionCard = dynamic(
-  () => import('../components/QuestionCard').then(mod => mod.QuestionCard),
-  {
-    loading: () => <div>Загрузка вопроса...</div>,
-    ssr: false
-  }
-);
+import BurnoutProgress from '../components/BurnoutProgress';
+import QuestionCard from '../components/QuestionCard';
 
 interface Question {
   id: number;
@@ -33,6 +17,13 @@ interface Question {
 }
 
 const QUESTIONS: Question[] = [
+  {
+    id: 1,
+    text: "Я чувствую усталость даже после отдыха",
+    positive_answer: "Да",
+    negative_answer: "Нет",
+    weight: 3
+  },
   {
     id: 1,
     text: "Я чувствую усталость даже после отдыха",
@@ -122,6 +113,60 @@ const Home = () => {
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
+  // Прелоад данных для friends и shop
+  useEffect(() => {
+    if (!user?.id || !initData) return;
+    
+    const prefetchData = async () => {
+      try {
+        // Прелоад данных для страницы friends
+        await queryClient.prefetchQuery({
+          queryKey: ['friends', user.id],
+          queryFn: async () => {
+            const response = await api.getFriends(user.id.toString());
+            if (response.success && response.data) {
+              return response.data;
+            }
+            throw new Error(response.error || 'Failed to prefetch friends');
+          },
+          staleTime: 5 * 60 * 1000,
+        });
+
+        // Прелоад данных для страницы shop
+        await queryClient.prefetchQuery({
+          queryKey: ['sprites'],
+          queryFn: async () => {
+            const response = await api.getSprites();
+            if (response.success) {
+              return response.data || [];
+            }
+            throw new Error(response.error || 'Failed to prefetch sprites');
+          },
+          staleTime: 10 * 60 * 1000,
+        });
+
+        // Прелоад данных о купленных спрайтах
+        await queryClient.prefetchQuery({
+          queryKey: ['ownedSprites', user.id],
+          queryFn: async () => {
+            const response = await api.getOwnedSprites(Number(user.id));
+            if (response.success) {
+              return response.data || [];
+            }
+            throw new Error(response.error || 'Failed to prefetch owned sprites');
+          },
+          staleTime: 5 * 60 * 1000,
+        });
+      } catch (error) {
+        console.error('Prefetch error:', error);
+      }
+    };
+
+    // Запуск прелоада с задержкой 1 секунда
+    const timer = setTimeout(prefetchData, 1000);
+    return () => clearTimeout(timer);
+  }, [user?.id, queryClient]);
+
   // Проверка, является ли дата сегодняшней (в UTC)
   const isTodayUTC = useCallback((dateStr: string) => {
     const today = new Date();
@@ -135,7 +180,7 @@ const Home = () => {
     return todayUTC === datePart;
   }, []);
 
-  // Загрузка данных пользователя с кэшированием
+  // Загрузка данных пользователя
   const { 
     data: userData, 
     isLoading, 
@@ -145,7 +190,7 @@ const Home = () => {
     queryKey: ['userData', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const response = await api.getUserData(Number(user.id), initData);
+      const response = await api.getUserData(Number(user.id));
       
       if (!response.success) {
         throw new Error(response.error || "Ошибка загрузки данных");
@@ -154,26 +199,25 @@ const Home = () => {
       return response.data;
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 минут кэширования
+    staleTime: 5 * 60 * 1000,
     retry: 1,
   });
 
-  // Обработка ошибок запроса
+  // Обработка ошибок
   useEffect(() => {
     if (queryError) {
       setApiError(queryError.message);
     }
   }, [queryError]);
 
-  // Мутация для отправки результатов опроса
+  // Мутация для отправки опроса
   const submitSurveyMutation = useMutation({
     mutationFn: async (totalScore: number) => {
       if (!user?.id) throw new Error("Пользователь не определен");
       
       const response = await api.submitSurvey({
         telegramId: Number(user.id),
-        newScore: totalScore,
-        initData
+        newScore: totalScore
       });
 
       if (!response.success) {
@@ -234,12 +278,12 @@ const Home = () => {
     }
   };
 
-  // Отображение состояния загрузки
+  // Загрузка
   if (isLoading) {
     return <Loader />;
   }
 
-  // Отображение ошибок
+  // Ошибки
   if (isError || !user) {
     return (
       <div className="error-message">
@@ -283,18 +327,18 @@ const Home = () => {
         )}
       </div>
 
-      {/* Меню навигации с prefetch */}
+      {/* Меню навигации */}
       <div className="menu">
         <Link href="/" passHref>
           <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
         </Link>
-        <Link href="/friends" passHref prefetch>
+        <Link href="/friends" passHref>
           <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
         </Link>
-        <Link href="/shop" passHref prefetch>
+        <Link href="/shop" passHref>
           <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
         </Link>
-        <Link href="/reference" passHref prefetch>
+        <Link href="/reference" passHref>
           <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
         </Link>
       </div>
