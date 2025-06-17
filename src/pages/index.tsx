@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTelegram } from '../hooks/useTelegram';
-import { api, useUserData } from '../lib/api';
+import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
 
+// Исправленные динамические импорты
 const BurnoutProgress = dynamic(
   () => import('../components/BurnoutProgress').then(mod => mod.BurnoutProgress),
   { 
@@ -121,78 +122,56 @@ const Home = () => {
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
+  // Проверка, является ли дата сегодняшней (в UTC)
   const isTodayUTC = useCallback((dateStr: string) => {
-    // ... (реализация остается без изменений)
+    const today = new Date();
+    const todayUTC = [
+      today.getUTCFullYear(),
+      String(today.getUTCMonth() + 1).padStart(2, '0'),
+      String(today.getUTCDate()).padStart(2, '0')
+    ].join('-');
+    
+    const datePart = dateStr.split('T')[0];
+    return todayUTC === datePart;
   }, []);
 
+  // Загрузка данных пользователя с кэшированием
   const { 
-    data: userResponse, 
+    data: userData, 
     isLoading, 
     isError,
     error: queryError 
-  } = useUserData(user?.id ? Number(user.id) : 0, initData);
-  
-  const userData = userResponse?.data;
+  } = useQuery({
+    queryKey: ['userData', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const response = await api.getUserData(Number(user.id), initData);
+      
+      if (!response.success) {
+        throw new Error(response.error || "Ошибка загрузки данных");
+      }
+      
+      return response.data;
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 минут кэширования
+    retry: 1,
+  });
 
+  // Обработка ошибок запроса
   useEffect(() => {
-    if (!user?.id || !initData) return;
-    
-    const timer = setTimeout(() => {
-      // Прелоад данных для страницы friends
-      queryClient.prefetchQuery({
-        queryKey: ['friends', user.id],
-        queryFn: async () => {
-          const response = await api.getFriends(user.id.toString(), initData);
-          if (!response.success || !response.data) {
-            throw new Error(response.error || 'Failed to load friends');
-          }
-          return response.data.map(f => ({
-            id: f.id,
-            friend_id: f.friend.id,
-            friend_username: f.friend.username || 
-                            `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
-            burnout_level: f.friend.burnout_level
-          }));
-        },
-        staleTime: 300000, // 5 минут
-      });
+    if (queryError) {
+      setApiError(queryError.message);
+    }
+  }, [queryError]);
 
-      // Прелоад данных для страницы shop
-      queryClient.prefetchQuery({
-        queryKey: ['sprites'],
-        queryFn: async () => {
-          const response = await api.getSprites(initData);
-          if (!response.success || !response.data) {
-            throw new Error(response.error || 'Failed to load sprites');
-          }
-          return response.data;
-        },
-        staleTime: 300000,
-      });
-
-      // Прелоад данных о купленных спрайтах
-      queryClient.prefetchQuery({
-        queryKey: ['ownedSprites', user.id],
-        queryFn: async () => {
-          const response = await api.getOwnedSprites(Number(user.id), initData);
-          if (!response.success || !response.data) {
-            throw new Error(response.error || 'Failed to load owned sprites');
-          }
-          return response.data;
-        },
-        staleTime: 300000,
-      });
-    }, 1000); // Задержка 1 секунда
-
-    return () => clearTimeout(timer);
-  }, [user?.id, initData, queryClient]);
-
+  // Мутация для отправки результатов опроса
   const submitSurveyMutation = useMutation({
-    mutationFn: async (payload: { totalScore: number; userId: number; initData: string }) => {
-      const { totalScore, userId, initData } = payload;
+    mutationFn: async (totalScore: number) => {
+      if (!user?.id) throw new Error("Пользователь не определен");
       
       const response = await api.submitSurvey({
-        telegramId: userId,
+        telegramId: Number(user.id),
         newScore: totalScore,
         initData
       });
@@ -201,10 +180,10 @@ const Home = () => {
         throw new Error(response.error || 'Ошибка сохранения результатов');
       }
       
-      return response;
+      return response.data;
     },
-    onSuccess: (data, variables) => {
-      queryClient.setQueryData(['user', variables.userId], data);
+    onSuccess: (data) => {
+      queryClient.setQueryData(['userData', user?.id], data);
       setSurveyCompleted(true);
     },
     onError: (error: Error) => {
@@ -212,12 +191,14 @@ const Home = () => {
     }
   });
 
+  // Вычисляемые значения
   const initialBurnoutLevel = userData?.burnout_level ?? 0;
   const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
   const alreadyAttemptedToday = userData?.last_attempt_date 
     ? isTodayUTC(userData.last_attempt_date) 
     : false;
 
+  // Расчет текущего уровня выгорания
   const burnoutLevel = useMemo(() => {
     const answeredDelta = Object.entries(answers).reduce((sum, [id, ans]) => {
       if (!ans) return sum;
@@ -229,8 +210,9 @@ const Home = () => {
     return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
   }, [answers, initialBurnoutLevel, questions]);
 
+  // Обработка выбора ответа
   const handleAnswer = (questionId: number, isPositive: boolean) => {
-    if (alreadyAttemptedToday || !user || !initData) return;
+    if (alreadyAttemptedToday || !user) return;
 
     const question = questions.find(q => q.id === questionId);
     if (!question) return;
@@ -242,28 +224,26 @@ const Home = () => {
 
     setAnswers(newAnswers);
 
+    // Проверка завершения опроса
     if (questions.every(q => q.id in newAnswers)) {
       const totalScore = Object.values(newAnswers).reduce((sum, ans, idx) => {
         return sum + (ans ? questions[idx].weight : 0);
       }, 0);
       
-      // Исправление здесь: преобразуем user.id из string в number
-      submitSurveyMutation.mutate({ 
-        totalScore, 
-        userId: Number(user.id), 
-        initData 
-      });
+      submitSurveyMutation.mutate(totalScore);
     }
   };
 
+  // Отображение состояния загрузки
   if (isLoading) {
     return <Loader />;
   }
 
+  // Отображение ошибок
   if (isError || !user) {
     return (
       <div className="error-message">
-        {apiError || queryError?.message || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
+        {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
       </div>
     );
   }
@@ -303,17 +283,18 @@ const Home = () => {
         )}
       </div>
 
+      {/* Меню навигации с prefetch */}
       <div className="menu">
         <Link href="/" passHref>
           <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
         </Link>
-        <Link href="/friends" passHref>
+        <Link href="/friends" passHref prefetch>
           <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
         </Link>
-        <Link href="/shop" passHref>
+        <Link href="/shop" passHref prefetch>
           <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
         </Link>
-        <Link href="/reference" passHref>
+        <Link href="/reference" passHref prefetch>
           <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
         </Link>
       </div>
