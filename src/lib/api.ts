@@ -1,4 +1,3 @@
-Api.ts
 import { ApiResponse, UserProfile, Sprite, Friend } from './types';
 import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
 import { queryClient } from './queryClient';
