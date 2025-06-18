@@ -45,7 +45,7 @@ function App({ Component, pageProps }: AppProps) {
         await Promise.all([
           // Основные данные пользователя (для index)
           queryClient.prefetchQuery({
-            queryKey: ['userData', telegramId],
+            queryKey: ['user', telegramId],
             queryFn: () => api.getUserData(telegramId, initData),
           }),
           
