@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Script from 'next/script';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
+import Router from 'next/router'; // Импортируем Router
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -11,20 +12,15 @@ import '../styles/globals.css';
 
 // Prefetch shop data
 const prefetchShopData = (initData?: string) => {
-  if (typeof window !== 'undefined') {
-    queryClient.prefetchQuery({
-      queryKey: ['sprites'],
-      queryFn: () => api.getSprites(initData),
-    });
-  }
+  queryClient.prefetchQuery({
+    queryKey: ['sprites'],
+    queryFn: () => api.getSprites(initData),
+  });
 };
 
 const Loader = dynamic(
   () => import('../components/Loader').then(mod => mod.Loader),
-  {
-    ssr: false,
-    loading: () => <div>Загрузка...</div>
-  }
+  { ssr: false, loading: () => <div>Загрузка...</div> }
 );
 
 function App({ Component, pageProps }: AppProps) {
@@ -32,22 +28,27 @@ function App({ Component, pageProps }: AppProps) {
   const [userInitialized, setUserInitialized] = useState(false);
 
   useEffect(() => {
-    if (initData) {
-      api.initUser(initData, startParam)
-        .then(response => {
-          if (response.success) {
-            console.log('User initialized successfully');
-          }
-        })
-        .finally(() => setUserInitialized(true));
-    }
+    if (!initData) return;
+
+    // Инициализируем пользователя
+    api.initUser(initData, startParam)
+      .then(response => {
+        if (response.success) {
+          console.log('User initialized successfully');
+          
+          // После инициализации пользователя предзагружаем страницы
+          const routes = ['/', '/shop', '/friends'];
+          routes.forEach(route => Router.prefetch(route));
+        }
+      })
+      .finally(() => setUserInitialized(true));
   }, [initData, startParam]);
 
   useEffect(() => {
-    if (webApp && initData) {
-      // Prefetch shop data when app is ready
-      prefetchShopData(initData);
-    }
+    if (!webApp || !initData) return;
+    
+    // Предзагружаем данные магазина
+    prefetchShopData(initData);
   }, [webApp, initData]);
 
   return (
@@ -61,22 +62,4 @@ function App({ Component, pageProps }: AppProps) {
 
       <Script 
         src="https://telegram.org/js/telegram-web-app.js" 
-        strategy="beforeInteractive" 
-        onLoad={() => {
-          if (window.Telegram?.WebApp) {
-            window.dispatchEvent(new Event('telegram-ready'));
-          }
-        }}
-      />
-
-      {userInitialized ? 
-        <div className="page-transition">
-          <Component {...pageProps} />
-        </div> : 
-        <Loader />
-      }
-    </QueryClientProvider>
-  );
-}
-
-export default App;
+       
