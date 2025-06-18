@@ -141,7 +141,7 @@ const Home = () => {
     isError,
     error: queryError 
   } = useQuery({
-    queryKey: ['user', user?.id],
+    queryKey: ['userData', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       const response = await api.getUserData(Number(user.id), initData);
@@ -179,7 +179,7 @@ const Home = () => {
     },
     onSuccess: (data) => {
       // Обновляем данные по новому ключу
-      queryClient.setQueryData(['user', user?.id], data);
+      queryClient.setQueryData(['userData', user?.id], data);
       setSurveyCompleted(true);
     },
     onError: (error: Error) => {
