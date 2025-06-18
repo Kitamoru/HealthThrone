@@ -34,7 +34,7 @@ export default function Friends() {
   const { user, initData, webApp } = useTelegram();
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [deletingFriends, setDeletingFriends] = useState<number[]>([]); // Новое состояние
+  const [deletingFriends, setDeletingFriends] = useState<number[]>([]);
   const queryClient = useQueryClient();
 
   const { 
@@ -43,7 +43,7 @@ export default function Friends() {
     isError,
     error: queryError
   } = useQuery({
-    queryKey: ['friends', user?.id],
+    queryKey: ['friends', user?.id?.toString()],
     queryFn: async () => {
       if (!user?.id || !initData) return [];
       
@@ -60,7 +60,6 @@ export default function Friends() {
       throw new Error(response.error || 'Failed to load friends');
     },
     enabled: !!user?.id && !!initData,
-    staleTime: 5 * 60 * 1000,
   });
 
   const deleteFriendMutation = useMutation({
@@ -69,17 +68,16 @@ export default function Friends() {
       return api.deleteFriend(friendId, initData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['friends', user?.id] });
+      // Инвалидируем данные друзей и пользователя
+      queryClient.invalidateQueries({ queryKey: ['friends', user?.id?.toString()] });
+      queryClient.invalidateQueries({ queryKey: ['user', user?.id] });
     },
   });
 
   const handleDelete = (friendId: number) => {
-    // Добавляем друга в список удаляемых
     setDeletingFriends(prev => [...prev, friendId]);
-    
     deleteFriendMutation.mutate(friendId, {
       onSettled: () => {
-        // Убираем друга из списка после завершения
         setDeletingFriends(prev => prev.filter(id => id !== friendId));
       }
     });
@@ -140,7 +138,7 @@ export default function Friends() {
                   <button 
                     className="delete-btn"
                     onClick={() => handleDelete(friend.id)}
-                    disabled={deletingFriends.includes(friend.id)} // Блокируем конкретную кнопку
+                    disabled={deletingFriends.includes(friend.id)}
                   >
                     {deletingFriends.includes(friend.id) ? 'Удаление...' : 'Удалить'}
                   </button>
@@ -193,15 +191,7 @@ export default function Friends() {
 
       <div className="menu">
         <Link href="/" passHref>
-          <button 
-            className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}
-            onMouseEnter={() => queryClient.prefetchQuery({ 
-              queryKey: ['user', user?.id],
-              queryFn: () => user?.id && initData 
-                ? api.getUserData(Number(user.id), initData)
-                : Promise.resolve(null),
-            })}
-          >
+          <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>
             📊
           </button>
         </Link>
@@ -211,13 +201,7 @@ export default function Friends() {
           </button>
         </Link>
         <Link href="/shop" passHref>
-          <button 
-            className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}
-            onMouseEnter={() => queryClient.prefetchQuery({ 
-              queryKey: ['sprites'],
-              queryFn: () => api.getSprites(initData),
-            })}
-          >
+          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>
             🛍️
           </button>
         </Link>
