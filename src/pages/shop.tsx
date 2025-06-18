@@ -174,7 +174,7 @@ export default function Shop() {
       });
       
       if (purchaseResult.success) {
-        // Исправление: правильный формат для invalidateQueries
+        // Инвалидируем данные пользователя и владения спрайтами
         queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] });
         queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
         setError(null);
@@ -213,7 +213,6 @@ export default function Shop() {
       });
       
       if (equipResult.success) {
-        // Исправление: правильный формат для invalidateQueries
         queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
         setError(null);
       } else {
@@ -266,13 +265,13 @@ export default function Shop() {
 
       <div className="menu">
         <Link href="/" passHref>
-          <button className="menu-btn">📊</button>
+          <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
         </Link>
         <Link href="/friends" passHref>
-          <button className="menu-btn">📈</button>
+          <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
         </Link>
         <Link href="/shop" passHref>
-          <button className="menu-btn active">🛍️</button>
+          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
         </Link>
         <Link href="/reference" passHref>
           <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
