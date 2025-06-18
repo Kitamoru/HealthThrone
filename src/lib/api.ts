@@ -1,6 +1,72 @@
+Api.ts
 import { ApiResponse, UserProfile, Sprite, Friend } from './types';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
 import { queryClient } from './queryClient';
+
+export const useUserData = (telegramId: number, initData?: string) => {
+  return useQuery({
+    queryKey: ['user', telegramId],
+    queryFn: () => api.getUserData(telegramId, initData),
+    enabled: !!telegramId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useFriendsData = (telegramId: string, initData?: string) => {
+  return useQuery({
+    queryKey: ['friends', telegramId],
+    queryFn: () => api.getFriends(telegramId, initData),
+    enabled: !!telegramId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useSpritesData = (initData?: string) => {
+  return useQuery({
+    queryKey: ['sprites'],
+    queryFn: () => api.getSprites(initData),
+    staleTime: 10 * 60 * 1000,
+  });
+};
+
+export const useOwnedSprites = (telegramId: number, initData?: string) => {
+  return useQuery({
+    queryKey: ['ownedSprites', telegramId],
+    queryFn: () => api.getOwnedSprites(telegramId, initData),
+    enabled: !!telegramId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useSubmitSurvey = () => {
+  return useMutation({
+    mutationFn: (params: { 
+      telegramId: number; 
+      newScore: number; 
+      initData?: string 
+    }) => api.submitSurvey(params),
+  });
+};
+
+export const usePurchaseSprite = () => {
+  return useMutation({
+    mutationFn: (params: {
+      telegramId: number;
+      spriteId: number;
+      initData?: string;
+    }) => api.purchaseSprite(params.telegramId, params.spriteId, params.initData),
+  });
+};
+
+export const useEquipSprite = () => {
+  return useMutation({
+    mutationFn: (params: {
+      telegramId: number;
+      spriteId: number;
+      initData?: string;
+    }) => api.equipSprite(params.telegramId, params.spriteId, params.initData),
+  });
+};
 
 class Api {
   private baseUrl = '/api';
@@ -184,67 +250,4 @@ class Api {
   }
 }
 
-// Экспортируем экземпляр API
 export const api = new Api();
-
-// Хуки используют локальный экземпляр api
-export const useUserData = (telegramId: number, initData?: string) => {
-  return useQuery({
-    queryKey: ['user', telegramId],
-    queryFn: () => api.getUserData(telegramId, initData),
-    enabled: !!telegramId,
-  });
-};
-
-export const useFriendsData = (telegramId: string, initData?: string) => {
-  return useQuery({
-    queryKey: ['friends', telegramId],
-    queryFn: () => api.getFriends(telegramId, initData),
-    enabled: !!telegramId,
-  });
-};
-
-export const useSpritesData = (initData?: string) => {
-  return useQuery({
-    queryKey: ['sprites'],
-    queryFn: () => api.getSprites(initData),
-  });
-};
-
-export const useOwnedSprites = (telegramId: number, initData?: string) => {
-  return useQuery({
-    queryKey: ['ownedSprites', telegramId],
-    queryFn: () => api.getOwnedSprites(telegramId, initData),
-    enabled: !!telegramId,
-  });
-};
-
-export const useSubmitSurvey = () => {
-  return useMutation({
-    mutationFn: (params: { 
-      telegramId: number; 
-      newScore: number; 
-      initData?: string 
-    }) => api.submitSurvey(params),
-  });
-};
-
-export const usePurchaseSprite = () => {
-  return useMutation({
-    mutationFn: (params: {
-      telegramId: number;
-      spriteId: number;
-      initData?: string;
-    }) => api.purchaseSprite(params.telegramId, params.spriteId, params.initData),
-  });
-};
-
-export const useEquipSprite = () => {
-  return useMutation({
-    mutationFn: (params: {
-      telegramId: number;
-      spriteId: number;
-      initData?: string;
-    }) => api.equipSprite(params.telegramId, params.spriteId, params.initData),
-  });
-};
