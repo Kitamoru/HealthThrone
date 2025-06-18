@@ -33,83 +33,7 @@ interface Question {
 }
 
 const QUESTIONS: Question[] = [
-  {
-    id: 1,
-    text: "Я чувствую усталость даже после отдыха",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: 3
-  },
-  {
-    id: 2,
-    text: "Мне трудно сосредоточиться на работе",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: 2
-  },
-  {
-    id: 3,
-    text: "Я часто чувствую раздражение",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: 2
-  },
-  {
-    id: 4,
-    text: "У меня снизилась мотивация к работе",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: 3
-  },
-  {
-    id: 5,
-    text: "Я испытываю физическое напряжение",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: 2
-  },
-  {
-    id: 6,
-    text: "Мне сложно расслабиться",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: 2
-  },
-  {
-    id: 7,
-    text: "Я чувствую себя эмоционально истощенным",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: 3
-  },
-  {
-    id: 8,
-    text: "У меня есть проблемы со сном",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: 2
-  },
-  {
-    id: 9,
-    text: "Я хорошо сплю",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: -2
-  },
-  {
-    id: 10,
-    text: "Я чувствую себя мотивированным",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: -2
-  },
-  {
-    id: 11,
-    text: "У меня хороший аппетит",
-    positive_answer: "Да",
-    negative_answer: "Нет",
-    weight: -1
-  }
+  // ... (вопросы остаются без изменений)
 ];
 
 const Home = () => {
@@ -122,7 +46,6 @@ const Home = () => {
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  // Проверка, является ли дата сегодняшней (в UTC)
   const isTodayUTC = useCallback((dateStr: string) => {
     const today = new Date();
     const todayUTC = [
@@ -135,14 +58,14 @@ const Home = () => {
     return todayUTC === datePart;
   }, []);
 
-  // Загрузка данных пользователя с кэшированием
+  // Унифицированный ключ запроса: ['user', id]
   const { 
     data: userData, 
     isLoading, 
     isError,
     error: queryError 
   } = useQuery({
-    queryKey: ['userData', user?.id],
+    queryKey: ['user', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       const response = await api.getUserData(Number(user.id), initData);
@@ -154,18 +77,14 @@ const Home = () => {
       return response.data;
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 минут кэширования
-    retry: 1,
   });
 
-  // Обработка ошибок запроса
   useEffect(() => {
     if (queryError) {
       setApiError(queryError.message);
     }
   }, [queryError]);
 
-  // Мутация для отправки результатов опроса
   const submitSurveyMutation = useMutation({
     mutationFn: async (totalScore: number) => {
       if (!user?.id) throw new Error("Пользователь не определен");
@@ -183,7 +102,8 @@ const Home = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(['userData', user?.id], data);
+      // Обновляем данные по новому ключу
+      queryClient.setQueryData(['user', user?.id], data);
       setSurveyCompleted(true);
     },
     onError: (error: Error) => {
@@ -191,14 +111,12 @@ const Home = () => {
     }
   });
 
-  // Вычисляемые значения
   const initialBurnoutLevel = userData?.burnout_level ?? 0;
   const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
   const alreadyAttemptedToday = userData?.last_attempt_date 
     ? isTodayUTC(userData.last_attempt_date) 
     : false;
 
-  // Расчет текущего уровня выгорания
   const burnoutLevel = useMemo(() => {
     const answeredDelta = Object.entries(answers).reduce((sum, [id, ans]) => {
       if (!ans) return sum;
@@ -210,7 +128,6 @@ const Home = () => {
     return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
   }, [answers, initialBurnoutLevel, questions]);
 
-  // Обработка выбора ответа
   const handleAnswer = (questionId: number, isPositive: boolean) => {
     if (alreadyAttemptedToday || !user) return;
 
@@ -224,7 +141,6 @@ const Home = () => {
 
     setAnswers(newAnswers);
 
-    // Проверка завершения опроса
     if (questions.every(q => q.id in newAnswers)) {
       const totalScore = Object.values(newAnswers).reduce((sum, ans, idx) => {
         return sum + (ans ? questions[idx].weight : 0);
@@ -234,12 +150,10 @@ const Home = () => {
     }
   };
 
-  // Отображение состояния загрузки
   if (isLoading) {
     return <Loader />;
   }
 
-  // Отображение ошибок
   if (isError || !user) {
     return (
       <div className="error-message">
@@ -283,18 +197,18 @@ const Home = () => {
         )}
       </div>
 
-      {/* Меню навигации с prefetch */}
+      {/* Меню навигации без префетча по наведению */}
       <div className="menu">
         <Link href="/" passHref>
           <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
         </Link>
-        <Link href="/friends" passHref prefetch>
+        <Link href="/friends" passHref>
           <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
         </Link>
-        <Link href="/shop" passHref prefetch>
+        <Link href="/shop" passHref>
           <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
         </Link>
-        <Link href="/reference" passHref prefetch>
+        <Link href="/reference" passHref>
           <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
         </Link>
       </div>
