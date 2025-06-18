@@ -10,26 +10,13 @@ import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
 // Prefetch shop data
-const prefetchAllData = async (telegramId: number, initData?: string) => {
-  await queryClient.prefetchQuery({
-    queryKey: ['user', telegramId],
-    queryFn: () => api.getUserData(telegramId, initData),
-  });
-
-  await queryClient.prefetchQuery({
-    queryKey: ['friends', telegramId.toString()],
-    queryFn: () => api.getFriends(telegramId.toString(), initData),
-  });
-
-  await queryClient.prefetchQuery({
-    queryKey: ['sprites'],
-    queryFn: () => api.getSprites(initData),
-  });
-
-  await queryClient.prefetchQuery({
-    queryKey: ['ownedSprites', telegramId],
-    queryFn: () => api.getOwnedSprites(telegramId, initData),
-  });
+const prefetchShopData = (initData?: string) => {
+  if (typeof window !== 'undefined') {
+    queryClient.prefetchQuery({
+      queryKey: ['sprites'],
+      queryFn: () => api.getSprites(initData),
+    });
+  }
 };
 
 const Loader = dynamic(
@@ -41,7 +28,7 @@ const Loader = dynamic(
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp, user } = useTelegram();
+  const { initData, startParam, webApp } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
 
   useEffect(() => {
@@ -57,14 +44,11 @@ function App({ Component, pageProps }: AppProps) {
   }, [initData, startParam]);
 
   useEffect(() => {
-    if (userInitialized && user?.id && initData) {
-      const telegramId = Number(user.id);
-      prefetchAllData(telegramId, initData);
-      
-      // Инвалидируем старые ключи для обратной совместимости
-      queryClient.removeQueries({ queryKey: ['userData'] });
+    if (webApp && initData) {
+      // Prefetch shop data when app is ready
+      prefetchShopData(initData);
     }
-  }, [userInitialized, user?.id, initData]);
+  }, [webApp, initData]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -96,3 +80,117 @@ function App({ Component, pageProps }: AppProps) {
 }
 
 export default App;
+
+useTelegram.ts
+import { useEffect, useState } from 'react';
+
+interface TelegramUser {
+  id: string;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  language_code?: string;
+  is_premium?: boolean;
+  photo_url?: string;
+}
+
+interface TelegramContact {
+  user_id?: number;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  phone_number?: string;
+}
+
+interface TelegramWebApp {
+  initData: string;
+  initDataUnsafe: {
+    user?: TelegramUser;
+    chat_instance?: string;
+    chat_type?: string;
+    start_param?: string;
+  };
+  colorScheme: 'light' | 'dark';
+  themeParams: {
+    bg_color?: string;
+    text_color?: string;
+    hint_color?: string;
+    link_color?: string;
+    button_color?: string;
+    button_text_color?: string;
+  };
+  isExpanded: boolean;
+  viewportHeight: number;
+  viewportStableHeight: number;
+  ready: () => void;
+  expand: () => void;
+  close: () => void;
+  sendData: (data: string) => void;
+  showAlert: (message: string) => void;
+  showConfirm: (message: string, callback: (confirmed: boolean) => void) => void;
+  showPopup: (params: any, callback?: (buttonId: string) => void) => void;
+  openTelegramLink: (url: string) => void;
+  openLink: (url: string, options?: { try_instant_view?: boolean }) => void;
+  HapticFeedback: {
+    impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
+    notificationOccurred: (type: 'error' | 'success' | 'warning') => void;
+    selectionChanged: () => void;
+  };
+  showContactPicker?: (
+    options: { title?: string },
+    callback: (contact: TelegramContact) => void
+  ) => void;
+}
+
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp: TelegramWebApp;
+    };
+  }
+}
+
+export const useTelegram = () => {
+  const [state, setState] = useState({
+    webApp: null as TelegramWebApp | null,
+    initData: '',
+    user: null as TelegramUser | null,
+    startParam: '',
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const initTelegram = () => {
+      const telegram = window.Telegram;
+      if (!telegram?.WebApp) return;
+
+      const tg = telegram.WebApp;
+      tg.ready();
+      tg.expand();
+
+      setState({
+        webApp: tg,
+        initData: tg.initData,
+        user: tg.initDataUnsafe.user || null,
+        startParam: tg.initDataUnsafe.start_param || '',
+      });
+    };
+
+    if (window.Telegram?.WebApp) {
+      initTelegram();
+    } else {
+      const handleReady = () => {
+        initTelegram();
+        window.removeEventListener('telegram-ready', handleReady);
+      };
+      window.addEventListener('telegram-ready', handleReady);
+    }
+
+    return () => {
+      window.removeEventListener('telegram-ready', initTelegram);
+    };
+  }, []);
+
+  return state;
+};
