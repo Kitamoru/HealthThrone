@@ -122,19 +122,25 @@ const Home = () => {
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
+  // Исправленная функция проверки даты
   const isTodayUTC = useCallback((dateStr: string) => {
-    const today = new Date();
-    const todayUTC = [
-      today.getUTCFullYear(),
-      String(today.getUTCMonth() + 1).padStart(2, '0'),
-      String(today.getUTCDate()).padStart(2, '0')
-    ].join('-');
+    if (!dateStr) return false;
     
-    const datePart = dateStr.split('T')[0];
-    return todayUTC === datePart;
+    try {
+      const date = new Date(dateStr);
+      const now = new Date();
+      
+      return (
+        date.getUTCFullYear() === now.getUTCFullYear() &&
+        date.getUTCMonth() === now.getUTCMonth() &&
+        date.getUTCDate() === now.getUTCDate()
+      );
+    } catch (e) {
+      console.error('Date parsing error:', e);
+      return false;
+    }
   }, []);
 
-  // Унифицированный ключ запроса: ['user', id]
   const { 
     data: userData, 
     isLoading, 
@@ -178,9 +184,9 @@ const Home = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      // Обновляем данные по новому ключу
       queryClient.setQueryData(['userData', user?.id], data);
       setSurveyCompleted(true);
+      setAnswers({}); // Сбрасываем ответы после успешной отправки
     },
     onError: (error: Error) => {
       setApiError(error.message);
@@ -193,7 +199,12 @@ const Home = () => {
     ? isTodayUTC(userData.last_attempt_date) 
     : false;
 
+  // Исправленный расчет burnoutLevel
   const burnoutLevel = useMemo(() => {
+    if (surveyCompleted && userData) {
+      return userData.burnout_level; // Используем серверное значение
+    }
+
     const answeredDelta = Object.entries(answers).reduce((sum, [id, ans]) => {
       if (!ans) return sum;
       const qId = parseInt(id);
@@ -202,7 +213,7 @@ const Home = () => {
     }, 0);
 
     return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
-  }, [answers, initialBurnoutLevel, questions]);
+  }, [answers, initialBurnoutLevel, questions, surveyCompleted, userData]);
 
   const handleAnswer = (questionId: number, isPositive: boolean) => {
     if (alreadyAttemptedToday || !user) return;
@@ -273,7 +284,6 @@ const Home = () => {
         )}
       </div>
 
-      {/* Меню навигации без префетча по наведению */}
       <div className="menu">
         <Link href="/" passHref>
           <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
