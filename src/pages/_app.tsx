@@ -10,13 +10,26 @@ import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
 // Prefetch shop data
-const prefetchShopData = (initData?: string) => {
-  if (typeof window !== 'undefined') {
-    queryClient.prefetchQuery({
-      queryKey: ['sprites'],
-      queryFn: () => api.getSprites(initData),
-    });
-  }
+const prefetchAllData = async (telegramId: number, initData?: string) => {
+  await queryClient.prefetchQuery({
+    queryKey: ['user', telegramId],
+    queryFn: () => api.getUserData(telegramId, initData),
+  });
+
+  await queryClient.prefetchQuery({
+    queryKey: ['friends', telegramId.toString()],
+    queryFn: () => api.getFriends(telegramId.toString(), initData),
+  });
+
+  await queryClient.prefetchQuery({
+    queryKey: ['sprites'],
+    queryFn: () => api.getSprites(initData),
+  });
+
+  await queryClient.prefetchQuery({
+    queryKey: ['ownedSprites', telegramId],
+    queryFn: () => api.getOwnedSprites(telegramId, initData),
+  });
 };
 
 const Loader = dynamic(
@@ -28,7 +41,7 @@ const Loader = dynamic(
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp } = useTelegram();
+  const { initData, startParam, webApp, user } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
 
   useEffect(() => {
@@ -44,11 +57,14 @@ function App({ Component, pageProps }: AppProps) {
   }, [initData, startParam]);
 
   useEffect(() => {
-    if (webApp && initData) {
-      // Prefetch shop data when app is ready
-      prefetchShopData(initData);
+    if (userInitialized && user?.id && initData) {
+      const telegramId = Number(user.id);
+      prefetchAllData(telegramId, initData);
+      
+      // Инвалидируем старые ключи для обратной совместимости
+      queryClient.removeQueries({ queryKey: ['userData'] });
     }
-  }, [webApp, initData]);
+  }, [userInitialized, user?.id, initData]);
 
   return (
     <QueryClientProvider client={queryClient}>
