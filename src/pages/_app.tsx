@@ -39,7 +39,7 @@ function App({ Component, pageProps }: AppProps) {
     
     const preloadAllData = async () => {
       try {
-        const telegramId = number(user.id);
+        const telegramId = Number(user.id);
         
         // Параллельная предзагрузка всех данных
         await Promise.all([
