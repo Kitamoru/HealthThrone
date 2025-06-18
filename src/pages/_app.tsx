@@ -10,20 +10,27 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
+// Prefetch shop data
+const prefetchShopData = (initData?: string) => {
+  queryClient.prefetchQuery({
+    queryKey: ['sprites'],
+    queryFn: () => api.getSprites(initData),
+  });
+};
+
 const Loader = dynamic(
   () => import('../components/Loader').then(mod => mod.Loader),
   { ssr: false, loading: () => <div>Загрузка...</div> }
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp, user } = useTelegram();
+  const { initData, startParam, webApp } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
-  const [isDataPreloaded, setIsDataPreloaded] = useState(false);
 
-  // Инициализация пользователя
   useEffect(() => {
     if (!initData) return;
 
+    // Инициализируем пользователя
     api.initUser(initData, startParam)
       .then(response => {
         if (response.success) {
@@ -33,70 +40,16 @@ function App({ Component, pageProps }: AppProps) {
       .finally(() => setUserInitialized(true));
   }, [initData, startParam]);
 
-  // Предзагрузка всех данных и страниц после инициализации пользователя
   useEffect(() => {
-    if (!userInitialized || !user?.id || !initData || !webApp) return;
+    if (!webApp || !initData) return;
     
-    const preloadAllData = async () => {
-      try {
-        const telegramId = Number(user.id);
-        
-        // Параллельная предзагрузка всех данных
-        await Promise.all([
-          // Основные данные пользователя (для index)
-          queryClient.prefetchQuery({
-            queryKey: ['user', telegramId],
-            queryFn: () => api.getUserData(telegramId, initData),
-          }),
-          
-          // Данные друзей (для friends)
-          queryClient.prefetchQuery({
-            queryKey: ['friends', telegramId.toString()],
-            queryFn: () => api.getFriends(telegramId.toString(), initData),
-          }),
-          
-          // Спрайты магазина (для shop)
-          queryClient.prefetchQuery({
-            queryKey: ['sprites'],
-            queryFn: () => api.getSprites(initData),
-          }),
-          
-          // Купленные спрайты (для shop)
-          queryClient.prefetchQuery({
-            queryKey: ['ownedSprites', telegramId],
-            queryFn: () => api.getOwnedSprites(telegramId, initData),
-          })
-        ]);
-        
-        // Предзагрузка страниц
-        await Promise.all([
-          Router.prefetch('/'),
-          Router.prefetch('/shop'),
-          Router.prefetch('/friends'),
-        ]);
-        
-      } catch (error) {
-        console.error('Prefetch error:', error);
-      } finally {
-        setIsDataPreloaded(true);
-      }
-    };
-
-    preloadAllData();
-  }, [userInitialized, user, initData, webApp]);
-
-  // Показываем лоадер пока данные не готовы
-  if (!userInitialized || !isDataPreloaded) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <Head>
-          <title>Загрузка...</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        </Head>
-        <Loader />
-      </QueryClientProvider>
-    );
-  }
+    // Предзагружаем данные магазина
+    prefetchShopData(initData);
+    
+    // Предзагружаем страницы
+    const routes = ['/', '/shop', '/friends'];
+    routes.forEach(route => Router.prefetch(route));
+  }, [webApp, initData]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -117,10 +70,14 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      <div className="page-transition">
-        <Component {...pageProps} />
-      </div>
-    </QueryClientProvider>
+      {userInitialized ? (
+        <div className="page-transition">
+          <Component {...pageProps} />
+        </div>
+      ) : (
+        <Loader />
+      )}
+    </QueryClientProvider> // Закрывающий тег добавлен здесь
   );
 }
 
