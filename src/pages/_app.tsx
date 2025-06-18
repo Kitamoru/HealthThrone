@@ -16,13 +16,14 @@ const Loader = dynamic(
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp } = useTelegram();
+  const { initData, startParam, webApp, user } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
+  const [isDataPreloaded, setIsDataPreloaded] = useState(false);
 
+  // Инициализация пользователя
   useEffect(() => {
     if (!initData) return;
 
-    // Инициализируем пользователя
     api.initUser(initData, startParam)
       .then(response => {
         if (response.success) {
@@ -32,13 +33,70 @@ function App({ Component, pageProps }: AppProps) {
       .finally(() => setUserInitialized(true));
   }, [initData, startParam]);
 
+  // Предзагрузка всех данных и страниц после инициализации пользователя
   useEffect(() => {
-    if (!webApp || !initData) return;
+    if (!userInitialized || !user?.id || !initData || !webApp) return;
     
-    // Предзагружаем страницы
-    const routes = ['/', '/shop', '/friends'];
-    routes.forEach(route => Router.prefetch(route));
-  }, [webApp, initData]);
+    const preloadAllData = async () => {
+      try {
+        const telegramId = string(user.id);
+        
+        // Параллельная предзагрузка всех данных
+        await Promise.all([
+          // Основные данные пользователя (для index)
+          queryClient.prefetchQuery({
+            queryKey: ['userData', telegramId],
+            queryFn: () => api.getUserData(telegramId, initData),
+          }),
+          
+          // Данные друзей (для friends)
+          queryClient.prefetchQuery({
+            queryKey: ['friends', telegramId.toString()],
+            queryFn: () => api.getFriends(telegramId.toString(), initData),
+          }),
+          
+          // Спрайты магазина (для shop)
+          queryClient.prefetchQuery({
+            queryKey: ['sprites'],
+            queryFn: () => api.getSprites(initData),
+          }),
+          
+          // Купленные спрайты (для shop)
+          queryClient.prefetchQuery({
+            queryKey: ['ownedSprites', telegramId],
+            queryFn: () => api.getOwnedSprites(telegramId, initData),
+          })
+        ]);
+        
+        // Предзагрузка страниц
+        await Promise.all([
+          Router.prefetch('/'),
+          Router.prefetch('/shop'),
+          Router.prefetch('/friends'),
+        ]);
+        
+      } catch (error) {
+        console.error('Prefetch error:', error);
+      } finally {
+        setIsDataPreloaded(true);
+      }
+    };
+
+    preloadAllData();
+  }, [userInitialized, user, initData, webApp]);
+
+  // Показываем лоадер пока данные не готовы
+  if (!userInitialized || !isDataPreloaded) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <Head>
+          <title>Загрузка...</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        </Head>
+        <Loader />
+      </QueryClientProvider>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -59,14 +117,10 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      {userInitialized ? (
-        <div className="page-transition">
-          <Component {...pageProps} />
-        </div>
-      ) : (
-        <Loader />
-      )}
-    </QueryClientProvider> // Закрывающий тег добавлен здесь
+      <div className="page-transition">
+        <Component {...pageProps} />
+      </div>
+    </QueryClientProvider>
   );
 }
 
