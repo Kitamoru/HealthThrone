@@ -27,7 +27,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   console.log(`[UpdateBurnout] Request for user ${telegramId} with delta: ${newScore}`);
 
   try {
-    // Используем UTC дату для корректного сравнения на клиенте
     const { data, error } = await supabase.rpc('update_burnout', {
       p_telegram_id: telegramId,
       p_score_delta: newScore
@@ -39,13 +38,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       if (error.message.includes('Daily limit exceeded')) {
         return res.status(429).json({ error: 'Daily attempt limit exceeded' });
-      }
-      if (error.message.includes('Error updating burnout level')) {
-        console.error('Database function error:', error.message);
-        return res.status(500).json({ 
-          error: 'Database operation failed',
-          details: error.message
-        });
       }
       
       console.error('RPC execution error:', error);
