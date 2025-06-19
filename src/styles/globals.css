@@ -990,21 +990,6 @@ strong {
   opacity: 0.7;
   cursor: not-allowed;
 }
-  .sprite-container {
-  position: relative;
-  width: 100px;
-  height: 100px;
-}
-
-.sprite {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  transition: opacity 0.3s ease;
-}
 
 .fade-in {
   opacity: 0;
