@@ -980,9 +980,9 @@ strong {
     font-size: 1.1rem;
   }
 
-  .button-loader {
+ .button-loader {
   display: inline-block;
-  animation: spin 1s linear infinite;
+  animation: processingPulse 1.5s ease-in-out infinite;
 }
 
 @keyframes spin {
@@ -1056,5 +1056,30 @@ strong {
     opacity: 0;
     transform: scale(1.05);
   }
+}
+  /* Улучшенная анимация загрузки */
+@keyframes processingPulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.processing {
+  position: relative;
+  color: transparent !important;
+}
+
+.processing::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 }
