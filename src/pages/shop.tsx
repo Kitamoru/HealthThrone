@@ -56,7 +56,7 @@ const SpriteCard = React.memo(({
               disabled={isProcessing}
             >
               {isProcessing ? (
-                <span className="button-loader"></span>
+                <span className="button-loader">⏳</span>
               ) : (
                 'Купить'
               )}
