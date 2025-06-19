@@ -167,6 +167,8 @@ export default function Shop() {
 
     try {
       setProcessing(spriteId);
+      setError(null);
+      
       const purchaseResult = await purchaseMutation.mutateAsync({
         telegramId: Number(user.id),
         spriteId,
@@ -174,17 +176,19 @@ export default function Shop() {
       });
       
       if (purchaseResult.success) {
-        // ИНВАЛИДАЦИЯ ДЛЯ ГЛАВНОЙ СТРАНИЦЫ ДОБАВЛЕНА
-        queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] });
-        queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] });
-        queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
-        setError(null);
+        // Ожидаем завершения всех операций обновления данных
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
+          queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] }),
+          queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
+        ]);
       } else {
         setError(purchaseResult.error || 'Ошибка покупки спрайта.');
       }
     } catch (err) {
       setError('Возникла проблема с сетью при покупке.');
     } finally {
+      // Снимаем блокировку только после ВСЕХ операций
       setProcessing(null);
     }
   }, [user, initData, sprites, ownedSprites, coins, purchaseMutation]);
@@ -207,6 +211,8 @@ export default function Shop() {
 
     try {
       setProcessing(spriteId);
+      setError(null);
+      
       const equipResult = await equipMutation.mutateAsync({
         telegramId: Number(user.id),
         spriteId,
@@ -214,16 +220,18 @@ export default function Shop() {
       });
       
       if (equipResult.success) {
-        // ИНВАЛИДАЦИЯ ДЛЯ ГЛАВНОЙ СТРАНИЦЫ ДОБАВЛЕНА
-        queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] });
-        queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
-        setError(null);
+        // Ожидаем завершения операций обновления
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
+          queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
+        ]);
       } else {
         setError(equipResult.error || 'Ошибка при применении спрайта.');
       }
     } catch (err) {
       setError('Проблема с сетью при попытке применить спрайт.');
     } finally {
+      // Снимаем блокировку только после ВСЕХ операций
       setProcessing(null);
     }
   }, [user, initData, equipMutation]);
