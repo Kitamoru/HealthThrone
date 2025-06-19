@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface BurnoutProgressProps {
   level: number;
@@ -7,16 +7,47 @@ interface BurnoutProgressProps {
 
 export const BurnoutProgress = React.memo(({ 
   level, 
-  spriteUrl = '/sprite.gif' // Значение по умолчанию в деструктуризации
+  spriteUrl = '/sprite.gif'
 }: BurnoutProgressProps) => {
+  const [currentSprite, setCurrentSprite] = useState(spriteUrl);
+  const [prevSprite, setPrevSprite] = useState(spriteUrl);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Эффект для обработки смены спрайта
+  useEffect(() => {
+    if (spriteUrl !== currentSprite) {
+      setPrevSprite(currentSprite);
+      setCurrentSprite(spriteUrl);
+      setIsAnimating(true);
+      
+      // Таймер для завершения анимации
+      const timer = setTimeout(() => {
+        setIsAnimating(false);
+      }, 500); // Длительность анимации (0.5s)
+      
+      return () => clearTimeout(timer);
+    }
+  }, [spriteUrl, currentSprite]);
+
   return (
     <>
       <div className="header">
         <div className="sprite-container">
+          {/* Предыдущий спрайт (исчезающий) */}
           <img 
-            src={spriteUrl} 
+            src={prevSprite} 
             alt="Character" 
-            className="sprite"
+            className={`sprite ${isAnimating ? 'sprite-fade-out' : 'sprite-hidden'}`}
+            onError={(e) => {
+              e.currentTarget.src = '/sprite.gif';
+            }}
+          />
+          
+          {/* Новый спрайт (появляющийся) */}
+          <img 
+            src={currentSprite} 
+            alt="Character" 
+            className={`sprite ${isAnimating ? 'sprite-fade-in' : ''}`}
             onError={(e) => {
               e.currentTarget.src = '/sprite.gif';
             }}
