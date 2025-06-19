@@ -145,7 +145,8 @@ const Home = () => {
     data: userData, 
     isLoading, 
     isError,
-    error: queryError 
+    error: queryError,
+    refetch: refetchUserData // ДОБАВЛЕНА ФУНКЦИЯ ПЕРЕЗАПРОСА
   } = useQuery({
     queryKey: ['userData', user?.id],
     queryFn: async () => {
@@ -159,6 +160,7 @@ const Home = () => {
       return response.data;
     },
     enabled: !!user?.id,
+    refetchOnWindowFocus: true, // ВКЛЮЧЕНО ОБНОВЛЕНИЕ ПРИ ФОКУСЕ
   });
 
   useEffect(() => {
@@ -166,6 +168,13 @@ const Home = () => {
       setApiError(queryError.message);
     }
   }, [queryError]);
+
+  // ДОБАВЛЕН: Эффект для перезапроса данных при монтировании
+  useEffect(() => {
+    if (user?.id) {
+      refetchUserData();
+    }
+  }, [user?.id, refetchUserData]);
 
   const submitSurveyMutation = useMutation({
     mutationFn: async (totalScore: number) => {
