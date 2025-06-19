@@ -112,6 +112,7 @@ body {
   object-fit: contain; /* Сохраняет пропорции */
   border-radius: 20px;
   image-rendering: pixelated;
+  transition: opacity 0.5s ease-in-out;
 }
 
 .pentagon {
@@ -1009,5 +1010,47 @@ strong {
 @keyframes fadeOut {
   from { opacity: 1; }
   to { opacity: 0; }
+}
+  /* Классы для управления анимацией */
+.sprite-hidden {
+  opacity: 0;
+  visibility: hidden;
+  z-index: 1;
+}
+
+.sprite-fade-in {
+  opacity: 1;
+  z-index: 2;
+  animation: spriteFadeIn 0.5s ease-in-out;
+}
+
+.sprite-fade-out {
+  opacity: 0;
+  z-index: 1;
+  animation: spriteFadeOut 0.5s ease-in-out;
+}
+
+/* Анимация появления */
+@keyframes spriteFadeIn {
+  from { 
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Анимация исчезновения */
+@keyframes spriteFadeOut {
+  from { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  to { 
+    opacity: 0;
+    transform: scale(1.05);
+  }
 }
 }
