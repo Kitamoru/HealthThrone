@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 
 interface BurnoutProgressProps {
   level: number;
@@ -7,51 +7,22 @@ interface BurnoutProgressProps {
 
 export const BurnoutProgress = React.memo(({ 
   level, 
-  spriteUrl = '/sprite.gif'
+  spriteUrl = '/sprite.gif' // Значение по умолчанию в деструктуризации
 }: BurnoutProgressProps) => {
-  const [currentSprite, setCurrentSprite] = useState(spriteUrl);
-  const [previousSprite, setPreviousSprite] = useState<string | null>(null);
-  const [isChanging, setIsChanging] = useState(false);
-  const prevSpriteRef = useRef(spriteUrl);
-
-  useEffect(() => {
-    if (spriteUrl !== prevSpriteRef.current) {
-      setPreviousSprite(prevSpriteRef.current);
-      setCurrentSprite(spriteUrl);
-      setIsChanging(true);
-      prevSpriteRef.current = spriteUrl;
-      
-      const timer = setTimeout(() => {
-        setPreviousSprite(null);
-        setIsChanging(false);
-      }, 300);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [spriteUrl]);
-
   return (
-    <div className="header">
-      <div className="sprite-container">
-        {previousSprite && (
+    <>
+      <div className="header">
+        <div className="sprite-container">
           <img 
-            src={previousSprite} 
-            alt="Previous Character" 
-            className={`sprite ${isChanging ? 'fade-out' : ''}`}
+            src={spriteUrl} 
+            alt="Character" 
+            className="sprite"
             onError={(e) => {
               e.currentTarget.src = '/sprite.gif';
             }}
           />
-        )}
-        <img 
-          src={currentSprite} 
-          alt="Character" 
-          className={`sprite ${isChanging ? 'fade-in' : ''}`}
-          onError={(e) => {
-            e.currentTarget.src = '/sprite.gif';
-          }}
-        />
-        
+        </div>
+
         <div className="pentagon">
           🔥
         </div>
@@ -71,6 +42,6 @@ export const BurnoutProgress = React.memo(({
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 });
