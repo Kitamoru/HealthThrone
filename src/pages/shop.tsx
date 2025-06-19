@@ -174,7 +174,8 @@ export default function Shop() {
       });
       
       if (purchaseResult.success) {
-        // Инвалидируем данные пользователя и владения спрайтами
+        // ИНВАЛИДАЦИЯ ДЛЯ ГЛАВНОЙ СТРАНИЦЫ ДОБАВЛЕНА
+        queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] });
         queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] });
         queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
         setError(null);
@@ -213,6 +214,8 @@ export default function Shop() {
       });
       
       if (equipResult.success) {
+        // ИНВАЛИДАЦИЯ ДЛЯ ГЛАВНОЙ СТРАНИЦЫ ДОБАВЛЕНА
+        queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] });
         queryClient.invalidateQueries({ queryKey: ['user', telegramId] });
         setError(null);
       } else {
