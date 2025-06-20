@@ -98,7 +98,10 @@ export default async function handler(
         user.factors.factor6,
         user.factors.factor7,
         user.factors.factor8
-      ] : [50, 50, 50, 50, 50, 50, 50, 50]
+      ] : [50, 50, 50, 50, 50, 50, 50, 50],
+      // Добавляем обязательные поля
+      created_at: user.created_at,
+      updated_at: user.updated_at
     };
 
     console.log('[Data API] User profile loaded successfully');
