@@ -1057,4 +1057,604 @@ strong {
     transform: scale(1.05);
   }
   }
+  :root {
+  --vh: 1vh;
+  --vw: 1vw;
+  --tg-bg: var(--tg-theme-bg-color, #18222d);
+  --tg-text: var(--tg-theme-text-color, #ffffff);
+  --tg-secondary: var(--tg-theme-secondary-bg-color, #2a3a4d);
+  --tg-accent: var(--tg-theme-link-color, #5b8cff);
+  --tg-danger: #e74c3c;
+  --tg-success: #2ecc71;
+  --tg-border: var(--tg-theme-hint-color, rgba(255,255,255,0.1));
+  --tg-hint: var(--tg-theme-hint-color, rgba(255,255,255,0.5));
+}
+
+* {
+  box-sizing: border-box;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--tg-bg);
+  color: var(--tg-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  height: calc(var(--vh, 1vh) * 100);
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* Основные контейнеры */
+.container {
+  display: flex;
+  flex-direction: column;
+  height: calc(var(--vh, 1vh) * 100);
+  padding: 15px;
+  gap: 20px;
+}
+
+.scrollable-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 20px;
+}
+
+/* Секции */
+.character-section {
+  height: 40vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.octalysis-section {
+  margin: 10px 0;
+  padding: 15px;
+  background: var(--tg-secondary);
+  border-radius: 16px;
+  border: 1px solid var(--tg-border);
+}
+
+.actions-section {
+  margin-top: auto;
+}
+
+.section-title {
+  color: var(--tg-accent);
+  margin-bottom: 15px;
+  font-size: 1.2rem;
+}
+
+/* Спрайт персонажа */
+.sprite-container {
+  position: relative;
+  width: 100%;
+  height: 70%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.sprite {
+  width: auto;
+  height: 100%;
+  max-height: 250px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  transition: 
+    opacity 0.5s ease-in-out,
+    transform 0.3s ease;
+}
+
+.sprite-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Прогресс-бар выгорания */
+.burnout-section {
+  width: 90%;
+  max-width: 400px;
+  padding: 10px 0;
+}
+
+.level-display {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+}
+
+.level-label {
+  color: var(--tg-hint);
+}
+
+.level-value {
+  font-weight: bold;
+}
+
+.progress-wrapper {
+  width: 100%;
+}
+
+.burnout-bar {
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.burnout-progress {
+  height: 100%;
+  background: linear-gradient(90deg, #ff7e5f, #feb47b);
+  border-radius: 10px;
+  transition: width 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+  box-shadow: 0 0 10px rgba(254, 180, 123, 0.5);
+}
+
+/* Октализ */
+.octalisys-chart {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  height: 30vh;
+}
+
+.octagon-3d-view {
+  perspective: 1000px;
+  width: 200px;
+  height: 200px;
+  position: relative;
+  margin: 0 auto;
+}
+
+.hexagon-3d {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80px;
+  height: 80px;
+  margin: -40px 0 0 -40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: white;
+  font-weight: bold;
+  font-size: 12px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+.hexagon-value {
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.factors-labels {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 15px;
+  width: 100%;
+}
+
+.factor {
+  text-align: center;
+  padding: 6px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+}
+
+.factor-name {
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
+.factor-value {
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+/* Кнопка чекапа */
+.checkup-button {
+  background: linear-gradient(135deg, var(--tg-accent), #4a7bc8);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 16px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.checkup-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.pulse-animation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.2);
+  animation: pulse 1.5s infinite;
+  border-radius: 30px;
+  z-index: 0;
+}
+
+@keyframes pulse {
+  0% { opacity: 0; transform: scale(0.95); }
+  50% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+
+/* Информационные карточки */
+.info-card {
+  background: var(--tg-secondary);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border: 1px solid var(--tg-border);
+}
+
+.info-icon {
+  font-size: 2rem;
+}
+
+.info-content h4 {
+  margin-bottom: 5px;
+}
+
+/* Сообщения об ошибках */
+.error-message {
+  color: var(--tg-danger);
+  background-color: rgba(231, 76, 60, 0.1);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+/* Навигационное меню */
+.menu {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 2px solid var(--tg-border);
+  background: var(--tg-bg);
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+}
+
+.menu-btn {
+  background: var(--tg-secondary);
+  border: 1px solid var(--tg-border);
+  padding: 12px;
+  font-size: 24px;
+  color: var(--tg-text);
+  cursor: pointer;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.menu-btn.active {
+  background: var(--tg-accent);
+  color: white;
+}
+
+.menu-btn .label {
+  font-size: 0.7rem;
+  margin-top: 5px;
+}
+
+/* Модальное окно ежедневного чекапа */
+.daily-checkup-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.progress-bar {
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff7e5f, #feb47b);
+}
+
+.questions-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.question-wrapper {
+  width: 100%;
+  max-width: 500px;
+}
+
+.gesture-question {
+  background: rgba(255,255,255,0.05);
+  border-radius: 20px;
+  padding: 25px;
+  text-align: center;
+}
+
+.question-text {
+  font-size: 1.2rem;
+  margin-bottom: 30px;
+  line-height: 1.4;
+}
+
+.gesture-hints {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hint {
+  flex: 1;
+  padding: 12px 5px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.1);
+  cursor: pointer;
+  user-select: none;
+}
+
+.progress-indicator {
+  text-align: center;
+  margin: 15px 0;
+  opacity: 0.7;
+}
+
+.modal-footer {
+  text-align: center;
+  padding: 15px;
+}
+
+.submit-btn {
+  background: linear-gradient(90deg, #ff7e5f, #feb47b);
+  border: none;
+  border-radius: 30px;
+  padding: 12px 35px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: bold;
+  color: white;
+}
+
+.hint-text {
+  text-align: center;
+  opacity: 0.7;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+/* Загрузчик */
+.loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  gap: 10px;
+}
+
+.loader-spinner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pulse-circle {
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle, rgba(0, 123, 255, 0.7) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: loader-pulse 1.5s ease-in-out infinite;
+}
+
+.loader-emoji {
+  font-size: 24px;
+  position: absolute;
+  animation: loader-bounce 1.5s ease-in-out infinite;
+}
+
+.loader-text {
+  font-size: 16px;
+  color: #fff;
+  font-weight: 500;
+  animation: loader-fade 1.5s ease-in-out infinite;
+}
+
+@keyframes loader-pulse {
+  0% { transform: scale(0.8); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0.7; }
+}
+
+@keyframes loader-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes loader-fade {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* Анимации */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+  .container {
+    padding: 10px;
+    gap: 15px;
+  }
+  
+  .character-section {
+    height: 35vh;
+  }
+  
+  .sprite {
+    max-height: 180px;
+  }
+  
+  .burnout-section {
+    width: 95%;
+  }
+  
+  .octagon-3d-view {
+    width: 160px;
+    height: 160px;
+  }
+  
+  .hexagon-3d {
+    width: 60px;
+    height: 60px;
+    margin: -30px 0 0 -30px;
+    font-size: 10px;
+  }
+  
+  .factors-labels {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .menu-btn {
+    padding: 10px;
+    font-size: 20px;
+  }
+  
+  .menu-btn .label {
+    font-size: 0.6rem;
+  }
+  
+  .gesture-question {
+    padding: 15px;
+  }
+  
+  .question-text {
+    font-size: 1rem;
+    margin-bottom: 20px;
+  }
+  
+  .hint {
+    padding: 8px 3px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Анимации спрайта */
+.sprite-hidden {
+  opacity: 0;
+  visibility: hidden;
+  z-index: 1;
+}
+
+.sprite-fade-in {
+  opacity: 1;
+  z-index: 2;
+  animation: spriteFadeIn 0.5s ease-in-out;
+}
+
+.sprite-fade-out {
+  opacity: 0;
+  z-index: 1;
+  animation: spriteFadeOut 0.5s ease-in-out;
+}
+
+@keyframes spriteFadeIn {
+  from { 
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes spriteFadeOut {
+  from { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  to { 
+    opacity: 0;
+    transform: scale(1.05);
+  }
+}
 }
