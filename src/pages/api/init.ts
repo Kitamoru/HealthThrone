@@ -221,28 +221,31 @@ export default async function handler(
       }
 
       // Формируем ответ с URL спрайта и факторами
-      const responseUser: UserProfile = {
-        id: userRecord.id,
-        telegram_id: userRecord.telegram_id,
-        username: userRecord.username,
-        first_name: userRecord.first_name,
-        last_name: userRecord.last_name,
-        burnout_level: userRecord.burnout_level,
-        last_attempt_date: userRecord.last_attempt_date,
-        coins: userRecord.coins,
-        current_sprite_id: userRecord.current_sprite_id,
-        current_sprite_url: userRecord.sprites?.image_url || null,
-        octalysis_factors: userRecord.factors ? [
-          userRecord.factors.factor1,
-          userRecord.factors.factor2,
-          userRecord.factors.factor3,
-          userRecord.factors.factor4,
-          userRecord.factors.factor5,
-          userRecord.factors.factor6,
-          userRecord.factors.factor7,
-          userRecord.factors.factor8
-        ] : [50, 50, 50, 50, 50, 50, 50, 50]
-      };
+     const responseUser: UserProfile = {
+  id: userRecord.id,
+  telegram_id: userRecord.telegram_id,
+  username: userRecord.username,
+  first_name: userRecord.first_name,
+  last_name: userRecord.last_name,
+  burnout_level: userRecord.burnout_level,
+  last_attempt_date: userRecord.last_attempt_date,
+  coins: userRecord.coins,
+  current_sprite_id: userRecord.current_sprite_id,
+  current_sprite_url: userRecord.sprites?.image_url || null,
+  octalysis_factors: userRecord.factors ? [
+    userRecord.factors.factor1,
+    userRecord.factors.factor2,
+    userRecord.factors.factor3,
+    userRecord.factors.factor4,
+    userRecord.factors.factor5,
+    userRecord.factors.factor6,
+    userRecord.factors.factor7,
+    userRecord.factors.factor8
+  ] : [50, 50, 50, 50, 50, 50, 50, 50],
+  // Добавляем обязательные поля
+  created_at: userRecord.created_at,
+  updated_at: userRecord.updated_at
+};
 
       console.log('[Init API] User initialization successful');
       return res.status(200).json({
