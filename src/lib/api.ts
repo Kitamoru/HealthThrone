@@ -41,15 +41,9 @@ export const useSubmitSurvey = () => {
   return useMutation({
     mutationFn: (params: { 
       telegramId: number; 
-      burnoutDelta: number; 
-      factorsDelta: number[];
-      initData?: string;
-    }) => api.submitSurvey({
-      telegramId: params.telegramId,
-      burnoutDelta: params.burnoutDelta,
-      factorsDelta: params.factorsDelta,
-      initData: params.initData
-    }),
+      newScore: number; 
+      initData?: string 
+    }) => api.submitSurvey(params),
   });
 };
 
@@ -239,22 +233,20 @@ class Api {
   }
   
   async submitSurvey(params: {
-  telegramId: number;
-  burnoutDelta: number;
-  factorsDelta: number[];
-  initData?: string;
-}): Promise<ApiResponse<UserProfile>> {
-  return this.makeRequest<UserProfile>(
-    '/api/updateBurnout', 
-    'POST', 
-    {
-      telegramId: params.telegramId,
-      burnoutDelta: params.burnoutDelta,
-      factorsDelta: params.factorsDelta
-    },
-    params.initData
-  );
-}
+    telegramId: number;
+    newScore: number;
+    initData?: string;
+  }): Promise<ApiResponse<UserProfile>> {
+    return this.makeRequest<UserProfile>(
+      '/updateBurnout', 
+      'POST', 
+      {
+        telegramId: params.telegramId,
+        newScore: params.newScore
+      },
+      params.initData
+    );
+  }
 }
 
 export const api = new Api();
