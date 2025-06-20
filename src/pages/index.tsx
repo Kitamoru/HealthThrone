@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -7,7 +7,7 @@ import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
 
-// Исправленные динамические импорты
+// Динамические импорты
 const BurnoutProgress = dynamic(
   () => import('../components/BurnoutProgress').then(mod => mod.BurnoutProgress),
   { 
@@ -121,8 +121,9 @@ const Home = () => {
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [spriteLoaded, setSpriteLoaded] = useState(false); // Новое состояние для отслеживания загрузки спрайта
 
-  // Исправленная функция проверки даты
+  // Функция проверки даты
   const isTodayUTC = useCallback((dateStr: string) => {
     if (!dateStr) return false;
     
@@ -146,7 +147,7 @@ const Home = () => {
     isLoading, 
     isError,
     error: queryError,
-    refetch: refetchUserData // ДОБАВЛЕНА ФУНКЦИЯ ПЕРЕЗАПРОСА
+    refetch: refetchUserData
   } = useQuery({
     queryKey: ['userData', user?.id],
     queryFn: async () => {
@@ -160,7 +161,7 @@ const Home = () => {
       return response.data;
     },
     enabled: !!user?.id,
-    refetchOnWindowFocus: true, // ВКЛЮЧЕНО ОБНОВЛЕНИЕ ПРИ ФОКУСЕ
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {
@@ -169,12 +170,26 @@ const Home = () => {
     }
   }, [queryError]);
 
-  // ДОБАВЛЕН: Эффект для перезапроса данных при монтировании
   useEffect(() => {
     if (user?.id) {
       refetchUserData();
     }
   }, [user?.id, refetchUserData]);
+
+  // Предзагрузка спрайта
+  useEffect(() => {
+    if (userData?.current_sprite_url) {
+      const img = new Image();
+      img.src = userData.current_sprite_url;
+      img.onload = () => setSpriteLoaded(true);
+      img.onerror = () => {
+        console.error('Failed to preload sprite');
+        setSpriteLoaded(true);
+      };
+    } else {
+      setSpriteLoaded(true);
+    }
+  }, [userData?.current_sprite_url]);
 
   const submitSurveyMutation = useMutation({
     mutationFn: async (totalScore: number) => {
@@ -193,9 +208,19 @@ const Home = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(['userData', user?.id], data);
+      // Сохраняем текущий спрайт при обновлении данных
+      queryClient.setQueryData(['userData', user?.id], (oldData: any) => {
+        if (!oldData) return data;
+        
+        return {
+          ...oldData,
+          ...data,
+          current_sprite_url: oldData.current_sprite_url // Сохраняем текущий спрайт
+        };
+      });
+      
       setSurveyCompleted(true);
-      setAnswers({}); // Сбрасываем ответы после успешной отправки
+      setAnswers({});
     },
     onError: (error: Error) => {
       setApiError(error.message);
@@ -208,10 +233,9 @@ const Home = () => {
     ? isTodayUTC(userData.last_attempt_date) 
     : false;
 
-  // Исправленный расчет burnoutLevel
   const burnoutLevel = useMemo(() => {
     if (surveyCompleted && userData) {
-      return userData.burnout_level; // Используем серверное значение
+      return userData.burnout_level;
     }
 
     const answeredDelta = Object.entries(answers).reduce((sum, [id, ans]) => {
@@ -246,7 +270,7 @@ const Home = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !spriteLoaded) { // Показываем загрузчик пока грузятся данные или спрайт
     return <Loader />;
   }
 
