@@ -11,7 +11,6 @@ export const GestureQuestion: React.FC<GestureQuestionProps> = ({ question, onAn
   const handlers = useSwipeable({
     onSwipedLeft: () => onAnswer(-1),
     onSwipedRight: () => onAnswer(1),
-    preventDefaultTouchmoveEvent: true,
     trackMouse: true
   });
 
