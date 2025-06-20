@@ -249,5 +249,6 @@ class Api {
     params.initData
   );
 }
+}
 
 export const api = new Api();
