@@ -24,7 +24,13 @@
     "react-router-dom": "^7.6.1",
     "stream-browserify": "^3.0.0",
     "telegraf": "^4.16.3",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "framer-motion": "^10.16.4",
+    "react-spring": "^9.7.0",
+    "react-swipeable": "^7.0.0",
+    "use-gesture": "^10.3.0",
+    "embla-carousel-react": "^8.0.0",
+    "canvas-confetti": "^1.9.0"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.0.0",
