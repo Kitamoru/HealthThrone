@@ -47,7 +47,6 @@ export interface UserProfile {
   current_sprite_id?: number | null;
   last_login_date?: string;
   current_sprite_url: string | null;
-   octalysis_factors: number[]; // [50,50,50,50,50,50,50,50]
 }
 
 export interface Friend {
