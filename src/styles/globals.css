@@ -1512,65 +1512,6 @@ strong {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Адаптивность */
-@media (max-width: 480px) {
-  .container {
-    padding: 10px;
-    gap: 15px;
-  }
-  
-  .character-section {
-    height: 35vh;
-  }
-  
-  .sprite {
-    max-height: 180px;
-  }
-  
-  .burnout-section {
-    width: 95%;
-  }
-  
-  .octagon-3d-view {
-    width: 160px;
-    height: 160px;
-  }
-  
-  .hexagon-3d {
-    width: 60px;
-    height: 60px;
-    margin: -30px 0 0 -30px;
-    font-size: 10px;
-  }
-  
-  .factors-labels {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .menu-btn {
-    padding: 10px;
-    font-size: 20px;
-  }
-  
-  .menu-btn .label {
-    font-size: 0.6rem;
-  }
-  
-  .gesture-question {
-    padding: 15px;
-  }
-  
-  .question-text {
-    font-size: 1rem;
-    margin-bottom: 20px;
-  }
-  
-  .hint {
-    padding: 8px 3px;
-    font-size: 0.8rem;
-  }
-}
-
 /* Анимации спрайта */
 .sprite-hidden {
   opacity: 0;
