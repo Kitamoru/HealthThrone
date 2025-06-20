@@ -13,27 +13,55 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { telegramId, burnoutDelta, factorsDelta } = req.body;
+  const { telegramId, newScore } = req.body;
 
-  if (typeof telegramId !== 'number' || typeof burnoutDelta !== 'number' || !Array.isArray(factorsDelta)) {
+  if (!telegramId || typeof newScore !== 'number') {
     return res.status(400).json({ error: 'Invalid request body' });
   }
 
+  // Валидация диапазона баллов
+  if (newScore < -20 || newScore > 20) {
+    return res.status(400).json({ error: 'Invalid score delta value' });
+  }
+
+  console.log(`[UpdateBurnout] Request for user ${telegramId} with delta: ${newScore}`);
+
   try {
-    const { data, error } = await supabase.rpc('update_user_stats', {
+    const { data, error } = await supabase.rpc('update_burnout', {
       p_telegram_id: telegramId,
-      p_burnout_delta: burnoutDelta,
-      p_factors_delta: factorsDelta
+      p_score_delta: newScore
     });
 
     if (error) {
-      console.error('RPC error:', error);
-      return res.status(500).json({ error: error.message });
+      if (error.message.includes('User not found')) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      if (error.message.includes('Daily limit exceeded')) {
+        return res.status(429).json({ error: 'Daily attempt limit exceeded' });
+      }
+      
+      console.error('RPC execution error:', error);
+      return res.status(500).json({ 
+        error: 'Database operation failed',
+        code: error.code,
+        details: error.message
+      });
     }
 
-    return res.status(200).json({ success: true, data });
+    if (!data || data.length === 0) {
+      console.error('RPC returned empty result');
+      return res.status(404).json({ error: 'User not found after update' });
+    }
+
+    const updatedUser = data[0];
+    console.log(`[UpdateBurnout] Updated user ${telegramId}: burnout=${updatedUser.burnout_level}`);
+
+    return res.status(200).json({
+      success: true,
+      data: updatedUser
+    });
   } catch (e) {
-    console.error('Server error:', e);
+    console.error('Unhandled server error:', e);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
