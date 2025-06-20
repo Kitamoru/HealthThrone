@@ -52,13 +52,14 @@ export default async function handler(
     const today = format(now, 'yyyy-MM-dd');
     console.log(`[Init API] Current date: ${today}, timestamp: ${now.toISOString()}`);
 
-    // Поиск существующего пользователя с JOIN к спрайтам
+    // Поиск существующего пользователя с JOIN к спрайтам и факторам
     const { data: existingUser, error: userError } = await supabase
       .from('users')
       .select(`
         *,
-        sprites:current_sprite_id (image_url)
-      `) // Добавляем JOIN к таблице спрайтов
+        sprites:current_sprite_id (image_url),
+        factors:octalysis_factors!inner (factor1, factor2, factor3, factor4, factor5, factor6, factor7, factor8)
+      `)
       .eq('telegram_id', telegramId)
       .maybeSingle();
 
@@ -88,7 +89,7 @@ export default async function handler(
         updated_at: now.toISOString(),
         burnout_level: existingUser?.burnout_level || 0,
         created_at: existingUser?.created_at || now.toISOString(),
-        current_sprite_id: existingUser?.current_sprite_id || null // Сохраняем текущий спрайт
+        current_sprite_id: existingUser?.current_sprite_id || null
       };
 
       // Выполняем upsert без немедленного возврата данных
@@ -100,19 +101,54 @@ export default async function handler(
 
       if (upsertError) throw upsertError;
 
-      // Повторно запрашиваем пользователя с JOIN к спрайтам
+      // Повторно запрашиваем пользователя с JOIN к спрайтам и факторам
       const { data: userRecord, error: selectError } = await supabase
         .from('users')
         .select(`
           *,
-          sprites:current_sprite_id (image_url)
-        `) // Добавляем JOIN к таблице спрайтов
+          sprites:current_sprite_id (image_url),
+          factors:octalysis_factors!inner (factor1, factor2, factor3, factor4, factor5, factor6, factor7, factor8)
+        `)
         .eq('telegram_id', telegramId)
         .single();
 
       if (selectError) throw selectError;
 
       console.log('[Init API] User upsert successful:', JSON.stringify(userRecord, null, 2));
+
+      // Создаем факторы Октализа, если их нет
+      if (!userRecord.factors) {
+        console.log('[Init API] Creating default octalysis factors');
+        const { error: factorsError } = await supabase
+          .from('octalysis_factors')
+          .insert({
+            user_id: userRecord.id,
+            factor1: 50,
+            factor2: 50,
+            factor3: 50,
+            factor4: 50,
+            factor5: 50,
+            factor6: 50,
+            factor7: 50,
+            factor8: 50
+          });
+
+        if (factorsError) {
+          console.error('[Init API] Failed to create octalysis factors:', factorsError);
+        } else {
+          // Обновляем локальную копию факторов
+          userRecord.factors = {
+            factor1: 50,
+            factor2: 50,
+            factor3: 50,
+            factor4: 50,
+            factor5: 50,
+            factor6: 50,
+            factor7: 50,
+            factor8: 50
+          };
+        }
+      }
 
       // Обработка реферальной системы
       if (ref && typeof ref === 'string' && ref.startsWith('ref_')) {
@@ -186,7 +222,7 @@ export default async function handler(
         }
       }
 
-      // Формируем ответ с URL спрайта
+      // Формируем ответ с URL спрайта и факторами
       const responseUser: UserProfile = {
         id: userRecord.id,
         telegram_id: userRecord.telegram_id,
@@ -201,7 +237,18 @@ export default async function handler(
         current_sprite_id: userRecord.current_sprite_id,
         last_login_date: userRecord.last_login_date,
         // Добавляем URL активного спрайта
-        current_sprite_url: userRecord.sprites?.image_url || null
+        current_sprite_url: userRecord.sprites?.image_url || null,
+        // Добавляем факторы Октализа
+        octalysis_factors: userRecord.factors ? [
+          userRecord.factors.factor1,
+          userRecord.factors.factor2,
+          userRecord.factors.factor3,
+          userRecord.factors.factor4,
+          userRecord.factors.factor5,
+          userRecord.factors.factor6,
+          userRecord.factors.factor7,
+          userRecord.factors.factor8
+        ] : [50, 50, 50, 50, 50, 50, 50, 50]
       };
 
       console.log('[Init API] Returning success response');
