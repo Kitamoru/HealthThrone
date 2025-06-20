@@ -13,55 +13,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { telegramId, newScore } = req.body;
+  const { telegramId, burnoutDelta, factorsDelta } = req.body;
 
-  if (!telegramId || typeof newScore !== 'number') {
+  if (typeof telegramId !== 'number' || typeof burnoutDelta !== 'number' || !Array.isArray(factorsDelta)) {
     return res.status(400).json({ error: 'Invalid request body' });
   }
 
-  // Валидация диапазона баллов
-  if (newScore < -20 || newScore > 20) {
-    return res.status(400).json({ error: 'Invalid score delta value' });
-  }
-
-  console.log(`[UpdateBurnout] Request for user ${telegramId} with delta: ${newScore}`);
-
   try {
-    const { data, error } = await supabase.rpc('update_burnout', {
+    const { data, error } = await supabase.rpc('update_user_stats', {
       p_telegram_id: telegramId,
-      p_score_delta: newScore
+      p_burnout_delta: burnoutDelta,
+      p_factors_delta: factorsDelta
     });
 
     if (error) {
-      if (error.message.includes('User not found')) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      if (error.message.includes('Daily limit exceeded')) {
-        return res.status(429).json({ error: 'Daily attempt limit exceeded' });
-      }
-      
-      console.error('RPC execution error:', error);
-      return res.status(500).json({ 
-        error: 'Database operation failed',
-        code: error.code,
-        details: error.message
-      });
+      console.error('RPC error:', error);
+      return res.status(500).json({ error: error.message });
     }
 
-    if (!data || data.length === 0) {
-      console.error('RPC returned empty result');
-      return res.status(404).json({ error: 'User not found after update' });
-    }
-
-    const updatedUser = data[0];
-    console.log(`[UpdateBurnout] Updated user ${telegramId}: burnout=${updatedUser.burnout_level}`);
-
-    return res.status(200).json({
-      success: true,
-      data: updatedUser
-    });
+    return res.status(200).json({ success: true, data });
   } catch (e) {
-    console.error('Unhandled server error:', e);
+    console.error('Server error:', e);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
