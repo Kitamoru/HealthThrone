@@ -30,7 +30,50 @@ body {
   overscroll-behavior: none;
 }
 
-/* Основные контейнеры */
+/* Loader Styles */
+.loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  gap: 10px;
+}
+
+.loader-spinner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pulse-circle {
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle, rgba(0, 123, 255, 0.7) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.loader-emoji {
+  font-size: 24px;
+  position: absolute;
+  animation: bounce 1.5s ease-in-out infinite;
+}
+
+.loader-text {
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+  animation: fade 1.5s ease-in-out infinite;
+}
+
+/* Main Container */
 .container {
   display: flex;
   flex-direction: column;
@@ -39,12 +82,981 @@ body {
   gap: 20px;
 }
 
-.scrollable-content {
-  flex: 1;
+/* Header Styles */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.sprite-container {
+  position: relative; /* Для позиционирования внутри контейнера */
+  width: 70px;
+  height: 70px;
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sprite-container:hover {
+  transform: scale(1.05);
+}
+
+.sprite {
+  position: absolute; /* Оба спрайта абсолютно позиционированы */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 20px;
+  image-rendering: pixelated;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.pentagon {
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, var(--tg-danger), #c0392b);
+  clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 2;
+  color: white;
+  font-weight: bold;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  transition: transform 0.3s ease;
+}
+
+.pentagon:hover {
+  transform: scale(1.1);
+}
+
+/* Burnout Section */
+.burnout-section {
+  background: var(--tg-secondary);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid var(--tg-border);
+}
+
+.level-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.level-label {
+  font-size: 14px;
+  color: var(--tg-hint);
+  font-weight: 500;
+}
+
+.level-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--tg-text);
+  padding: 6px 12px;
+  background: linear-gradient(135deg, var(--tg-accent), #4a7bc8);
+  border-radius: 8px;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.progress-wrapper {
+  width: 100%;
+}
+
+.burnout-bar {
+  background: var(--tg-secondary);
+  height: 14px;
+  border-radius: 7px;
+  overflow: hidden;
+  border: 1px solid var(--tg-border);
+}
+
+.burnout-progress {
+  height: 100%;
+  background: linear-gradient(90deg, var(--tg-success), var(--tg-accent), var(--tg-danger));
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+}
+
+.burnout-progress::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent 70%, rgba(255,255,255,0.3));
+  animation: shimmer 2s infinite;
+}
+
+/* Content Area */
+.content {
+  flex-grow: 1;
   overflow-y: auto;
   scroll-behavior: smooth;
-  padding-bottom: 20px;
+  padding-bottom: 15px;
 }
+
+.questions {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.question-card {
+  background: var(--tg-secondary);
+  border-radius: 16px;
+  padding: 18px;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.question-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  transition: left 0.5s;
+}
+
+.question-card:hover::before {
+  left: 100%;
+}
+
+.question-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--tg-accent);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.question-card.answered {
+  border-color: var(--tg-success);
+  background: linear-gradient(135deg, var(--tg-secondary), rgba(46, 204, 113, 0.1));
+}
+
+.question-text {
+  margin: 0 0 14px;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.answer-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.answer-btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+.answer-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.answer-btn:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+.answer-btn.positive {
+  background: linear-gradient(135deg, var(--tg-accent), #4a7bc8);
+  color: white;
+  box-shadow: 0 4px 15px rgba(91, 140, 255, 0.4);
+}
+
+.answer-btn.negative {
+  background: linear-gradient(135deg, var(--tg-secondary), #374151);
+  color: var(--tg-text);
+  border: 1px solid var(--tg-border);
+}
+
+.answer-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.answer-btn.positive:hover {
+  box-shadow: 0 6px 20px rgba(91, 140, 255, 0.6);
+}
+
+.answer-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Messages */
+.time-message {
+  text-align: center;
+  margin-top: 20px;
+  animation: fadeInUp 0.5s ease;
+}
+
+.info-message {
+  background: linear-gradient(135deg, rgba(91, 140, 255, 0.2), rgba(46, 204, 113, 0.2));
+  padding: 16px 20px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tg-text);
+  border: 1px solid var(--tg-accent);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* Menu */
+.menu {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 2px solid var(--tg-border);
+  background: var(--tg-bg);
+  position: sticky;
+  bottom: 0;
+}
+
+.menu > * {
+  display: flex;
+}
+
+.menu-btn {
+  background: var(--tg-secondary);
+  border: 1px solid var(--tg-border);
+  padding: 14px;
+  font-size: 24px;
+  color: var(--tg-text);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  width: 100%; /* Добавлено */
+  text-align: center; /* Добавлено */
+  display: flex; /* Добавлено */
+  justify-content: center; /* Добавлено */
+  align-items: center; /* Добавлено */
+}
+
+.menu-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: var(--tg-accent);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.4s, height 0.4s;
+  opacity: 0.2;
+}
+
+.menu-btn:active::before {
+  width: 100px;
+  height: 100px;
+}
+
+.menu-btn:hover {
+  background: var(--tg-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(91, 140, 255, 0.3);
+}
+
+.menu-btn.active {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+/* Friends Page */
+.back-btn {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  z-index: 10;
+  color: var(--tg-text);
+}
+
+.friends-list {
+  margin-top: 20px;
+  width: 100%;
+}
+
+.friend-card {
+  background: var(--tg-secondary);
+  border-radius: 15px;
+  padding: 15px;
+  margin-bottom: 15px;
+  border: 1px solid var(--tg-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.friend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.friend-username {
+  font-weight: bold;
+  font-size: 16px;
+  color: var(--tg-text);
+}
+
+.burnout-level {
+  text-align: center;
+  margin-top: 5px;
+  font-size: 14px;
+  color: var(--tg-hint);
+}
+
+.add-friend-section {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.add-friend-btn {
+  background: linear-gradient(135deg, var(--tg-accent), #4a7bc8);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 12px 25px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  width: 100%;
+  max-width: 250px;
+  font-weight: 600;
+}
+
+.add-friend-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.add-friend-hint {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--tg-hint);
+}
+
+.error-message {
+  color: var(--tg-danger);
+  text-align: center;
+  margin: 15px 0;
+  padding: 10px;
+  border-radius: 8px;
+  background-color: rgba(231, 76, 60, 0.1);
+}
+
+.remove-btn, .delete-btn {
+  background: var(--tg-danger);
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-weight: 500;
+}
+
+.remove-btn:hover, .delete-btn:hover {
+  background: #c0392b;
+}
+
+/* Animations */
+@keyframes pulse {
+  0% { transform: scale(0.8); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0.7; }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes fade {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .sprite-container,
+  .pentagon {
+    width: 65px;
+    height: 65px;
+  }
+
+  .pentagon {
+    font-size: 24px;
+  }
+
+  .question-text {
+    font-size: 15px;
+  }
+
+  .answer-btn {
+    font-size: 13px;
+    padding: 10px 16px;
+  }
+
+  .container {
+    padding: 12px;
+  }
+  
+  .menu-btn {
+    padding: 12px;
+    font-size: 20px;
+  }
+}
+
+/* Alternative Loader */
+.loader {
+  width: 50px;
+  height: 50px;
+  margin: 20px auto;
+}
+
+.loader-inner {
+  width: 100%;
+  height: 100%;
+  border: 3px solid var(--tg-hint);
+  border-top: 3px solid var(--tg-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+/* Friends page */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+}
+
+.add-friends-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.friends-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+.friend-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.friend-name {
+  font-weight: bold;
+}
+
+.burnout-level {
+  color: #666;
+}
+
+.delete-btn {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: var(--tg-secondary);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid var(--tg-border);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  max-width: 500px;
+  width: 90%;
+  margin: 0 auto;
+}
+
+.custom-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.custom-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--tg-text);
+}
+
+.custom-modal-body {
+  margin-bottom: 15px;
+}
+
+.referral-link-container {
+  display: flex;
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.custom-input {
+  background: var(--tg-secondary);
+  border: 1px solid var(--tg-border);
+  border-radius: 12px;
+  padding: 12px;
+  color: var(--tg-text);
+  font-size: 14px;
+  flex: 1;
+  outline: none;
+}
+
+.custom-input:focus {
+  border-color: var(--tg-accent);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--tg-text);
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+
+.close-btn:hover {
+  opacity: 1;
+}
+/* Existing styles... */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* Занимаем всю высоту экрана */
+  padding: 15px;
+  gap: 20px;
+}
+
+.scrollable-content {
+  flex: 1; /* Занимает все доступное пространство */
+  overflow-y: auto; /* Включаем прокрутку при необходимости */
+  padding-bottom: 20px; /* Отступ для меню */
+}
+
+.menu {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 2px solid var(--tg-border);
+  background: var(--tg-bg);
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+  margin-top: auto; /* Важное изменение - прижимаем меню к низу */
+}
+
+/* Новые стили для кнопки удаления */
+.delete-btn {
+  background: var(--tg-danger);
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-weight: 500;
+  margin-top: 10px;
+}
+
+.delete-btn:hover {
+  background: #c0392b;
+}
+
+/* Стили для пустого состояния */
+.empty {
+  text-align: center;
+  padding: 20px;
+  color: var(--tg-hint);
+  font-size: 16px;
+}
+
+/* Улучшаем адаптивность */
+@media (max-width: 480px) {
+  .container {
+    padding: 12px;
+  }
+  
+  .menu-btn {
+    padding: 12px;
+    font-size: 20px;
+  }
+  
+  .friend-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .delete-btn {
+    align-self: flex-end;
+  }
+  
+ /* Плавная анимация появления */
+.page-transition {
+  animation: fadeIn 0.3s ease forwards;
+  opacity: 0;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+}  
+/* Стили для магазина */
+.coins-display {
+  background: linear-gradient(135deg, #ffd700, #ffb700);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: bold;
+  color: #333;
+}
+
+.sprites-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.sprite-card {
+  background: var(--tg-secondary);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--tg-border);
+  transition: transform 0.3s ease;
+}
+
+.sprite-card:hover {
+  transform: translateY(-5px);
+}
+
+.sprite-image {
+  width: 100%;
+  height: 120px;
+  object-fit: contain;
+  background: #1a2431;
+}
+
+.sprite-info {
+  padding: 10px;
+}
+
+.sprite-price {
+  font-size: 14px;
+  margin: 5px 0;
+  color: var(--tg-accent);
+}
+
+.sprite-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.buy-btn, .equip-btn {
+  flex: 1;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.buy-btn {
+  background: linear-gradient(135deg, var(--tg-accent), #4a7bc8);
+  color: white;
+}
+
+.buy-btn.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.equip-btn {
+  background: var(--tg-secondary);
+  color: var(--tg-text);
+  border: 1px solid var(--tg-border);
+}
+
+.equip-btn:disabled {
+  background: var(--tg-success);
+  color: white;
+}
+/* Reference Page Styles */
+.page-title {
+  text-align: center;
+  color: var(--tg-text);
+  margin-bottom: 24px;
+  font-size: 1.8rem;
+  padding-top: 10px;
+}
+
+.reference-section {
+  margin-bottom: 25px;
+  animation: fadeIn 0.5s ease;
+}
+
+.section-title {
+  color: var(--tg-accent);
+  border-bottom: 2px solid var(--tg-accent);
+  padding-bottom: 8px;
+  margin-bottom: 15px;
+  font-size: 1.4rem;
+}
+
+.reference-card {
+  background: var(--tg-secondary);
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  margin-bottom: 15px;
+  border-left: 4px solid var(--tg-accent);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.reference-card.important {
+  border-left: 4px solid var(--tg-danger);
+  background: rgba(231, 76, 60, 0.1);
+}
+
+.feature-list {
+  padding-left: 20px;
+  margin: 12px 0;
+}
+
+.feature-list li {
+  margin-bottom: 10px;
+  line-height: 1.5;
+  color: var(--tg-text);
+}
+
+/* Улучшенные автоматические переносы */
+.reference-section * {
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Отступы для заголовков внутри карточек */
+.reference-card h3 {
+  margin-top: 15px;
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+  color: var(--tg-accent);
+}
+
+.reference-card h3:first-child {
+  margin-top: 0;
+}
+
+/* Выделение важных элементов */
+strong {
+  color: var(--tg-success);
+  font-weight: 600;
+}
+
+/* Анимация для плавного появления */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+  .reference-card {
+    padding: 14px;
+  }
+  
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  .section-title {
+    font-size: 1.2rem;
+  }
+  
+  .feature-list li {
+    font-size: 14px;
+  }
+  
+  .reference-card h3 {
+    font-size: 1.1rem;
+  }
+
+ .button-loader {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.buy-btn.processing,
+.equip-btn.processing {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 0.3s ease-in forwards;
+}
+
+.fade-out {
+  opacity: 1;
+  animation: fadeOut 0.3s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+  /* Классы для управления анимацией */
+.sprite-hidden {
+  opacity: 0;
+  visibility: hidden;
+  z-index: 1;
+}
+
+.sprite-fade-in {
+  opacity: 1;
+  z-index: 2;
+  animation: spriteFadeIn 0.5s ease-in-out;
+}
+
+.sprite-fade-out {
+  opacity: 0;
+  z-index: 1;
+  animation: spriteFadeOut 0.5s ease-in-out;
+}
+
+/* Анимация появления */
+@keyframes spriteFadeIn {
+  from { 
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Анимация исчезновения */
+@keyframes spriteFadeOut {
+  from { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  to { 
+    opacity: 0;
+    transform: scale(1.05);
+  }
+  }
 
 /* Секции */
 .character-section {
@@ -96,22 +1108,13 @@ body {
     transform 0.3s ease;
 }
 
-.sprite-hidden {
-  opacity: 0;
-  visibility: hidden;
-  z-index: 1;
-}
-
 .sprite-fade-in {
-  opacity: 1;
-  z-index: 2;
-  animation: spriteFadeIn 0.5s ease-in-out;
+  animation: fadeIn 0.5s ease-out;
 }
 
-.sprite-fade-out {
-  opacity: 0;
-  z-index: 1;
-  animation: spriteFadeOut 0.5s ease-in-out;
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 /* Прогресс-бар выгорания */
@@ -253,6 +1256,12 @@ body {
   animation: pulse 1.5s infinite;
   border-radius: 30px;
   z-index: 0;
+}
+
+@keyframes pulse {
+  0% { opacity: 0; transform: scale(0.95); }
+  50% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.05); }
 }
 
 /* Информационные карточки */
@@ -476,29 +1485,6 @@ body {
   animation: loader-fade 1.5s ease-in-out infinite;
 }
 
-/* Анимации */
-@keyframes spriteFadeIn {
-  from { 
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to { 
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes spriteFadeOut {
-  from { 
-    opacity: 1;
-    transform: scale(1);
-  }
-  to { 
-    opacity: 0;
-    transform: scale(1.05);
-  }
-}
-
 @keyframes loader-pulse {
   0% { transform: scale(0.8); opacity: 0.7; }
   50% { transform: scale(1.2); opacity: 1; }
@@ -515,12 +1501,7 @@ body {
   50% { opacity: 1; }
 }
 
-@keyframes pulse {
-  0% { opacity: 0; transform: scale(0.95); }
-  50% { opacity: 1; }
-  100% { opacity: 0; transform: scale(1.05); }
-}
-
+/* Анимации */
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
@@ -529,21 +1510,6 @@ body {
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 /* Адаптивность */
@@ -603,13 +1569,45 @@ body {
     padding: 8px 3px;
     font-size: 0.8rem;
   }
-  
-  .checkup-button {
-    padding: 14px;
-    font-size: 1rem;
+}
+
+/* Анимации спрайта */
+.sprite-hidden {
+  opacity: 0;
+  visibility: hidden;
+  z-index: 1;
+}
+
+.sprite-fade-in {
+  opacity: 1;
+  z-index: 2;
+  animation: spriteFadeIn 0.5s ease-in-out;
+}
+
+.sprite-fade-out {
+  opacity: 0;
+  z-index: 1;
+  animation: spriteFadeOut 0.5s ease-in-out;
+}
+
+@keyframes spriteFadeIn {
+  from { 
+    opacity: 0;
+    transform: scale(0.95);
   }
-  
-  .info-card {
-    padding: 15px;
+  to { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes spriteFadeOut {
+  from { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  to { 
+    opacity: 0;
+    transform: scale(1.05);
   }
 }
