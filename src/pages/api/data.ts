@@ -58,21 +58,13 @@ export default async function handler(
 
     console.log(`[Data API] Fetching user data for ID: ${telegramIdNumber}`);
 
-    if (setUserResult.error) {
-      console.error('[Data API] RLS error:', setUserResult.error);
-      return res.status(500).json({ 
-        success: false,
-        error: 'RLS configuration failed'
-      });
-    }
-
-    // Запрашиваем данные пользователя из базы данных с JOIN к спрайтам
+    // Запрашиваем данные пользователя из базы данных с JOIN к спрайтам и факторам
     const { data: user, error: dbError } = await supabase
       .from('users')
       .select(`
         *,
         sprites:current_sprite_id (image_url),
-        factors:octalysis_factors!inner (factor1, factor2, factor3, factor4, factor5, factor6, factor7, factor8)
+        factors:octalysis_factors (factor1, factor2, factor3, factor4, factor5, factor6, factor7, factor8)
       `)
       .eq('telegram_id', telegramIdNumber)
       .single();
@@ -85,26 +77,18 @@ export default async function handler(
       });
     }
 
-    // Дополнительный лог: печатаем сырые данные пользователя
-    console.log('[Data API] Retrieved raw user data:', user);
-
     // Формируем данные пользователя для ответа
     const userData: UserProfile = {
       id: user.id,
       telegram_id: user.telegram_id,
-      created_at: user.created_at,
       username: user.username,
       first_name: user.first_name,
       last_name: user.last_name,
       burnout_level: user.burnout_level,
       last_attempt_date: user.last_attempt_date,
       coins: user.coins,
-      updated_at: user.updated_at,
       current_sprite_id: user.current_sprite_id,
-      last_login_date: user.last_login_date,
-      // Добавляем URL активного спрайта
       current_sprite_url: user.sprites?.image_url || null,
-      // Добавляем факторы Октализа
       octalysis_factors: user.factors ? [
         user.factors.factor1,
         user.factors.factor2,
@@ -117,7 +101,7 @@ export default async function handler(
       ] : [50, 50, 50, 50, 50, 50, 50, 50]
     };
 
-    console.log('[Data API] Final user profile:', userData);
+    console.log('[Data API] User profile loaded successfully');
 
     // Возвращаем сформированный профиль пользователя
     return res.status(200).json({
