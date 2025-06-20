@@ -233,20 +233,21 @@ class Api {
   }
   
   async submitSurvey(params: {
-    telegramId: number;
-    newScore: number;
-    initData?: string;
-  }): Promise<ApiResponse<UserProfile>> {
-    return this.makeRequest<UserProfile>(
-      '/updateBurnout', 
-      'POST', 
-      {
-        telegramId: params.telegramId,
-        newScore: params.newScore
-      },
-      params.initData
-    );
-  }
+  telegramId: number;
+  burnoutDelta: number;
+  factorsDelta: number[];
+  initData?: string;
+}): Promise<ApiResponse<UserProfile>> {
+  return this.makeRequest<UserProfile>(
+    '/api/updateBurnout', 
+    'POST', 
+    {
+      telegramId: params.telegramId,
+      burnoutDelta: params.burnoutDelta,
+      factorsDelta: params.factorsDelta
+    },
+    params.initData
+  );
 }
 
 export const api = new Api();
