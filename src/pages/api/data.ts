@@ -58,11 +58,6 @@ export default async function handler(
 
     console.log(`[Data API] Fetching user data for ID: ${telegramIdNumber}`);
 
-    // Устанавливаем контекст пользователя для RLS
-    const setUserResult = await supabase.rpc('set_current_user', { 
-      user_id: telegramIdNumber.toString() 
-    });
-
     if (setUserResult.error) {
       console.error('[Data API] RLS error:', setUserResult.error);
       return res.status(500).json({ 
