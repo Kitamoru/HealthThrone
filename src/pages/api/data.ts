@@ -76,8 +76,9 @@ export default async function handler(
       .from('users')
       .select(`
         *,
-        sprites:current_sprite_id (image_url)
-      `) // Добавляем JOIN к таблице спрайтов
+        sprites:current_sprite_id (image_url),
+        factors:octalysis_factors!inner (factor1, factor2, factor3, factor4, factor5, factor6, factor7, factor8)
+      `)
       .eq('telegram_id', telegramIdNumber)
       .single();
 
@@ -107,7 +108,18 @@ export default async function handler(
       current_sprite_id: user.current_sprite_id,
       last_login_date: user.last_login_date,
       // Добавляем URL активного спрайта
-      current_sprite_url: user.sprites?.image_url || null
+      current_sprite_url: user.sprites?.image_url || null,
+      // Добавляем факторы Октализа
+      octalysis_factors: user.factors ? [
+        user.factors.factor1,
+        user.factors.factor2,
+        user.factors.factor3,
+        user.factors.factor4,
+        user.factors.factor5,
+        user.factors.factor6,
+        user.factors.factor7,
+        user.factors.factor8
+      ] : [50, 50, 50, 50, 50, 50, 50, 50]
     };
 
     console.log('[Data API] Final user profile:', userData);
