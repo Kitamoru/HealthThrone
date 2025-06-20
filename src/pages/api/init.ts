@@ -50,7 +50,7 @@ export default async function handler(
 
     const now = new Date();
     const today = format(now, 'yyyy-MM-dd');
-    console.log(`[Init API] Current date: ${today}, timestamp: ${now.toISOString()}`);
+    console.log(`[Init API] Current date: ${today}`);
 
     // Поиск существующего пользователя с JOIN к спрайтам и факторам
     const { data: existingUser, error: userError } = await supabase
@@ -58,7 +58,7 @@ export default async function handler(
       .select(`
         *,
         sprites:current_sprite_id (image_url),
-        factors:octalysis_factors!inner (factor1, factor2, factor3, factor4, factor5, factor6, factor7, factor8)
+        factors:octalysis_factors (factor1, factor2, factor3, factor4, factor5, factor6, factor7, factor8)
       `)
       .eq('telegram_id', telegramId)
       .maybeSingle();
@@ -92,7 +92,7 @@ export default async function handler(
         current_sprite_id: existingUser?.current_sprite_id || null
       };
 
-      // Выполняем upsert без немедленного возврата данных
+      // Выполняем upsert
       const { error: upsertError } = await supabase
         .from('users')
         .upsert(updates, {
@@ -107,14 +107,12 @@ export default async function handler(
         .select(`
           *,
           sprites:current_sprite_id (image_url),
-          factors:octalysis_factors!inner (factor1, factor2, factor3, factor4, factor5, factor6, factor7, factor8)
+          factors:octalysis_factors (factor1, factor2, factor3, factor4, factor5, factor6, factor7, factor8)
         `)
         .eq('telegram_id', telegramId)
         .single();
 
       if (selectError) throw selectError;
-
-      console.log('[Init API] User upsert successful:', JSON.stringify(userRecord, null, 2));
 
       // Создаем факторы Октализа, если их нет
       if (!userRecord.factors) {
@@ -226,19 +224,14 @@ export default async function handler(
       const responseUser: UserProfile = {
         id: userRecord.id,
         telegram_id: userRecord.telegram_id,
-        created_at: userRecord.created_at,
         username: userRecord.username,
         first_name: userRecord.first_name,
         last_name: userRecord.last_name,
         burnout_level: userRecord.burnout_level,
         last_attempt_date: userRecord.last_attempt_date,
         coins: userRecord.coins,
-        updated_at: userRecord.updated_at,
         current_sprite_id: userRecord.current_sprite_id,
-        last_login_date: userRecord.last_login_date,
-        // Добавляем URL активного спрайта
         current_sprite_url: userRecord.sprites?.image_url || null,
-        // Добавляем факторы Октализа
         octalysis_factors: userRecord.factors ? [
           userRecord.factors.factor1,
           userRecord.factors.factor2,
@@ -251,7 +244,7 @@ export default async function handler(
         ] : [50, 50, 50, 50, 50, 50, 50, 50]
       };
 
-      console.log('[Init API] Returning success response');
+      console.log('[Init API] User initialization successful');
       return res.status(200).json({
         success: true,
         user: responseUser,
