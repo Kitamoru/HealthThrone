@@ -41,9 +41,12 @@ export const DailyCheckupModal: React.FC<DailyCheckupModalProps> = ({
 
   const handleSubmit = () => {
     // Рассчитываем дельту для выгорания
-    const burnoutDelta = answers.slice(0, burnoutQuestions.length).reduce(
-      (sum, answer, idx) => sum + (answer || 0) * burnoutQuestions[idx].weight, 0
-    );
+    const burnoutDelta = answers
+      .slice(0, burnoutQuestions.length)
+      .reduce<number>((sum, answer, idx) => {
+        const value = answer !== null ? answer : 0;
+        return sum + value * burnoutQuestions[idx].weight;
+      }, 0);
     
     // Для факторов Октализа
     const factorsDelta = Array(8).fill(0);
@@ -52,7 +55,7 @@ export const DailyCheckupModal: React.FC<DailyCheckupModalProps> = ({
       if (answer === null) return;
       const factorIndex = octalysisQuestions[idx].factor;
       if (factorIndex !== undefined) {
-        factorsDelta[factorIndex] += (answer || 0) * octalysisQuestions[idx].weight;
+        factorsDelta[factorIndex] += answer * octalysisQuestions[idx].weight;
       }
     });
     
