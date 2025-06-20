@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
 
 interface BurnoutProgressProps {
   level: number;
@@ -25,35 +24,49 @@ export const BurnoutProgress = React.memo(({
 
     // Если спрайт изменился
     if (spriteUrl !== prevSpriteRef.current) {
-      setIsAnimating(true);
-      prevSpriteRef.current = spriteUrl;
-      setDisplaySprite(spriteUrl);
-      
-      const timer = setTimeout(() => {
-        setIsAnimating(false);
-      }, 500);
-      
-      return () => clearTimeout(timer);
+      // Если нет активной анимации - сразу обновляем
+      if (!isAnimating) {
+        prevSpriteRef.current = spriteUrl;
+        setDisplaySprite(spriteUrl);
+        setIsAnimating(true);
+        
+        const timer = setTimeout(() => {
+          setIsAnimating(false);
+        }, 500);
+        
+        return () => clearTimeout(timer);
+      } 
+      // Если анимация активна - ставим в очередь обновление
+      else {
+        const timer = setTimeout(() => {
+          prevSpriteRef.current = spriteUrl;
+          setDisplaySprite(spriteUrl);
+        }, 500);
+        
+        return () => clearTimeout(timer);
+      }
     }
-  }, [spriteUrl]);
+  }, [spriteUrl, isAnimating]);
 
   return (
-    <div className="character-section">
-      <div className="sprite-container">
-        <motion.img 
-          src={displaySprite} 
-          alt="Character"
-          className="sprite"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ 
-            opacity: 1, 
-            scale: isAnimating ? 1.05 : 1,
-            filter: `brightness(${100 - level/2}%) saturate(${100 + level/2}%)`
-          }}
-          transition={{ duration: 0.5 }}
-        />
+    <>
+      <div className="header">
+        <div className="sprite-container">
+          <img 
+            src={displaySprite} 
+            alt="Character" 
+            className={`sprite ${isAnimating ? 'sprite-fade-in' : ''}`}
+            onError={(e) => {
+              e.currentTarget.src = '/sprite.gif';
+            }}
+          />
+        </div>
+
+        <div className="pentagon">
+          🔥
+        </div>
       </div>
-      
+
       <div className="burnout-section">
         <div className="level-display">
           <span className="level-label">Уровень выгорания</span>
@@ -61,15 +74,13 @@ export const BurnoutProgress = React.memo(({
         </div>
         <div className="progress-wrapper">
           <div className="burnout-bar">
-            <motion.div 
+            <div 
               className="burnout-progress"
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.min(level, 100)}%` }}
-              transition={{ duration: 1, ease: "easeOut" }}
+              style={{ width: `${Math.min(level, 100)}%` }}
             />
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 });
