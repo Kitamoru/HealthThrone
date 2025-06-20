@@ -41,9 +41,15 @@ export const useSubmitSurvey = () => {
   return useMutation({
     mutationFn: (params: { 
       telegramId: number; 
-      newScore: number; 
-      initData?: string 
-    }) => api.submitSurvey(params),
+      burnoutDelta: number; 
+      factorsDelta: number[];
+      initData?: string;
+    }) => api.submitSurvey({
+      telegramId: params.telegramId,
+      burnoutDelta: params.burnoutDelta,
+      factorsDelta: params.factorsDelta,
+      initData: params.initData
+    }),
   });
 };
 
