@@ -94,7 +94,7 @@ export default function Friends() {
   };
 
   const handleShare = () => {
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('✨ Твоя мотивация — искра. Вместе мы — Пламя!\nПрисоединяйся к команде поиска мотивации в Moraleon:')}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('✨ Твоя мотивация — искра. Вместе мы — Пламя!🔥\nПрисоединяйся к команде поиска мотивации в Moraleon!⚔️')}`;
     if (webApp?.openTelegramLink) {
       webApp.openTelegramLink(shareUrl);
     } else if (webApp?.openLink) {
@@ -127,7 +127,7 @@ export default function Friends() {
         
         <div className="friends-list">
           {!friends || friends.length === 0 ? (
-            <div className="empty">У вас не добавлены участники команды</div>
+            <div className="empty">У вас не призваны участники команды</div>
           ) : (
             <div className="friends-grid">
               {friends.map((friend) => (
