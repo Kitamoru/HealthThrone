@@ -94,7 +94,7 @@ export default function Friends() {
   };
 
   const handleShare = () => {
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('✨ Твоя мотивация — искра. Вместе мы — пламя!🔥\nПрисоединяйся к команде в *Moraleon*!⚔️')}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('✨ Твоя мотивация — искра. Вместе мы — пламя!🔥\nПрисоединяйся к команде в MORALEON!⚔️')}`;
     if (webApp?.openTelegramLink) {
       webApp.openTelegramLink(shareUrl);
     } else if (webApp?.openLink) {
@@ -180,7 +180,7 @@ export default function Friends() {
                   onClick={handleShare}
                   style={{ marginTop: '15px' }}
                 >
-                  Поделиться
+                  Призвать
                 </button>
               </div>
             </div>
