@@ -17,8 +17,15 @@ const ReferencePage = () => {
       
       <div className="container">
         <div className="scrollable-content">
-          <h1 className="page-title">📚 Что тут есть?</h1>
+          <h1 className="page-title">📚 Где я?</h1>
           
+          {/* Добавленное описание */}
+          <div className="page-description">
+            Moraleon — это ваш персональный трекер мотивации и выгорания, 
+            который становится еще мощнее в команде. Ваша легенда начинается здесь! ⚔️✨
+          </div>
+          {/* Конец добавленного блока */}
+
           <div className="reference-section">
             <h2 className="section-title">📊 Главный экран</h2>
             <div className="reference-card">
@@ -32,6 +39,7 @@ const ReferencePage = () => {
             </div>
           </div>
 
+          {/* Остальная часть кода без изменений */}
           <div className="reference-section">
             <h2 className="section-title">📈 Моя команда</h2>
             <div className="reference-card">
