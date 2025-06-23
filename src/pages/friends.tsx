@@ -85,7 +85,7 @@ export default function Friends() {
 
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
   const referralCode = `ref_${user?.id || 'default'}`;
-  const referralLink = `https://t.me/${botUsername}/HealthBreake?startapp=${referralCode}`;
+  const referralLink = `https://t.me/${botUsername}/Moraleon?startapp=${referralCode}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink);
@@ -94,8 +94,7 @@ export default function Friends() {
   };
 
   const handleShare = () => {
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Добро пожаловать на борт!')}`;
-
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('✨ Твоя мотивация — искра. Вместе мы — Пламя!\nПрисоединяйся к команде поиска мотивации в Moraleon:')}`;
     if (webApp?.openTelegramLink) {
       webApp.openTelegramLink(shareUrl);
     } else if (webApp?.openLink) {
@@ -118,7 +117,7 @@ export default function Friends() {
             className="answer-btn positive"
             onClick={() => setShowModal(true)}
           >
-            Добавить
+            Призвать
           </button>
         </div>
         
@@ -152,7 +151,7 @@ export default function Friends() {
           <div className="modal-overlay">
             <div className="modal-card">
               <div className="custom-modal-header">
-                <h3>Ссылка приглашение</h3>
+                <h3>Активировать свиток</h3>
                 <button 
                   className="close-btn" 
                   onClick={() => setShowModal(false)}
@@ -161,7 +160,7 @@ export default function Friends() {
                 </button>
               </div>
               <div className="custom-modal-body">
-                <p>Добавь участника команды</p>
+                <p>Призови участника команды</p>
                 <div className="referral-link-container">
                   <input 
                     type="text" 
