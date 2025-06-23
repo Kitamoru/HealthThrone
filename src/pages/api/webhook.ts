@@ -73,20 +73,36 @@ bot.command('start', async (ctx) => {
       throw new Error(`Invalid WEBAPPURL: ${webAppUrl}`);
     }
     
+    // Формируем URL для картинки (базовый URL из WEBAPPURL)
+    let imageUrl: string;
+    try {
+      const urlObj = new URL(webAppUrl);
+      imageUrl = `${urlObj.origin}/IMG_5349.jpeg`;
+    } catch (e) {
+      throw new Error(`Failed to parse WEBAPPURL: ${webAppUrl}`);
+    }
+    
     // Создаем клавиатуру
     const keyboard = Markup.inlineKeyboard([
       Markup.button.webApp('🌐 Открыть приложение', webAppUrl),
       Markup.button.callback('📊 Статистика', 'stats')
     ]);
 
-    // Экранированное сообщение для MarkdownV2
-    const escapedMessage = '🔥 Добро пожаловать\\!';
+    // Новое приветственное сообщение с HTML-разметкой
+    const caption = `🔥 <b>СВЕТ ФАКЕЛОВ ОСВЕЩАЕТ ТЕБЯ В ТЕМНОТЕ ПОДЗЕМЕЛЬЯ</b>
+АГА! НОВЫЙ ИСКАТЕЛЬ ПРИКЛЮЧЕНИЙ В МОРАЛЕОНЕ!
+
+Ты забрел в подземелье мотивации. Здесь:
+• Скучные опросы = 🔮 Квесты на артефакты мотивации
+• Метрики команды = 🗺️ Магическая карта Октограммы
+• Твоя активность = 🏆 Титулы («Убийца Аппатии», «Пожиратель Целей»)!
+🔮 Духи Подземелья шепчут твое имя. Ответь на зов:`;
     
-    // Отправляем сообщение
-    await ctx.reply(escapedMessage, {
-      reply_markup: keyboard.reply_markup,
-      parse_mode: 'MarkdownV2',
-      link_preview_options: { is_disabled: true }
+    // Отправляем картинку с подписью и клавиатурой
+    await ctx.replyWithPhoto(imageUrl, {
+      caption: caption,
+      parse_mode: 'HTML',
+      reply_markup: keyboard.reply_markup
     });
     
     console.log(`Successfully handled /start for user: ${ctx.from.id}`);
