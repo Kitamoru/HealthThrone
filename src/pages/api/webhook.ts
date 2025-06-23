@@ -84,7 +84,7 @@ bot.command('start', async (ctx) => {
     
     // Создаем клавиатуру
     const keyboard = Markup.inlineKeyboard([
-      Markup.button.webApp('⚔️ Отправиться в путь!', webAppUrl),
+      Markup.button.webApp('⚔️ Отправиться в путь', webAppUrl),
     ]);
 
     // Новое приветственное сообщение с HTML-разметкой
