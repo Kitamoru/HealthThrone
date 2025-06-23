@@ -1057,4 +1057,15 @@ strong {
     transform: scale(1.05);
   }
   }
+.page-description {
+  text-align: center;
+  margin: 15px 20px 25px;
+  padding: 12px;
+  background-color: #f0f9ff;
+  border-radius: 12px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #333;
+  border: 1px solid #d1e7ff;
+}
 }
