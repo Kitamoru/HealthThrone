@@ -1,11 +1,13 @@
-// Исправленный next.config.js
 const nextConfig = {
   reactStrictMode: true,
   images: {
     domains: [
-      process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', '') || '',
+      ...(process.env.NEXT_PUBLIC_SUPABASE_URL 
+        ? [process.env.NEXT_PUBLIC_SUPABASE_URL.replace('https://', '')] 
+        : []
+      ),
       'supabase.co'
-    ],
+    ].filter(Boolean), // Фильтруем пустые значения
     unoptimized: true
   },
   async headers() {
@@ -26,9 +28,10 @@ const nextConfig = {
         ]
       }
     ];
-  },
+  }
+}; // Фикс: добавили закрывающую фигурную скобку для nextConfig
 
-// Проверяем наличие анализатора только при необходимости
+// Проверяем наличие анализатора
 if (process.env.ANALYZE) {
   const withBundleAnalyzer = require('@next/bundle-analyzer')({
     enabled: process.env.ANALYZE === 'true',
