@@ -32,7 +32,7 @@
     "framer-motion": "^11.0.3",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.8.1",
-    "tsparticles/engine": "^3.8.1"
+    "tsparticles-engine": "^3.8.1"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.0.0",
