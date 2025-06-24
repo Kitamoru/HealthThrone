@@ -3,9 +3,6 @@ import React from 'react';
 export function Loader() {
   return (
     <div style={{
-      '--loader-min-size': '320px',
-      '--loader-max-size': '512px',
-      '--mobile-breakpoint': '480px',
       position: 'relative',
       width: '100vw',
       height: '100vh',
@@ -18,7 +15,8 @@ export function Loader() {
       transition: 'background-color 0.3s ease'
     }}>
       <div style={{
-        width: 'clamp(var(--loader-min-size), 80%, var(--loader-max-size))',
+        width: '90%',
+        maxWidth: '512px',
         aspectRatio: '1/1',
         position: 'relative',
         backgroundImage: 'url(/IMG_0413.png)',
@@ -36,9 +34,11 @@ export function Loader() {
             100% { transform: scale(0.95); opacity: 0.8; }
           }
           
+          /* Адаптация для очень маленьких экранов */
           @media (max-width: 480px) {
             div > div {
-              width: 90% !important;
+              width: 95%;
+              max-width: 95%;
             }
           }
         `}
