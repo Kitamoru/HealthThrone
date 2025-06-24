@@ -19,7 +19,7 @@ const prefetchShopData = (initData?: string) => {
 };
 
 const Loader = dynamic(
-  () => import('../components/Loader').then(mod => mod.default),
+  () => import('../components/Loader').then(mod => mod.Loader),
   { ssr: false, loading: () => <div>Загрузка...</div> }
 );
 
