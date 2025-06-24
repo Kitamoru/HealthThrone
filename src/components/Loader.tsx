@@ -2,7 +2,7 @@ import React from 'react';
 import MagicProgressBar from './MagicProgressBar';
 import ParticlesBackground from './ParticlesBackground';
 
-export default function LoaderScreen() {
+export function Loader() { 
   return (
     <div style={{
       position: 'relative',
