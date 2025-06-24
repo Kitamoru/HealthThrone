@@ -14,7 +14,6 @@ export function Loader() {
       alignItems: 'center',
       flexDirection: 'column',
     }}>
-      <ParticlesBackground />
       <MagicProgressBar duration={5000} />
     </div>
   );
