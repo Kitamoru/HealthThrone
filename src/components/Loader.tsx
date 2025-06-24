@@ -1,6 +1,5 @@
 import React from 'react';
 import MagicProgressBar from './MagicProgressBar';
-import ParticlesBackground from './ParticlesBackground';
 
 export function Loader() { 
   return (
