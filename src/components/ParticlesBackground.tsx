@@ -7,7 +7,7 @@ import type { Engine } from 'tsparticles-engine';
 
 const ParticlesBackground = () => {
   const particlesInit = async (main: Engine) => {
-    await loadFull(main);
+    await loadSlim(main);
   };
 
   return (
