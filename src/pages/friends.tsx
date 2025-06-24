@@ -114,6 +114,12 @@ export default function Friends() {
       window.open(shareUrl, '_blank');
     }
   };
+
+  // Показываем лоадер только при первой загрузке
+  if (isInitialLoading) {
+    return <Loader />;
+  }
+
   return (
     <div className="container">
       <div className="scrollable-content">
