@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import styles from './MagicProgressBar.module.css';
@@ -10,14 +12,22 @@ const MagicProgressBar: React.FC<Props> = ({ duration = 3000 }) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
+    let animationFrame: number;
     const start = Date.now();
-    const interval = setInterval(() => {
+    
+    const updateProgress = () => {
       const elapsed = Date.now() - start;
       const percent = Math.min(100, (elapsed / duration) * 100);
       setProgress(percent);
-      if (percent >= 100) clearInterval(interval);
-    }, 16);
-    return () => clearInterval(interval);
+      
+      if (percent < 100) {
+        animationFrame = requestAnimationFrame(updateProgress);
+      }
+    };
+    
+    animationFrame = requestAnimationFrame(updateProgress);
+    
+    return () => cancelAnimationFrame(animationFrame);
   }, [duration]);
 
   return (
