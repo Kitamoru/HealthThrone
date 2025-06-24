@@ -3,7 +3,7 @@
 import React from 'react';
 import Particles from '@tsparticles/react';
 import { loadSlim } from '@tsparticles/slim';
-import type { Engine } from 'tsparticles-engine';
+import type { Engine } from '@tsparticles/engine'; // Измененный импорт
 
 const ParticlesBackground = () => {
   const particlesInit = async (main: Engine) => {
