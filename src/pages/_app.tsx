@@ -42,16 +42,10 @@ function App({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     if (!webApp || !initData) return;
-
+    
     // Предзагружаем данные магазина
     prefetchShopData(initData);
-
-    // Предзагружаем данные друзей
-     queryClient.prefetchQuery({
-     queryKey: ['friends', user.id], // Используем прямое преобразование в строку
-     queryFn: () => api.getFriends(user.id, initData),
-    });
-
+    
     // Предзагружаем страницы
     const routes = ['/', '/shop', '/friends'];
     routes.forEach(route => Router.prefetch(route));
@@ -83,7 +77,7 @@ function App({ Component, pageProps }: AppProps) {
       ) : (
         <Loader />
       )}
-    </QueryClientProvider>
+    </QueryClientProvider> // Закрывающий тег добавлен здесь
   );
 }
 
