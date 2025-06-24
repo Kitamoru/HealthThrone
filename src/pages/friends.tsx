@@ -36,19 +36,18 @@ export default function Friends() {
   const [copied, setCopied] = useState(false);
   const [deletingFriends, setDeletingFriends] = useState<number[]>([]);
   const queryClient = useQueryClient();
-  const userId = user?.id;
 
   const { 
-    data: friends = [], 
-    isInitialLoading,
+    data: friends, 
+    isLoading, 
     isError,
     error: queryError
-  } = useQuery<Friend[]>({
-    queryKey: ['friends', userId?.toString()],
+  } = useQuery({
+    queryKey: ['friends', user?.id?.toString()],
     queryFn: async () => {
-      if (!userId || !initData) return [];
+      if (!user?.id || !initData) return [];
       
-      const response = await api.getFriends(userId.toString(), initData);
+      const response = await api.getFriends(user.id.toString(), initData);
       if (response.success && response.data) {
         return response.data.map(f => ({
           id: f.id,
@@ -60,14 +59,7 @@ export default function Friends() {
       }
       throw new Error(response.error || 'Failed to load friends');
     },
-    enabled: !!userId && !!initData,
-    staleTime: 1000 * 60 * 5, // 5 минут кеширования
-    initialData: () => {
-      // Используем префетченные данные из кеша
-      return queryClient.getQueryData<Friend[]>(['friends', userId?.toString()]);
-    },
-    refetchOnMount: true,
-    refetchOnWindowFocus: false
+    enabled: !!user?.id && !!initData,
   });
 
   const deleteFriendMutation = useMutation({
@@ -76,12 +68,9 @@ export default function Friends() {
       return api.deleteFriend(friendId, initData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['friends', userId?.toString()] 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: ['user', userId] 
-      });
+      // Инвалидируем данные друзей и пользователя
+      queryClient.invalidateQueries({ queryKey: ['friends', user?.id?.toString()] });
+      queryClient.invalidateQueries({ queryKey: ['user', user?.id] });
     },
   });
 
@@ -95,7 +84,7 @@ export default function Friends() {
   };
 
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
-  const referralCode = `ref_${userId || 'default'}`;
+  const referralCode = `ref_${user?.id || 'default'}`;
   const referralLink = `https://t.me/${botUsername}/Moraleon?startapp=${referralCode}`;
 
   const handleCopy = () => {
@@ -115,8 +104,7 @@ export default function Friends() {
     }
   };
 
-  // Показываем лоадер только при первой загрузке
-  if (isInitialLoading) {
+  if (isLoading) {
     return <Loader />;
   }
 
@@ -134,13 +122,11 @@ export default function Friends() {
         </div>
         
         {isError && (
-          <div className="error">
-            {queryError?.message || 'Ошибка загрузки друзей'}
-          </div>
+          <div className="error">{queryError?.message || 'Ошибка загрузки друзей'}</div>
         )}
         
         <div className="friends-list">
-          {friends.length === 0 ? (
+          {!friends || friends.length === 0 ? (
             <div className="empty">У вас не призваны участники команды</div>
           ) : (
             <div className="friends-grid">
@@ -153,9 +139,7 @@ export default function Friends() {
                     onClick={() => handleDelete(friend.id)}
                     disabled={deletingFriends.includes(friend.id)}
                   >
-                    {deletingFriends.includes(friend.id) 
-                      ? 'Удаление...' 
-                      : 'Удалить'}
+                    {deletingFriends.includes(friend.id) ? 'Удаление...' : 'Удалить'}
                   </button>
                 </div>
               ))}
