@@ -10,6 +10,12 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
+// Определим тип для ответа initUser
+interface InitUserResponse {
+  id: number;
+  // Другие поля пользователя, если они есть в ответе
+}
+
 // Prefetch shop data
 const prefetchShopData = (initData?: string) => {
   queryClient.prefetchQuery({
@@ -54,14 +60,15 @@ function App({ Component, pageProps }: AppProps) {
     api.initUser(initData, startParam)
       .then(response => {
         if (response.success && response.data) {
-          // Получаем ID пользователя из ответа
-          const userId = response.data.id;
+          // Приводим тип данных к InitUserResponse
+          const userData = response.data as InitUserResponse;
+          const userId = userData.id;
           
           // Предзагружаем данные друзей
           prefetchFriends(userId, initData);
           
           // Сохраняем данные пользователя для главной страницы
-          queryClient.setQueryData(['userData', userId], response.data);
+          queryClient.setQueryData(['userData', userId], userData);
         }
         return response;
       })
