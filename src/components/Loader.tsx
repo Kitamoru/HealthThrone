@@ -12,7 +12,7 @@ export function Loader() {
       justifyContent: 'center',
       alignItems: 'center',
       flexDirection: 'column',
-      backgroundColor: '#f5f5f5', // Фолбек-цвет
+      backgroundColor: '#131313', // Фолбек-цвет
       zIndex: 1000, // Убедимся что лоадер поверх других элементов
     }}>
       <div style={{
@@ -20,7 +20,7 @@ export function Loader() {
         height: 'auto',
         minHeight: 80, // Минимальная высота
         position: 'relative',
-        backgroundImage: `url(${process.env.PUBLIC_URL}/IMG_123.jpg)`,
+        backgroundImage: `url(${process.env.PUBLIC_URL}/IMG_0413.jpg)`,
         backgroundSize: 'contain',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center',
