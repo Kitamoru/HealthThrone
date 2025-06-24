@@ -44,7 +44,7 @@ const Loader = dynamic(
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp } = useTelegram();
+  const { user, initData, startParam, webApp } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
 
   useEffect(() => {
@@ -53,17 +53,26 @@ function App({ Component, pageProps }: AppProps) {
     // Инициализируем пользователя
     api.initUser(initData, startParam)
       .then(response => {
-        if (response.success && response.user) {
-          // Предзагружаем данные друзей
-          prefetchFriends(response.user.id, initData);
-          
-          // Сохраняем данные пользователя для главной страницы
-          queryClient.setQueryData(['userData', response.user.id], response.user);
+        if (response.success) {
+          // Предзагружаем данные пользователя для главной страницы
+          if (user?.id) {
+            queryClient.prefetchQuery({
+              queryKey: ['user', user.id],
+              queryFn: () => api.getUserData(user.id, initData),
+            });
+          }
         }
         return response;
       })
       .finally(() => setUserInitialized(true));
-  }, [initData, startParam]);
+  }, [initData, startParam, user]);
+
+  useEffect(() => {
+    if (!initData || !user?.id) return;
+
+    // Предзагружаем данные друзей
+    prefetchFriends(user.id, initData);
+  }, [initData, user]);
 
   useEffect(() => {
     if (!webApp || !initData) return;
