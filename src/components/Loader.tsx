@@ -6,7 +6,6 @@ export function Loader() {
       position: 'relative',
       width: '100vw',
       height: '100vh',
-      backgroundColor: bgColor, // Используем цвет из состояния
       overflow: 'hidden',
       display: 'flex',
       justifyContent: 'center',
