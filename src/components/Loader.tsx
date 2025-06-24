@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
 export function Loader() {
-  const [bgColor, setBgColor] = useState('#131313'); // Значение по умолчанию
   return (
     <div style={{
       position: 'relative',
