@@ -27,12 +27,18 @@ const nextConfig = {
       }
     ];
   },
+  // Добавлено для поддержки частиц
+  transpilePackages: ['react-tsparticles', 'tsparticles', 'tsparticles-engine'],
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
       crypto: require.resolve('crypto-browserify'),
       stream: require.resolve('stream-browserify'),
-      buffer: require.resolve('buffer/')
+      buffer: require.resolve('buffer/'),
+      // Добавлено для частиц
+      fs: false,
+      path: false,
+      os: false,
     };
     
     return config;
