@@ -71,6 +71,7 @@ export const useTelegram = () => {
     webApp: null as TelegramWebApp | null,
     initData: '',
     user: null as TelegramUser | null,
+    userId: state.user?.id || null, // Явное поле для ID
     startParam: '',
   });
 
