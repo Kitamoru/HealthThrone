@@ -1,7 +1,6 @@
 import React from 'react';
-import MagicProgressBar from './MagicProgressBar';
 
-export function Loader() { 
+export function Loader() {
   return (
     <div style={{
       position: 'relative',
@@ -14,7 +13,27 @@ export function Loader() {
       alignItems: 'center',
       flexDirection: 'column',
     }}>
-      <MagicProgressBar duration={5000} />
+      <div style={{
+        width: '300px',
+        height: '80px',
+        position: 'relative',
+        backgroundImage: 'url(/IMG_0413.png)',
+        backgroundSize: 'contain',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+        animation: 'pulse 1.5s infinite ease-in-out'
+      }}></div>
+      
+      {/* CSS анимация */}
+      <style>
+        {`
+          @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.9; }
+          }
+        `}
+      </style>
     </div>
   );
 }
