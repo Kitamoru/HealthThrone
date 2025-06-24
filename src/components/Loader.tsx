@@ -3,25 +3,23 @@ import React from 'react';
 export function Loader() {
   return (
     <div style={{
-      position: 'relative',
-      width: '100vw',
-      height: '100vh',
-      overflow: 'hidden',
+      position: 'fixed', // Используем fixed вместо relative
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
       flexDirection: 'column',
-      transition: 'background-color 0.3s ease'
+      backgroundColor: 'transparent',
+      zIndex: 9999
     }}>
-      {/* Добавляем absolute-позиционирование */}
       <div style={{
-        position: 'absolute',
-        top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: '90%',
-        aspectRatio: '1/1', // Если изображение не квадратное, замените значение
+        width: 'min(90%, 400px)', // Адаптивная ширина с ограничением
+        aspectRatio: '1/1',
         backgroundImage: 'url(/IMG_0413.png)', 
-        backgroundSize: 'cover', // Покрываем весь блок изображением
+        backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center',
         animation: 'pulse 1.5s infinite ease-in-out'
@@ -29,15 +27,24 @@ export function Loader() {
     
       <style>{`
         @keyframes pulse {
-          0% { transform: scale(0.95); opacity: 0.8; }
-          50% { transform: scale(1.05); opacity: 1; }
-          100% { transform: scale(0.95); opacity: 0.8; }
+          0% { 
+            transform: scale(0.95); 
+            opacity: 0.8; 
+          }
+          50% { 
+            transform: scale(1.05); 
+            opacity: 1; 
+          }
+          100% { 
+            transform: scale(0.95); 
+            opacity: 0.8; 
+          }
         }
         
-        /* Адаптация для очень маленьких экранов */
-        @media (max-width: 480px) {
-          div > div {
-            width: 95%; // Увеличили масштабируемость для мобильных устройств
+        /* Фикс для Safari */
+        @supports (-webkit-touch-callout: none) {
+          div {
+            height: -webkit-fill-available;
           }
         }
       `}</style>
