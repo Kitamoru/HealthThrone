@@ -1,16 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 export function Loader() {
-  const [bgColor, setBgColor] = useState('#0b0c1d'); // Значение по умолчанию
-
-  useEffect(() => {
-    // Проверяем доступность Telegram WebApp API
-    if (window.Telegram && window.Telegram.WebApp) {
-      // Используем цвет фона из текущей темы Telegram
-      setBgColor(window.Telegram.WebApp.backgroundColor);
-    }
-  }, []);
-
+  const [bgColor, setBgColor] = useState('#131313'); // Значение по умолчанию
   return (
     <div style={{
       position: 'relative',
