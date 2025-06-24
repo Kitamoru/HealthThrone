@@ -1,23 +1,35 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 export function Loader() {
+  const [bgColor, setBgColor] = useState('#0b0c1d'); // Значение по умолчанию
+
+  useEffect(() => {
+    // Проверяем доступность Telegram WebApp API
+    if (window.Telegram && window.Telegram.WebApp) {
+      // Используем цвет фона из текущей темы Telegram
+      setBgColor(window.Telegram.WebApp.backgroundColor);
+    }
+  }, []);
+
   return (
     <div style={{
       position: 'relative',
       width: '100vw',
       height: '100vh',
-      backgroundColor: '#0b0c1d',
+      backgroundColor: bgColor, // Используем цвет из состояния
       overflow: 'hidden',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
       flexDirection: 'column',
+      transition: 'background-color 0.3s ease' // Плавное изменение цвета
     }}>
       <div style={{
-        width: '300px',
-        height: '80px',
+        width: '100%', // Растягиваем на всю ширину контейнера
+        maxWidth: '600px', // Ограничиваем максимальную ширину
+        aspectRatio: '300/80', // Сохраняем пропорции оригинала (300x80)
         position: 'relative',
-        backgroundImage: 'url(/IMG_0413.png)',
+        backgroundImage: 'url(/IMG_123.jpg)',
         backgroundSize: 'contain',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center',
