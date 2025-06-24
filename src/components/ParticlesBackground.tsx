@@ -1,0 +1,54 @@
+import React from 'react';
+import Particles from 'react-tsparticles';
+import { loadFull } from 'tsparticles';
+
+const ParticlesBackground = () => {
+  const particlesInit = async (main: any) => {
+    await loadFull(main);
+  };
+
+  return (
+    <Particles
+      id="tsparticles"
+      init={particlesInit}
+      options={{
+        fullScreen: { enable: false },
+        background: { color: { value: 'transparent' } },
+        fpsLimit: 60,
+        particles: {
+          color: { value: '#9be7ff' },
+          links: { enable: false },
+          move: {
+            direction: 'none',
+            enable: true,
+            outModes: 'bounce',
+            speed: 0.2,
+          },
+          number: { value: 40 },
+          opacity: {
+            value: 0.5,
+            animation: { enable: true, speed: 0.5, minimumValue: 0.1 },
+          },
+          shape: { type: 'circle' },
+          size: {
+            value: { min: 1, max: 3 },
+            animation: {
+              enable: true,
+              speed: 3,
+              minimumValue: 0.5,
+              sync: false,
+            },
+          },
+        },
+      }}
+      style={{
+        position: 'absolute',
+        width: '100%',
+        height: '100%',
+        zIndex: 0,
+      }}
+    />
+  );
+};
+
+export default ParticlesBackground;
