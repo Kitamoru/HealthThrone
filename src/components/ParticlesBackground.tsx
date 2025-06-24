@@ -1,19 +1,23 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Particles from '@tsparticles/react';
-import { loadSlim } from '@tsparticles/slim';
-import type { Engine } from '@tsparticles/engine';
+import { loadFull } from '@tsparticles/engine';
+
+// Убираем ненужный import типа Engine
 
 const ParticlesBackground = () => {
-  const particlesInit = async (main: Engine) => {
-    await loadSlim(main);
-  };
+  useEffect(() => {
+    // Инициализация частиц сразу в useEffect()
+    async function init() {
+      await loadFull();
+    }
+    init(); // Запускаем загрузку библиотеки
+  }, []);
 
   return (
     <Particles
       id="tsparticles"
-      init={particlesInit}
       options={{
         fullScreen: { enable: false },
         background: { color: { value: 'transparent' } },
@@ -34,7 +38,7 @@ const ParticlesBackground = () => {
           },
           shape: { type: 'circle' },
           size: {
-            value: { min: 1, max: 3 }, // Прямо задаём диапазон размера
+            value: { min: 1, max: 3 },
             animation: {
               enable: true,
               speed: 3,
