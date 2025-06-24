@@ -3,7 +3,7 @@
 import React from 'react';
 import Particles from '@tsparticles/react';
 import { loadSlim } from '@tsparticles/slim';
-import type { Engine } from '@tsparticles/engine'; // Измененный импорт
+import type { Engine } from '@tsparticles/engine';
 
 const ParticlesBackground = () => {
   const particlesInit = async (main: Engine) => {
@@ -30,7 +30,8 @@ const ParticlesBackground = () => {
           number: { value: 40 },
           opacity: {
             value: 0.5,
-            animation: { enable: true, speed: 0.5, minimumValue: 0.1 },
+            min: 0.1, // Переносим minimumValue сюда
+            animation: { enable: true, speed: 0.5 }, // Убираем minimumValue отсюда
           },
           shape: { type: 'circle' },
           size: {
