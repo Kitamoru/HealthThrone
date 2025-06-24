@@ -1,31 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 export function Loader() {
   return (
     <div style={{
-      position: 'relative',
+      position: 'fixed', // Используем fixed вместо relative для полного покрытия
+      top: 0,
+      left: 0,
       width: '100vw',
       height: '100vh',
-      overflow: 'hidden',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
       flexDirection: 'column',
-      transition: 'background-color 0.3s ease' // Плавное изменение цвета
+      backgroundColor: '#f5f5f5', // Фолбек-цвет
+      zIndex: 1000, // Убедимся что лоадер поверх других элементов
     }}>
       <div style={{
-        width: '100%', // Растягиваем на всю ширину контейнера
-        maxWidth: '600px', // Ограничиваем максимальную ширину
-        aspectRatio: '300/80', // Сохраняем пропорции оригинала (300x80)
+        width: 'min(80vw, 600px)', // Адаптивная ширина
+        height: 'auto',
+        minHeight: 80, // Минимальная высота
         position: 'relative',
-        backgroundImage: 'url(/IMG_123.jpg)',
+        backgroundImage: `url(${process.env.PUBLIC_URL}/IMG_123.jpg)`,
         backgroundSize: 'contain',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center',
+        backgroundColor: 'transparent', // Убираем возможную заливку
         animation: 'pulse 1.5s infinite ease-in-out'
       }}></div>
       
-      {/* CSS анимация */}
       <style>
         {`
           @keyframes pulse {
