@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 export function Loader() {
   return (
     <div style={{
+      '--loader-min-size': '320px',
+      '--loader-max-size': '512px',
+      '--mobile-breakpoint': '480px',
       position: 'relative',
       width: '100vw',
       height: '100vh',
@@ -11,12 +14,12 @@ export function Loader() {
       justifyContent: 'center',
       alignItems: 'center',
       flexDirection: 'column',
-      transition: 'background-color 0.3s ease' // Плавное изменение цвета
+      backgroundColor: '#f0f2f5',
+      transition: 'background-color 0.3s ease'
     }}>
       <div style={{
-        width: '100%', // Растягиваем на всю ширину контейнера
-        maxWidth: '600px', // Ограничиваем максимальную ширину
-        aspectRatio: '300/80', // Сохраняем пропорции оригинала (300x80)
+        width: 'clamp(var(--loader-min-size), 80%, var(--loader-max-size))',
+        aspectRatio: '1/1',
         position: 'relative',
         backgroundImage: 'url(/IMG_0413.png)',
         backgroundSize: 'contain',
@@ -25,13 +28,18 @@ export function Loader() {
         animation: 'pulse 1.5s infinite ease-in-out'
       }}></div>
       
-      {/* CSS анимация */}
       <style>
         {`
           @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.9; }
+            0% { transform: scale(0.95); opacity: 0.8; }
             50% { transform: scale(1.05); opacity: 1; }
-            100% { transform: scale(1); opacity: 0.9; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+          }
+          
+          @media (max-width: 480px) {
+            div > div {
+              width: 90% !important;
+            }
           }
         `}
       </style>
