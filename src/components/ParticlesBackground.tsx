@@ -3,11 +3,11 @@
 import React from 'react';
 import Particles from '@tsparticles/react';
 import { loadSlim } from '@tsparticles/slim';
-import type { Engine } from '@tsparticles/engine'; // Импорт типа Engine
+import type { Engine } from '@tsparticles/engine';
 
 const ParticlesBackground = () => {
   const particlesInit = async (main: Engine) => {
-    await loadSlim(main); // Загрузка slim-версии библиотеки
+    await loadSlim(main);
   };
 
   return (
@@ -15,40 +15,39 @@ const ParticlesBackground = () => {
       id="tsparticles"
       init={particlesInit}
       options={{
-        fullScreen: { enable: false }, // Отключаем полноэкранный режим
-        background: { color: { value: 'transparent' } }, // Прозрачный фон
-        fpsLimit: 60, // Ограничение FPS
+        fullScreen: { enable: false },
+        background: { color: { value: 'transparent' } },
+        fpsLimit: 60,
         particles: {
-          color: { value: '#9be7ff' }, // Цвет частиц
-          links: { enable: false }, // Выключение связей между частицами
+          color: { value: '#9be7ff' },
+          links: { enable: false },
           move: {
-            direction: 'none', // Направление движения
-            enable: true, // Включаем движение
-            outModes: 'bounce', // Режим выхода частицы за границы экрана
-            speed: 0.2, // Скорость перемещения
+            direction: 'none',
+            enable: true,
+            outModes: 'bounce',
+            speed: 0.2,
           },
-          number: { value: 40 }, // Количество частиц
+          number: { value: 40 },
           opacity: {
-            value: 0.5, // Начальная прозрачность
-            animation: { enable: true, speed: 0.5, sync: false }, // Анимация прозрачности
+            value: 0.5,
+            animation: { enable: true, speed: 0.5, sync: false },
           },
-          shape: { type: 'circle' }, // Форма частиц (круг)
+          shape: { type: 'circle' },
           size: {
-            value: { min: 1, max: 3 }, // Диапазон размеров частиц
+            value: { min: 1, max: 3 }, // Прямо задаём диапазон размера
             animation: {
-              enable: true, // Включаем анимацию размера
-              speed: 3, // Скорость изменения размера
-              minimumValue: 0.5, // Минимальное значение размера
-              sync: false, // Не синхронизируем размеры частиц
+              enable: true,
+              speed: 3,
+              sync: false,
             },
           },
         },
       }}
       style={{
         position: 'absolute',
-        width: '100%', // Полная ширина
-        height: '100%', // Полная высота
-        zIndex: 0, // Низкий индекс слоя
+        width: '100%',
+        height: '100%',
+        zIndex: 0,
       }}
     />
   );
