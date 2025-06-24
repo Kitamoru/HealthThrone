@@ -18,6 +18,26 @@ const prefetchShopData = (initData?: string) => {
   });
 };
 
+// Prefetch friends data
+const prefetchFriends = (userId: number, initData: string) => {
+  queryClient.prefetchQuery({
+    queryKey: ['friends', userId.toString()],
+    queryFn: async () => {
+      const response = await api.getFriends(userId.toString(), initData);
+      if (response.success && response.data) {
+        return response.data.map(f => ({
+          id: f.id,
+          friend_id: f.friend.id,
+          friend_username: f.friend.username || 
+                          `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
+          burnout_level: f.friend.burnout_level
+        }));
+      }
+      throw new Error(response.error || 'Failed to load friends');
+    },
+  });
+};
+
 const Loader = dynamic(
   () => import('../components/Loader').then(mod => mod.Loader),
   { ssr: false, loading: () => <div>Загрузка...</div> }
@@ -33,9 +53,14 @@ function App({ Component, pageProps }: AppProps) {
     // Инициализируем пользователя
     api.initUser(initData, startParam)
       .then(response => {
-        if (response.success) {
-          console.log('User initialized successfully');
+        if (response.success && response.user) {
+          // Предзагружаем данные друзей
+          prefetchFriends(response.user.id, initData);
+          
+          // Сохраняем данные пользователя для главной страницы
+          queryClient.setQueryData(['userData', response.user.id], response.user);
         }
+        return response;
       })
       .finally(() => setUserInitialized(true));
   }, [initData, startParam]);
@@ -77,7 +102,7 @@ function App({ Component, pageProps }: AppProps) {
       ) : (
         <Loader />
       )}
-    </QueryClientProvider> // Закрывающий тег добавлен здесь
+    </QueryClientProvider>
   );
 }
 
