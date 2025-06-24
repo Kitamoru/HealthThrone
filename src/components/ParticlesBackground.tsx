@@ -9,7 +9,7 @@ const ParticlesBackground = () => {
   const particlesInit = async (engine: Engine) => {
     await loadSlim(engine);
   };
-
+  
   return (
     <Particles
       id="tsparticles"
