@@ -47,9 +47,9 @@ function App({ Component, pageProps }: AppProps) {
     prefetchShopData(initData);
 
     // Предзагружаем данные друзей
-    queryClient.prefetchQuery({
-      queryKey: ['friends', user?.id?.toString()],
-      queryFn: () => api.getFriends(user?.id?.toString(), initData),
+     queryClient.prefetchQuery({
+     queryKey: ['friends', user.id], // Используем прямое преобразование в строку
+     queryFn: () => api.getFriends(user.id, initData),
     });
 
     // Предзагружаем страницы
