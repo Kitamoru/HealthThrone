@@ -201,7 +201,8 @@ export default async function handler(
         current_sprite_id: userRecord.current_sprite_id,
         last_login_date: userRecord.last_login_date,
         // Добавляем URL активного спрайта
-        current_sprite_url: userRecord.sprites?.image_url || null
+        current_sprite_url: userRecord.sprites?.image_url || null,
+        character_class: userRecord.character_class
       };
 
       console.log('[Init API] Returning success response');
