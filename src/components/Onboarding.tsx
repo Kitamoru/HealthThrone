@@ -299,7 +299,7 @@ const CLASS_DESCRIPTIONS: Record<Role, Record<string, string>> = {
 
 // Добавляем пропсы для компонента Onboarding
 interface OnboardingProps {
-  onComplete: () => void;
+  onComplete: () => void; // Изменено: теперь без параметров
   userId?: number;
   initData?: string;
 }
@@ -375,6 +375,7 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
     
     try {
       await api.updateUserClass(characterClass, initData);
+      // Вызываем onComplete без параметров
       onComplete();
     } catch (error) {
       console.error('Ошибка сохранения класса:', error);
