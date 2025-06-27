@@ -143,9 +143,6 @@ class Api {
   }
 
   async initUser(
-  initData: string, 
-  startParam?: string
-): Promise<ApiResponse<InitUserResponse>> {
   return this.makeRequest<InitUserResponse>('/init', 'POST', { initData, ref: startParam });
 }
 
