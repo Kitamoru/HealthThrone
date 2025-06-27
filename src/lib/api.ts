@@ -71,7 +71,7 @@ export const useEquipSprite = () => {
 export const useUpdateUserClass = () => {
   return useMutation({
     mutationFn: (params: {
-      telegramId:: number; // Изменено на string
+      telegramId: number; // Исправлен тип (было string)
       characterClass: string;
       initData?: string;
     }) => api.updateUserClass(params.telegramId, params.characterClass, params.initData),
