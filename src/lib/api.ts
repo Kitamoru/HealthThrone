@@ -261,14 +261,17 @@ class Api {
 
   // Добавлен метод для обновления класса пользователя
   async updateUserClass(
-  telegramId: number, // Изменено на string
+  telegramId: number,
   characterClass: string, 
   initData?: string
 ): Promise<ApiResponse> {
   return this.makeRequest(
-    '/Onboarding', 
-    'PATCH', 
-    { telegramId, character_class: characterClass }, 
+    '/api/onboarding', // Исправленный эндпоинт
+    'POST', 
+    { 
+      telegram_id: telegramId, // snake_case для бекенда
+      character_class: characterClass 
+    }, 
     initData
   );
 }
