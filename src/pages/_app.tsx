@@ -142,6 +142,7 @@ function App({ Component, pageProps }: AppProps) {
 ) : (
   <Component ... />
       )}
+      )}
     </QueryClientProvider>
   );
 }
