@@ -52,14 +52,25 @@ const Loader = dynamic(
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp } = useTelegram();
+  const { 
+    webApp, 
+    initData, 
+    startParam, 
+    isTelegramReady, // Используем флаг готовности
+    user: telegramUser 
+  } = useTelegram();
+  
   const [isLoading, setIsLoading] = useState(true);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [userData, setUserData] = useState<InitUserResponse | null>(null);
 
   useEffect(() => {
-    if (!initData) {
-      setIsLoading(false);
+    // Если Telegram не готов или нет initData - пропускаем
+    if (!isTelegramReady || !initData) {
+      // Если Telegram не готов, но уже есть данные пользователя (DEV режим)
+      if (!isTelegramReady && process.env.NODE_ENV === 'development') {
+        console.log('DEV mode: Skipping Telegram initialization');
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -70,16 +81,11 @@ function App({ Component, pageProps }: AppProps) {
           const user = response.data as InitUserResponse;
           setUserData(user);
           
-          // Проверяем необходимость онбординга
-          if (!user.character_class) {
-            setShowOnboarding(true);
-          }
+          // Сохраняем данные пользователя
+          queryClient.setQueryData(['userData', user.id], user);
           
           // Предзагружаем данные друзей
           prefetchFriends(user.id, initData);
-          
-          // Сохраняем данные пользователя
-          queryClient.setQueryData(['userData', user.id], user);
         }
       } catch (error) {
         console.error("Ошибка инициализации пользователя:", error);
@@ -89,7 +95,7 @@ function App({ Component, pageProps }: AppProps) {
     };
 
     initializeUser();
-  }, [initData, startParam]);
+  }, [isTelegramReady, initData, startParam]); // Зависимость от isTelegramReady
 
   useEffect(() => {
     if (!webApp || !initData) return;
@@ -102,13 +108,22 @@ function App({ Component, pageProps }: AppProps) {
     routes.forEach(route => Router.prefetch(route));
   }, [webApp, initData]);
 
-  const handleOnboardingComplete = () => {
-    setShowOnboarding(false);
-    // Обновляем данные пользователя после онбординга
+  const handleOnboardingComplete = (characterClass: string) => {
+    // Обновляем локальное состояние
+    if (userData) {
+      setUserData({ ...userData, character_class: characterClass });
+    }
+    
+    // Инвалидируем кеш
     if (userData?.id) {
       queryClient.invalidateQueries({ queryKey: ['userData', userData.id] });
     }
   };
+
+  // Определяем нужно ли показывать онбординг
+  const showOnboarding = isTelegramReady && 
+                         userData && 
+                         !userData.character_class;
 
   return (
     <QueryClientProvider client={queryClient}>
