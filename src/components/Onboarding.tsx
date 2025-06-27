@@ -300,7 +300,7 @@ const CLASS_DESCRIPTIONS: Record<Role, Record<string, string>> = {
 // Добавляем пропсы для компонента Onboarding
 interface OnboardingProps {
   onComplete: () => void; // Изменено: теперь без параметров
-  userId?: number;
+  userId?: string;
   initData?: string;
 }
 
