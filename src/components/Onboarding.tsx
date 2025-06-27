@@ -297,13 +297,14 @@ const CLASS_DESCRIPTIONS: Record<Role, Record<string, string>> = {
   }
 };
 
+// Добавляем пропсы для компонента Onboarding
 interface OnboardingProps {
   onComplete: () => void;
   userId?: number;
   initData?: string;
 }
 
-const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
+const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
   const [step, setStep] = useState<'role' | 'test' | 'result'>('role');
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -370,10 +371,10 @@ const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
 
   // Сохранение результата
   const saveResult = async () => {
-    if (!characterClass) return;
+    if (!characterClass || !userId || !initData) return;
     
     try {
-      await api.updateUserClass(characterClass);
+      await api.updateUserClass(characterClass, initData);
       onComplete();
     } catch (error) {
       console.error('Ошибка сохранения класса:', error);
