@@ -107,7 +107,8 @@ export default async function handler(
       current_sprite_id: user.current_sprite_id,
       last_login_date: user.last_login_date,
       // Добавляем URL активного спрайта
-      current_sprite_url: user.sprites?.image_url || null
+      current_sprite_url: user.sprites?.image_url || null,
+      character_class: user.character_class
     };
 
     console.log('[Data API] Final user profile:', userData);
