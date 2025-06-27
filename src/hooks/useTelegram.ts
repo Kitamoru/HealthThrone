@@ -72,6 +72,7 @@ export const useTelegram = () => {
     initData: '',
     user: null as TelegramUser | null,
     startParam: '',
+    isReady: false, // Добавлен флаг готовности
   });
 
   useEffect(() => {
@@ -90,6 +91,7 @@ export const useTelegram = () => {
         initData: tg.initData,
         user: tg.initDataUnsafe.user || null,
         startParam: tg.initDataUnsafe.start_param || '',
+        isReady: true, // Помечаем как готово
       });
     };
 
@@ -108,5 +110,8 @@ export const useTelegram = () => {
     };
   }, []);
 
-  return state;
+  return {
+    ...state,
+    isTelegramReady: state.isReady, // Добавляем флаг готовности в результат
+  };
 };
