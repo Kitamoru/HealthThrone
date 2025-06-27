@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '../../lib/supabase; // Используем существующий клиент
-import { setUserContext } from '../../lib/supabase; // Используем существующую функцию RLS
+import { supabase } from '../../lib/supabase'; // Используем существующий клиент
+import { setUserContext } from '../../lib/supabase'; // Используем существующую функцию RLS
 
 export default async function handler(
   req: NextApiRequest,
