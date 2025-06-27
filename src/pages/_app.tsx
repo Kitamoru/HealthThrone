@@ -123,26 +123,13 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      {userInitialized ? (
-        <div className="page-transition">
-          {showOnboarding ? (
-            <Onboarding 
-              onComplete={handleOnboardingComplete} 
-              userId={userData?.id}
-              initData={initData}
-            />
-          ) : (
-            <Component {...pageProps} />
-          )}
-        </div>
-      ) : (
-        <Loader />
-      ) : showOnboarding ? (
+      {!userInitialized ? (
+  <Loader />
+) : showOnboarding ? (
   <Onboarding ... />
 ) : (
   <Component ... />
-      )}
-      )}
+)}
     </QueryClientProvider>
   );
 }
