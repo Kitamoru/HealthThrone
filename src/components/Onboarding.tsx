@@ -371,16 +371,16 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
 
   // Сохранение результата
   const saveResult = async () => {
-    if (!characterClass || !userId || !initData) return;
-    
-    try {
-      await api.updateUserClass(characterClass, initData);
-      // Вызываем onComplete без параметров
-      onComplete();
-    } catch (error) {
-      console.error('Ошибка сохранения класса:', error);
-    }
-  };
+  if (!characterClass || !userId || !initData) return;
+  
+  try {
+    // Преобразуем userId в число и передаем в запрос
+    await api.updateUserClass(Number(userId), characterClass, initData);
+    onComplete();
+  } catch (error) {
+    console.error('Ошибка сохранения класса:', error);
+  }
+};
 
   // Перезапуск теста
   const restartTest = () => {
@@ -462,12 +462,6 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
               className="w-full p-3 bg-green-700 hover:bg-green-600 rounded-lg font-bold transition-colors"
             >
               Принять Судьбу
-            </button>
-            <button
-              onClick={restartTest}
-              className="w-full p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-            >
-              Перепройти испытание
             </button>
           </div>
         </div>
