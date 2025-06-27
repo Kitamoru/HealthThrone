@@ -9,13 +9,11 @@ import { api } from '../lib/api';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
-import Onboarding from '../components/Onboarding';
 
-// Обновленный тип для ответа initUser
+// Определим тип для ответа initUser
 interface InitUserResponse {
   id: number;
-  character_class: string | null;
-  // Другие поля пользователя
+  // Другие поля пользователя, если они есть в ответе
 }
 
 // Prefetch shop data
@@ -53,42 +51,28 @@ const Loader = dynamic(
 
 function App({ Component, pageProps }: AppProps) {
   const { initData, startParam, webApp } = useTelegram();
-  const [isLoading, setIsLoading] = useState(true);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [userData, setUserData] = useState<InitUserResponse | null>(null);
+  const [userInitialized, setUserInitialized] = useState(false);
 
   useEffect(() => {
-    if (!initData) {
-      setIsLoading(false);
-      return;
-    }
+    if (!initData) return;
 
-    const initializeUser = async () => {
-      try {
-        const response = await api.initUser(initData, startParam);
+    // Инициализируем пользователя
+    api.initUser(initData, startParam)
+      .then(response => {
         if (response.success && response.data) {
-          const user = response.data as InitUserResponse;
-          setUserData(user);
-          
-          // Проверяем необходимость онбординга
-          if (!user.character_class) {
-            setShowOnboarding(true);
-          }
+          // Приводим тип данных к InitUserResponse
+          const userData = response.data as InitUserResponse;
+          const userId = userData.id;
           
           // Предзагружаем данные друзей
-          prefetchFriends(user.id, initData);
+          prefetchFriends(userId, initData);
           
-          // Сохраняем данные пользователя
-          queryClient.setQueryData(['userData', user.id], user);
+          // Сохраняем данные пользователя для главной страницы
+          queryClient.setQueryData(['userData', userId], userData);
         }
-      } catch (error) {
-        console.error("Ошибка инициализации пользователя:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initializeUser();
+        return response;
+      })
+      .finally(() => setUserInitialized(true));
   }, [initData, startParam]);
 
   useEffect(() => {
@@ -101,14 +85,6 @@ function App({ Component, pageProps }: AppProps) {
     const routes = ['/', '/shop', '/friends'];
     routes.forEach(route => Router.prefetch(route));
   }, [webApp, initData]);
-
-  const handleOnboardingComplete = () => {
-    setShowOnboarding(false);
-    // Обновляем данные пользователя после онбординга
-    if (userData?.id) {
-      queryClient.invalidateQueries({ queryKey: ['userData', userData.id] });
-    }
-  };
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -129,18 +105,12 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      {isLoading ? (
-        <Loader />
-      ) : showOnboarding ? (
-        <Onboarding 
-          onComplete={handleOnboardingComplete} 
-          userId={userData?.id}
-          initData={initData}
-        />
-      ) : (
+      {userInitialized ? (
         <div className="page-transition">
           <Component {...pageProps} />
         </div>
+      ) : (
+        <Loader />
       )}
     </QueryClientProvider>
   );
