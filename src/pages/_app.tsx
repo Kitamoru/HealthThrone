@@ -56,7 +56,7 @@ function App({ Component, pageProps }: AppProps) {
     webApp, 
     initData, 
     startParam, 
-    isTelegramReady, // Используем флаг готовности
+    isTelegramReady,
     user: telegramUser 
   } = useTelegram();
   
@@ -64,9 +64,7 @@ function App({ Component, pageProps }: AppProps) {
   const [userData, setUserData] = useState<InitUserResponse | null>(null);
 
   useEffect(() => {
-    // Если Telegram не готов или нет initData - пропускаем
     if (!isTelegramReady || !initData) {
-      // Если Telegram не готов, но уже есть данные пользователя (DEV режим)
       if (!isTelegramReady && process.env.NODE_ENV === 'development') {
         console.log('DEV mode: Skipping Telegram initialization');
         setIsLoading(false);
@@ -80,11 +78,7 @@ function App({ Component, pageProps }: AppProps) {
         if (response.success && response.data) {
           const user = response.data as InitUserResponse;
           setUserData(user);
-          
-          // Сохраняем данные пользователя
           queryClient.setQueryData(['userData', user.id], user);
-          
-          // Предзагружаем данные друзей
           prefetchFriends(user.id, initData);
         }
       } catch (error) {
@@ -95,32 +89,25 @@ function App({ Component, pageProps }: AppProps) {
     };
 
     initializeUser();
-  }, [isTelegramReady, initData, startParam]); // Зависимость от isTelegramReady
+  }, [isTelegramReady, initData, startParam]);
 
   useEffect(() => {
     if (!webApp || !initData) return;
-    
-    // Предзагружаем данные магазина
     prefetchShopData(initData);
-    
-    // Предзагружаем страницы
     const routes = ['/', '/shop', '/friends'];
     routes.forEach(route => Router.prefetch(route));
   }, [webApp, initData]);
 
-  const handleOnboardingComplete = (characterClass: string) => {
-    // Обновляем локальное состояние
-    if (userData) {
-      setUserData({ ...userData, character_class: characterClass });
-    }
-    
-    // Инвалидируем кеш
+  // Измененная функция - теперь без параметров
+  const handleOnboardingComplete = () => {
+    // Инвалидируем кеш, чтобы получить обновленные данные
     if (userData?.id) {
       queryClient.invalidateQueries({ queryKey: ['userData', userData.id] });
     }
+    // Сбрасываем состояние онбординга
+    setUserData(prev => prev ? {...prev, character_class: "temp"} : null);
   };
 
-  // Определяем нужно ли показывать онбординг
   const showOnboarding = isTelegramReady && 
                          userData && 
                          !userData.character_class;
