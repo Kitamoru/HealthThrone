@@ -67,6 +67,16 @@ export const useEquipSprite = () => {
   });
 };
 
+// Добавлен хук для обновления класса пользователя
+export const useUpdateUserClass = () => {
+  return useMutation({
+    mutationFn: (params: {
+      characterClass: string;
+      initData?: string;
+    }) => api.updateUserClass(params.characterClass, params.initData),
+  });
+};
+
 class Api {
   private baseUrl = '/api';
   private defaultHeaders: Record<string, string> = {
@@ -245,6 +255,19 @@ class Api {
         newScore: params.newScore
       },
       params.initData
+    );
+  }
+
+  // Добавлен метод для обновления класса пользователя
+  async updateUserClass(
+    characterClass: string, 
+    initData?: string
+  ): Promise<ApiResponse> {
+    return this.makeRequest(
+      '/user/class', 
+      'PATCH', 
+      { character_class: characterClass },
+      initData
     );
   }
 }
