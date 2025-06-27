@@ -299,8 +299,8 @@ const CLASS_DESCRIPTIONS: Record<Role, Record<string, string>> = {
 
 // Добавляем пропсы для компонента Onboarding
 interface OnboardingProps {
-  onComplete: () => void; // Изменено: теперь без параметров
-  userId?: string;
+  onComplete: () => void;
+  userId?: number; // Изменён тип с string на number
   initData?: string;
 }
 
@@ -373,7 +373,8 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
   const saveResult = async () => {
   if (!characterClass || !userId || !initData) return;
   try {
-    await api.updateUserClass(telegramId, characterClass, initData);
+    // Используем userId вместо telegramId
+    await api.updateUserClass(userId, characterClass, initData);
     onComplete();
   } catch (error) {
     console.error('Ошибка сохранения класса:', error);
