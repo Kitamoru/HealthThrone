@@ -260,16 +260,17 @@ class Api {
 
   // Добавлен метод для обновления класса пользователя
   async updateUserClass(
-    characterClass: string, 
-    initData?: string
-  ): Promise<ApiResponse> {
-    return this.makeRequest(
-      '/user/class', 
-      'PATCH', 
-      { character_class: characterClass },
-      initData
-    );
-  }
+  userId: number, // Добавляем userId
+  characterClass: string, 
+  initData?: string
+): Promise<ApiResponse> {
+  return this.makeRequest(
+    '/user/class', 
+    'PATCH', 
+    { userId, character_class: characterClass }, // Добавляем userId в тело запроса
+    initData
+  );
+}
 }
 
 export const api = new Api();
