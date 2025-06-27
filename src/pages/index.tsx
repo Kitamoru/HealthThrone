@@ -300,7 +300,7 @@ const Home = () => {
     return (
       <Onboarding 
         onComplete={handleOnboardingComplete} 
-        userId={user?.id}
+        userId={user?.id ? parseInt(user.id) : undefined} // Преобразуем в число
         initData={initData}
       />
     );
