@@ -11,6 +11,7 @@ import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 import Onboarding from '../components/Onboarding';
 
+// Обновленный тип для ответа initUser
 interface InitUserResponse {
   id: number;
   character_class: string | null;
@@ -51,58 +52,34 @@ const Loader = dynamic(
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { 
-    webApp, 
-    initData, 
-    startParam, 
-    isTelegramReady,
-    user: telegramUser 
-  } = useTelegram();
-  
+  const { initData, startParam, webApp } = useTelegram();
   const [isLoading, setIsLoading] = useState(true);
-  const [userData, setUserData] = useState<InitUserResponse | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  
-  // Флаг для принудительного показа онбординга
-  const [forceOnboarding, setForceOnboarding] = useState(false);
+  const [userData, setUserData] = useState<InitUserResponse | null>(null);
 
   useEffect(() => {
-    // Проверка параметра URL для принудительного онбординга
-    const urlParams = new URLSearchParams(window.location.search);
-    const forceOnboardParam = urlParams.get('force_onboard');
-    
-    if (forceOnboardParam === 'true') {
-      console.log('Forcing onboarding via URL parameter');
-      setForceOnboarding(true);
-      setShowOnboarding(true);
+    if (!initData) {
       setIsLoading(false);
-      return;
-    }
-
-    if (!isTelegramReady || !initData) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('DEV mode: Skipping Telegram initialization');
-        setIsLoading(false);
-      }
       return;
     }
 
     const initializeUser = async () => {
       try {
         const response = await api.initUser(initData, startParam);
-        
         if (response.success && response.data) {
           const user = response.data as InitUserResponse;
           setUserData(user);
-          queryClient.setQueryData(['userData', user.id], user);
-          prefetchFriends(user.id, initData);
           
-          const needsOnboarding = user.character_class === null || 
-                                 user.character_class === '';
-          
-          if (needsOnboarding) {
+          // Проверяем необходимость онбординга
+          if (!user.character_class) {
             setShowOnboarding(true);
           }
+          
+          // Предзагружаем данные друзей
+          prefetchFriends(user.id, initData);
+          
+          // Сохраняем данные пользователя
+          queryClient.setQueryData(['userData', user.id], user);
         }
       } catch (error) {
         console.error("Ошибка инициализации пользователя:", error);
@@ -112,29 +89,26 @@ function App({ Component, pageProps }: AppProps) {
     };
 
     initializeUser();
-  }, [isTelegramReady, initData, startParam]);
+  }, [initData, startParam]);
 
   useEffect(() => {
     if (!webApp || !initData) return;
+    
+    // Предзагружаем данные магазина
     prefetchShopData(initData);
+    
+    // Предзагружаем страницы
     const routes = ['/', '/shop', '/friends'];
     routes.forEach(route => Router.prefetch(route));
   }, [webApp, initData]);
 
   const handleOnboardingComplete = () => {
-    console.log('Onboarding completed');
     setShowOnboarding(false);
-    setForceOnboarding(false);
-    
+    // Обновляем данные пользователя после онбординга
     if (userData?.id) {
-      queryClient.invalidateQueries({ 
-        queryKey: ['userData', userData.id] 
-      });
+      queryClient.invalidateQueries({ queryKey: ['userData', userData.id] });
     }
   };
-
-  // Для разработки: кнопка принудительного запуска онбординга
-  const isDevMode = process.env.NODE_ENV === 'development';
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -150,7 +124,6 @@ function App({ Component, pageProps }: AppProps) {
         strategy="beforeInteractive" 
         onLoad={() => {
           if (window.Telegram?.WebApp) {
-            console.log('Telegram WebApp script loaded');
             window.dispatchEvent(new Event('telegram-ready'));
           }
         }}
@@ -158,7 +131,7 @@ function App({ Component, pageProps }: AppProps) {
 
       {isLoading ? (
         <Loader />
-      ) : showOnboarding || forceOnboarding ? (
+      ) : showOnboarding ? (
         <Onboarding 
           onComplete={handleOnboardingComplete} 
           userId={userData?.id}
@@ -167,21 +140,6 @@ function App({ Component, pageProps }: AppProps) {
       ) : (
         <div className="page-transition">
           <Component {...pageProps} />
-          
-          {/* Кнопка для принудительного запуска онбординга в dev-режиме */}
-          {isDevMode && (
-            <div className="fixed bottom-4 right-4 z-50">
-              <button
-                onClick={() => {
-                  setForceOnboarding(true);
-                  setShowOnboarding(true);
-                }}
-                className="p-3 bg-red-500 text-white rounded-lg shadow-lg"
-              >
-                DEV: Force Onboarding
-              </button>
-            </div>
-          )}
         </div>
       )}
     </QueryClientProvider>
