@@ -261,7 +261,7 @@ class Api {
 
   // Добавлен метод для обновления класса пользователя
   async updateUserClass(
-  telegramId: number;, // Изменено на string
+  telegramId: number, // Изменено на string
   characterClass: string, 
   initData?: string
 ): Promise<ApiResponse> {
