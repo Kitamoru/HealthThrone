@@ -297,6 +297,12 @@ const CLASS_DESCRIPTIONS: Record<Role, Record<string, string>> = {
   }
 };
 
+interface OnboardingProps {
+  onComplete: () => void;
+  userId?: number;
+  initData?: string;
+}
+
 const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
   const [step, setStep] = useState<'role' | 'test' | 'result'>('role');
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
