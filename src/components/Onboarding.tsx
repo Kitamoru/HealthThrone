@@ -372,24 +372,13 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
   // Сохранение результата
   const saveResult = async () => {
   if (!characterClass || !userId || !initData) return;
-  
   try {
-    // Преобразуем userId в число и передаем в запрос
-    await api.updateUserClass(Number(userId), characterClass, initData);
+    await api.updateUserClass(userId, characterClass, initData);
     onComplete();
   } catch (error) {
     console.error('Ошибка сохранения класса:', error);
   }
 };
-
-  // Перезапуск теста
-  const restartTest = () => {
-    setAnswers([]);
-    setCurrentQuestion(0);
-    setBaseType(null);
-    setCharacterClass(null);
-    setStep('test');
-  };
 
   return (
     <div className="min-h-screen bg-dungeon bg-cover text-white p-4">
