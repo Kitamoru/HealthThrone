@@ -10,13 +10,12 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 import Onboarding from '../components/Onboarding';
-import { UserProfile } from '../lib/types'; // Добавлен импорт типа
 
 // Обновленный тип для ответа initUser
 interface InitUserResponse {
-  user: UserProfile; // Теперь ожидаем объект user
-  coinsAdded: number;
-  isNewUser: boolean;
+  id: number;
+  character_class: string | null;
+  // Другие поля пользователя
 }
 
 // Prefetch shop data
@@ -56,7 +55,7 @@ function App({ Component, pageProps }: AppProps) {
   const { initData, startParam, webApp } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [userData, setUserData] = useState<UserProfile | null>(null); // Использован тип UserProfile
+  const [userData, setUserData] = useState<InitUserResponse | null>(null);
 
   useEffect(() => {
     if (!initData) return;
@@ -65,25 +64,24 @@ function App({ Component, pageProps }: AppProps) {
     api.initUser(initData, startParam)
       .then(response => {
         if (response.success && response.data) {
-          const { user } = response.data; // Извлекаем данные пользователя
-          setUserData(user);
+          const userData = response.data as InitUserResponse;
+          setUserData(userData);
           
           // Проверяем, прошел ли пользователь онбординг
-          if (!user.character_class) { // Проверяем свойство внутри user
+          if (!userData.character_class) {
             setShowOnboarding(true);
           }
           
-          const userId = user.id;
+          const userId = userData.id;
           
           // Предзагружаем данные друзей
           prefetchFriends(userId, initData);
           
           // Сохраняем данные пользователя
-          queryClient.setQueryData(['userData', userId], user);
+          queryClient.setQueryData(['userData', userId], userData);
         }
         return response;
       })
-      .catch(error => console.error('Init error:', error))
       .finally(() => setUserInitialized(true));
   }, [initData, startParam]);
 
