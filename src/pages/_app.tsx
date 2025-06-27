@@ -7,13 +7,14 @@ import Router from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { queryClient } from '../lib/queryClient'; // Используем созданный экземпляр
+import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 import Onboarding from '../components/Onboarding';
 
 interface InitUserResponse {
   id: number;
   character_class: string | null;
+  // Другие поля пользователя
 }
 
 // Prefetch shop data
@@ -61,13 +62,22 @@ function App({ Component, pageProps }: AppProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [userData, setUserData] = useState<InitUserResponse | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  
+  // Флаг для принудительного показа онбординга
+  const [forceOnboarding, setForceOnboarding] = useState(false);
 
   useEffect(() => {
-    console.log('Telegram status:', {
-      isReady: isTelegramReady,
-      hasInitData: !!initData,
-      userData
-    });
+    // Проверка параметра URL для принудительного онбординга
+    const urlParams = new URLSearchParams(window.location.search);
+    const forceOnboardParam = urlParams.get('force_onboard');
+    
+    if (forceOnboardParam === 'true') {
+      console.log('Forcing onboarding via URL parameter');
+      setForceOnboarding(true);
+      setShowOnboarding(true);
+      setIsLoading(false);
+      return;
+    }
 
     if (!isTelegramReady || !initData) {
       if (process.env.NODE_ENV === 'development') {
@@ -78,23 +88,17 @@ function App({ Component, pageProps }: AppProps) {
     }
 
     const initializeUser = async () => {
-      console.log('Initializing user...');
       try {
         const response = await api.initUser(initData, startParam);
-        console.log('User init response:', response);
         
         if (response.success && response.data) {
           const user = response.data as InitUserResponse;
-          console.log('User data received:', user);
-          
           setUserData(user);
           queryClient.setQueryData(['userData', user.id], user);
           prefetchFriends(user.id, initData);
           
-          // Обновленная проверка: учитываем как null, так и пустую строку
           const needsOnboarding = user.character_class === null || 
                                  user.character_class === '';
-          console.log('User needs onboarding:', needsOnboarding);
           
           if (needsOnboarding) {
             setShowOnboarding(true);
@@ -120,26 +124,17 @@ function App({ Component, pageProps }: AppProps) {
   const handleOnboardingComplete = () => {
     console.log('Onboarding completed');
     setShowOnboarding(false);
+    setForceOnboarding(false);
     
-    // Принудительно обновляем данные пользователя
     if (userData?.id) {
       queryClient.invalidateQueries({ 
         queryKey: ['userData', userData.id] 
       });
-      
-      // Повторно запрашиваем данные пользователя
-      api.getUserData(userData.id, initData)
-        .then(response => {
-          if (response.success && response.data) {
-            setUserData(response.data);
-          }
-        });
     }
   };
 
-  // Для разработки: принудительно показать онбординг
+  // Для разработки: кнопка принудительного запуска онбординга
   const isDevMode = process.env.NODE_ENV === 'development';
-  const forceOnboarding = isDevMode && true;
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -163,7 +158,7 @@ function App({ Component, pageProps }: AppProps) {
 
       {isLoading ? (
         <Loader />
-      ) : (showOnboarding || forceOnboarding) ? (
+      ) : showOnboarding || forceOnboarding ? (
         <Onboarding 
           onComplete={handleOnboardingComplete} 
           userId={userData?.id}
@@ -172,6 +167,21 @@ function App({ Component, pageProps }: AppProps) {
       ) : (
         <div className="page-transition">
           <Component {...pageProps} />
+          
+          {/* Кнопка для принудительного запуска онбординга в dev-режиме */}
+          {isDevMode && (
+            <div className="fixed bottom-4 right-4 z-50">
+              <button
+                onClick={() => {
+                  setForceOnboarding(true);
+                  setShowOnboarding(true);
+                }}
+                className="p-3 bg-red-500 text-white rounded-lg shadow-lg"
+              >
+                DEV: Force Onboarding
+              </button>
+            </div>
+          )}
         </div>
       )}
     </QueryClientProvider>
