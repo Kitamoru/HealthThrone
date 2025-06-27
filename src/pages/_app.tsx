@@ -10,12 +10,13 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 import Onboarding from '../components/Onboarding';
+import { UserProfile } from '../lib/types'; // Добавлен импорт типа
 
 // Обновленный тип для ответа initUser
 interface InitUserResponse {
-  id: number;
-  character_class: string | null;
-  // Другие поля пользователя
+  user: UserProfile; // Теперь ожидаем объект user
+  coinsAdded: number;
+  isNewUser: boolean;
 }
 
 // Prefetch shop data
@@ -55,7 +56,7 @@ function App({ Component, pageProps }: AppProps) {
   const { initData, startParam, webApp } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [userData, setUserData] = useState<InitUserResponse | null>(null);
+  const [userData, setUserData] = useState<UserProfile | null>(null); // Использован тип UserProfile
 
   useEffect(() => {
     if (!initData) return;
@@ -64,24 +65,25 @@ function App({ Component, pageProps }: AppProps) {
     api.initUser(initData, startParam)
       .then(response => {
         if (response.success && response.data) {
-          const userData = response.data as InitUserResponse;
-          setUserData(userData);
+          const { user } = response.data; // Извлекаем данные пользователя
+          setUserData(user);
           
           // Проверяем, прошел ли пользователь онбординг
-          if (!userData.character_class) {
+          if (!user.character_class) { // Проверяем свойство внутри user
             setShowOnboarding(true);
           }
           
-          const userId = userData.id;
+          const userId = user.id;
           
           // Предзагружаем данные друзей
           prefetchFriends(userId, initData);
           
           // Сохраняем данные пользователя
-          queryClient.setQueryData(['userData', userId], userData);
+          queryClient.setQueryData(['userData', userId], user);
         }
         return response;
       })
+      .catch(error => console.error('Init error:', error))
       .finally(() => setUserInitialized(true));
   }, [initData, startParam]);
 
@@ -123,13 +125,21 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      {!userInitialized ? (
-  <Loader />
-) : showOnboarding ? (
-  <Onboarding ... />
-) : (
-  <Component ... />
-)}
+      {userInitialized ? (
+        <div className="page-transition">
+          {showOnboarding ? (
+            <Onboarding 
+              onComplete={handleOnboardingComplete} 
+              userId={userData?.id}
+              initData={initData}
+            />
+          ) : (
+            <Component {...pageProps} />
+          )}
+        </div>
+      ) : (
+        <Loader />
+      )}
     </QueryClientProvider>
   );
 }
