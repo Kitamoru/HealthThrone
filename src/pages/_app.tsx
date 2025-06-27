@@ -100,7 +100,7 @@ function App({ Component, pageProps }: AppProps) {
     setShowOnboarding(false);
     // Обновляем данные пользователя после онбординга
     if (userData?.id) {
-      queryClient.invalidateQueries(['userData', userData.id]);
+      queryClient.invalidateQueries({ queryKey: ['userData', userData.id] })
     }
   };
 
