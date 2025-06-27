@@ -137,6 +137,10 @@ function App({ Component, pageProps }: AppProps) {
         </div>
       ) : (
         <Loader />
+      ) : showOnboarding ? (
+  <Onboarding ... />
+) : (
+  <Component ... />
       )}
     </QueryClientProvider>
   );
