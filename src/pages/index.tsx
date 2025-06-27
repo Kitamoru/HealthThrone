@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
+import { UserProfile } from '../lib/types'; // Добавляем импорт типа
 
 // Динамические импорты
 const BurnoutProgress = dynamic(
@@ -158,7 +159,7 @@ const Home = () => {
     isError,
     error: queryError,
     refetch: refetchUserData
-  } = useQuery({
+  } = useQuery<UserProfile | null>({
     queryKey: ['userData', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -172,17 +173,18 @@ const Home = () => {
     },
     enabled: !!user?.id,
     refetchOnWindowFocus: true,
-    onSuccess: (data) => {
-      // Проверяем необходимость показа онбординга
-      if (data && data.character_class === null) {
-        setShowOnboarding(true);
-      }
-    }
   });
+
+  // Добавляем эффект для проверки необходимости онбординга
+  useEffect(() => {
+    if (userData && userData.character_class === null) {
+      setShowOnboarding(true);
+    }
+  }, [userData]);
 
   useEffect(() => {
     if (queryError) {
-      setApiError(queryError.message);
+      setApiError((queryError as Error).message);
     }
   }, [queryError]);
 
