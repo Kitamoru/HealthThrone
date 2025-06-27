@@ -153,7 +153,7 @@ const Home = () => {
     }
   }, []);
 
-  const { 
+   const { 
     data: userData, 
     isLoading, 
     isError,
@@ -161,15 +161,17 @@ const Home = () => {
     refetch: refetchUserData
   } = useQuery<UserProfile | null>({
     queryKey: ['userData', user?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<UserProfile | null> => {
       if (!user?.id) return null;
+      
       const response = await api.getUserData(Number(user.id), initData);
       
       if (!response.success) {
         throw new Error(response.error || "Ошибка загрузки данных");
       }
       
-      return response.data;
+      // Явное приведение типа для response.data
+      return response.data as UserProfile;
     },
     enabled: !!user?.id,
     refetchOnWindowFocus: true,
