@@ -71,7 +71,7 @@ export const useEquipSprite = () => {
 export const useUpdateUserClass = () => {
   return useMutation({
     mutationFn: (params: {
-      userId: number; // Добавляем userId
+      userId: string; // Изменено на string
       characterClass: string;
       initData?: string;
     }) => api.updateUserClass(params.userId, params.characterClass, params.initData),
@@ -261,14 +261,14 @@ class Api {
 
   // Добавлен метод для обновления класса пользователя
   async updateUserClass(
-  userId: number, // Добавляем userId
+  userId: string, // Изменено на string
   characterClass: string, 
   initData?: string
 ): Promise<ApiResponse> {
   return this.makeRequest(
     '/user/class', 
     'PATCH', 
-    { userId, character_class: characterClass }, // Добавляем userId в тело запроса
+    { userId, character_class: characterClass }, // Теперь userId как string
     initData
   );
 }
