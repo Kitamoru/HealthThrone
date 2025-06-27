@@ -1,4 +1,3 @@
-
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
@@ -7,15 +6,14 @@ import { useEffect, useState } from 'react';
 import Router from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
-import { QueryClientProvider, useQueryClient } from '@tanstack/react-query';
-import { queryClient } from '../lib/queryClient';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '../lib/queryClient'; // Используем созданный экземпляр
 import '../styles/globals.css';
 import Onboarding from '../components/Onboarding';
 
 interface InitUserResponse {
   id: number;
   character_class: string | null;
-  // Другие поля пользователя
 }
 
 // Prefetch shop data
@@ -63,7 +61,6 @@ function App({ Component, pageProps }: AppProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [userData, setUserData] = useState<InitUserResponse | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const clientQuery = useQueryClient();
 
   useEffect(() => {
     console.log('Telegram status:', {
@@ -91,7 +88,7 @@ function App({ Component, pageProps }: AppProps) {
           console.log('User data received:', user);
           
           setUserData(user);
-          clientQuery.setQueryData(['userData', user.id], user);
+          queryClient.setQueryData(['userData', user.id], user);
           prefetchFriends(user.id, initData);
           
           // Обновленная проверка: учитываем как null, так и пустую строку
@@ -111,7 +108,7 @@ function App({ Component, pageProps }: AppProps) {
     };
 
     initializeUser();
-  }, [isTelegramReady, initData, startParam, clientQuery]);
+  }, [isTelegramReady, initData, startParam]);
 
   useEffect(() => {
     if (!webApp || !initData) return;
@@ -126,7 +123,7 @@ function App({ Component, pageProps }: AppProps) {
     
     // Принудительно обновляем данные пользователя
     if (userData?.id) {
-      clientQuery.invalidateQueries({ 
+      queryClient.invalidateQueries({ 
         queryKey: ['userData', userData.id] 
       });
       
@@ -142,7 +139,7 @@ function App({ Component, pageProps }: AppProps) {
 
   // Для разработки: принудительно показать онбординг
   const isDevMode = process.env.NODE_ENV === 'development';
-  const forceOnboarding = isDevMode && true; // поменять на true для тестирования
+  const forceOnboarding = isDevMode && true;
 
   return (
     <QueryClientProvider client={queryClient}>
