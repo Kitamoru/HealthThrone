@@ -71,9 +71,10 @@ export const useEquipSprite = () => {
 export const useUpdateUserClass = () => {
   return useMutation({
     mutationFn: (params: {
+      userId: number; // Добавляем userId
       characterClass: string;
       initData?: string;
-    }) => api.updateUserClass(params.characterClass, params.initData),
+    }) => api.updateUserClass(params.userId, params.characterClass, params.initData),
   });
 };
 
