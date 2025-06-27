@@ -142,9 +142,9 @@ class Api {
     }
   }
 
-  async initUser(
-  return this.makeRequest<InitUserResponse>('/init', 'POST', { initData, ref: startParam });
-}
+  async initUser(initData: string, startParam?: string) {
+    return this.makeRequest('/init', 'POST', { initData, ref: startParam });
+  }
 
   async getUserData(telegramId: number, initData?: string): Promise<ApiResponse<UserProfile>> {
     return this.makeRequest<UserProfile>(
