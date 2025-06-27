@@ -208,7 +208,7 @@ export default async function handler(
       console.log('[Init API] Returning success response');
       return res.status(200).json({
         success: true,
-        data: responseUser,
+        user: responseUser,
         coinsAdded: coinsToAdd,
         isNewUser: !existingUser
       });
