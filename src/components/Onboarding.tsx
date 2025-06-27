@@ -373,7 +373,7 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
   const saveResult = async () => {
   if (!characterClass || !userId || !initData) return;
   try {
-    await api.updateUserClass(userId, characterClass, initData);
+    await api.updateUserClass(telegramId, characterClass, initData);
     onComplete();
   } catch (error) {
     console.error('Ошибка сохранения класса:', error);
