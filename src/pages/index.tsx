@@ -24,6 +24,15 @@ const QuestionCard = dynamic(
   }
 );
 
+// Динамически импортируем онбординг
+const Onboarding = dynamic(
+  () => import('../components/Onboarding'),
+  { 
+    loading: () => <Loader />,
+    ssr: false 
+  }
+);
+
 interface Question {
   id: number;
   text: string;
@@ -121,7 +130,8 @@ const Home = () => {
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [spriteLoaded, setSpriteLoaded] = useState(false); // Новое состояние для отслеживания загрузки спрайта
+  const [spriteLoaded, setSpriteLoaded] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Функция проверки даты
   const isTodayUTC = useCallback((dateStr: string) => {
@@ -162,6 +172,12 @@ const Home = () => {
     },
     enabled: !!user?.id,
     refetchOnWindowFocus: true,
+    onSuccess: (data) => {
+      // Проверяем необходимость показа онбординга
+      if (data && data.character_class === null) {
+        setShowOnboarding(true);
+      }
+    }
   });
 
   useEffect(() => {
@@ -208,14 +224,13 @@ const Home = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      // Сохраняем текущий спрайт при обновлении данных
       queryClient.setQueryData(['userData', user?.id], (oldData: any) => {
         if (!oldData) return data;
         
         return {
           ...oldData,
           ...data,
-          current_sprite_url: oldData.current_sprite_url // Сохраняем текущий спрайт
+          current_sprite_url: oldData.current_sprite_url
         };
       });
       
@@ -270,7 +285,24 @@ const Home = () => {
     }
   };
 
-  if (isLoading || !spriteLoaded) { // Показываем загрузчик пока грузятся данные или спрайт
+  const handleOnboardingComplete = useCallback(() => {
+    setShowOnboarding(false);
+    // Обновляем данные после завершения онбординга
+    refetchUserData();
+  }, [refetchUserData]);
+
+  // Показываем онбординг если требуется
+  if (showOnboarding) {
+    return (
+      <Onboarding 
+        onComplete={handleOnboardingComplete} 
+        userId={user?.id}
+        initData={initData}
+      />
+    );
+  }
+
+  if (isLoading || !spriteLoaded) {
     return <Loader />;
   }
 
