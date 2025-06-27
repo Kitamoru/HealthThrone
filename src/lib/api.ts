@@ -71,10 +71,10 @@ export const useEquipSprite = () => {
 export const useUpdateUserClass = () => {
   return useMutation({
     mutationFn: (params: {
-      userId: string; // Изменено на string
+      telegramId:: number; // Изменено на string
       characterClass: string;
       initData?: string;
-    }) => api.updateUserClass(params.userId, params.characterClass, params.initData),
+    }) => api.updateUserClass(params.telegramId, params.characterClass, params.initData),
   });
 };
 
@@ -261,14 +261,14 @@ class Api {
 
   // Добавлен метод для обновления класса пользователя
   async updateUserClass(
-  userId: string, // Изменено на string
+  telegramId: number;, // Изменено на string
   characterClass: string, 
   initData?: string
 ): Promise<ApiResponse> {
   return this.makeRequest(
-    '/user/class', 
+    '/Onboarding', 
     'PATCH', 
-    { userId, character_class: characterClass }, // Теперь userId как string
+    { telegramId, character_class: characterClass }, 
     initData
   );
 }
