@@ -9,11 +9,13 @@ import { api } from '../lib/api';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
+import Onboarding from '../components/Onboarding';
 
-// Определим тип для ответа initUser
+// Обновленный тип для ответа initUser
 interface InitUserResponse {
   id: number;
-  // Другие поля пользователя, если они есть в ответе
+  character_class: string | null;
+  // Другие поля пользователя
 }
 
 // Prefetch shop data
@@ -52,6 +54,8 @@ const Loader = dynamic(
 function App({ Component, pageProps }: AppProps) {
   const { initData, startParam, webApp } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [userData, setUserData] = useState<InitUserResponse | null>(null);
 
   useEffect(() => {
     if (!initData) return;
@@ -60,14 +64,20 @@ function App({ Component, pageProps }: AppProps) {
     api.initUser(initData, startParam)
       .then(response => {
         if (response.success && response.data) {
-          // Приводим тип данных к InitUserResponse
           const userData = response.data as InitUserResponse;
+          setUserData(userData);
+          
+          // Проверяем, прошел ли пользователь онбординг
+          if (!userData.character_class) {
+            setShowOnboarding(true);
+          }
+          
           const userId = userData.id;
           
           // Предзагружаем данные друзей
           prefetchFriends(userId, initData);
           
-          // Сохраняем данные пользователя для главной страницы
+          // Сохраняем данные пользователя
           queryClient.setQueryData(['userData', userId], userData);
         }
         return response;
@@ -85,6 +95,14 @@ function App({ Component, pageProps }: AppProps) {
     const routes = ['/', '/shop', '/friends'];
     routes.forEach(route => Router.prefetch(route));
   }, [webApp, initData]);
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    // Обновляем данные пользователя после онбординга
+    if (userData?.id) {
+      queryClient.invalidateQueries(['userData', userData.id]);
+    }
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -107,7 +125,15 @@ function App({ Component, pageProps }: AppProps) {
 
       {userInitialized ? (
         <div className="page-transition">
-          <Component {...pageProps} />
+          {showOnboarding ? (
+            <Onboarding 
+              onComplete={handleOnboardingComplete} 
+              userId={userData?.id}
+              initData={initData}
+            />
+          ) : (
+            <Component {...pageProps} />
+          )}
         </div>
       ) : (
         <Loader />
