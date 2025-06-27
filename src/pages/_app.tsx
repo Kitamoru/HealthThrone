@@ -53,36 +53,42 @@ const Loader = dynamic(
 
 function App({ Component, pageProps }: AppProps) {
   const { initData, startParam, webApp } = useTelegram();
-  const [userInitialized, setUserInitialized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userData, setUserData] = useState<InitUserResponse | null>(null);
 
   useEffect(() => {
-    if (!initData) return;
+    if (!initData) {
+      setIsLoading(false);
+      return;
+    }
 
-    // Инициализируем пользователя
-    api.initUser(initData, startParam)
-      .then(response => {
+    const initializeUser = async () => {
+      try {
+        const response = await api.initUser(initData, startParam);
         if (response.success && response.data) {
-          const userData = response.data as InitUserResponse;
-          setUserData(userData);
+          const user = response.data as InitUserResponse;
+          setUserData(user);
           
-          // Проверяем, прошел ли пользователь онбординг
-          if (!userData.character_class) {
+          // Проверяем необходимость онбординга
+          if (!user.character_class) {
             setShowOnboarding(true);
           }
           
-          const userId = userData.id;
-          
           // Предзагружаем данные друзей
-          prefetchFriends(userId, initData);
+          prefetchFriends(user.id, initData);
           
           // Сохраняем данные пользователя
-          queryClient.setQueryData(['userData', userId], userData);
+          queryClient.setQueryData(['userData', user.id], user);
         }
-        return response;
-      })
-      .finally(() => setUserInitialized(true));
+      } catch (error) {
+        console.error("Ошибка инициализации пользователя:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeUser();
   }, [initData, startParam]);
 
   useEffect(() => {
@@ -100,7 +106,7 @@ function App({ Component, pageProps }: AppProps) {
     setShowOnboarding(false);
     // Обновляем данные пользователя после онбординга
     if (userData?.id) {
-      queryClient.invalidateQueries({ queryKey: ['userData', userData.id] })
+      queryClient.invalidateQueries({ queryKey: ['userData', userData.id] });
     }
   };
 
@@ -123,20 +129,18 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      {userInitialized ? (
-        <div className="page-transition">
-          {showOnboarding ? (
-            <Onboarding 
-              onComplete={handleOnboardingComplete} 
-              userId={userData?.id}
-              initData={initData}
-            />
-          ) : (
-            <Component {...pageProps} />
-          )}
-        </div>
-      ) : (
+      {isLoading ? (
         <Loader />
+      ) : showOnboarding ? (
+        <Onboarding 
+          onComplete={handleOnboardingComplete} 
+          userId={userData?.id}
+          initData={initData}
+        />
+      ) : (
+        <div className="page-transition">
+          <Component {...pageProps} />
+        </div>
       )}
     </QueryClientProvider>
   );
