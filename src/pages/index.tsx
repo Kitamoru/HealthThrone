@@ -131,9 +131,8 @@ const Home = () => {
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [spriteLoaded, setSpriteLoaded] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [isGlobalLoading, setIsGlobalLoading] = useState(false); // Единое состояние для глобального лоадера
+  const [isGlobalLoading, setIsGlobalLoading] = useState(true); // Единое состояние для глобального лоадера
 
   const isTodayUTC = useCallback((dateStr: string) => {
     if (!dateStr) return false;
@@ -155,7 +154,7 @@ const Home = () => {
 
   const { 
     data: userData, 
-    isLoading, 
+    isLoading: isLoadingUser,
     isError,
     error: queryError,
     refetch: refetchUserData
@@ -177,14 +176,19 @@ const Home = () => {
   });
 
   useEffect(() => {
-    if (userData && userData.character_class === null) {
-      setShowOnboarding(true);
+    if (userData) {
+      if (userData.character_class === null) {
+        setShowOnboarding(true);
+      }
+      // После загрузки данных пользователя скрываем лоадер
+      setIsGlobalLoading(false);
     }
   }, [userData]);
 
   useEffect(() => {
     if (queryError) {
       setApiError((queryError as Error).message);
+      setIsGlobalLoading(false);
     }
   }, [queryError]);
 
@@ -193,55 +197,6 @@ const Home = () => {
       refetchUserData();
     }
   }, [user?.id, refetchUserData]);
-
-  useEffect(() => {
-    if (userData?.current_sprite_url) {
-      const img = new Image();
-      img.src = userData.current_sprite_url;
-      img.onload = () => setSpriteLoaded(true);
-      img.onerror = () => {
-        console.error('Failed to preload sprite');
-        setSpriteLoaded(true);
-      };
-    } else {
-      setSpriteLoaded(true);
-    }
-  }, [userData?.current_sprite_url]);
-
-  const submitSurveyMutation = useMutation({
-    mutationFn: async (totalScore: number) => {
-      if (!user?.id) throw new Error("Пользователь не определен");
-      
-      const response = await api.submitSurvey({
-        telegramId: Number(user.id),
-        newScore: totalScore,
-        initData
-      });
-
-      if (!response.success) {
-        throw new Error(response.error || 'Ошибка сохранения результатов');
-      }
-      
-      return response.data;
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(['userData', user?.id], (oldData: any) => {
-        if (!oldData) return data;
-        
-        return {
-          ...oldData,
-          ...data,
-          current_sprite_url: oldData.current_sprite_url
-        };
-      });
-      
-      setSurveyCompleted(true);
-      setAnswers({});
-    },
-    onError: (error: Error) => {
-      setApiError(error.message);
-    }
-  });
 
   const initialBurnoutLevel = userData?.burnout_level ?? 0;
   const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
@@ -286,6 +241,41 @@ const Home = () => {
     }
   };
 
+  const submitSurveyMutation = useMutation({
+    mutationFn: async (totalScore: number) => {
+      if (!user?.id) throw new Error("Пользователь не определен");
+      
+      const response = await api.submitSurvey({
+        telegramId: Number(user.id),
+        newScore: totalScore,
+        initData
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || 'Ошибка сохранения результатов');
+      }
+      
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(['userData', user?.id], (oldData: any) => {
+        if (!oldData) return data;
+        
+        return {
+          ...oldData,
+          ...data,
+          current_sprite_url: oldData.current_sprite_url
+        };
+      });
+      
+      setSurveyCompleted(true);
+      setAnswers({});
+    },
+    onError: (error: Error) => {
+      setApiError(error.message);
+    }
+  });
+
   const handleOnboardingComplete = useCallback(() => {
     setIsGlobalLoading(true);
     refetchUserData().finally(() => {
@@ -308,11 +298,6 @@ const Home = () => {
         initData={initData}
       />
     );
-  }
-
-  // Показываем лоадер при загрузке данных или спрайта
-  if (isLoading || !spriteLoaded) {
-    return <Loader />;
   }
 
   return (
