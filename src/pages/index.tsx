@@ -9,15 +9,7 @@ import { Loader } from '../components/Loader';
 import { UserProfile } from '../lib/types';
 import { QuestionCard } from '../components/QuestionCard'; 
 import { BurnoutProgress } from '../components/BurnoutProgress';
-
-// Динамически импортируем онбординг
-const Onboarding = dynamic(
-  () => import('../components/Onboarding'),
-  { 
-    loading: () => <Loader />,
-    ssr: false 
-  }
-);
+import { Onboarding } from '../components/Onboarding';
 
 interface Question {
   id: number;
