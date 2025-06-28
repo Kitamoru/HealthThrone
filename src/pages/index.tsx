@@ -9,7 +9,7 @@ import { Loader } from '../components/Loader';
 import { UserProfile } from '../lib/types';
 import { QuestionCard } from '../components/QuestionCard'; 
 import { BurnoutProgress } from '../components/BurnoutProgress';
-import { Onboarding } from '../components/Onboarding';
+import Onboarding from '../components/Onboarding';
 
 interface Question {
   id: number;
