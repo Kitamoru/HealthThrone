@@ -481,55 +481,29 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
       )}
       
       {isSaving && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center">
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            flexDirection: 'column',
-            backgroundColor: 'transparent',
-            zIndex: 9999
-          }}>
-            <div style={{
-              width: 'min(90%, 400px)',
-              aspectRatio: '1/1',
-              backgroundImage: 'url(/IMG_0413.png)', 
-              backgroundSize: 'cover',
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'center',
-              animation: 'pulse 1.5s infinite ease-in-out'
-            }}></div>
-          
-            <style>{`
-              @keyframes pulse {
-                0% { 
-                  transform: scale(0.95); 
-                  opacity: 0.8; 
-                }
-                50% { 
-                  transform: scale(1.05); 
-                  opacity: 1; 
-                }
-                100% { 
-                  transform: scale(0.95); 
-                  opacity: 0.8; 
-                }
-              }
-              
-              @supports (-webkit-touch-callout: none) {
-                div {
-                  height: -webkit-fill-available;
-                }
-              }
-            `}</style>
-          </div>
-        </div>
-      )}
+  <div className="fixed inset-0 z-50">
+    <div className="absolute inset-0 bg-black bg-opacity-70"></div>
+    <div className="relative w-full h-full flex items-center justify-center">
+      <div style={{
+        width: 'min(90%, 400px)',
+        aspectRatio: '1/1',
+        backgroundImage: 'url(/IMG_0413.png)', 
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+        animation: 'pulse 1.5s infinite ease-in-out'
+      }}></div>
+    </div>
+    
+    <style>{`
+      @keyframes pulse {
+        0% { transform: scale(0.95); opacity: 0.8; }
+        50% { transform: scale(1.05); opacity: 1; }
+        100% { transform: scale(0.95); opacity: 0.8; }
+      }
+    `}</style>
+  </div>
+)}}
     </div>
   );
 };
