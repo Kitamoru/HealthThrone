@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
-import { Loader } from './Loader'; // Импортируем компонент Loader
+import { Loader } from './Loader';
 
 // Типы данных
 type Role = 'Разработчик' | 'Инженер по безопасности' | 'Тестер' | 'Аналитик' | 'Дизайнер' | 'Продакт менеджер' | 'Менеджер проектов' | 'Скрам мастер' | 'Тимлид' | 'Техлид' | 'Саппорт' | 'Девопс' | 'Архитектор' | 'Аккаунт менеджер' | 'Менеджер по продажам' | 'Руководитель' | 'HR';
@@ -311,7 +311,7 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [baseType, setBaseType] = useState<BaseType | null>(null);
   const [characterClass, setCharacterClass] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false); // Состояние для отображения лоадера
+  const [isSaving, setIsSaving] = useState(false);
 
   // Роли для выпадающего списка
   const roles: Role[] = [
@@ -372,96 +372,94 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
 
   // Сохранение результата
   const saveResult = async () => {
-  if (!characterClass || !userId || !initData) return;
-  
-  setIsSaving(true);
-  
-  try {
-    const response = await api.updateUserClass(userId, characterClass, initData);
-    if (!response.success) throw new Error(response.error);
-    onComplete(); // Переходим сразу после сохранения
-  } catch (error) {
-    console.error('Ошибка сохранения:', error);
-  } finally {
-    setIsSaving(false);
-  }
-};
+    if (!characterClass || !userId || !initData) return;
+    
+    setIsSaving(true);
+    
+    try {
+      const response = await api.updateUserClass(userId, characterClass, initData);
+      if (!response.success) throw new Error(response.error);
+      onComplete();
+    } catch (error) {
+      console.error('Ошибка сохранения:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-dungeon bg-cover text-white p-4 relative">
-      {isSaving && <Loader />} {/* Лоадер поверх всего контента */}
+    <div className="onboarding-container">
+      {isSaving && <Loader />}
       
       {step === 'role' && (
-        <div className="max-w-md mx-auto mt-20 text-center">
-          <h1 className="text-2xl font-bold mb-6">Добро пожаловать в Подземелье Moraleon!</h1>
-          <p className="mb-8">Выбери свою роль в гильдии:</p>
+        <div className="role-step">
+          <div className="onboarding-header">
+            <h1>Добро пожаловать в Подземелье Moraleon!</h1>
+            <p>Выбери свою роль в гильдии:</p>
+          </div>
           
-          <div className="relative">
+          <div className="role-selector">
             <select 
               onChange={(e) => handleRoleSelect(e.target.value as Role)}
-              className="w-full p-4 bg-gray-800 border-2 border-gold rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="role-dropdown"
             >
               <option value="">-- Выбери свою роль --</option>
               {roles.map(role => (
                 <option key={role} value={role}>{role}</option>
               ))}
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-              </svg>
-            </div>
           </div>
         </div>
       )}
 
       {step === 'test' && (
-        <div className="max-w-md mx-auto mt-10 bg-gray-900 bg-opacity-80 p-6 rounded-xl border-2 border-purple-700">
-          <div className="mb-4 text-center">
-            <h2 className="text-xl font-bold mb-2">Испытание духа</h2>
-            <p className="text-sm mb-4">Вопрос {currentQuestion + 1} из {QUESTIONS.length}</p>
-            <div className="w-full bg-gray-700 rounded-full h-2.5">
+        <div className="test-step">
+          <div className="progress-container">
+            <p className="progress-text">Вопрос {currentQuestion + 1} из {QUESTIONS.length}</p>
+            <div className="progress-bar">
               <div 
-                className="bg-blue-600 h-2.5 rounded-full" 
+                className="progress-fill" 
                 style={{ width: `${((currentQuestion + 1) / QUESTIONS.length) * 100}%` }}
               ></div>
             </div>
           </div>
-
-          <div className="mb-6">
-            <p className="text-lg font-medium mb-4">{QUESTIONS[currentQuestion]}</p>
-            <div className="space-y-3">
-              {OPTIONS[currentQuestion].map((option, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleAnswer(String.fromCharCode(97 + index) as Answer)}
-                  className="w-full p-3 bg-gray-800 hover:bg-gray-700 border border-purple-600 rounded-lg text-left transition-all duration-200 transform hover:scale-[1.02]"
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
+          
+          <div className="question-container">
+            <p className="question-text">{QUESTIONS[currentQuestion]}</p>
+          </div>
+          
+          <div className="answers-container">
+            {OPTIONS[currentQuestion].map((option, index) => (
+              <button
+                key={index}
+                onClick={() => handleAnswer(String.fromCharCode(97 + index) as Answer)}
+                className="answer-button"
+              >
+                {option}
+              </button>
+            ))}
           </div>
         </div>
       )}
 
       {step === 'result' && selectedRole && baseType && characterClass && (
-        <div className="max-w-md mx-auto mt-10 text-center">
-          <h2 className="text-2xl font-bold mb-6">Твой Класс определён!</h2>
-          <div className="bg-gray-900 bg-opacity-80 p-6 rounded-xl border-2 border-gold mb-6">
-            <h3 className="text-xl font-bold text-yellow-400 mb-2">{characterClass}</h3>
-            <p className="text-lg mb-4">{CLASS_DESCRIPTIONS[selectedRole][characterClass]}</p>
-            <p className="text-sm italic">Твоё путешествие в Подземелье Мотивации начинается!</p>
+        <div className="result-step">
+          <div className="result-header">
+            <h2>Твой Класс определён!</h2>
           </div>
-
-          <div className="flex flex-col gap-3">
-            <button
-              onClick={saveResult}
-              className="w-full p-3 bg-green-700 hover:bg-green-600 rounded-lg font-bold transition-colors"
-            >
-              Принять Судьбу
-            </button>
+          
+          <div className="result-card">
+            <h3 className="class-title">{characterClass}</h3>
+            <p className="class-description">{CLASS_DESCRIPTIONS[selectedRole][characterClass]}</p>
+            <p className="class-footer">Твоё путешествие в Подземелье Мотивации начинается!</p>
           </div>
+          
+          <button
+            onClick={saveResult}
+            className="accept-button"
+          >
+            Принять Судьбу
+          </button>
         </div>
       )}
     </div>
