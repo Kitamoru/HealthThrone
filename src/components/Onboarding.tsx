@@ -371,13 +371,23 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
 
   // Сохранение результата
   const saveResult = async () => {
-  if (!characterClass || !userId || !initData) return;
+  if (!characterClass || !userId || !initData) {
+    console.error("Missing required data for saving");
+    return;
+  }
+
   try {
-    // Используем userId вместо telegramId
-    await api.updateUserClass(userId, characterClass, initData);
+    const response = await api.updateUserClass(userId, characterClass, initData);
+    
+    if (!response.success) {
+      throw new Error(response.error || "Unknown error");
+    }
+    
+    console.log("Class updated successfully:", response.data);
     onComplete();
   } catch (error) {
     console.error('Ошибка сохранения класса:', error);
+    // Можно добавить уведомление для пользователя
   }
 };
 
