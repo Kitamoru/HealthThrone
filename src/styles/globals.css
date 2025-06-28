@@ -1324,4 +1324,24 @@ strong {
   background: #4a7bc8;
   transform: translateY(-2px);
 }
+  /* Стили для контейнера октаграммы */
+.octagram-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.7);
+  border-radius: 16px;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .octagram-container {
+    padding: 0.5rem;
+    margin: 1rem 0;
+  }
+}
 }
