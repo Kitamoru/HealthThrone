@@ -7,10 +7,8 @@ interface OctagramProps {
 }
 
 const Octagram = ({ values, size = 300 }: OctagramProps) => {
-  const [phase, setPhase] = useState<'rays' | 'octagram' | 'octagon' | 'sectors'>('rays');
+  const [phase, setPhase] = useState<'vertices' | 'octagram' | 'rays' | 'sectors'>('vertices');
   const octagramControls = useAnimation();
-  const octagonControls = useAnimation();
-  const crossControls = useAnimation();
 
   const center = size / 2;
   const radius = size * 0.4;
@@ -32,6 +30,17 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     return points;
   };
 
+  const getMidPoints = (points: { x: number; y: number }[]) => {
+    const midpoints = [];
+    for (let i = 0; i < points.length; i++) {
+      const next = (i + 1) % points.length;
+      const x = (points[i].x + points[next].x) / 2;
+      const y = (points[i].y + points[next].y) / 2;
+      midpoints.push({ x, y });
+    }
+    return midpoints;
+  };
+
   const createOctagramPath = (points: { x: number; y: number }[]) => {
     let path = `M ${points[0].x},${points[0].y}`;
     for (let i = 1; i <= 8; i++) {
@@ -41,77 +50,63 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     return path + ' Z';
   };
 
-  const createOctagonPath = (points: { x: number; y: number }[]) => {
-    let path = `M ${points[0].x},${points[0].y}`;
-    for (let i = 1; i < points.length; i++) {
-      path += ` L ${points[i].x},${points[i].y}`;
-    }
-    return path + ' Z';
-  };
-
   const octagonPoints = getOctagonPoints();
+  const midPoints = getMidPoints(octagonPoints);
   const octagramPath = createOctagramPath(octagonPoints);
-  const octagonPath = createOctagonPath(octagonPoints);
 
-  const handleRaysComplete = () => {
-    setTimeout(() => setPhase('octagram'), 300);
-  };
+  useEffect(() => {
+    if (phase === 'vertices') {
+      // Переход к следующей фазе после появления всех точек
+      const totalDelay = 0.6 + values.length * 0.1 + 0.8;
+      setTimeout(() => setPhase('octagram'), totalDelay * 1000);
+    }
+  }, [phase]);
 
   useEffect(() => {
     if (phase === 'octagram') {
-      octagramControls.start({
-        pathLength: 1,
-        opacity: 1,
-        transition: { duration: 1.5, ease: 'easeInOut' },
-      }).then(() => {
-        setTimeout(() => setPhase('octagon'), 1000);
-      });
+      octagramControls
+        .start({
+          pathLength: 1,
+          opacity: 1,
+          transition: { duration: 1.5, ease: 'easeInOut' },
+        })
+        .then(() => {
+          setTimeout(() => setPhase('rays'), 1000);
+        });
     }
   }, [phase]);
 
-  useEffect(() => {
-    if (phase === 'octagon') {
-      octagonControls.start({
-        pathLength: 1,
-        opacity: 1,
-        transition: { duration: 1.5, ease: 'easeInOut' },
-      }).then(() => {
-        setTimeout(() => setPhase('sectors'), 500);
-      });
-    }
-  }, [phase]);
+  const handleRaysComplete = () => {
+    setTimeout(() => setPhase('sectors'), 500);
+  };
 
   const createValueRays = () => {
-    return values.map((_, index) => {
-      const angle = index * 45 - 90;
-      const point = getPoint(angle, radius);
-      return (
-        <motion.line
-          key={`ray-${index}`}
-          x1={center}
-          y1={center}
-          x2={center}
-          y2={center}
-          stroke="#00D4FF"
-          strokeWidth="4"
-          strokeLinecap="round"
-          initial={{ opacity: 0 }}
-          animate={{
-            opacity: 1,
-            x2: point.x,
-            y2: point.y,
-          }}
-          transition={{
-            delay: index * 0.1,
-            duration: 1.2,
-            type: 'spring',
-            damping: 12,
-          }}
-          onAnimationComplete={index === values.length - 1 ? handleRaysComplete : undefined}
-          filter="url(#glow)"
-        />
-      );
-    });
+    return midPoints.map((point, index) => (
+      <motion.line
+        key={`ray-${index}`}
+        x1={center}
+        y1={center}
+        x2={center}
+        y2={center}
+        stroke="#00D4FF"
+        strokeWidth="4"
+        strokeLinecap="round"
+        initial={{ opacity: 0 }}
+        animate={{
+          opacity: 1,
+          x2: point.x,
+          y2: point.y,
+        }}
+        transition={{
+          delay: index * 0.1,
+          duration: 1.2,
+          type: 'spring',
+          damping: 12,
+        }}
+        onAnimationComplete={index === values.length - 1 ? handleRaysComplete : undefined}
+        filter="url(#glow)"
+      />
+    ));
   };
 
   return (
@@ -129,11 +124,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           </linearGradient>
         </defs>
 
-        {/* Rays */}
-        {createValueRays()}
-
         {/* Octagram path */}
-        {phase !== 'octagon' && phase !== 'sectors' && (
+        {phase === 'octagram' && (
           <motion.path
             d={octagramPath}
             fill="none"
@@ -145,18 +137,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           />
         )}
 
-        {/* Octagon path */}
-        {(phase === 'octagon' || phase === 'sectors') && (
-          <motion.path
-            d={octagonPath}
-            fill="none"
-            stroke="#00D4FF"
-            strokeWidth="2"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={octagonControls}
-            filter="url(#glow)"
-          />
-        )}
+        {/* Rays */}
+        {phase === 'rays' && createValueRays()}
 
         {/* Cross-sector lines */}
         {phase === 'sectors' &&
@@ -199,15 +181,11 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             r="8"
             fill="#00D4FF"
             initial={{ scale: 0, opacity: 0, y: 20 }}
-            animate={
-              phase !== 'rays'
-                ? {
-                    scale: [0, 1.3, 1],
-                    opacity: 1,
-                    y: 0,
-                  }
-                : {}
-            }
+            animate={{
+              scale: [0, 1.3, 1],
+              opacity: 1,
+              y: 0,
+            }}
             transition={{
               delay: 0.6 + index * 0.1,
               duration: 0.8,
