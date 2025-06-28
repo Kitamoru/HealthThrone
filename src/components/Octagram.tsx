@@ -194,7 +194,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           />
         ))}
 
-        {/* Central crystal */}
+        {/* Central crystal with glowing hover effect */}
         <motion.polygon
           points={`
             ${center - 15},${center}
@@ -203,11 +203,16 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             ${center},${center + 15}
           `}
           fill="url(#crystalGradient)"
-          initial={{ scale: 0, rotate: 0 }}
+          initial={{ scale: 0, rotate: 0, opacity: 0.8 }}
           animate={{
             scale: 1,
             rotate: 360,
             opacity: [0.8, 1, 0.8],
+          }}
+          whileHover={{
+            scale: 1.3,
+            opacity: 1,
+            filter: 'drop-shadow(0 0 10px #00D4FF)',
           }}
           transition={{
             delay: 1,
@@ -222,8 +227,14 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
               repeat: Infinity,
               repeatType: 'reverse',
             },
+            scale: {
+              type: 'spring',
+              stiffness: 300,
+              damping: 20,
+            },
           }}
           filter="url(#glow)"
+          style={{ cursor: 'pointer' }}
         />
       </svg>
     </div>
