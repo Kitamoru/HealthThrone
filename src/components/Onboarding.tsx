@@ -373,30 +373,20 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
 
   // Сохранение результата
   const saveResult = async () => {
-    if (!characterClass || !userId || !initData) {
-      console.error("Missing required data for saving");
-      return;
-    }
-
-    setIsSaving(true); // Показать лоадер
-    
-    try {
-      const response = await api.updateUserClass(userId, characterClass, initData);
-      
-      if (!response.success) {
-        throw new Error(response.error || "Unknown error");
-      }
-      
-      // Искусственная задержка для демонстрации лоадера
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      onComplete();
-    } catch (error) {
-      console.error('Ошибка сохранения класса:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  if (!characterClass || !userId || !initData) return;
+  
+  setIsSaving(true);
+  
+  try {
+    const response = await api.updateUserClass(userId, characterClass, initData);
+    if (!response.success) throw new Error(response.error);
+    onComplete(); // Переходим сразу после сохранения
+  } catch (error) {
+    console.error('Ошибка сохранения:', error);
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-dungeon bg-cover text-white p-4 relative">
