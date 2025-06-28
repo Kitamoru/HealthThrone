@@ -1224,7 +1224,7 @@ strong {
   transition: width 0.3s ease;
 }
 
-.question-container {
+.test-container {
   flex-grow: 1;
   display: flex;
   align-items: center;
@@ -1232,7 +1232,7 @@ strong {
   padding: 20px 0;
 }
 
-.question-text {
+.test-text {
   font-size: 1.2rem;
   font-weight: 500;
   line-height: 1.5;
