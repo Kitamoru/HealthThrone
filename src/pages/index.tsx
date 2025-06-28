@@ -242,14 +242,14 @@ const Home = () => {
   // Временные данные для октаграммы
   const octagramValues = useMemo(() => {
     return [
-      0.85, // Техномантия
-      0.65, // Артефакты
-      0.9,  // Эфирные потоки
-      0.75, // Рунная связь
-      0.55, // Киберчары
-      0.8,  // Некросеть
-      0.7,  // Астрал
-      0.95  // Квантовое колдовство
+      0.5, // Техномантия
+      0.5, // Артефакты
+      0.5,  // Эфирные потоки
+      0.5, // Рунная связь
+      0.5, // Киберчары
+      0.5,  // Некросеть
+      0.5,  // Астрал
+      0.5  // Квантовое колдовство
     ];
   }, []);
 
@@ -346,33 +346,14 @@ const Home = () => {
           </div>
 
           {/* Добавленный блок с октаграммой */}
-          <AnimatePresence>
+         <AnimatePresence>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="mt-8 mb-4 flex flex-col items-center octagram-container"
+              className="mt-4 mb-4 flex flex-col items-center octagram-container" // Уменьшен верхний отступ
             >
-              <h2 className="text-xl font-bold mb-4 text-[#00D4FF]">
-                Аспекты Энергии
-              </h2>
               <Octagram values={octagramValues} size={280} />
-              
-              {/* Легенда для значений */}
-              <div className="mt-4 grid grid-cols-4 gap-2 max-w-md">
-                {[
-                  'Техномантия', 'Артефакты', 'Эфир', 'Руны',
-                  'Киберчары', 'Некросеть', 'Астрал', 'Кванты'
-                ].map((label, idx) => (
-                  <div key={idx} className="flex items-center">
-                    <div 
-                      className="w-3 h-3 mr-1 rounded-full" 
-                      style={{ background: '#00D4FF' }}
-                    ></div>
-                    <span className="text-xs text-white">{label}</span>
-                  </div>
-                ))}
-              </div>
             </motion.div>
           </AnimatePresence>
 
