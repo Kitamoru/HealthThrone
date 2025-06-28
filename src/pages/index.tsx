@@ -6,11 +6,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
-import { BurnoutProgress } from '../components/BurnoutProgress';
-import { QuestionCard } from '../components/QuestionCard';
 import { UserProfile } from '../lib/types';
 
-// Динамически импортируем только онбординг
+// Динамические импорты
+const BurnoutProgress = dynamic(
+  () => import('../components/BurnoutProgress').then(mod => mod.BurnoutProgress),
+  { 
+    loading: () => <div className="sprite-container">Загрузка...</div>,
+    ssr: false
+  }
+);
+
+// Динамически импортируем онбординг
 const Onboarding = dynamic(
   () => import('../components/Onboarding'),
   { 
@@ -117,8 +124,8 @@ const Home = () => {
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [spriteLoaded, setSpriteLoaded] = useState(false);
-  const [isGlobalLoading, setIsGlobalLoading] = useState(false);
-  const [componentsReady, setComponentsReady] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isGlobalLoading, setIsGlobalLoading] = useState(false); // Единое состояние для глобального лоадера
 
   const isTodayUTC = useCallback((dateStr: string) => {
     if (!dateStr) return false;
@@ -162,6 +169,12 @@ const Home = () => {
   });
 
   useEffect(() => {
+    if (userData && userData.character_class === null) {
+      setShowOnboarding(true);
+    }
+  }, [userData]);
+
+  useEffect(() => {
     if (queryError) {
       setApiError((queryError as Error).message);
     }
@@ -186,17 +199,6 @@ const Home = () => {
       setSpriteLoaded(true);
     }
   }, [userData?.current_sprite_url]);
-
-  // Добавлено: проверка готовности всех компонентов
-  useEffect(() => {
-    if (!isLoading && spriteLoaded && !isGlobalLoading) {
-      const timer = setTimeout(() => {
-        setComponentsReady(true);
-      }, 50); // Небольшая задержка для стабилизации
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading, spriteLoaded, isGlobalLoading]);
 
   const submitSurveyMutation = useMutation({
     mutationFn: async (totalScore: number) => {
@@ -233,9 +235,6 @@ const Home = () => {
     }
   });
 
-  // Определяем необходимость онбординга
-  const needsOnboarding = userData && userData.character_class === null;
-  
   const initialBurnoutLevel = userData?.burnout_level ?? 0;
   const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
   const alreadyAttemptedToday = userData?.last_attempt_date 
@@ -282,17 +281,18 @@ const Home = () => {
   const handleOnboardingComplete = useCallback(() => {
     setIsGlobalLoading(true);
     refetchUserData().finally(() => {
+      setShowOnboarding(false);
       setIsGlobalLoading(false);
     });
   }, [refetchUserData]);
 
-  // 1. Показываем глобальный лоадер при загрузке
+  // Если идет глобальная загрузка, показываем лоадер
   if (isGlobalLoading) {
     return <Loader />;
   }
 
-  // 2. Приоритет: показываем онбординг если требуется
-  if (needsOnboarding) {
+  // Показываем онбординг если требуется
+  if (showOnboarding) {
     return (
       <Onboarding 
         onComplete={handleOnboardingComplete} 
@@ -302,8 +302,8 @@ const Home = () => {
     );
   }
 
-  // 3. Показываем лоадер при загрузке данных, спрайта или пока компоненты не готовы
-  if (isLoading || !spriteLoaded || !componentsReady) {
+  // Показываем лоадер при загрузке данных или спрайта
+  if (isLoading || !spriteLoaded) {
     return <Loader />;
   }
 
@@ -367,5 +367,3 @@ const Home = () => {
     </div>
   );
 };
-
-export default React.memo(Home);
