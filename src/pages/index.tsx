@@ -131,8 +131,7 @@ const Home = () => {
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [isGlobalLoading, setIsGlobalLoading] = useState(true); // Единое состояние для глобального лоадера
+  const [appState, setAppState] = useState<'loading' | 'onboarding' | 'main'>('loading');
 
   const isTodayUTC = useCallback((dateStr: string) => {
     if (!dateStr) return false;
@@ -172,31 +171,26 @@ const Home = () => {
       return response.data as UserProfile;
     },
     enabled: !!user?.id,
-    refetchOnWindowFocus: true,
-  });
-
-  useEffect(() => {
-    if (userData) {
-      if (userData.character_class === null) {
-        setShowOnboarding(true);
+    refetchOnWindowFocus: false,
+    onSuccess: (data) => {
+      if (data) {
+        if (data.character_class === null) {
+          setAppState('onboarding');
+        } else {
+          setAppState('main');
+        }
       }
-      // После загрузки данных пользователя скрываем лоадер
-      setIsGlobalLoading(false);
+    },
+    onError: () => {
+      setAppState('main');
     }
-  }, [userData]);
+  });
 
   useEffect(() => {
     if (queryError) {
       setApiError((queryError as Error).message);
-      setIsGlobalLoading(false);
     }
   }, [queryError]);
-
-  useEffect(() => {
-    if (user?.id) {
-      refetchUserData();
-    }
-  }, [user?.id, refetchUserData]);
 
   const initialBurnoutLevel = userData?.burnout_level ?? 0;
   const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
@@ -277,88 +271,91 @@ const Home = () => {
   });
 
   const handleOnboardingComplete = useCallback(() => {
-    setIsGlobalLoading(true);
     refetchUserData().finally(() => {
-      setShowOnboarding(false);
-      setIsGlobalLoading(false);
+      setAppState('main');
     });
   }, [refetchUserData]);
 
-  // Если идет глобальная загрузка, показываем лоадер
-  if (isGlobalLoading) {
-    return <Loader />;
-  }
-
-  // Показываем онбординг если требуется
-  if (showOnboarding) {
-    return (
-      <Onboarding 
-        onComplete={handleOnboardingComplete} 
-        userId={user?.id ? parseInt(user.id) : undefined}
-        initData={initData}
-      />
-    );
-  }
-
-  return (
-    <div className="container">
-      {isError || !user ? (
-        <div className="error-message">
-          {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
+  // Определяем что показывать на основе единого состояния
+  switch (appState) {
+    case 'loading':
+      return <Loader />;
+      
+    case 'onboarding':
+      return (
+        <div className="onboarding-wrapper">
+          <Onboarding 
+            onComplete={handleOnboardingComplete} 
+            userId={user?.id ? parseInt(user.id) : undefined}
+            initData={initData}
+          />
         </div>
-      ) : (
-        <>
-          <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
-          
-          <div className="content">
-            {apiError && !alreadyAttemptedToday && (
-              <div className="error-message">{apiError}</div>
-            )}
+      );
+      
+    case 'main':
+      return (
+        <div className="container">
+          {isError || !user ? (
+            <div className="error-message">
+              {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
+            </div>
+          ) : (
+            <>
+              <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
+              
+              <div className="content">
+                {apiError && !alreadyAttemptedToday && (
+                  <div className="error-message">{apiError}</div>
+                )}
 
-            {alreadyAttemptedToday ? (
-              <div className="time-message">
-                <div className="info-message">
-                  Вы уже прошли опрос сегодня. Ваш текущий уровень выгорания: {burnoutLevel}%
-                </div>
+                {alreadyAttemptedToday ? (
+                  <div className="time-message">
+                    <div className="info-message">
+                      Вы уже прошли опрос сегодня. Ваш текущий уровень выгорания: {burnoutLevel}%
+                    </div>
+                  </div>
+                ) : surveyCompleted ? (
+                  <div className="time-message">
+                    <div className="info-message">
+                      🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
+                    </div>
+                  </div>
+                ) : (
+                  <div className="questions">
+                    {questions.map(question => (
+                      <QuestionCard
+                        key={question.id}
+                        question={question}
+                        onAnswer={handleAnswer}
+                        answered={question.id in answers}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-            ) : surveyCompleted ? (
-              <div className="time-message">
-                <div className="info-message">
-                  🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
-                </div>
-              </div>
-            ) : (
-              <div className="questions">
-                {questions.map(question => (
-                  <QuestionCard
-                    key={question.id}
-                    question={question}
-                    onAnswer={handleAnswer}
-                    answered={question.id in answers}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
 
-          <div className="menu">
-            <Link href="/" passHref>
-              <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
-            </Link>
-            <Link href="/friends" passHref>
-              <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
-            </Link>
-            <Link href="/shop" passHref>
-              <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
-            </Link>
-            <Link href="/reference" passHref>
-              <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
-            </Link>
-          </div>
-        </>
-      )}
-    </div>
-  );
+              <div className="menu">
+                <Link href="/" passHref>
+                  <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
+                </Link>
+                <Link href="/friends" passHref>
+                  <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
+                </Link>
+                <Link href="/shop" passHref>
+                  <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
+                </Link>
+                <Link href="/reference" passHref>
+                  <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
+                </Link>
+              </div>
+            </>
+          )}
+        </div>
+      );
+      
+    default:
+      return <Loader />;
+  }
 };
 
 export default React.memo(Home);
