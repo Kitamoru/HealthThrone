@@ -447,7 +447,7 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
                 >
                   {option}
                 </button>
-              )}
+              ))}
             </div>
           </div>
         </div>
@@ -503,7 +503,7 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
       }
     `}</style>
   </div>
-)}}
+)}
     </div>
   );
 };
