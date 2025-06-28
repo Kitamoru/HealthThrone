@@ -1,15 +1,15 @@
 import { motion, useAnimation } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { flubber } from 'flubber';
 
 interface OctagramProps {
-  values: number[];
+  values: number[]; // 8 значений от 0 до 1
   size?: number;
 }
 
 const Octagram = ({ values, size = 300 }: OctagramProps) => {
-  const [phase, setPhase] = useState<'rays' | 'morph'>('rays');
-  const pathControls = useAnimation();
+  const [phase, setPhase] = useState<'rays' | 'octagram' | 'octagon'>('rays');
+  const octagramControls = useAnimation();
+  const octagonControls = useAnimation();
 
   const center = size / 2;
   const radius = size * 0.4;
@@ -22,7 +22,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     };
   };
 
-  const getOctagramPoints = () => {
+  const getOctagonPoints = () => {
     const points = [];
     for (let i = 0; i < 8; i++) {
       const angle = i * 45 - 90;
@@ -31,49 +31,50 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     return points;
   };
 
-  const createOctagramPath = (pts: { x: number; y: number }[]) => {
-    let path = `M ${pts[0].x},${pts[0].y}`;
+  const createOctagramPath = (points: { x: number; y: number }[]) => {
+    let path = `M ${points[0].x},${points[0].y}`;
     for (let i = 1; i <= 8; i++) {
       const nextIndex = (i * 3) % 8;
-      path += ` L ${pts[nextIndex].x},${pts[nextIndex].y}`;
+      path += ` L ${points[nextIndex].x},${points[nextIndex].y}`;
     }
     return path + ' Z';
   };
 
-  const createOctagonPath = (pts: { x: number; y: number }[]) => {
-    let path = `M ${pts[0].x},${pts[0].y}`;
-    for (let i = 1; i < pts.length; i++) {
-      path += ` L ${pts[i].x},${pts[i].y}`;
+  const createOctagonPath = (points: { x: number; y: number }[]) => {
+    let path = `M ${points[0].x},${points[0].y}`;
+    for (let i = 1; i < points.length; i++) {
+      path += ` L ${points[i].x},${points[i].y}`;
     }
     return path + ' Z';
   };
 
-  const octagramPoints = getOctagramPoints();
-  const pathOctagram = createOctagramPath(octagramPoints);
-  const pathOctagon = createOctagonPath(octagramPoints);
+  const octagonPoints = getOctagonPoints();
+  const octagramPath = createOctagramPath(octagonPoints);
+  const octagonPath = createOctagonPath(octagonPoints);
 
   const handleRaysComplete = () => {
-    setTimeout(() => {
-      setPhase('morph');
-    }, 300);
+    setTimeout(() => setPhase('octagram'), 300);
   };
 
   useEffect(() => {
-    if (phase === 'morph') {
-      const interpolator = flubber.interpolate(pathOctagram, pathOctagon, { maxSegmentLength: 2 });
-      const steps = 60;
-      let currentStep = 0;
+    if (phase === 'octagram') {
+      octagramControls.start({
+        pathLength: 1,
+        opacity: 1,
+        transition: { duration: 1.5, ease: 'easeInOut' },
+      }).then(() => {
+        setTimeout(() => setPhase('octagon'), 1000);
+      });
+    }
+  }, [phase]);
 
-      const animate = () => {
-        if (currentStep > steps) return;
-        const t = currentStep / steps;
-        const newPath = interpolator(t);
-        pathControls.set({ d: newPath });
-        currentStep++;
-        requestAnimationFrame(animate);
-      };
-
-      animate();
+  useEffect(() => {
+    if (phase === 'octagon') {
+      octagonControls.start({
+        pathLength: 1,
+        opacity: 1,
+        transition: { duration: 1.5, ease: 'easeInOut' },
+      });
     }
   }, [phase]);
 
@@ -99,9 +100,9 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           }}
           transition={{
             delay: index * 0.1,
-            duration: 1.5,
+            duration: 1.2,
             type: 'spring',
-            damping: 10,
+            damping: 12,
           }}
           onAnimationComplete={index === values.length - 1 ? handleRaysComplete : undefined}
           filter="url(#glow)"
@@ -125,19 +126,68 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           </linearGradient>
         </defs>
 
+        {/* Rays */}
         {createValueRays()}
 
-        <motion.path
-          d={pathOctagram}
-          stroke="#00D4FF"
-          strokeWidth="2"
-          fill="none"
-          animate={pathControls}
-          initial={{ d: pathOctagram }}
-          filter="url(#glow)"
-        />
+        {/* Cross lines (sector dividers) */}
+        {['0', '45', '90', '135'].map((deg, index) => {
+          const angle = parseFloat(deg);
+          const start = getPoint(angle, radius);
+          const end = getPoint(angle + 180, radius);
 
-        {octagramPoints.map((point, index) => (
+          return (
+            <motion.line
+              key={`cross-${index}`}
+              x1={start.x}
+              y1={start.y}
+              x2={start.x}
+              y2={start.y}
+              stroke="#00D4FF"
+              strokeWidth="2"
+              initial={{ opacity: 0 }}
+              animate={{
+                x2: end.x,
+                y2: end.y,
+                opacity: 0.4,
+              }}
+              transition={{
+                delay: 0.8 + index * 0.1,
+                duration: 1,
+                ease: 'easeInOut',
+              }}
+              filter="url(#glow)"
+            />
+          );
+        })}
+
+        {/* Octagram */}
+        {phase !== 'octagon' && (
+          <motion.path
+            d={octagramPath}
+            fill="none"
+            stroke="#00D4FF"
+            strokeWidth="2"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={octagramControls}
+            filter="url(#glow)"
+          />
+        )}
+
+        {/* Octagon */}
+        {phase === 'octagon' && (
+          <motion.path
+            d={octagonPath}
+            fill="none"
+            stroke="#00D4FF"
+            strokeWidth="2"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={octagonControls}
+            filter="url(#glow)"
+          />
+        )}
+
+        {/* Vertices */}
+        {octagonPoints.map((point, index) => (
           <motion.circle
             key={`vertex-${index}`}
             cx={point.x}
@@ -155,13 +205,14 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
                 : {}
             }
             transition={{
-              delay: 0.5 + index * 0.1,
+              delay: 0.6 + index * 0.1,
               duration: 0.8,
             }}
             filter="url(#glow)"
           />
         ))}
 
+        {/* Central crystal */}
         <motion.polygon
           points={`
             ${center - 15},${center}
