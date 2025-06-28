@@ -351,7 +351,7 @@ const Home = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="mt-4 mb-4 flex flex-col items-center octagram-container" // Уменьшен верхний отступ
+              className="mt-10 mb-4 flex flex-col items-center octagram-container" // Уменьшен верхний отступ
             >
               <Octagram values={octagramValues} size={280} />
             </motion.div>
