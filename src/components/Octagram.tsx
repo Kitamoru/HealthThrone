@@ -86,4 +86,112 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           onAnimationComplete={
             index === values.length - 1 ? handleRaysComplete : undefined
           }
-   
+          filter="url(#glow)"
+        />
+      );
+    });
+  };
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size}>
+        <defs>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="10" result="blur"/>
+            <feMerge>
+              <feMergeNode/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+
+          <linearGradient id="crystalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#00D4FF" stopOpacity="0.8"/>
+            <stop offset="100%" stopColor="#0077FF" stopOpacity="0.2"/>
+          </linearGradient>
+        </defs>
+
+        {/* Анимированные лучи */}
+        {createValueRays()}
+
+        {/* Оконтуривание октаграммы */}
+        <motion.path
+          d={createOctagramPath()}
+          fill="none"
+          stroke="#8A2BE2"
+          strokeWidth="2"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={controls}
+          transition={{
+            duration: 2,
+            ease: "easeInOut"
+          }}
+          filter="url(#glow)"
+        />
+
+        {/* Вершины (появляются после контура) */}
+        {Array.from({ length: 8 }).map((_, index) => {
+          const angle = index * 45 - 90;
+          const point = getPoint(angle, outerRadius);
+
+          return (
+            <motion.circle
+              key={`vertex-${index}`}
+              cx={point.x}
+              cy={point.y}
+              r="8"
+              fill="#00D4FF"
+              initial={{ scale: 0, opacity: 0, y: 20 }}
+              animate={isRaysAnimationComplete ? {
+                scale: [0, 1.3, 1],
+                opacity: 1,
+                y: 0
+              } : {}}
+              transition={{
+                delay: 0.5 + index * 0.1,
+                duration: 0.8,
+                repeat: Infinity,
+                repeatType: "reverse",
+                repeatDelay: 1
+              }}
+              filter="url(#glow)"
+            />
+          );
+        })}
+
+        {/* Центральная фигура ("Кристалл") */}
+        <motion.polygon
+          points={`
+            ${center - 15},${center} 
+            ${center},${center - 15} 
+            ${center + 15},${center} 
+            ${center},${center + 15}
+          `}
+          fill="url(#crystalGradient)"
+          initial={{ scale: 0, rotate: 0 }}
+          animate={{
+            scale: 1,
+            rotate: 360,
+            opacity: [0.8, 1, 0.8]
+          }}
+          transition={{
+            delay: 1,
+            duration: 8,
+            rotate: {
+              duration: 20,
+              repeat: Infinity,
+              ease: "linear"
+            },
+            opacity: {
+              duration: 3,
+              repeat: Infinity,
+              repeatType: "reverse"
+            }
+          }}
+          filter="url(#glow)"
+        />
+      </svg>
+    </div>
+  );
+};
+
+export default Octagram;
