@@ -1,6 +1,7 @@
 // components/Onboarding.tsx
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
+import { Loader } from './Loader'; // Импортируем компонент Loader
 
 // Типы данных
 type Role = 'Разработчик' | 'Инженер по безопасности' | 'Тестер' | 'Аналитик' | 'Дизайнер' | 'Продакт менеджер' | 'Менеджер проектов' | 'Скрам мастер' | 'Тимлид' | 'Техлид' | 'Саппорт' | 'Девопс' | 'Архитектор' | 'Аккаунт менеджер' | 'Менеджер по продажам' | 'Руководитель' | 'HR';
@@ -34,7 +35,7 @@ const OPTIONS = [
     "d) Внутренний голос: «Я сокрушу эти стены, даже если это последнее, что я сделаю!»"
   ],
   [
-    "a) Блуждаение без карты и целей, когда никто не видит твоих побед",
+    "a) Блуждание без карты и целей, когда никто не видит твоих побед",
     "b) Бесконечная рубка одних и тех же скелетов по указке",
     "c) Ядовитые споры между союзниками и чувство, что твое место шатко",
     "d) Поражение гильдии в Великом Турнире или отсутствие достойных противников"
@@ -256,7 +257,7 @@ const CLASS_DESCRIPTIONS: Record<Role, Record<string, string>> = {
   'Саппорт': {
     'Волшебник поддержки': `Ваши решения быстры и точны как магия. Вы закрываете максимум тикетов с высочайшим CSAT, превращая истерику в благодарность. Мотивация – в скорости, эффективности и идеальных метриках разрешения.`,
     'Хранитель истины': `Вы – археолог логов и конфигов. Копая глубже, вы находите первопричины проблем, превращая разрозненные симптомы в ясную картину. Мотивация – в разгадке тайны и предотвращении повторных инцидентов.`,
-    'Посол доверия': `Вы – лицо гильдии для клиентов. Ваше спокойствие, эмпатия и умение слушать превращают разгневанных драконов в лояльных союзников, даже в самых сложных ситуациях. Мотивация – в построении позитивных отношений и доверии.`,
+    'Посол доверия': `Вы – лицо гильдии для клиентов. Ваше спокойствие, эмпатия и умение слушать превращают разгневанных драконов в лояльных союзников, даже в самых сложных ситуациях. Мотивация – в построении позитивных отношений и доверия.`,
     'Охотник за SLA': `Вы мчитесь наперегонки с таймером критичных SLA. Ваша цель – победить время, устранить проблему до последней секунды и доказать надежность гильдии. Мотивация – в азарте погони и победе над сроками.`
   },
   'Девопс': {
@@ -300,7 +301,7 @@ const CLASS_DESCRIPTIONS: Record<Role, Record<string, string>> = {
 // Добавляем пропсы для компонента Onboarding
 interface OnboardingProps {
   onComplete: () => void;
-  userId?: number; // Изменён тип с string на number
+  userId?: number;
   initData?: string;
 }
 
@@ -311,8 +312,7 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [baseType, setBaseType] = useState<BaseType | null>(null);
   const [characterClass, setCharacterClass] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false); // Состояние для отображения лоадера
 
   // Роли для выпадающего списка
   const roles: Role[] = [
@@ -374,24 +374,25 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
   // Сохранение результата
   const saveResult = async () => {
     if (!characterClass || !userId || !initData) {
-      setSaveError("Недостаточно данных для сохранения");
+      console.error("Missing required data for saving");
       return;
     }
 
-    setIsSaving(true);
-    setSaveError(null);
-
+    setIsSaving(true); // Показать лоадер
+    
     try {
       const response = await api.updateUserClass(userId, characterClass, initData);
       
       if (!response.success) {
-        throw new Error(response.error || "Неизвестная ошибка сервера");
+        throw new Error(response.error || "Unknown error");
       }
       
+      // Искусственная задержка для демонстрации лоадера
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       onComplete();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Ошибка сохранения класса:', error);
-      setSaveError(error.message || "Ошибка при сохранении данных");
     } finally {
       setIsSaving(false);
     }
@@ -399,6 +400,8 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
 
   return (
     <div className="min-h-screen bg-dungeon bg-cover text-white p-4 relative">
+      {isSaving && <Loader />} {/* Лоадер поверх всего контента */}
+      
       {step === 'role' && (
         <div className="max-w-md mx-auto mt-20 text-center">
           <h1 className="text-2xl font-bold mb-6">Добро пожаловать в Подземелье Moraleon!</h1>
@@ -462,48 +465,16 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
             <p className="text-sm italic">Твоё путешествие в Подземелье Мотивации начинается!</p>
           </div>
 
-          {saveError && (
-            <div className="text-red-500 text-center mb-4">
-              {saveError}
-            </div>
-          )}
-
-          <button
-            onClick={saveResult}
-            disabled={isSaving}
-            className={`w-full p-3 bg-green-700 rounded-lg font-bold ${
-              isSaving ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-600'
-            }`}
-          >
-            {isSaving ? 'Сохранение...' : 'Принять Судьбу'}
-          </button>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={saveResult}
+              className="w-full p-3 bg-green-700 hover:bg-green-600 rounded-lg font-bold transition-colors"
+            >
+              Принять Судьбу
+            </button>
+          </div>
         </div>
       )}
-      
-      {isSaving && (
-  <div className="fixed inset-0 z-50">
-    <div className="absolute inset-0 bg-black bg-opacity-70"></div>
-    <div className="relative w-full h-full flex items-center justify-center">
-      <div style={{
-        width: 'min(90%, 400px)',
-        aspectRatio: '1/1',
-        backgroundImage: 'url(/IMG_0413.png)', 
-        backgroundSize: 'cover',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center',
-        animation: 'pulse 1.5s infinite ease-in-out'
-      }}></div>
-    </div>
-    
-    <style>{`
-      @keyframes pulse {
-        0% { transform: scale(0.95); opacity: 0.8; }
-        50% { transform: scale(1.05); opacity: 1; }
-        100% { transform: scale(0.95); opacity: 0.8; }
-      }
-    `}</style>
-  </div>
-)}
     </div>
   );
 };
