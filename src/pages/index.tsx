@@ -289,26 +289,21 @@ const Home = () => {
     }
   };
 
+ const [isTransitioning, setIsTransitioning] = useState(false);
+
   const handleOnboardingComplete = useCallback(() => {
-    setShowOnboarding(false);
-    // Обновляем данные после завершения онбординга
-    refetchUserData();
+    setIsTransitioning(true);
+    
+    // Имитация загрузки данных перед переходом
+    setTimeout(() => {
+      setShowOnboarding(false);
+      refetchUserData().finally(() => setIsTransitioning(false));
+    }, 1000);
   }, [refetchUserData]);
 
-  // Показываем онбординг если требуется
-  if (showOnboarding) {
-    return (
-      <Onboarding 
-        onComplete={handleOnboardingComplete} 
-        userId={user?.id ? parseInt(user.id) : undefined} // Преобразуем в число
-        initData={initData}
-      />
-    );
-  }
-
-  if (isLoading || !spriteLoaded) {
-    return <Loader />;
-  }
+  return (
+    <div className="container">
+      {isTransitioning && <Loader />}
 
   if (isError || !user) {
     return (
