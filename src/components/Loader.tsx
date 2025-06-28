@@ -1,9 +1,18 @@
-import React from 'react';
+// components/Loader.tsx
+import React, { useEffect } from 'react';
 
 export function Loader() {
+  // Блокируем прокрутку страницы при показе лоадера
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   return (
     <div style={{
-      position: 'fixed', // Используем fixed вместо relative
+      position: 'fixed',
       top: 0,
       left: 0,
       width: '100%',
@@ -12,13 +21,13 @@ export function Loader() {
       justifyContent: 'center',
       alignItems: 'center',
       flexDirection: 'column',
-      backgroundColor: 'transparent',
+      backgroundColor: 'rgba(0, 0, 0, 0.95)', // Почти непрозрачный черный фон
       zIndex: 9999
     }}>
       <div style={{
-        width: 'min(90%, 400px)', // Адаптивная ширина с ограничением
+        width: 'min(90%, 400px)',
         aspectRatio: '1/1',
-        backgroundImage: 'url(/IMG_0413.png)', 
+        backgroundImage: 'url(/IMG_0413.png)',
         backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center',
