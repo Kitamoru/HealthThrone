@@ -7,8 +7,7 @@ interface OctagramProps {
 }
 
 const Octagram = ({ values, size = 300 }: OctagramProps) => {
-  const [phase, setPhase] = useState<'rays' | 'octagram' | 'octagon' | 'sectors'>('rays');
-  const octagramControls = useAnimation();
+  const [phase, setPhase] = useState<'vertices' | 'octagon' | 'sectors'>('vertices');
   const octagonControls = useAnimation();
   const crossControls = useAnimation();
 
@@ -32,17 +31,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     return points;
   };
 
-  // Fixed: Renamed parameter to avoid conflict
-  const createOctagramPath = (vertices: { x: number; y: number }[]) => {
-    let path = `M ${vertices[0].x},${vertices[0].y}`;
-    for (let i = 1; i <= 8; i++) {
-      const nextIndex = (i * 3) % 8;
-      path += ` L ${vertices[nextIndex].x},${vertices[nextIndex].y}`;
-    }
-    return path + ' Z';
-  };
-
-  // Fixed: Renamed parameter to avoid conflict
   const createOctagonPath = (vertices: { x: number; y: number }[]) => {
     let path = `M ${vertices[0].x},${vertices[0].y}`;
     for (let i = 1; i < vertices.length; i++) {
@@ -52,25 +40,17 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
   };
 
   const octagonPoints = getOctagonPoints();
-  const octagramPath = createOctagramPath(octagonPoints);
   const octagonPath = createOctagonPath(octagonPoints);
 
-  const handleRaysComplete = () => {
-    setTimeout(() => setPhase('octagram'), 300);
-  };
-
+  // Анимация вершин (точек)
   useEffect(() => {
-    if (phase === 'octagram') {
-      octagramControls.start({
-        pathLength: 1,
-        opacity: 1,
-        transition: { duration: 1.5, ease: 'easeInOut' },
-      }).then(() => {
-        setTimeout(() => setPhase('octagon'), 1000);
-      });
+    if (phase === 'vertices') {
+      // Переходим к следующей фазе после анимации всех точек
+      setTimeout(() => setPhase('octagon'), 8 * 100 + 800);
     }
-  }, [phase, octagramControls]);
+  }, [phase]);
 
+  // Анимация восьмиугольника
   useEffect(() => {
     if (phase === 'octagon') {
       octagonControls.start({
@@ -82,39 +62,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
       });
     }
   }, [phase, octagonControls]);
-
-  const createValueRays = () => {
-    return values.map((_, index) => {
-      const angle = index * 45 - 90;
-      const point = getPoint(angle, radius);
-      return (
-        <motion.line
-          key={`ray-${index}`}
-          x1={center}
-          y1={center}
-          x2={center}
-          y2={center}
-          stroke="#00D4FF"
-          strokeWidth="4"
-          strokeLinecap="round"
-          initial={{ opacity: 0 }}
-          animate={{
-            opacity: 1,
-            x2: point.x,
-            y2: point.y,
-          }}
-          transition={{
-            delay: index * 0.1,
-            duration: 1.2,
-            type: 'spring',
-            damping: 12,
-          }}
-          onAnimationComplete={index === values.length - 1 ? handleRaysComplete : undefined}
-          filter="url(#glow)"
-        />
-      );
-    });
-  };
 
   return (
     <div style={{ width: size, height: size }}>
@@ -131,23 +78,33 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           </linearGradient>
         </defs>
 
-        {/* Rays */}
-        {createValueRays()}
-
-        {/* Octagram path */}
-        {phase !== 'octagon' && phase !== 'sectors' && (
-          <motion.path
-            d={octagramPath}
-            fill="none"
-            stroke="#00D4FF"
-            strokeWidth="2"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={octagramControls}
+        {/* Вершины (точки) - всегда видны после своей анимации */}
+        {octagonPoints.map((point, index) => (
+          <motion.circle
+            key={`vertex-${index}`}
+            cx={point.x}
+            cy={point.y}
+            r="8"
+            fill="#00D4FF"
+            initial={{ scale: 0, opacity: 0, y: 20 }}
+            animate={
+              phase !== 'vertices'
+                ? { scale: 1, opacity: 1, y: 0 } // После анимации просто показываем
+                : {
+                    scale: [0, 1.3, 1],
+                    opacity: 1,
+                    y: 0,
+                  }
+            }
+            transition={{
+              delay: index * 0.1,
+              duration: 0.8,
+            }}
             filter="url(#glow)"
           />
-        )}
+        ))}
 
-        {/* Octagon path */}
+        {/* Восьмиугольник - появляется на фазе octagon и остается */}
         {(phase === 'octagon' || phase === 'sectors') && (
           <motion.path
             d={octagonPath}
@@ -160,64 +117,88 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           />
         )}
 
-        {/* Cross-sector lines */}
-        {phase === 'sectors' &&
-          [0, 45, 90, 135].map((angle, index) => {
-            const start = getPoint(angle, radius);
-            const end = getPoint(angle + 180, radius);
+        {/* Секторные линии - появляются на фазе sectors */}
+        {phase === 'sectors' && (
+          <>
+            {/* Диагональные линии */}
+            {[45, 135].map((angle, index) => {
+              const start = getPoint(angle, radius);
+              const end = getPoint(angle + 180, radius);
 
-            return (
-              <motion.line
-                key={`cross-${index}`}
-                x1={start.x}
-                y1={start.y}
-                x2={start.x}
-                y2={start.y}
-                stroke="#00D4FF"
-                strokeWidth="2"
-                initial={{ opacity: 0 }}
-                animate={{
-                  x2: end.x,
-                  y2: end.y,
-                  opacity: 0.4,
-                }}
-                transition={{
-                  delay: 0.2 + index * 0.1,
-                  duration: 1,
-                  ease: 'easeInOut',
-                }}
-                filter="url(#glow)"
-              />
-            );
-          })}
+              return (
+                <motion.line
+                  key={`diagonal-${index}`}
+                  x1={start.x}
+                  y1={start.y}
+                  x2={start.x}
+                  y2={start.y}
+                  stroke="#00D4FF"
+                  strokeWidth="2"
+                  initial={{ opacity: 0 }}
+                  animate={{
+                    x2: end.x,
+                    y2: end.y,
+                    opacity: 0.4,
+                  }}
+                  transition={{
+                    delay: 0.2 + index * 0.1,
+                    duration: 1,
+                    ease: 'easeInOut',
+                  }}
+                  filter="url(#glow)"
+                />
+              );
+            })}
+            
+            {/* Вертикальная линия (верх-низ) */}
+            <motion.line
+              key="vertical"
+              x1={octagonPoints[0].x}
+              y1={octagonPoints[0].y}
+              x2={octagonPoints[0].x}
+              y2={octagonPoints[0].y}
+              stroke="#00D4FF"
+              strokeWidth="2"
+              initial={{ opacity: 0 }}
+              animate={{
+                x2: octagonPoints[4].x,
+                y2: octagonPoints[4].y,
+                opacity: 0.4,
+              }}
+              transition={{
+                delay: 0.4,
+                duration: 1,
+                ease: 'easeInOut',
+              }}
+              filter="url(#glow)"
+            />
+            
+            {/* Горизонтальная линия (лево-право) */}
+            <motion.line
+              key="horizontal"
+              x1={octagonPoints[6].x}
+              y1={octagonPoints[6].y}
+              x2={octagonPoints[6].x}
+              y2={octagonPoints[6].y}
+              stroke="#00D4FF"
+              strokeWidth="2"
+              initial={{ opacity: 0 }}
+              animate={{
+                x2: octagonPoints[2].x,
+                y2: octagonPoints[2].y,
+                opacity: 0.4,
+              }}
+              transition={{
+                delay: 0.5,
+                duration: 1,
+                ease: 'easeInOut',
+              }}
+              filter="url(#glow)"
+            />
+          </>
+        )}
 
-        {/* Vertices */}
-        {octagonPoints.map((point, index) => (
-          <motion.circle
-            key={`vertex-${index}`}
-            cx={point.x}
-            cy={point.y}
-            r="8"
-            fill="#00D4FF"
-            initial={{ scale: 0, opacity: 0, y: 20 }}
-            animate={
-              phase !== 'rays'
-                ? {
-                    scale: [0, 1.3, 1],
-                    opacity: 1,
-                    y: 0,
-                  }
-                : {}
-            }
-            transition={{
-              delay: 0.6 + index * 0.1,
-              duration: 0.8,
-            }}
-            filter="url(#glow)"
-          />
-        ))}
-
-        {/* Central crystal */}
+        {/* Центральный кристалл */}
         <motion.polygon
           points={
             `${center - 15},${center} ` +
