@@ -6,26 +6,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
+import { BurnoutProgress } from '../components/BurnoutProgress';
+import { QuestionCard } from '../components/QuestionCard';
 import { UserProfile } from '../lib/types';
 
-// Динамические импорты
-const BurnoutProgress = dynamic(
-  () => import('../components/BurnoutProgress').then(mod => mod.BurnoutProgress),
-  { 
-    loading: () => <div className="sprite-container">Загрузка...</div>,
-    ssr: false
-  }
-);
-
-const QuestionCard = dynamic(
-  () => import('../components/QuestionCard').then(mod => mod.QuestionCard),
-  {
-    loading: () => <div>Загрузка вопроса...</div>,
-    ssr: false
-  }
-);
-
-// Динамически импортируем онбординг
+// Динамически импортируем только онбординг
 const Onboarding = dynamic(
   () => import('../components/Onboarding'),
   { 
@@ -133,6 +118,7 @@ const Home = () => {
   const [apiError, setApiError] = useState<string | null>(null);
   const [spriteLoaded, setSpriteLoaded] = useState(false);
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
+  const [componentsReady, setComponentsReady] = useState(false);
 
   const isTodayUTC = useCallback((dateStr: string) => {
     if (!dateStr) return false;
@@ -201,6 +187,17 @@ const Home = () => {
     }
   }, [userData?.current_sprite_url]);
 
+  // Добавлено: проверка готовности всех компонентов
+  useEffect(() => {
+    if (!isLoading && spriteLoaded && !isGlobalLoading) {
+      const timer = setTimeout(() => {
+        setComponentsReady(true);
+      }, 50); // Небольшая задержка для стабилизации
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, spriteLoaded, isGlobalLoading]);
+
   const submitSurveyMutation = useMutation({
     mutationFn: async (totalScore: number) => {
       if (!user?.id) throw new Error("Пользователь не определен");
@@ -236,7 +233,7 @@ const Home = () => {
     }
   });
 
-  // Ключевое изменение: определяем необходимость онбординга
+  // Определяем необходимость онбординга
   const needsOnboarding = userData && userData.character_class === null;
   
   const initialBurnoutLevel = userData?.burnout_level ?? 0;
@@ -289,7 +286,7 @@ const Home = () => {
     });
   }, [refetchUserData]);
 
-  // 1. Показываем глобальный лоадер при выполнении запросов
+  // 1. Показываем глобальный лоадер при загрузке
   if (isGlobalLoading) {
     return <Loader />;
   }
@@ -305,8 +302,8 @@ const Home = () => {
     );
   }
 
-  // 3. Показываем лоадер при загрузке данных или спрайта
-  if (isLoading || !spriteLoaded) {
+  // 3. Показываем лоадер при загрузке данных, спрайта или пока компоненты не готовы
+  if (isLoading || !spriteLoaded || !componentsReady) {
     return <Loader />;
   }
 
