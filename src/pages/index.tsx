@@ -103,7 +103,8 @@ const Home = () => {
   const router = useRouter();
   const { user, initData } = useTelegram();
   const queryClient = useQueryClient();
-  
+
+  const [questions] = useState<Question[]>(QUESTIONS);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
