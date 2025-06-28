@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
@@ -10,6 +11,7 @@ import { UserProfile } from '../lib/types';
 import { QuestionCard } from '../components/QuestionCard'; 
 import { BurnoutProgress } from '../components/BurnoutProgress';
 import Onboarding from '../components/Onboarding';
+import Octagram from '../components/Octagram'; // Импорт компонента октаграммы
 
 interface Question {
   id: number;
@@ -237,6 +239,20 @@ const Home = () => {
     return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
   }, [answers, initialBurnoutLevel, surveyCompleted, userData]);
 
+  // Временные данные для октаграммы
+  const octagramValues = useMemo(() => {
+    return [
+      0.85, // Техномантия
+      0.65, // Артефакты
+      0.9,  // Эфирные потоки
+      0.75, // Рунная связь
+      0.55, // Киберчары
+      0.8,  // Некросеть
+      0.7,  // Астрал
+      0.95  // Квантовое колдовство
+    ];
+  }, []);
+
   const handleAnswer = (questionId: number, isPositive: boolean) => {
     if (alreadyAttemptedToday || !user) return;
 
@@ -328,6 +344,37 @@ const Home = () => {
               </div>
             )}
           </div>
+
+          {/* Добавленный блок с октаграммой */}
+          <AnimatePresence>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="mt-8 mb-4 flex flex-col items-center octagram-container"
+            >
+              <h2 className="text-xl font-bold mb-4 text-[#00D4FF]">
+                Аспекты Энергии
+              </h2>
+              <Octagram values={octagramValues} size={280} />
+              
+              {/* Легенда для значений */}
+              <div className="mt-4 grid grid-cols-4 gap-2 max-w-md">
+                {[
+                  'Техномантия', 'Артефакты', 'Эфир', 'Руны',
+                  'Киберчары', 'Некросеть', 'Астрал', 'Кванты'
+                ].map((label, idx) => (
+                  <div key={idx} className="flex items-center">
+                    <div 
+                      className="w-3 h-3 mr-1 rounded-full" 
+                      style={{ background: '#00D4FF' }}
+                    ></div>
+                    <span className="text-xs text-white">{label}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </AnimatePresence>
 
           <div className="menu">
             <Link href="/" passHref>
