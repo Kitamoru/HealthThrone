@@ -1,7 +1,6 @@
-// components/Onboarding.tsx
-import { useState, useEffect } from 'react';
+mport { useState, useEffect } from 'react';
 import { api } from '../lib/api';
-import { Loader } from './Loader';
+import { Loader } from './Loader'; // Импортируем компонент Loader
 
 // Типы данных
 type Role = 'Разработчик' | 'Инженер по безопасности' | 'Тестер' | 'Аналитик' | 'Дизайнер' | 'Продакт менеджер' | 'Менеджер проектов' | 'Скрам мастер' | 'Тимлид' | 'Техлид' | 'Саппорт' | 'Девопс' | 'Архитектор' | 'Аккаунт менеджер' | 'Менеджер по продажам' | 'Руководитель' | 'HR';
@@ -298,7 +297,7 @@ const CLASS_DESCRIPTIONS: Record<Role, Record<string, string>> = {
   }
 };
 
-// Пропсы для компонента Onboarding
+// Добавляем пропсы для компонента Onboarding
 interface OnboardingProps {
   onComplete: () => void;
   userId?: number;
@@ -312,34 +311,7 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [baseType, setBaseType] = useState<BaseType | null>(null);
   const [characterClass, setCharacterClass] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Константы для стилей
-  const glassStyle = {
-    borderRadius: '1rem',
-    background: 'rgba(33, 33, 33, 0.01)',
-    boxShadow: `
-      inset 0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10),
-      inset 0px 0.5px 10px 0px rgba(255, 255, 255, 0.05),
-      inset 1px 1px 2px 0px rgba(194, 179, 255, 0.20),
-      inset 0px 0.15px 0px 0px #C2B3FF
-    `,
-    backdropFilter: 'blur(30px)',
-    border: '1px solid rgba(194, 179, 255, 0.3)'
-  };
-
-  const answerButtonStyle = {
-    borderRadius: '10rem',
-    background: 'rgba(33, 33, 33, 0.01)',
-    boxShadow: `
-      inset 0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10),
-      inset 0px 0.5px 10px 0px rgba(255, 255, 255, 0.05),
-      inset 1px 1px 2px 0px rgba(194, 179, 255, 0.20),
-      inset 0px 0.15px 0px 0px #C2B3FF
-    `,
-    backdropFilter: 'blur(30px)',
-    border: '1px solid rgba(194, 179, 255, 0.3)'
-  };
+  const [isSaving, setIsSaving] = useState(false); // Состояние для отображения лоадера
 
   // Роли для выпадающего списка
   const roles: Role[] = [
@@ -400,47 +372,34 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
 
   // Сохранение результата
   const saveResult = async () => {
-    if (!characterClass || !userId || !initData) return;
-    
-    setIsSaving(true);
-    
-    try {
-      const response = await api.updateUserClass(userId, characterClass, initData);
-      if (!response.success) throw new Error(response.error);
-      onComplete();
-    } catch (error) {
-      console.error('Ошибка сохранения:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  if (!characterClass || !userId || !initData) return;
+  
+  setIsSaving(true);
+  
+  try {
+    const response = await api.updateUserClass(userId, characterClass, initData);
+    if (!response.success) throw new Error(response.error);
+    onComplete(); // Переходим сразу после сохранения
+  } catch (error) {
+    console.error('Ошибка сохранения:', error);
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   return (
-    <div 
-      className="min-h-screen flex flex-col justify-end text-white p-4 pb-20"
-      style={{
-        backgroundImage: "url('/IMG_5359.jpeg')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center'
-      }}
-    >
-      {isSaving && <Loader />}
-
-      {/* Шаг выбора роли */}
+    <div className="min-h-screen bg-dungeon bg-cover text-white p-4 relative">
+      {isSaving && <Loader />} {/* Лоадер поверх всего контента */}
+      
       {step === 'role' && (
-        <div className="flex flex-col items-center mb-20">
-          <div 
-            className="time-message p-6 mb-6 max-w-md w-full"
-            style={glassStyle}
-          >
-            <h1 className="text-2xl font-bold mb-2">Добро пожаловать в Подземелье Moraleon!</h1>
-            <p>Выбери свою роль в гильдии:</p>
-          </div>
+        <div className="max-w-md mx-auto mt-20 text-center">
+          <h1 className="text-2xl font-bold mb-6">Добро пожаловать в Подземелье Moraleon!</h1>
+          <p className="mb-8">Выбери свою роль в гильдии:</p>
           
-          <div className="relative max-w-md w-full">
+          <div className="relative">
             <select 
               onChange={(e) => handleRoleSelect(e.target.value as Role)}
-              className="w-full p-4 bg-gray-900 bg-opacity-70 border-2 border-gold rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-4 bg-gray-800 border-2 border-gold rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">-- Выбери свою роль --</option>
               {roles.map(role => (
@@ -456,58 +415,46 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
         </div>
       )}
 
-      {/* Шаг тестирования */}
       {step === 'test' && (
-        <div className="flex flex-col space-y-4">
-          <div 
-            className="info-message p-4"
-            style={glassStyle}
-          >
-            <div className="mb-4 text-center">
-              <h2 className="text-xl font-bold mb-2">Испытание духа</h2>
-              <p className="text-sm mb-4">Вопрос {currentQuestion + 1} из {QUESTIONS.length}</p>
-              <div className="w-full bg-gray-700 rounded-full h-2.5">
-                <div 
-                  className="bg-blue-600 h-2.5 rounded-full" 
-                  style={{ width: `${((currentQuestion + 1) / QUESTIONS.length) * 100}%` }}
-                ></div>
-              </div>
-            </div>
-
-            <div className="mb-2">
-              <p className="text-lg font-medium">{QUESTIONS[currentQuestion]}</p>
+        <div className="max-w-md mx-auto mt-10 bg-gray-900 bg-opacity-80 p-6 rounded-xl border-2 border-purple-700">
+          <div className="mb-4 text-center">
+            <h2 className="text-xl font-bold mb-2">Испытание духа</h2>
+            <p className="text-sm mb-4">Вопрос {currentQuestion + 1} из {QUESTIONS.length}</p>
+            <div className="w-full bg-gray-700 rounded-full h-2.5">
+              <div 
+                className="bg-blue-600 h-2.5 rounded-full" 
+                style={{ width: `${((currentQuestion + 1) / QUESTIONS.length) * 100}%` }}
+              ></div>
             </div>
           </div>
 
-          <div className="space-y-3">
-            {OPTIONS[currentQuestion].map((option, index) => (
-              <button
-                key={index}
-                onClick={() => handleAnswer(String.fromCharCode(97 + index) as Answer)}
-                className="w-full p-3 hover:bg-gray-800 rounded-lg text-left transition-all duration-200 transform hover:scale-[1.02]"
-                style={answerButtonStyle}
-              >
-                {option}
-              </button>
-            ))}
+          <div className="mb-6">
+            <p className="text-lg font-medium mb-4">{QUESTIONS[currentQuestion]}</p>
+            <div className="space-y-3">
+              {OPTIONS[currentQuestion].map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleAnswer(String.fromCharCode(97 + index) as Answer)}
+                  className="w-full p-3 bg-gray-800 hover:bg-gray-700 border border-purple-600 rounded-lg text-left transition-all duration-200 transform hover:scale-[1.02]"
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-      {/* Шаг результата */}
       {step === 'result' && selectedRole && baseType && characterClass && (
-        <div className="flex flex-col items-center mb-20">
-          <div 
-            className="time-message p-6 mb-6 max-w-md w-full"
-            style={glassStyle}
-          >
-            <h2 className="text-2xl font-bold mb-4">Твой Класс определён!</h2>
-            <div className="info-message p-4 mb-4" style={glassStyle}>
-              <h3 className="text-xl font-bold text-yellow-400 mb-2">{characterClass}</h3>
-              <p className="text-lg mb-2">{CLASS_DESCRIPTIONS[selectedRole][characterClass]}</p>
-              <p className="text-sm italic">Твоё путешествие в Подземелье Мотивации начинается!</p>
-            </div>
+        <div className="max-w-md mx-auto mt-10 text-center">
+          <h2 className="text-2xl font-bold mb-6">Твой Класс определён!</h2>
+          <div className="bg-gray-900 bg-opacity-80 p-6 rounded-xl border-2 border-gold mb-6">
+            <h3 className="text-xl font-bold text-yellow-400 mb-2">{characterClass}</h3>
+            <p className="text-lg mb-4">{CLASS_DESCRIPTIONS[selectedRole][characterClass]}</p>
+            <p className="text-sm italic">Твоё путешествие в Подземелье Мотивации начинается!</p>
+          </div>
 
+          <div className="flex flex-col gap-3">
             <button
               onClick={saveResult}
               className="w-full p-3 bg-green-700 hover:bg-green-600 rounded-lg font-bold transition-colors"
