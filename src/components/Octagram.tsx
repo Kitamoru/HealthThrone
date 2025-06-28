@@ -1,6 +1,6 @@
 import { motion, useAnimation } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import * as flubber from 'flubber';
+import { flubber } from 'flubber';
 
 interface OctagramProps {
   values: number[];
