@@ -7,9 +7,10 @@ interface OctagramProps {
 }
 
 const Octagram = ({ values, size = 300 }: OctagramProps) => {
-  const [phase, setPhase] = useState<'rays' | 'octagram' | 'octagon'>('rays');
+  const [phase, setPhase] = useState<'rays' | 'octagram' | 'octagon' | 'sectors'>('rays');
   const octagramControls = useAnimation();
   const octagonControls = useAnimation();
+  const crossControls = useAnimation();
 
   const center = size / 2;
   const radius = size * 0.4;
@@ -74,6 +75,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
         pathLength: 1,
         opacity: 1,
         transition: { duration: 1.5, ease: 'easeInOut' },
+      }).then(() => {
+        setTimeout(() => setPhase('sectors'), 500);
       });
     }
   }, [phase]);
@@ -129,39 +132,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
         {/* Rays */}
         {createValueRays()}
 
-        {/* Cross lines (sector dividers) */}
-        {['0', '45', '90', '135'].map((deg, index) => {
-          const angle = parseFloat(deg);
-          const start = getPoint(angle, radius);
-          const end = getPoint(angle + 180, radius);
-
-          return (
-            <motion.line
-              key={`cross-${index}`}
-              x1={start.x}
-              y1={start.y}
-              x2={start.x}
-              y2={start.y}
-              stroke="#00D4FF"
-              strokeWidth="2"
-              initial={{ opacity: 0 }}
-              animate={{
-                x2: end.x,
-                y2: end.y,
-                opacity: 0.4,
-              }}
-              transition={{
-                delay: 0.8 + index * 0.1,
-                duration: 1,
-                ease: 'easeInOut',
-              }}
-              filter="url(#glow)"
-            />
-          );
-        })}
-
-        {/* Octagram */}
-        {phase !== 'octagon' && (
+        {/* Octagram path */}
+        {phase !== 'octagon' && phase !== 'sectors' && (
           <motion.path
             d={octagramPath}
             fill="none"
@@ -173,8 +145,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           />
         )}
 
-        {/* Octagon */}
-        {phase === 'octagon' && (
+        {/* Octagon path */}
+        {(phase === 'octagon' || phase === 'sectors') && (
           <motion.path
             d={octagonPath}
             fill="none"
@@ -185,6 +157,38 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             filter="url(#glow)"
           />
         )}
+
+        {/* Cross-sector lines */}
+        {phase === 'sectors' &&
+          ['0', '45', '90', '135'].map((deg, index) => {
+            const angle = parseFloat(deg);
+            const start = getPoint(angle, radius);
+            const end = getPoint(angle + 180, radius);
+
+            return (
+              <motion.line
+                key={`cross-${index}`}
+                x1={start.x}
+                y1={start.y}
+                x2={start.x}
+                y2={start.y}
+                stroke="#00D4FF"
+                strokeWidth="2"
+                initial={{ opacity: 0 }}
+                animate={{
+                  x2: end.x,
+                  y2: end.y,
+                  opacity: 0.4,
+                }}
+                transition={{
+                  delay: 0.2 + index * 0.1,
+                  duration: 1,
+                  ease: 'easeInOut',
+                }}
+                filter="url(#glow)"
+              />
+            );
+          })}
 
         {/* Vertices */}
         {octagonPoints.map((point, index) => (
