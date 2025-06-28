@@ -2,7 +2,7 @@ import { motion, useAnimation } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 interface OctagramProps {
-  values: number[]; // 8 значений от 0 до 1
+  values: number[]; // 8 values from 0 to 1
   size?: number;
 }
 
@@ -32,19 +32,21 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     return points;
   };
 
-  const createOctagramPath = (points: { x: number; y: number }[]) => {
-    let path = M ${points[0].x},${points[0].y};
+  // Fixed: Renamed parameter to avoid conflict
+  const createOctagramPath = (vertices: { x: number; y: number }[]) => {
+    let path = `M ${vertices[0].x},${vertices[0].y}`;
     for (let i = 1; i <= 8; i++) {
       const nextIndex = (i * 3) % 8;
-      path +=  L ${points[nextIndex].x},${points[nextIndex].y};
+      path += ` L ${vertices[nextIndex].x},${vertices[nextIndex].y}`;
     }
     return path + ' Z';
   };
 
-  const createOctagonPath = (points: { x: number; y: number }[]) => {
-    let path = M ${points[0].x},${points[0].y};
-    for (let i = 1; i < points.length; i++) {
-      path +=  L ${points[i].x},${points[i].y};
+  // Fixed: Renamed parameter to avoid conflict
+  const createOctagonPath = (vertices: { x: number; y: number }[]) => {
+    let path = `M ${vertices[0].x},${vertices[0].y}`;
+    for (let i = 1; i < vertices.length; i++) {
+      path += ` L ${vertices[i].x},${vertices[i].y}`;
     }
     return path + ' Z';
   };
@@ -67,7 +69,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
         setTimeout(() => setPhase('octagon'), 1000);
       });
     }
-  }, [phase]);
+  }, [phase, octagramControls]);
 
   useEffect(() => {
     if (phase === 'octagon') {
@@ -79,7 +81,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
         setTimeout(() => setPhase('sectors'), 500);
       });
     }
-  }, [phase]);
+  }, [phase, octagonControls]);
 
   const createValueRays = () => {
     return values.map((_, index) => {
@@ -87,7 +89,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
       const point = getPoint(angle, radius);
       return (
         <motion.line
-          key={ray-${index}}
+          key={`ray-${index}`}
           x1={center}
           y1={center}
           x2={center}
@@ -160,14 +162,13 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
 
         {/* Cross-sector lines */}
         {phase === 'sectors' &&
-          ['0', '45', '90', '135'].map((deg, index) => {
-            const angle = parseFloat(deg);
+          [0, 45, 90, 135].map((angle, index) => {
             const start = getPoint(angle, radius);
             const end = getPoint(angle + 180, radius);
 
             return (
               <motion.line
-                key={cross-${index}}
+                key={`cross-${index}`}
                 x1={start.x}
                 y1={start.y}
                 x2={start.x}
@@ -193,7 +194,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
         {/* Vertices */}
         {octagonPoints.map((point, index) => (
           <motion.circle
-            key={vertex-${index}}
+            key={`vertex-${index}`}
             cx={point.x}
             cy={point.y}
             r="8"
@@ -219,10 +220,10 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
         {/* Central crystal */}
         <motion.polygon
           points={
-            ${center - 15},${center}
-            ${center},${center - 15}
-            ${center + 15},${center}
-            ${center},${center + 15}
+            `${center - 15},${center} ` +
+            `${center},${center - 15} ` +
+            `${center + 15},${center} ` +
+            `${center},${center + 15}`
           }
           fill="url(#crystalGradient)"
           initial={{ scale: 0, rotate: 0 }}
