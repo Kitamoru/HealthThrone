@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
-import { UserProfile } from '../lib/types'; // Добавляем импорт типа
+import { UserProfile } from '../lib/types';
 
 // Динамические импорты
 const BurnoutProgress = dynamic(
@@ -133,7 +133,7 @@ const Home = () => {
   const [apiError, setApiError] = useState<string | null>(null);
   const [spriteLoaded, setSpriteLoaded] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isGlobalLoading, setIsGlobalLoading] = useState(false); // Единое состояние для глобального лоадера
 
   const isTodayUTC = useCallback((dateStr: string) => {
     if (!dateStr) return false;
@@ -287,13 +287,17 @@ const Home = () => {
   };
 
   const handleOnboardingComplete = useCallback(() => {
-    setIsTransitioning(true);
-    
-    setTimeout(() => {
+    setIsGlobalLoading(true);
+    refetchUserData().finally(() => {
       setShowOnboarding(false);
-      refetchUserData().finally(() => setIsTransitioning(false));
-    }, 1000);
+      setIsGlobalLoading(false);
+    });
   }, [refetchUserData]);
+
+  // Если идет глобальная загрузка, показываем лоадер
+  if (isGlobalLoading) {
+    return <Loader />;
+  }
 
   // Показываем онбординг если требуется
   if (showOnboarding) {
@@ -306,14 +310,13 @@ const Home = () => {
     );
   }
 
+  // Показываем лоадер при загрузке данных или спрайта
   if (isLoading || !spriteLoaded) {
     return <Loader />;
   }
 
   return (
     <div className="container">
-      {isTransitioning && <Loader />}
-      
       {isError || !user ? (
         <div className="error-message">
           {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
