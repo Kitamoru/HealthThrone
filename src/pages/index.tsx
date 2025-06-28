@@ -104,13 +104,11 @@ const Home = () => {
   const { user, initData } = useTelegram();
   const queryClient = useQueryClient();
   
-  const [questions] = useState<Question[]>(QUESTIONS);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [spriteLoaded, setSpriteLoaded] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [isGlobalLoading, setIsGlobalLoading] = useState(false); // Единое состояние для глобального лоадера
+  const [isGlobalLoading, setIsGlobalLoading] = useState(false);
 
   const isTodayUTC = useCallback((dateStr: string) => {
     if (!dateStr) return false;
@@ -153,11 +151,8 @@ const Home = () => {
     refetchOnWindowFocus: true,
   });
 
-  useEffect(() => {
-    if (userData && userData.character_class === null) {
-      setShowOnboarding(true);
-    }
-  }, [userData]);
+  // Определяем необходимость онбординга сразу при получении данных
+  const needsOnboarding = userData?.character_class === null;
 
   useEffect(() => {
     if (queryError) {
@@ -239,7 +234,7 @@ const Home = () => {
     }, 0);
 
     return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
-  }, [answers, initialBurnoutLevel, questions, surveyCompleted, userData]);
+  }, [answers, initialBurnoutLevel, surveyCompleted, userData]);
 
   const handleAnswer = (questionId: number, isPositive: boolean) => {
     if (alreadyAttemptedToday || !user) return;
@@ -266,18 +261,17 @@ const Home = () => {
   const handleOnboardingComplete = useCallback(() => {
     setIsGlobalLoading(true);
     refetchUserData().finally(() => {
-      setShowOnboarding(false);
       setIsGlobalLoading(false);
     });
   }, [refetchUserData]);
 
-  // Если идет глобальная загрузка, показываем лоадер
+  // Приоритет 1: Глобальная загрузка
   if (isGlobalLoading) {
     return <Loader />;
   }
 
-  // Показываем онбординг если требуется
-  if (showOnboarding) {
+  // Приоритет 2: Онбординг (проверяем без ожидания загрузки спрайта)
+  if (needsOnboarding) {
     return (
       <Onboarding 
         onComplete={handleOnboardingComplete} 
@@ -287,11 +281,12 @@ const Home = () => {
     );
   }
 
-  // Показываем лоадер при загрузке данных или спрайта
+  // Приоритет 3: Загрузка данных или спрайта
   if (isLoading || !spriteLoaded) {
     return <Loader />;
   }
 
+  // Приоритет 4: Главная страница
   return (
     <div className="container">
       {isError || !user ? (
