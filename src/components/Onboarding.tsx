@@ -459,8 +459,8 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
             </div>
           </div>
           
-          <div className="question-container">
-            <p className="question-text">{QUESTIONS[currentQuestion]}</p>
+          <div className="test-container">
+            <p className="test-text">{QUESTIONS[currentQuestion]}</p>
           </div>
           
           <div className="answers-container">
