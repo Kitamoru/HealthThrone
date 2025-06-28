@@ -131,7 +131,8 @@ const Home = () => {
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [appState, setAppState] = useState<'loading' | 'onboarding' | 'main'>('loading');
+  const [spriteLoaded, setSpriteLoaded] = useState(false);
+  const [isGlobalLoading, setIsGlobalLoading] = useState(false);
 
   const isTodayUTC = useCallback((dateStr: string) => {
     if (!dateStr) return false;
@@ -153,7 +154,7 @@ const Home = () => {
 
   const { 
     data: userData, 
-    isLoading: isLoadingUser,
+    isLoading, 
     isError,
     error: queryError,
     refetch: refetchUserData
@@ -171,19 +172,7 @@ const Home = () => {
       return response.data as UserProfile;
     },
     enabled: !!user?.id,
-    refetchOnWindowFocus: false,
-    onSuccess: (data) => {
-      if (data) {
-        if (data.character_class === null) {
-          setAppState('onboarding');
-        } else {
-          setAppState('main');
-        }
-      }
-    },
-    onError: () => {
-      setAppState('main');
-    }
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {
@@ -192,6 +181,64 @@ const Home = () => {
     }
   }, [queryError]);
 
+  useEffect(() => {
+    if (user?.id) {
+      refetchUserData();
+    }
+  }, [user?.id, refetchUserData]);
+
+  useEffect(() => {
+    if (userData?.current_sprite_url) {
+      const img = new Image();
+      img.src = userData.current_sprite_url;
+      img.onload = () => setSpriteLoaded(true);
+      img.onerror = () => {
+        console.error('Failed to preload sprite');
+        setSpriteLoaded(true);
+      };
+    } else {
+      setSpriteLoaded(true);
+    }
+  }, [userData?.current_sprite_url]);
+
+  const submitSurveyMutation = useMutation({
+    mutationFn: async (totalScore: number) => {
+      if (!user?.id) throw new Error("Пользователь не определен");
+      
+      const response = await api.submitSurvey({
+        telegramId: Number(user.id),
+        newScore: totalScore,
+        initData
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || 'Ошибка сохранения результатов');
+      }
+      
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(['userData', user?.id], (oldData: any) => {
+        if (!oldData) return data;
+        
+        return {
+          ...oldData,
+          ...data,
+          current_sprite_url: oldData.current_sprite_url
+        };
+      });
+      
+      setSurveyCompleted(true);
+      setAnswers({});
+    },
+    onError: (error: Error) => {
+      setApiError(error.message);
+    }
+  });
+
+  // Ключевое изменение: определяем необходимость онбординга
+  const needsOnboarding = userData && userData.character_class === null;
+  
   const initialBurnoutLevel = userData?.burnout_level ?? 0;
   const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
   const alreadyAttemptedToday = userData?.last_attempt_date 
@@ -235,127 +282,93 @@ const Home = () => {
     }
   };
 
-  const submitSurveyMutation = useMutation({
-    mutationFn: async (totalScore: number) => {
-      if (!user?.id) throw new Error("Пользователь не определен");
-      
-      const response = await api.submitSurvey({
-        telegramId: Number(user.id),
-        newScore: totalScore,
-        initData
-      });
-
-      if (!response.success) {
-        throw new Error(response.error || 'Ошибка сохранения результатов');
-      }
-      
-      return response.data;
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(['userData', user?.id], (oldData: any) => {
-        if (!oldData) return data;
-        
-        return {
-          ...oldData,
-          ...data,
-          current_sprite_url: oldData.current_sprite_url
-        };
-      });
-      
-      setSurveyCompleted(true);
-      setAnswers({});
-    },
-    onError: (error: Error) => {
-      setApiError(error.message);
-    }
-  });
-
   const handleOnboardingComplete = useCallback(() => {
+    setIsGlobalLoading(true);
     refetchUserData().finally(() => {
-      setAppState('main');
+      setIsGlobalLoading(false);
     });
   }, [refetchUserData]);
 
-  // Определяем что показывать на основе единого состояния
-  switch (appState) {
-    case 'loading':
-      return <Loader />;
-      
-    case 'onboarding':
-      return (
-        <div className="onboarding-wrapper">
-          <Onboarding 
-            onComplete={handleOnboardingComplete} 
-            userId={user?.id ? parseInt(user.id) : undefined}
-            initData={initData}
-          />
-        </div>
-      );
-      
-    case 'main':
-      return (
-        <div className="container">
-          {isError || !user ? (
-            <div className="error-message">
-              {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
-            </div>
-          ) : (
-            <>
-              <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
-              
-              <div className="content">
-                {apiError && !alreadyAttemptedToday && (
-                  <div className="error-message">{apiError}</div>
-                )}
-
-                {alreadyAttemptedToday ? (
-                  <div className="time-message">
-                    <div className="info-message">
-                      Вы уже прошли опрос сегодня. Ваш текущий уровень выгорания: {burnoutLevel}%
-                    </div>
-                  </div>
-                ) : surveyCompleted ? (
-                  <div className="time-message">
-                    <div className="info-message">
-                      🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
-                    </div>
-                  </div>
-                ) : (
-                  <div className="questions">
-                    {questions.map(question => (
-                      <QuestionCard
-                        key={question.id}
-                        question={question}
-                        onAnswer={handleAnswer}
-                        answered={question.id in answers}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="menu">
-                <Link href="/" passHref>
-                  <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
-                </Link>
-                <Link href="/friends" passHref>
-                  <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
-                </Link>
-                <Link href="/shop" passHref>
-                  <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
-                </Link>
-                <Link href="/reference" passHref>
-                  <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
-                </Link>
-              </div>
-            </>
-          )}
-        </div>
-      );
-      
-    default:
-      return <Loader />;
+  // 1. Показываем глобальный лоадер при выполнении запросов
+  if (isGlobalLoading) {
+    return <Loader />;
   }
+
+  // 2. Приоритет: показываем онбординг если требуется
+  if (needsOnboarding) {
+    return (
+      <Onboarding 
+        onComplete={handleOnboardingComplete} 
+        userId={user?.id ? parseInt(user.id) : undefined}
+        initData={initData}
+      />
+    );
+  }
+
+  // 3. Показываем лоадер при загрузке данных или спрайта
+  if (isLoading || !spriteLoaded) {
+    return <Loader />;
+  }
+
+  return (
+    <div className="container">
+      {isError || !user ? (
+        <div className="error-message">
+          {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
+        </div>
+      ) : (
+        <>
+          <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
+          
+          <div className="content">
+            {apiError && !alreadyAttemptedToday && (
+              <div className="error-message">{apiError}</div>
+            )}
+
+            {alreadyAttemptedToday ? (
+              <div className="time-message">
+                <div className="info-message">
+                  Вы уже прошли опрос сегодня. Ваш текущий уровень выгорания: {burnoutLevel}%
+                </div>
+              </div>
+            ) : surveyCompleted ? (
+              <div className="time-message">
+                <div className="info-message">
+                  🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
+                </div>
+              </div>
+            ) : (
+              <div className="questions">
+                {questions.map(question => (
+                  <QuestionCard
+                    key={question.id}
+                    question={question}
+                    onAnswer={handleAnswer}
+                    answered={question.id in answers}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="menu">
+            <Link href="/" passHref>
+              <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
+            </Link>
+            <Link href="/friends" passHref>
+              <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
+            </Link>
+            <Link href="/shop" passHref>
+              <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
+            </Link>
+            <Link href="/reference" passHref>
+              <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
+            </Link>
+          </div>
+        </>
+      )}
+    </div>
+  );
 };
 
 export default React.memo(Home);
