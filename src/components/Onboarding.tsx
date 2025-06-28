@@ -312,6 +312,8 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
   const [baseType, setBaseType] = useState<BaseType | null>(null);
   const [characterClass, setCharacterClass] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Роли для выпадающего списка
   const roles: Role[] = [
@@ -324,6 +326,7 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
   // Обработчик выбора роли
   const handleRoleSelect = (role: Role) => {
     setSelectedRole(role);
+    setIsDropdownOpen(false);
     setStep('test');
   };
 
@@ -387,6 +390,20 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
     }
   };
 
+  // Обработчик клика вне выпадающего списка
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="onboarding-container">
       {isSaving && <Loader />}
@@ -398,16 +415,34 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
             <p>Выбери свою роль в гильдии:</p>
           </div>
           
-          <div className="role-selector">
-            <select 
-              onChange={(e) => handleRoleSelect(e.target.value as Role)}
-              className="role-dropdown"
+          <div className="role-selector-container" ref={dropdownRef}>
+            <div 
+              className="role-selector"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
-              <option value="">-- Выбери свою роль --</option>
-              {roles.map(role => (
-                <option key={role} value={role}>{role}</option>
-              ))}
-            </select>
+              <span className={selectedRole ? '' : 'placeholder'}>
+                {selectedRole || '-- Выбери свою роль --'}
+              </span>
+              <div className={`dropdown-icon ${isDropdownOpen ? 'open' : ''}`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            
+            {isDropdownOpen && (
+              <div className="role-dropdown">
+                {roles.map(role => (
+                  <div
+                    key={role}
+                    className={`role-option ${selectedRole === role ? 'selected' : ''}`}
+                    onClick={() => handleRoleSelect(role)}
+                  >
+                    {role}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
