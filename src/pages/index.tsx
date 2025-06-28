@@ -133,8 +133,8 @@ const Home = () => {
   const [apiError, setApiError] = useState<string | null>(null);
   const [spriteLoaded, setSpriteLoaded] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Функция проверки даты
   const isTodayUTC = useCallback((dateStr: string) => {
     if (!dateStr) return false;
     
@@ -153,7 +153,7 @@ const Home = () => {
     }
   }, []);
 
-   const { 
+  const { 
     data: userData, 
     isLoading, 
     isError,
@@ -170,14 +170,12 @@ const Home = () => {
         throw new Error(response.error || "Ошибка загрузки данных");
       }
       
-      // Явное приведение типа для response.data
       return response.data as UserProfile;
     },
     enabled: !!user?.id,
     refetchOnWindowFocus: true,
   });
 
-  // Добавляем эффект для проверки необходимости онбординга
   useEffect(() => {
     if (userData && userData.character_class === null) {
       setShowOnboarding(true);
@@ -196,7 +194,6 @@ const Home = () => {
     }
   }, [user?.id, refetchUserData]);
 
-  // Предзагрузка спрайта
   useEffect(() => {
     if (userData?.current_sprite_url) {
       const img = new Image();
@@ -289,76 +286,89 @@ const Home = () => {
     }
   };
 
- const [isTransitioning, setIsTransitioning] = useState(false);
-
   const handleOnboardingComplete = useCallback(() => {
     setIsTransitioning(true);
     
-    // Имитация загрузки данных перед переходом
     setTimeout(() => {
       setShowOnboarding(false);
       refetchUserData().finally(() => setIsTransitioning(false));
     }, 1000);
   }, [refetchUserData]);
 
+  // Показываем онбординг если требуется
+  if (showOnboarding) {
+    return (
+      <Onboarding 
+        onComplete={handleOnboardingComplete} 
+        userId={user?.id ? parseInt(user.id) : undefined}
+        initData={initData}
+      />
+    );
+  }
+
+  if (isLoading || !spriteLoaded) {
+    return <Loader />;
+  }
+
   return (
     <div className="container">
       {isTransitioning && <Loader />}
-
-  {isError || !user ? (
+      
+      {isError || !user ? (
         <div className="error-message">
           {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
         </div>
       ) : (
         <>
+          <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
           
-      <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
-      
-      <div className="content">
-        {apiError && !alreadyAttemptedToday && (
-          <div className="error-message">{apiError}</div>
-        )}
+          <div className="content">
+            {apiError && !alreadyAttemptedToday && (
+              <div className="error-message">{apiError}</div>
+            )}
 
-        {alreadyAttemptedToday ? (
-          <div className="time-message">
-            <div className="info-message">
-              Вы уже прошли опрос сегодня. Ваш текущий уровень выгорания: {burnoutLevel}%
-            </div>
+            {alreadyAttemptedToday ? (
+              <div className="time-message">
+                <div className="info-message">
+                  Вы уже прошли опрос сегодня. Ваш текущий уровень выгорания: {burnoutLevel}%
+                </div>
+              </div>
+            ) : surveyCompleted ? (
+              <div className="time-message">
+                <div className="info-message">
+                  🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
+                </div>
+              </div>
+            ) : (
+              <div className="questions">
+                {questions.map(question => (
+                  <QuestionCard
+                    key={question.id}
+                    question={question}
+                    onAnswer={handleAnswer}
+                    answered={question.id in answers}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        ) : surveyCompleted ? (
-          <div className="time-message">
-            <div className="info-message">
-              🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
-            </div>
-          </div>
-        ) : (
-          <div className="questions">
-            {questions.map(question => (
-              <QuestionCard
-                key={question.id}
-                question={question}
-                onAnswer={handleAnswer}
-                answered={question.id in answers}
-              />
-            ))}
-          </div>
-        )}
-      </div>
 
-      <div className="menu">
-        <Link href="/" passHref>
-          <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
-        </Link>
-        <Link href="/friends" passHref>
-          <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
-        </Link>
-        <Link href="/shop" passHref>
-          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
-        </Link>
-        <Link href="/reference" passHref>
-          <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
-        </Link>
-      </div>
+          <div className="menu">
+            <Link href="/" passHref>
+              <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
+            </Link>
+            <Link href="/friends" passHref>
+              <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
+            </Link>
+            <Link href="/shop" passHref>
+              <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
+            </Link>
+            <Link href="/reference" passHref>
+              <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
+            </Link>
+          </div>
+        </>
+      )}
     </div>
   );
 };
