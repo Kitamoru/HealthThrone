@@ -266,14 +266,14 @@ class Api {
   initData?: string
 ): Promise<ApiResponse> {
   return this.makeRequest(
-    '/api/onboarding', // Исправленный эндпоинт
-    'POST', 
-    { 
-      telegram_id: telegramId, // snake_case для бекенда
-      character_class: characterClass 
-    }, 
-    initData
-  );
+  '/onboarding', 
+  'POST', 
+  { 
+    telegram_id: telegramId,
+    character_class: characterClass 
+  }, 
+  initData
+);
 }
 }
 
