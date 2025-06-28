@@ -2,7 +2,7 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
 import dynamic from 'next/dynamic';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import Router from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
@@ -13,11 +13,7 @@ import '../styles/globals.css';
 // Определим тип для ответа initUser
 interface InitUserResponse {
   id: number;
-  character_class: string | null;
-  burnout_level: number;
-  current_sprite_url: string;
-  last_attempt_date: string | null;
-  // Другие поля пользователя
+  // Другие поля пользователя, если они есть в ответе
 }
 
 // Prefetch shop data
@@ -55,43 +51,35 @@ const Loader = dynamic(
 
 function App({ Component, pageProps }: AppProps) {
   const { initData, startParam, webApp } = useTelegram();
-  const [isInitialized, setIsInitialized] = useState(false);
-  const initializedRef = useRef(false);
+  const [userInitialized, setUserInitialized] = useState(false);
 
   useEffect(() => {
-    // Гарантируем однократное выполнение инициализации
-    if (initializedRef.current || !initData) return;
-    initializedRef.current = true;
+    if (!initData) return;
 
-    const initializeApp = async () => {
-      try {
-        // Инициализируем пользователя
-        const response = await api.initUser(initData, startParam);
+    // Инициализируем пользователя
+    api.initUser(initData, startParam)
+      .then(response => {
         if (response.success && response.data) {
+          // Приводим тип данных к InitUserResponse
           const userData = response.data as InitUserResponse;
           const userId = userData.id;
-
+          
+          // Предзагружаем данные друзей
+          prefetchFriends(userId, initData);
+          
           // Сохраняем данные пользователя для главной страницы
           queryClient.setQueryData(['userData', userId], userData);
-
-          // Предзагружаем данные для главной страницы
-          await Promise.all([
-            prefetchFriends(userId, initData),
-            prefetchShopData(initData),
-          ]);
         }
-      } catch (error) {
-        console.error('Initialization error:', error);
-      } finally {
-        setIsInitialized(true);
-      }
-    };
-
-    initializeApp();
+        return response;
+      })
+      .finally(() => setUserInitialized(true));
   }, [initData, startParam]);
 
   useEffect(() => {
     if (!webApp || !initData) return;
+    
+    // Предзагружаем данные магазина
+    prefetchShopData(initData);
     
     // Предзагружаем страницы
     const routes = ['/', '/shop', '/friends'];
@@ -117,12 +105,12 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      {!isInitialized ? (
-        <Loader />
-      ) : (
+      {userInitialized ? (
         <div className="page-transition">
           <Component {...pageProps} />
         </div>
+      ) : (
+        <Loader />
       )}
     </QueryClientProvider>
   );
