@@ -8,15 +8,7 @@ import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
 import { UserProfile } from '../lib/types';
 import { QuestionCard } from '../components/QuestionCard'; 
-
-// Динамические импорты
-const BurnoutProgress = dynamic(
-  () => import('../components/BurnoutProgress').then(mod => mod.BurnoutProgress),
-  { 
-    loading: () => <div className="sprite-container">Загрузка...</div>,
-    ssr: false
-  }
-);
+import { BurnoutProgress } from '../components/BurnoutProgress';
 
 // Динамически импортируем онбординг
 const Onboarding = dynamic(
