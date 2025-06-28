@@ -305,16 +305,13 @@ const Home = () => {
     <div className="container">
       {isTransitioning && <Loader />}
 
-  if (isError || !user) {
-    return (
-      <div className="error-message">
-        {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
-      </div>
-    );
-  }
-
-  return (
-    <div className="container">
+  {isError || !user ? (
+        <div className="error-message">
+          {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
+        </div>
+      ) : (
+        <>
+          
       <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
       
       <div className="content">
