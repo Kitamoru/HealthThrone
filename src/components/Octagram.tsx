@@ -1,24 +1,24 @@
 import { motion, useAnimation } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import * as flubber from 'flubber';
 
 interface OctagramProps {
-  values: number[]; // 8 значений от 0 до 1
+  values: number[];
   size?: number;
 }
 
 const Octagram = ({ values, size = 300 }: OctagramProps) => {
-  const [phase, setPhase] = useState<'rays' | 'octagram' | 'octagon'>('rays');
-  const octagramControls = useAnimation();
-  const octagonControls = useAnimation();
+  const [phase, setPhase] = useState<'rays' | 'morph'>('rays');
+  const pathControls = useAnimation();
 
   const center = size / 2;
   const radius = size * 0.4;
 
-  const getPoint = (angle: number, radius: number) => {
+  const getPoint = (angle: number, r: number) => {
     const rad = (angle * Math.PI) / 180;
     return {
-      x: center + radius * Math.cos(rad),
-      y: center + radius * Math.sin(rad),
+      x: center + r * Math.cos(rad),
+      y: center + r * Math.sin(rad),
     };
   };
 
@@ -31,54 +31,54 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     return points;
   };
 
-  const createOctagramPath = (points: { x: number; y: number }[]) => {
-    let path = `M ${points[0].x},${points[0].y}`;
+  const createOctagramPath = (pts: { x: number; y: number }[]) => {
+    let path = `M ${pts[0].x},${pts[0].y}`;
     for (let i = 1; i <= 8; i++) {
       const nextIndex = (i * 3) % 8;
-      const point = points[nextIndex];
-      path += ` L ${point.x},${point.y}`;
+      path += ` L ${pts[nextIndex].x},${pts[nextIndex].y}`;
     }
     return path + ' Z';
   };
 
-  const createOctagonPath = (points: { x: number; y: number }[]) => {
-    let path = `M ${points[0].x},${points[0].y}`;
-    for (let i = 1; i < points.length; i++) {
-      path += ` L ${points[i].x},${points[i].y}`;
+  const createOctagonPath = (pts: { x: number; y: number }[]) => {
+    let path = `M ${pts[0].x},${pts[0].y}`;
+    for (let i = 1; i < pts.length; i++) {
+      path += ` L ${pts[i].x},${pts[i].y}`;
     }
     return path + ' Z';
   };
+
+  const octagramPoints = getOctagramPoints();
+  const pathOctagram = createOctagramPath(octagramPoints);
+  const pathOctagon = createOctagonPath(octagramPoints);
 
   const handleRaysComplete = () => {
-    setTimeout(() => setPhase('octagram'), 300);
+    setTimeout(() => {
+      setPhase('morph');
+    }, 300);
   };
 
   useEffect(() => {
-    if (phase === 'octagram') {
-      octagramControls.start({
-        pathLength: 1,
-        opacity: 1,
-        transition: { duration: 2, ease: 'easeInOut' },
-      }).then(() => {
-        setTimeout(() => setPhase('octagon'), 1500);
-      });
+    if (phase === 'morph') {
+      const interpolator = flubber.interpolate(pathOctagram, pathOctagon, { maxSegmentLength: 2 });
+      const steps = 60;
+      let currentStep = 0;
+
+      const animate = () => {
+        if (currentStep > steps) return;
+        const t = currentStep / steps;
+        const newPath = interpolator(t);
+        pathControls.set({ d: newPath });
+        currentStep++;
+        requestAnimationFrame(animate);
+      };
+
+      animate();
     }
   }, [phase]);
-
-  useEffect(() => {
-    if (phase === 'octagon') {
-      octagonControls.start({
-        pathLength: 1,
-        opacity: 1,
-        transition: { duration: 2, ease: 'easeInOut' },
-      });
-    }
-  }, [phase]);
-
-  const points = getOctagramPoints();
 
   const createValueRays = () => {
-    return values.map((value, index) => {
+    return values.map((_, index) => {
       const angle = index * 45 - 90;
       const point = getPoint(angle, radius);
       return (
@@ -111,7 +111,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
   };
 
   return (
-    <div className="relative" style={{ width: size, height: size }}>
+    <div style={{ width: size, height: size }}>
       <svg width={size} height={size}>
         <defs>
           <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
@@ -127,34 +127,17 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
 
         {createValueRays()}
 
-        {/* Octagram path */}
-        {phase !== 'octagon' && (
-          <motion.path
-            d={createOctagramPath(points)}
-            fill="none"
-            stroke="#00D4FF"
-            strokeWidth="2"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={octagramControls}
-            filter="url(#glow)"
-          />
-        )}
+        <motion.path
+          d={pathOctagram}
+          stroke="#00D4FF"
+          strokeWidth="2"
+          fill="none"
+          animate={pathControls}
+          initial={{ d: pathOctagram }}
+          filter="url(#glow)"
+        />
 
-        {/* Octagon path */}
-        {phase === 'octagon' && (
-          <motion.path
-            d={createOctagonPath(points)}
-            fill="none"
-            stroke="#00D4FF"
-            strokeWidth="2"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={octagonControls}
-            filter="url(#glow)"
-          />
-        )}
-
-        {/* Vertices */}
-        {points.map((point, index) => (
+        {octagramPoints.map((point, index) => (
           <motion.circle
             key={`vertex-${index}`}
             cx={point.x}
@@ -179,7 +162,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           />
         ))}
 
-        {/* Crystal core */}
         <motion.polygon
           points={`
             ${center - 15},${center}
