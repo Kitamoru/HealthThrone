@@ -7,7 +7,7 @@ import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
 import { UserProfile } from '../lib/types';
-import QuestionCard from '../components/QuestionCard'; 
+import { QuestionCard } from '../components/QuestionCard'; 
 
 // Динамические импорты
 const BurnoutProgress = dynamic(
