@@ -1,5 +1,6 @@
 import { motion, useAnimation } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import gsap from 'gsap';
 
 interface OctagramProps {
   values: number[]; // 8 values from 0 to 1
@@ -8,19 +9,13 @@ interface OctagramProps {
 
 const Octagram = ({ values, size = 300 }: OctagramProps) => {
   const [phase, setPhase] = useState<'vertices' | 'octagon' | 'rays'>('vertices');
-  const [pulsing, setPulsing] = useState(false);
   const octagonControls = useAnimation();
   const raysControls = useAnimation();
   const crystalControls = useAnimation();
+  const animationRef = useRef<GSAPTimeline[]>([]);
 
   const center = size / 2;
   const radius = size * 0.4;
-
-  // Base colors
-  const BASE_COLOR = "#8B0000";
-  const GLOW_COLOR = "#FF4500";
-  const CRYSTAL_COLOR_1 = "#8B0000";
-  const CRYSTAL_COLOR_2 = "#FF4500";
 
   const getPoint = (angle: number, r: number) => {
     const rad = (angle * Math.PI) / 180;
@@ -47,7 +42,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     return path + ' Z';
   };
 
-  // Calculate midpoints between vertices for rays
   const getMidPoints = (vertices: { x: number; y: number }[]) => {
     const midPoints = [];
     for (let i = 0; i < vertices.length; i++) {
@@ -83,34 +77,47 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     }
   }, [phase, octagonControls]);
 
-  // Pulsing effect activation
+  // Initialize GSAP animations for gradients and vertices
   useEffect(() => {
-    if (phase === 'rays') {
-      const timer = setTimeout(() => {
-        setPulsing(true);
-        
-        // Start pulsing animations
-        octagonControls.start({
-          stroke: [BASE_COLOR, GLOW_COLOR, BASE_COLOR],
-          transition: { repeat: Infinity, duration: 2 }
-        });
-        
-        crystalControls.start({
-          opacity: [0.7, 1, 0.7],
-          scale: [1, 1.1, 1],
-          transition: { 
-            repeat: Infinity, 
-            duration: 2,
-            ease: "easeInOut"
-          }
-        });
-      }, 1500);
-      
-      return () => clearTimeout(timer);
-    } else {
-      setPulsing(false);
-    }
-  }, [phase, octagonControls, crystalControls]);
+    // Cleanup previous animations
+    animationRef.current.forEach(tl => tl.kill());
+    animationRef.current = [];
+
+    // Vertex pulsing animation
+    octagonPoints.forEach((_, i) => {
+      const tl = gsap.timeline({ repeat: -1, yoyo: true, delay: Math.random() * 2 });
+      tl.to(`#vertex-${i}`, {
+        scale: 1.1,
+        duration: 3,
+        ease: 'sine.inOut',
+        opacity: 0.9
+      });
+      animationRef.current.push(tl);
+    });
+
+    // Ray gradient flow animation
+    const rayGradientTL = gsap.timeline({ repeat: -1 });
+    rayGradientTL.to('#ray-gradient stop', {
+      attr: { offset: '100%' },
+      duration: 2,
+      ease: 'none',
+      stagger: 0.1
+    });
+    animationRef.current.push(rayGradientTL);
+
+    // Crystal gradient rotation animation
+    const crystalTL = gsap.timeline({ repeat: -1 });
+    crystalTL.to('#crystalGradient', {
+      attr: { gradientTransform: 'rotate(360 0.5 0.5)' },
+      duration: 10,
+      ease: 'none'
+    });
+    animationRef.current.push(crystalTL);
+
+    return () => {
+      animationRef.current.forEach(tl => tl.kill());
+    };
+  }, [phase]);
 
   return (
     <div style={{ width: size, height: size }}>
@@ -126,33 +133,37 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
 
-          <linearGradient id="crystalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={CRYSTAL_COLOR_1} stopOpacity="0.8" />
-            <stop offset="100%" stopColor={CRYSTAL_COLOR_2} stopOpacity="0.2" />
+          {/* Animated ray gradient */}
+          <linearGradient id="ray-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#00D4FF" stopOpacity="0.7" />
+            <stop offset="50%" stopColor="#00D4FF" stopOpacity="1" />
+            <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.7" />
           </linearGradient>
 
-          <linearGradient id="pulseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={BASE_COLOR} />
-            <stop offset="100%" stopColor={GLOW_COLOR} />
+          {/* Animated crystal gradient */}
+          <linearGradient 
+            id="crystalGradient" 
+            x1="0%" y1="0%" x2="100%" y2="100%" 
+            gradientUnits="objectBoundingBox"
+          >
+            <stop offset="0%" stopColor="#00D4FF" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.2" />
           </linearGradient>
         </defs>
 
-        {/* Vertices */}
+        {/* Vertices with pulsing animation */}
         {octagonPoints.map((point, index) => (
           <motion.circle
             key={`vertex-${index}`}
+            id={`vertex-${index}`}
             cx={point.x}
             cy={point.y}
             r="8"
-            fill={pulsing ? GLOW_COLOR : BASE_COLOR}
+            fill="#1E90FF"
             initial={{ scale: 0, opacity: 0, y: 20 }}
             animate={
               phase !== 'vertices'
-                ? { 
-                    scale: pulsing ? [1, 1.2, 1] : 1,
-                    opacity: 1,
-                    y: 0
-                  }
+                ? { scale: 1, opacity: 1, y: 0 }
                 : {
                     scale: [0, 1.3, 1],
                     opacity: 1,
@@ -162,9 +173,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             transition={{
               delay: index * 0.1,
               duration: 0.8,
-              scale: pulsing 
-                ? { repeat: Infinity, duration: 2, ease: "easeInOut" } 
-                : undefined
             }}
             filter="url(#glow)"
           />
@@ -175,7 +183,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           <motion.path
             d={octagonPath}
             fill="none"
-            stroke={BASE_COLOR}
+            stroke="#1E90FF"
             strokeWidth="2"
             initial={{ pathLength: 0, opacity: 0 }}
             animate={octagonControls}
@@ -183,7 +191,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           />
         )}
 
-        {/* Rays to midpoints */}
+        {/* Rays with animated gradient */}
         {phase === 'rays' && midPoints.map((point, index) => (
           <motion.line
             key={`ray-${index}`}
@@ -191,7 +199,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             y1={center}
             x2={point.x}
             y2={point.y}
-            stroke={pulsing ? "url(#pulseGradient)" : BASE_COLOR}
+            stroke="url(#ray-gradient)"
             strokeWidth="2"
             strokeLinecap="round"
             initial={{ opacity: 0, x2: center, y2: center }}
@@ -199,23 +207,17 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
               opacity: 1,
               x2: point.x,
               y2: point.y,
-              stroke: pulsing 
-                ? [BASE_COLOR, GLOW_COLOR, BASE_COLOR] 
-                : BASE_COLOR
             }}
             transition={{
               delay: index * 0.1,
               duration: 1.0,
               ease: 'easeOut',
-              stroke: pulsing 
-                ? { repeat: Infinity, duration: 2, ease: "easeInOut" } 
-                : undefined
             }}
             filter="url(#ray-glow)"
           />
         ))}
 
-        {/* Central crystal */}
+        {/* Central crystal with animated gradient */}
         <motion.polygon
           points={
             `${center - 15},${center} ` +
@@ -225,7 +227,25 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           }
           fill="url(#crystalGradient)"
           initial={{ scale: 0, rotate: 0, opacity: 0 }}
-          animate={crystalControls}
+          animate={{
+            scale: 1,
+            rotate: 360,
+            opacity: [0.8, 1, 0.8],
+          }}
+          transition={{
+            delay: 1.5,
+            duration: 1.0,
+            opacity: {
+              duration: 3,
+              repeat: Infinity,
+              repeatType: 'reverse',
+            },
+            rotate: {
+              duration: 20,
+              repeat: Infinity,
+              ease: 'linear',
+            }
+          }}
           filter="url(#glow)"
         />
       </svg>
