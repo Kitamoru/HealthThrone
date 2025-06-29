@@ -7,10 +7,11 @@ interface OctagramProps {
 }
 
 const Octagram = ({ values, size = 300 }: OctagramProps) => {
-  const [phase, setPhase] = useState<'vertices' | 'octagon' | 'rays'>('vertices');
+  const [phase, setPhase] = useState<'vertices' | 'octagon' | 'rays' | 'pulse'>('vertices');
   const octagonControls = useAnimation();
   const raysControls = useAnimation();
   const crystalControls = useAnimation();
+  const pulseControls = useAnimation();
 
   const center = size / 2;
   const radius = size * 0.4;
@@ -40,6 +41,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     return path + ' Z';
   };
 
+  // Calculate midpoints between vertices for rays
   const getMidPoints = (vertices: { x: number; y: number }[]) => {
     const midPoints = [];
     for (let i = 0; i < vertices.length; i++) {
@@ -55,12 +57,14 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
   const midPoints = getMidPoints(octagonPoints);
   const octagonPath = createOctagonPath(octagonPoints);
 
+  // Vertex animation phase
   useEffect(() => {
     if (phase === 'vertices') {
       setTimeout(() => setPhase('octagon'), 8 * 100 + 800);
     }
   }, [phase]);
 
+  // Octagon animation phase
   useEffect(() => {
     if (phase === 'octagon') {
       octagonControls.start({
@@ -73,193 +77,147 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     }
   }, [phase, octagonControls]);
 
-  // Цветовая схема: голубые тона
-  const blueColors = ["#1E90FF", "#00BFFF", "#00FFFF", "#1E90FF"];
-  const gradientTransition = {
-    duration: 6,
-    repeat: Infinity,
-    ease: "linear"
-  };
+  // Rays animation phase
+  useEffect(() => {
+    if (phase === 'rays') {
+      // Start pulse after rays animation completes
+      setTimeout(() => {
+        setPhase('pulse');
+        pulseControls.start({
+          scale: [1, 1.03, 1],
+          transition: {
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }
+        });
+      }, 2000);
+    }
+  }, [phase, pulseControls]);
 
   return (
     <div style={{ width: size, height: size }}>
       <svg width={size} height={size}>
         <defs>
-          {/* Улучшенный фильтр свечения */}
-          <filter id="magic-glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur" />
-            <feComponentTransfer in="blur" result="glow">
-              <feFuncA type="linear" slope="2" intercept="0"/>
-            </feComponentTransfer>
-            <feMerge>
-              <feMergeNode in="glow"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+          
+          <filter id="ray-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
 
-          {/* Градиент для лучей */}
-          <linearGradient id="ray-gradient" gradientTransform="rotate(90)">
-            <motion.stop
-              offset="0%"
-              stopColor="#1E90FF"
-              animate={{ stopColor: blueColors }}
-              transition={gradientTransition}
-            />
-            <motion.stop
-              offset="100%"
-              stopColor="#00FFFF"
-              animate={{ stopColor: [...blueColors].reverse() }}
-              transition={{ ...gradientTransition, delay: 2 }}
-            />
-          </linearGradient>
-
-          {/* Градиент для вершин */}
-          <radialGradient id="vertex-glow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-            <motion.stop
-              offset="0%"
-              stopColor="#1E90FF"
-              animate={{ stopColor: blueColors }}
-              transition={gradientTransition}
-            />
-            <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-          </radialGradient>
-
-          {/* Градиент для центрального кристалла */}
           <linearGradient id="crystalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <motion.stop
-              offset="0%"
-              stopColor="#00BFFF"
-              animate={{ stopColor: blueColors }}
-              transition={gradientTransition}
-            />
-            <motion.stop
-              offset="100%"
-              stopColor="#00FFFF"
-              animate={{ stopColor: [...blueColors].reverse() }}
-              transition={{ ...gradientTransition, delay: 3 }}
-            />
+            <stop offset="0%" stopColor="#1E90FF" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.2" />
           </linearGradient>
         </defs>
 
-        {/* Вершины с двойным свечением */}
-        {octagonPoints.map((point, index) => (
-          <g key={`vertex-${index}`}>
+        {/* Обертка для пульсации всей фигуры */}
+        <motion.g
+          animate={pulseControls}
+        >
+          {/* Vertices */}
+          {octagonPoints.map((point, index) => (
             <motion.circle
-              cx={point.x}
-              cy={point.y}
-              r="12"
-              fill="url(#vertex-glow)"
-              initial={{ scale: 0, opacity: 0 }}
-              animate={
-                phase !== 'vertices'
-                  ? { scale: 1, opacity: 1 }
-                  : {
-                      scale: [0, 1.3, 1],
-                      opacity: 1,
-                    }
-              }
-              transition={{
-                delay: index * 0.1,
-                duration: 0.8,
-              }}
-              filter="url(#magic-glow)"
-            />
-            <motion.circle
+              key={`vertex-${index}`}
               cx={point.x}
               cy={point.y}
               r="8"
               fill="#1E90FF"
-              initial={{ scale: 0, opacity: 0 }}
+              initial={{ scale: 0, opacity: 0, y: 20 }}
               animate={
                 phase !== 'vertices'
-                  ? { scale: 1, opacity: 1 }
+                  ? { scale: 1, opacity: 1, y: 0 }
                   : {
                       scale: [0, 1.3, 1],
                       opacity: 1,
+                      y: 0,
                     }
               }
               transition={{
                 delay: index * 0.1,
                 duration: 0.8,
               }}
+              filter="url(#glow)"
             />
-          </g>
-        ))}
+          ))}
 
-        {/* Анимированный восьмиугольник */}
-        {(phase === 'octagon' || phase === 'rays') && (
-          <motion.path
-            d={octagonPath}
-            fill="none"
-            stroke="url(#ray-gradient)"
-            strokeWidth="2"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={octagonControls}
-            filter="url(#magic-glow)"
-          />
-        )}
+          {/* Octagon */}
+          {(phase === 'octagon' || phase === 'rays' || phase === 'pulse') && (
+            <motion.path
+              d={octagonPath}
+              fill="none"
+              stroke="#1E90FF"
+              strokeWidth="2"
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={octagonControls}
+              filter="url(#glow)"
+            />
+          )}
 
-        {/* Лучи с анимированным градиентом */}
-        {phase === 'rays' && midPoints.map((point, index) => (
-          <motion.line
-            key={`ray-${index}`}
-            x1={center}
-            y1={center}
-            x2={point.x}
-            y2={point.y}
-            stroke="url(#ray-gradient)"
-            strokeWidth="3"
-            strokeLinecap="round"
-            initial={{ opacity: 0, x2: center, y2: center }}
+          {/* Rays to midpoints */}
+          {phase === 'rays' || phase === 'pulse' ? (
+            midPoints.map((point, index) => (
+              <motion.line
+                key={`ray-${index}`}
+                x1={center}
+                y1={center}
+                x2={point.x}
+                y2={point.y}
+                stroke="#1E90FF"
+                strokeWidth="2"
+                strokeLinecap="round"
+                initial={{ opacity: 0, x2: center, y2: center }}
+                animate={{
+                  opacity: 1,
+                  x2: point.x,
+                  y2: point.y,
+                }}
+                transition={{
+                  delay: phase === 'rays' ? index * 0.1 : 0,
+                  duration: 1.0,
+                  ease: 'easeOut',
+                }}
+                filter="url(#ray-glow)"
+              />
+            ))
+          ) : null}
+
+          {/* Central crystal */}
+          <motion.polygon
+            points={
+              `${center - 15},${center} ` +
+              `${center},${center - 15} ` +
+              `${center + 15},${center} ` +
+              `${center},${center + 15}`
+            }
+            fill="url(#crystalGradient)"
+            initial={{ scale: 0, rotate: 0, opacity: 0 }}
             animate={{
-              opacity: 1,
-              x2: point.x,
-              y2: point.y,
+              scale: 1,
+              rotate: 360,
+              opacity: [0.8, 1, 0.8],
             }}
             transition={{
-              delay: index * 0.1,
+              delay: 1.5,
               duration: 1.0,
-              ease: 'easeOut',
+              opacity: {
+                duration: 3,
+                repeat: Infinity,
+                repeatType: 'reverse',
+              },
+              rotate: {
+                duration: 20,
+                repeat: Infinity,
+                ease: 'linear',
+              }
             }}
-            filter="url(#magic-glow)"
+            filter="url(#glow)"
           />
-        ))}
-
-        {/* Центральный кристалл с анимацией */}
-        <motion.polygon
-          points={
-            `${center - 15},${center} ` +
-            `${center},${center - 15} ` +
-            `${center + 15},${center} ` +
-            `${center},${center + 15}`
-          }
-          fill="url(#crystalGradient)"
-          initial={{ scale: 0, rotate: 0, opacity: 0 }}
-          animate={{
-            scale: [1, 1.1, 1],
-            rotate: 360,
-            opacity: [0.7, 1, 0.7],
-          }}
-          transition={{
-            delay: 1.5,
-            scale: {
-              duration: 4,
-              repeat: Infinity,
-              repeatType: 'reverse' as const,
-            },
-            opacity: {
-              duration: 3,
-              repeat: Infinity,
-              repeatType: 'reverse' as const,
-            },
-            rotate: {
-              duration: 20,
-              repeat: Infinity,
-              ease: 'linear',
-            }
-          }}
-          filter="url(#magic-glow)"
-        />
+        </motion.g>
       </svg>
     </div>
   );
