@@ -7,7 +7,7 @@ interface OctagramProps {
 }
 
 const Octagram = ({ values, size = 300 }: OctagramProps) => {
-  const [phase, setPhase] = useState<'vertices' | 'octagon' | 'rays' | 'crystal'>('vertices');
+  const [phase, setPhase] = useState<'vertices' | 'octagon' | 'rays'>('vertices');
   const octagonControls = useAnimation();
   const raysControls = useAnimation();
   const crystalControls = useAnimation();
@@ -71,24 +71,10 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
         opacity: 1,
         transition: { duration: 1.5, ease: 'easeInOut' },
       }).then(() => {
-        setTimeout(() => setPhase('rays'), 500);
+        setPhase('rays');
       });
     }
   }, [phase, octagonControls]);
-
-  // Rays animation phase
-  useEffect(() => {
-    if (phase === 'rays') {
-      setTimeout(() => {
-        setPhase('crystal');
-        crystalControls.start({
-          opacity: 1,
-          scale: 1,
-          rotate: 360,
-        });
-      }, midPoints.length * 100 + 500);
-    }
-  }, [phase, crystalControls, midPoints.length]);
 
   return (
     <div style={{ width: size, height: size }}>
@@ -96,6 +82,11 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
         <defs>
           <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="4" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+          
+          <filter id="ray-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
 
@@ -132,11 +123,11 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
         ))}
 
         {/* Octagon */}
-        {(phase === 'octagon' || phase === 'rays' || phase === 'crystal') && (
+        {(phase === 'octagon' || phase === 'rays') && (
           <motion.path
             d={octagonPath}
             fill="none"
-            stroke="#FFD700" // Изменено на золотой
+            stroke="#FFD700"
             strokeWidth="2"
             initial={{ pathLength: 0, opacity: 0 }}
             animate={octagonControls}
@@ -144,32 +135,31 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           />
         )}
 
-        {/* Rays to midpoints */}
-        {phase === 'rays' &&
-          midPoints.map((point, index) => (
-            <motion.line
-              key={`ray-${index}`}
-              x1={center}
-              y1={center}
-              x2={center}
-              y2={center}
-              stroke="#FFD700" // Изменено на золотой
-              strokeWidth="2"
-              strokeLinecap="round"
-              initial={{ opacity: 0 }}
-              animate={{
-                opacity: 1,
-                x2: point.x,
-                y2: point.y,
-              }}
-              transition={{
-                delay: index * 0.1,
-                duration: 1.0,
-                ease: 'easeOut',
-              }}
-              filter="url(#glow)"
-            />
-          ))}
+        {/* Rays to midpoints - теперь остаются после анимации */}
+        {phase === 'rays' && midPoints.map((point, index) => (
+          <motion.line
+            key={`ray-${index}`}
+            x1={center}
+            y1={center}
+            x2={point.x}
+            y2={point.y}
+            stroke="#FFD700"
+            strokeWidth="2"
+            strokeLinecap="round"
+            initial={{ opacity: 0, x2: center, y2: center }}
+            animate={{
+              opacity: 1,
+              x2: point.x,
+              y2: point.y,
+            }}
+            transition={{
+              delay: index * 0.1,
+              duration: 1.0,
+              ease: 'easeOut',
+            }}
+            filter="url(#ray-glow)"
+          />
+        ))}
 
         {/* Central crystal - теперь отрисовывается последним */}
         <motion.polygon
@@ -181,15 +171,18 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           }
           fill="url(#crystalGradient)"
           initial={{ scale: 0, rotate: 0, opacity: 0 }}
-          animate={crystalControls}
+          animate={{
+            scale: 1,
+            rotate: 360,
+            opacity: [0.8, 1, 0.8],
+          }}
           transition={{
+            delay: 1.5,
+            duration: 1.0,
             opacity: {
-              duration: 1.5,
-              ease: 'easeOut'
-            },
-            scale: {
-              duration: 1.0,
-              ease: 'backOut'
+              duration: 3,
+              repeat: Infinity,
+              repeatType: 'reverse',
             },
             rotate: {
               duration: 20,
