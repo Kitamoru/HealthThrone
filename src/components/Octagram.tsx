@@ -7,9 +7,10 @@ interface OctagramProps {
 }
 
 const Octagram = ({ values, size = 300 }: OctagramProps) => {
-  const [phase, setPhase] = useState<'vertices' | 'octagon' | 'rays'>('vertices');
+  const [phase, setPhase] = useState<'vertices' | 'octagon' | 'rays' | 'crystal'>('vertices');
   const octagonControls = useAnimation();
   const raysControls = useAnimation();
+  const crystalControls = useAnimation();
 
   const center = size / 2;
   const radius = size * 0.4;
@@ -75,6 +76,20 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     }
   }, [phase, octagonControls]);
 
+  // Rays animation phase
+  useEffect(() => {
+    if (phase === 'rays') {
+      setTimeout(() => {
+        setPhase('crystal');
+        crystalControls.start({
+          opacity: 1,
+          scale: 1,
+          rotate: 360,
+        });
+      }, midPoints.length * 100 + 500);
+    }
+  }, [phase, crystalControls, midPoints.length]);
+
   return (
     <div style={{ width: size, height: size }}>
       <svg width={size} height={size}>
@@ -85,7 +100,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           </filter>
 
           <linearGradient id="crystalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="##FFD700" stopOpacity="0.8" />
+            <stop offset="0%" stopColor="#FFD700" stopOpacity="0.8" />
             <stop offset="100%" stopColor="#FFD700" stopOpacity="0.2" />
           </linearGradient>
         </defs>
@@ -117,11 +132,11 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
         ))}
 
         {/* Octagon */}
-        {(phase === 'octagon' || phase === 'rays') && (
+        {(phase === 'octagon' || phase === 'rays' || phase === 'crystal') && (
           <motion.path
             d={octagonPath}
             fill="none"
-            stroke="#00D4FF"
+            stroke="#FFD700" // Изменено на золотой
             strokeWidth="2"
             initial={{ pathLength: 0, opacity: 0 }}
             animate={octagonControls}
@@ -138,7 +153,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
               y1={center}
               x2={center}
               y2={center}
-              stroke="#00D4FF"
+              stroke="#FFD700" // Изменено на золотой
               strokeWidth="2"
               strokeLinecap="round"
               initial={{ opacity: 0 }}
@@ -156,7 +171,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             />
           ))}
 
-        {/* Central crystal */}
+        {/* Central crystal - теперь отрисовывается последним */}
         <motion.polygon
           points={
             `${center - 15},${center} ` +
@@ -165,25 +180,22 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             `${center},${center + 15}`
           }
           fill="url(#crystalGradient)"
-          initial={{ scale: 0, rotate: 0 }}
-          animate={{
-            scale: 1,
-            rotate: 360,
-            opacity: [0.8, 1, 0.8],
-          }}
+          initial={{ scale: 0, rotate: 0, opacity: 0 }}
+          animate={crystalControls}
           transition={{
-            delay: 1,
-            duration: 8,
+            opacity: {
+              duration: 1.5,
+              ease: 'easeOut'
+            },
+            scale: {
+              duration: 1.0,
+              ease: 'backOut'
+            },
             rotate: {
               duration: 20,
               repeat: Infinity,
               ease: 'linear',
-            },
-            opacity: {
-              duration: 3,
-              repeat: Infinity,
-              repeatType: 'reverse',
-            },
+            }
           }}
           filter="url(#glow)"
         />
