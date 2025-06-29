@@ -106,7 +106,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             <feGaussianBlur stdDeviation="4" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
-
+        
           <filter id="ray-glow" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="2" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
@@ -134,18 +134,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             key={`vertex-${index}`}
             cx={point.x}
             cy={point.y}
-            r={springs[index].r} // Используем пружину для каждого кружка
+            r={springs[index].r} // Полученный анимационный радиус
             fill="#483D8B"
-            initial={{ scale: 0, opacity: 0, y: 20 }}
-            animate={{
-              scale: 1,
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              delay: index * 0.1,
-              duration: 0.8,
-            }}
             filter="url(#glow)"
           />
         ))}
@@ -155,7 +145,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           <motion.path
             d={octagonPath}
             fill="none"
-            stroke="url(#startGradient)" // Применяем первый градиент
+            stroke="url(#startGradient)"
             strokeWidth="2"
             initial={{ pathLength: 0, opacity: 0 }}
             animate={octagonControls}
