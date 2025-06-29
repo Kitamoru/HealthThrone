@@ -1,9 +1,10 @@
+import React, { useEffect, useState } from 'react';
 import { motion, useAnimation } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
+import { animated as a, useSpring } from '@react-spring/web';
 import gsap from 'gsap';
 
 interface OctagramProps {
-  values: number[]; // 8 values from 0 to 1
+  values: number[];
   size?: number;
 }
 
@@ -12,7 +13,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
   const octagonControls = useAnimation();
   const raysControls = useAnimation();
   const crystalControls = useAnimation();
-  const animationRef = useRef<GSAPTimeline[]>([]);
 
   const center = size / 2;
   const radius = size * 0.4;
@@ -57,14 +57,22 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
   const midPoints = getMidPoints(octagonPoints);
   const octagonPath = createOctagonPath(octagonPoints);
 
-  // Vertex animation phase
+  const springConfig = { mass: 1, tension: 70, friction: 15 };
+  const springs = octagonPoints.map((_, idx) => {
+    return useSpring({
+      config: springConfig,
+      r: 8 + (Math.random() * 3 - 1.5),
+      loop: true,
+      reset: false,
+    });
+  });
+
   useEffect(() => {
     if (phase === 'vertices') {
       setTimeout(() => setPhase('octagon'), 8 * 100 + 800);
     }
   }, [phase]);
 
-  // Octagon animation phase
   useEffect(() => {
     if (phase === 'octagon') {
       octagonControls.start({
@@ -77,47 +85,18 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     }
   }, [phase, octagonControls]);
 
-  // Initialize GSAP animations for gradients and vertices
   useEffect(() => {
-    // Cleanup previous animations
-    animationRef.current.forEach(tl => tl.kill());
-    animationRef.current = [];
-
-    // Vertex pulsing animation
-    octagonPoints.forEach((_, i) => {
-      const tl = gsap.timeline({ repeat: -1, yoyo: true, delay: Math.random() * 2 });
-      tl.to(`#vertex-${i}`, {
-        scale: 1.1,
-        duration: 3,
-        ease: 'sine.inOut',
-        opacity: 0.9
-      });
-      animationRef.current.push(tl);
+    const tl = gsap.timeline();
+    tl.to('#startGradient', {
+      attr: {
+        'stop-color': ['#00D4FF', '#FF00DD'],
+        'stop-opacity': ['1', '1']
+      },
+      duration: 5,
+      yoyo: true,
+      repeat: -1,
     });
-
-    // Ray gradient flow animation
-    const rayGradientTL = gsap.timeline({ repeat: -1 });
-    rayGradientTL.to('#ray-gradient stop', {
-      attr: { offset: '100%' },
-      duration: 2,
-      ease: 'none',
-      stagger: 0.1
-    });
-    animationRef.current.push(rayGradientTL);
-
-    // Crystal gradient rotation animation
-    const crystalTL = gsap.timeline({ repeat: -1 });
-    crystalTL.to('#crystalGradient', {
-      attr: { gradientTransform: 'rotate(360 0.5 0.5)' },
-      duration: 10,
-      ease: 'none'
-    });
-    animationRef.current.push(crystalTL);
-
-    return () => {
-      animationRef.current.forEach(tl => tl.kill());
-    };
-  }, [phase]);
+  }, []);
 
   return (
     <div style={{ width: size, height: size }}>
@@ -127,49 +106,42 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             <feGaussianBlur stdDeviation="4" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
-          
+
           <filter id="ray-glow" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="2" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
 
-          {/* Animated ray gradient */}
-          <linearGradient id="ray-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#00D4FF" stopOpacity="0.7" />
-            <stop offset="50%" stopColor="#00D4FF" stopOpacity="1" />
-            <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.7" />
+          <linearGradient id="startGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#00D4FF" stopOpacity="1"/>
+            <stop offset="100%" stopColor="#1E90FF" stopOpacity="1"/>
           </linearGradient>
 
-          {/* Animated crystal gradient */}
-          <linearGradient 
-            id="crystalGradient" 
-            x1="0%" y1="0%" x2="100%" y2="100%" 
-            gradientUnits="objectBoundingBox"
-          >
-            <stop offset="0%" stopColor="#00D4FF" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.2" />
+          <linearGradient id="endGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FF00DD" stopOpacity="1"/>
+            <stop offset="100%" stopColor="#FFAAEE" stopOpacity="1"/>
+          </linearGradient>
+
+          <linearGradient id="crystalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#483D8B" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#483D8B" stopOpacity="0.2" />
           </linearGradient>
         </defs>
 
-        {/* Vertices with pulsing animation */}
+        {/* Vertices with random pulsation */}
         {octagonPoints.map((point, index) => (
-          <motion.circle
+          <a.circle
             key={`vertex-${index}`}
-            id={`vertex-${index}`}
             cx={point.x}
             cy={point.y}
-            r="8"
-            fill="#1E90FF"
+            r={springs[index].r} // Используем пружину для каждого кружка
+            fill="#483D8B"
             initial={{ scale: 0, opacity: 0, y: 20 }}
-            animate={
-              phase !== 'vertices'
-                ? { scale: 1, opacity: 1, y: 0 }
-                : {
-                    scale: [0, 1.3, 1],
-                    opacity: 1,
-                    y: 0,
-                  }
-            }
+            animate={{
+              scale: 1,
+              opacity: 1,
+              y: 0,
+            }}
             transition={{
               delay: index * 0.1,
               duration: 0.8,
@@ -183,7 +155,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           <motion.path
             d={octagonPath}
             fill="none"
-            stroke="#1E90FF"
+            stroke="url(#startGradient)" // Применяем первый градиент
             strokeWidth="2"
             initial={{ pathLength: 0, opacity: 0 }}
             animate={octagonControls}
@@ -191,7 +163,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           />
         )}
 
-        {/* Rays with animated gradient */}
+        {/* Rays to midpoints */}
         {phase === 'rays' && midPoints.map((point, index) => (
           <motion.line
             key={`ray-${index}`}
@@ -199,7 +171,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             y1={center}
             x2={point.x}
             y2={point.y}
-            stroke="url(#ray-gradient)"
+            stroke="#483D8B"
             strokeWidth="2"
             strokeLinecap="round"
             initial={{ opacity: 0, x2: center, y2: center }}
@@ -217,14 +189,9 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           />
         ))}
 
-        {/* Central crystal with animated gradient */}
+        {/* Central crystal */}
         <motion.polygon
-          points={
-            `${center - 15},${center} ` +
-            `${center},${center - 15} ` +
-            `${center + 15},${center} ` +
-            `${center},${center + 15}`
-          }
+          points={`${center - 15},${center} ${center},${center - 15} ${center + 15},${center} ${center},${center + 15}`}
           fill="url(#crystalGradient)"
           initial={{ scale: 0, rotate: 0, opacity: 0 }}
           animate={{
