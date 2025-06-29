@@ -1331,9 +1331,9 @@ strong {
   justify-content: center;
   margin: 2rem 0;
   padding: 1rem;
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--tg-secondary);
   border-radius: 16px;
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  border: 1px solid var(--tg-border);
   box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
 }
 
