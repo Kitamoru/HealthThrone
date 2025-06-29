@@ -91,8 +91,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           </filter>
 
           <linearGradient id="crystalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#2E8B57" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#2E8B57" stopOpacity="0.2" />
+            <stop offset="0%" stopColor="#228B22" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#228B22" stopOpacity="0.2" />
           </linearGradient>
         </defs>
 
@@ -103,7 +103,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             cx={point.x}
             cy={point.y}
             r="8"
-            fill="#2E8B57"
+            fill="#228B22"
             initial={{ scale: 0, opacity: 0, y: 20 }}
             animate={
               phase !== 'vertices'
@@ -127,7 +127,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           <motion.path
             d={octagonPath}
             fill="none"
-            stroke="#2E8B57"
+            stroke="#228B22"
             strokeWidth="2"
             initial={{ pathLength: 0, opacity: 0 }}
             animate={octagonControls}
@@ -143,7 +143,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             y1={center}
             x2={point.x}
             y2={point.y}
-            stroke="#2E8B57"
+            stroke="#228B22"
             strokeWidth="2"
             strokeLinecap="round"
             initial={{ opacity: 0, x2: center, y2: center }}
