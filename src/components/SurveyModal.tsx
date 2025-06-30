@@ -91,9 +91,9 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   if (!isOpen || currentIndex >= questions.length) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex z-50 overflow-auto">
       <motion.div 
-        className="bg-white w-full h-full flex flex-col"
+        className="bg-white w-full min-h-screen flex flex-col"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
@@ -110,14 +110,14 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           />
         </div>
         
-        <div className="flex-1 flex flex-col p-4">
+        <div className="flex-1 flex flex-col p-4 md:p-6 survey-modal-content">
           <div className="text-center mb-4 text-gray-500 text-lg">
             Вопрос {currentIndex + 1} из {questions.length}
           </div>
           
           {/* Контейнер для карточки - занимает основное пространство */}
           <div 
-            className="flex-1 relative mb-6"
+            className="flex-1 relative mb-6 min-h-[50vh] question-container"
             onTouchStart={handleDragStart}
             onTouchEnd={handleDragEnd}
             onMouseDown={handleDragStart}
@@ -149,7 +149,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           </div>
           
           {/* Подсказки */}
-          <div className="flex justify-between items-center text-base text-gray-500 pb-4">
+          <div className="flex justify-between items-center text-base text-gray-500 pb-4 hint-section">
             <div className="flex items-center">
               <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mr-2">
                 <span className="text-red-500 text-xl">←</span>
