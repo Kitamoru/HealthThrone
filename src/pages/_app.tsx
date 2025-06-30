@@ -1,3 +1,4 @@
+Вот мой _app.tsx
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
@@ -13,7 +14,7 @@ import '../styles/globals.css';
 // Определим тип для ответа initUser
 interface InitUserResponse {
   id: number;
-  // Другие поля пользователя
+  // Другие поля пользователя, если они есть в ответе
 }
 
 // Prefetch shop data
@@ -51,7 +52,7 @@ const Loader = dynamic(
 
 function App({ Component, pageProps }: AppProps) {
   const { initData, startParam, webApp } = useTelegram();
-  const [userInitialized, setUserInitialized] = useState(false); // Добавлено состояние
+  const [userInitialized, setUserInitialized] = useState(false);
 
   useEffect(() => {
     if (!initData) return;
@@ -60,18 +61,19 @@ function App({ Component, pageProps }: AppProps) {
     api.initUser(initData, startParam)
       .then(response => {
         if (response.success && response.data) {
+          // Приводим тип данных к InitUserResponse
           const userData = response.data as InitUserResponse;
           const userId = userData.id;
           
           // Предзагружаем данные друзей
           prefetchFriends(userId, initData);
           
-          // Сохраняем данные пользователя
+          // Сохраняем данные пользователя для главной страницы
           queryClient.setQueryData(['userData', userId], userData);
         }
         return response;
       })
-      .finally(() => setUserInitialized(true)); // Обновляем состояние
+      .finally(() => setUserInitialized(true));
   }, [initData, startParam]);
 
   useEffect(() => {
@@ -104,10 +106,7 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      {/* Контейнер для порталов */}
-      <div id="portal-root"></div>
-
-      {userInitialized ? ( // Используем состояние
+      {userInitialized ? (
         <div className="page-transition">
           <Component {...pageProps} />
         </div>
@@ -119,3 +118,5 @@ function App({ Component, pageProps }: AppProps) {
 }
 
 export default App;
+
+Внеси все необходимые изменения и пришли исправленные файлы полностью
