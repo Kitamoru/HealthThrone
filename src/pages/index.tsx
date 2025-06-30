@@ -273,84 +273,87 @@ const Home = () => {
 
   // Приоритет 4: Главная страница
   return (
-    <div className="container">
-      {isError || !user ? (
-        <div className="error-message">
-          {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
-        </div>
-      ) : (
-        <>
-          <div className="scrollable-content">
-            <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
-            
-            <div className="content">
-              {apiError && !alreadyAttemptedToday && (
-                <div className="error-message">{apiError}</div>
-              )}
+    <>
+      <div className="container">
+        {isError || !user ? (
+          <div className="error-message">
+            {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
+          </div>
+        ) : (
+          <>
+            <div className="scrollable-content">
+              <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
+              
+              <div className="content">
+                {apiError && !alreadyAttemptedToday && (
+                  <div className="error-message">{apiError}</div>
+                )}
 
-              {alreadyAttemptedToday ? (
-                <div className="time-message">
-                  <div className="info-message">
-                    Вы уже прошли опрос сегодня. Ваш текущий уровень выгорания: {burnoutLevel}%
+                {alreadyAttemptedToday ? (
+                  <div className="time-message">
+                    <div className="info-message">
+                      Вы уже прошли опрос сегодня. Ваш текущий уровень выгорания: {burnoutLevel}%
+                    </div>
                   </div>
-                </div>
-              ) : surveyCompleted ? (
-                <div className="time-message">
-                  <div className="info-message">
-                    🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
+                ) : surveyCompleted ? (
+                  <div className="time-message">
+                    <div className="info-message">
+                      🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex justify-center mt-6">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="bg-blue-500 text-white px-8 py-3 rounded-xl shadow-lg font-medium"
-                    onClick={() => setIsSurveyModalOpen(true)}
+                ) : (
+                  <div className="flex justify-center mt-6">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="survey-button"
+                      onClick={() => setIsSurveyModalOpen(true)}
+                    >
+                      Пройти тест сегодня
+                    </motion.button>
+                  </div>
+                )}
+
+                {/* Блок с октаграммой */}
+                <AnimatePresence>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
+                    className="mt-4 mb-4 flex flex-col items-center octagram-container"
                   >
-                    Пройти тест сегодня
-                  </motion.button>
-                </div>
-              )}
-
-              {/* Блок с октаграммой */}
-              <AnimatePresence>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8 }}
-                  className="mt-4 mb-4 flex flex-col items-center octagram-container"
-                >
-                  <Octagram values={octagramValues} size={280} />
-                </motion.div>
-              </AnimatePresence>
+                    <Octagram values={octagramValues} size={280} />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
             </div>
-          </div>
 
-          <div className="menu">
-            <Link href="/" passHref>
-              <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
-            </Link>
-            <Link href="/friends" passHref>
-              <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
-            </Link>
-            <Link href="/shop" passHref>
-              <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
-            </Link>
-            <Link href="/reference" passHref>
-              <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
-            </Link>
-          </div>
-        </>
-      )}
+            <div className="menu">
+              <Link href="/" passHref>
+                <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
+              </Link>
+              <Link href="/friends" passHref>
+                <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
+              </Link>
+              <Link href="/shop" passHref>
+                <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
+              </Link>
+              <Link href="/reference" passHref>
+                <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
+              </Link>
+            </div>
+          </>
+        )}
+      </div>
 
+      {/* Модальное окно опроса - теперь рендерится поверх всего */}
       <SurveyModal
         isOpen={isSurveyModalOpen}
         onClose={() => setIsSurveyModalOpen(false)}
         onComplete={handleSurveyComplete}
         questions={QUESTIONS}
       />
-    </div>
+    </>
   );
 };
 
