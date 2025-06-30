@@ -1,150 +1,174 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import TinderCard from 'react-tinder-card';
 import { motion } from 'framer-motion';
-import { Dialog } from '@headlessui/react';
-import { Question } from '../lib/types';
+
+interface Question {
+  id: number;
+  text: string;
+  weight: number;
+}
 
 interface SurveyModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onComplete: (answers: Record<number, 'yes' | 'no' | 'skip'>) => void;
   questions: Question[];
-  onSubmit: (answers: Record<number, boolean | null>) => void;
-  isLoading: boolean;
 }
+
+const swipeThreshold = 50;
 
 export const SurveyModal: React.FC<SurveyModalProps> = ({ 
   isOpen, 
   onClose, 
-  questions,
-  onSubmit,
-  isLoading
+  onComplete,
+  questions 
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, boolean | null>>({});
-  
-  // Сброс состояния при открытии модального окна
+  const [answers, setAnswers] = useState<Record<number, 'yes' | 'no' | 'skip'>>({});
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) {
       setCurrentIndex(0);
       setAnswers({});
     }
   }, [isOpen]);
 
-  const handleAnswer = useCallback((answer: boolean | null) => {
-    const questionId = questions[currentIndex].id;
-    setAnswers(prev => ({ ...prev, [questionId]: answer }));
+  const handleSwipe = (dir: 'left' | 'right') => {
+    const answer = dir === 'right' ? 'yes' : 'no';
+    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
+    setSwipeDirection(dir);
     
-    // Переход к следующему вопросу
+    setTimeout(() => {
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex(prev => prev + 1);
+        setSwipeDirection(null);
+      } else {
+        onComplete(answers);
+        onClose();
+      }
+    }, 300);
+  };
+
+  const handleSkip = () => {
+    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: 'skip' }));
+    
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
-      // Если это последний вопрос, сразу отправляем результаты
-      onSubmit({ ...answers, [questionId]: answer });
+      onComplete(answers);
+      onClose();
     }
-  }, [currentIndex, questions, onSubmit, answers]);
+  };
 
-  // При завершении опроса
-  useEffect(() => {
-    if (currentIndex === questions.length) {
-      onSubmit(answers);
+  const handleDragStart = (e: React.TouchEvent | React.MouseEvent) => {
+    const point = 'touches' in e ? e.touches[0] : e;
+    setDragStart({ x: point.clientX, y: point.clientY });
+    setDragging(true);
+  };
+
+  const handleDragEnd = (e: React.TouchEvent | React.MouseEvent) => {
+    if (!dragging) return;
+    
+    const point = 'touches' in e ? e.changedTouches[0] : e;
+    const deltaX = point.clientX - dragStart.x;
+    const deltaY = point.clientY - dragStart.y;
+    
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > swipeThreshold) {
+      handleSwipe(deltaX > 0 ? 'right' : 'left');
     }
-  }, [currentIndex, questions.length, answers, onSubmit]);
+    
+    setDragging(false);
+  };
 
-  const progress = ((currentIndex) / questions.length) * 100;
+  if (!isOpen || currentIndex >= questions.length) return null;
 
   return (
-    <Dialog
-      open={isOpen}
-      onClose={onClose}
-      className="fixed inset-0 z-50 overflow-y-auto"
-    >
-      {/* Бэкдроп */}
-      <div className="fixed inset-0 bg-black opacity-30" />
-      
-      <div className="min-h-screen px-4 text-center flex items-center justify-center">
-        <div className="test-step inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-tg-secondary shadow-xl rounded-2xl border border-tg-border">
-          <div className="progress-container">
-            <div className="progress-text text-tg-hint text-sm mb-2">
-              Вопрос {currentIndex + 1} из {questions.length}
-            </div>
-            <div className="progress-bar w-full h-2 bg-tg-secondary rounded overflow-hidden">
-              <div 
-                className="progress-fill h-full bg-tg-accent rounded"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <motion.div 
+        className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+      >
+        {/* Прогресс-бар */}
+        <div className="h-2 bg-gray-200">
+          <motion.div 
+            className="h-full bg-blue-500"
+            initial={{ width: "0%" }}
+            animate={{ 
+              width: `${((currentIndex + 1) / questions.length) * 100}%` 
+            }}
+            transition={{ duration: 0.3 }}
+          />
+        </div>
+        
+        <div className="p-6">
+          <div className="text-center mb-2 text-gray-500">
+            Вопрос {currentIndex + 1} из {questions.length}
           </div>
-
-          <Dialog.Title
-            as="h3"
-            className="text-lg font-medium leading-6 text-tg-text mt-4"
+          
+          {/* Контейнер для карточки */}
+          <div 
+            className="relative h-64 mb-8"
+            onTouchStart={handleDragStart}
+            onTouchEnd={handleDragEnd}
+            onMouseDown={handleDragStart}
+            onMouseUp={handleDragEnd}
+            onMouseLeave={handleDragEnd}
           >
-            Тест на выгорание
-          </Dialog.Title>
-
-          <div className="test-container mt-8 flex justify-center items-center min-h-[200px] relative">
-            {currentIndex < questions.length && (
-              <TinderCard
-                key={currentIndex}
-                onSwipe={(dir) => handleAnswer(dir === 'right')}
-                preventSwipe={['up', 'down']}
-                className="absolute w-full"
-              >
-                <div
-                  className="w-full p-6 bg-tg-secondary border border-tg-border rounded-xl shadow-md cursor-pointer"
-                >
-                  <p className="test-text text-tg-text text-xl font-medium text-center">
-                    {questions[currentIndex].text}
-                  </p>
-                </div>
-              </TinderCard>
-            )}
-
-            {currentIndex === questions.length && (
-              <div className="result-step text-center w-full">
-                <div className="result-header">
-                  <h2 className="text-2xl font-bold text-tg-text">Опрос завершен!</h2>
-                </div>
-                <div className="result-card mt-4">
-                  <p className="class-description text-tg-text">
-                    Ваши ответы успешно сохранены. Результаты теста можно увидеть на главной странице.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="answers-container mt-8 grid grid-cols-3 gap-3">
-            <button 
-              className="answer-button bg-tg-secondary border border-tg-border rounded-xl py-3 px-4 text-tg-text transition-all hover:bg-tg-accent hover:bg-opacity-10"
-              onClick={() => handleAnswer(false)}
-              disabled={currentIndex >= questions.length || isLoading}
+            <TinderCard
+              key={currentIndex}
+              onSwipe={handleSwipe}
+              preventSwipe={['up', 'down']}
+              swipeThreshold={swipeThreshold}
+              className="absolute w-full h-full"
             >
+              <motion.div
+                className={`w-full h-full rounded-xl shadow-lg flex items-center justify-center p-6 text-center cursor-grab
+                  ${swipeDirection === 'right' ? 'bg-green-100' : 
+                    swipeDirection === 'left' ? 'bg-red-100' : 'bg-white'}`}
+                whileTap={{ scale: 0.98 }}
+                animate={{
+                  x: swipeDirection === 'right' ? 300 : swipeDirection === 'left' ? -300 : 0,
+                  opacity: swipeDirection ? 0 : 1,
+                  rotate: swipeDirection === 'right' ? 30 : swipeDirection === 'left' ? -30 : 0
+                }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                onClick={handleSkip}
+              >
+                <p className="text-lg font-medium">{questions[currentIndex].text}</p>
+              </motion.div>
+            </TinderCard>
+          </div>
+          
+          {/* Подсказки */}
+          <div className="flex justify-between items-center text-sm text-gray-500">
+            <div className="flex items-center">
+              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mr-2">
+                <span className="text-red-500">←</span>
+              </div>
               Нет
-            </button>
-            <button 
-              className="answer-button bg-tg-secondary border border-tg-border rounded-xl py-3 px-4 text-tg-text transition-all hover:bg-tg-accent hover:bg-opacity-10"
-              onClick={() => handleAnswer(null)}
-              disabled={currentIndex >= questions.length || isLoading}
+            </div>
+            
+            <div 
+              className="px-4 py-2 bg-gray-100 rounded-lg"
+              onClick={handleSkip}
             >
               Не знаю
-            </button>
-            <button 
-              className="answer-button bg-tg-secondary border border-tg-border rounded-xl py-3 px-4 text-tg-text transition-all hover:bg-tg-accent hover:bg-opacity-10"
-              onClick={() => handleAnswer(true)}
-              disabled={currentIndex >= questions.length || isLoading}
-            >
-              Да
-            </button>
-          </div>
-
-          {isLoading && (
-            <div className="mt-6 text-center">
-              <p className="text-tg-hint">Сохранение результатов...</p>
             </div>
-          )}
+            
+            <div className="flex items-center">
+              Да
+              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center ml-2">
+                <span className="text-green-500">→</span>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </Dialog>
+      </motion.div>
+    </div>
   );
 };
