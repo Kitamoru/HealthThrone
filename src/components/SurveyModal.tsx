@@ -94,22 +94,26 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     }, 300);
   };
 
-  if (!isOpen || currentIndex >= questions.length) return null;
+   if (!isOpen || currentIndex >= questions.length) return null;
 
   return (
     <div 
-      className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black bg-opacity-80"
+      className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}
     >
-      {/* Модальное окно */}
       <motion.div 
-        className="relative bg-white w-full max-w-lg max-h-[90vh] rounded-xl overflow-hidden flex flex-col z-10 shadow-xl"
+        className="relative w-full max-w-lg max-h-[90vh] rounded-xl overflow-hidden flex flex-col z-10"
+        style={{ 
+          backgroundColor: 'white',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+        }}
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Прогресс-бар */}
-        <div className="px-4 pt-4 bg-white">
+        <div className="px-4 pt-4" style={{ backgroundColor: 'white' }}>
           <p className="text-center text-gray-500 mb-1">
             Вопрос {currentIndex + 1} из {questions.length}
           </p>
@@ -128,6 +132,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
         {/* Область вопроса - занимает 2/3 высоты */}
         <div 
           className="flex-[2] flex items-center justify-center p-4"
+          style={{ minHeight: '50vh' }}
           onTouchStart={(e) => setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY })}
           onTouchEnd={(e) => {
             const point = e.changedTouches[0];
@@ -164,24 +169,45 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
         </div>
         
         {/* Кнопки ответов - занимают 1/3 высоты */}
-        <div className="flex-[1] flex justify-between items-center p-6 pt-4 bg-white">
+        <div className="flex-[1] flex justify-between items-center p-6 pt-4" style={{ backgroundColor: 'white' }}>
           <button
             onClick={() => handleAnswer('no')}
-            className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center shadow-md hover:bg-red-200 transition-colors"
+            className="flex items-center justify-center shadow-md hover:bg-red-200 transition-colors"
+            style={{ 
+              width: '4rem', 
+              height: '4rem', 
+              borderRadius: '50%',
+              backgroundColor: '#fee2e2',
+              color: '#dc2626'
+            }}
           >
             <span className="text-2xl">←</span>
           </button>
           
           <button
             onClick={handleSkip}
-            className="w-16 h-16 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center shadow-md hover:bg-gray-200 transition-colors"
+            className="flex items-center justify-center shadow-md hover:bg-gray-200 transition-colors"
+            style={{ 
+              width: '4rem', 
+              height: '4rem', 
+              borderRadius: '50%',
+              backgroundColor: '#f3f4f6',
+              color: '#4b5563'
+            }}
           >
             <span className="text-sm font-medium">↻</span>
           </button>
           
           <button
             onClick={() => handleAnswer('yes')}
-            className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center shadow-md hover:bg-green-200 transition-colors"
+            className="flex items-center justify-center shadow-md hover:bg-green-200 transition-colors"
+            style={{ 
+              width: '4rem', 
+              height: '4rem', 
+              borderRadius: '50%',
+              backgroundColor: '#d1fae5',
+              color: '#059669'
+            }}
           >
             <span className="text-2xl">→</span>
           </button>
