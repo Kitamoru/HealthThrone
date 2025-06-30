@@ -37,24 +37,24 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     }
   }, [isOpen]);
 
-  // Исправляем тип параметра на string
-  const handleSwipe = (dir: string) => {
-    // Проверяем, что это допустимое направление
-    if (dir !== 'left' && dir !== 'right') return;
-    
-    const answer = dir === 'right' ? 'yes' : 'no';
-    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
-    setSwipeDirection(dir);
-    
-    setTimeout(() => {
-      if (currentIndex < questions.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-        setSwipeDirection(null);
-      } else {
-        onComplete(answers);
-        onClose();
-      }
-    }, 300);
+  // Используем более гибкий тип для обработки всех направлений
+  const handleSwipe = (direction: string) => {
+    // Обрабатываем только левый и правый свайп
+    if (direction === 'left' || direction === 'right') {
+      const answer = direction === 'right' ? 'yes' : 'no';
+      setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
+      setSwipeDirection(direction);
+      
+      setTimeout(() => {
+        if (currentIndex < questions.length - 1) {
+          setCurrentIndex(prev => prev + 1);
+          setSwipeDirection(null);
+        } else {
+          onComplete(answers);
+          onClose();
+        }
+      }, 300);
+    }
   };
 
   const handleSkip = () => {
