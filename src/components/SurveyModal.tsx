@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import ReactDOM from 'react-dom';
+import { createPortal } from 'react-dom';
 import TinderCard from 'react-tinder-card';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -96,7 +96,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
 
   if (!isOpen || currentIndex >= questions.length || !isBrowser) return null;
 
-  return ReactDOM.createPortal(
+  return createPortal(
     <AnimatePresence>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000]">
         <motion.div 
