@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import TinderCard from 'react-tinder-card';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Dialog } from '@headlessui/react';
-import { Question } from '../lib/questionTypes';
+import { Question } from '../lib/types';
 
 interface SurveyModalProps {
   isOpen: boolean;
@@ -21,34 +21,27 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, boolean | null>>({});
-  const [direction, setDirection] = useState<'left' | 'right' | 'none'>('none');
   
   // Сброс состояния при открытии модального окна
   useEffect(() => {
     if (isOpen) {
       setCurrentIndex(0);
       setAnswers({});
-      setDirection('none');
     }
   }, [isOpen]);
 
-  const handleSwipe = useCallback((dir: string, id: number) => {
-    const isPositive = dir === 'right';
-    setDirection(dir as 'left' | 'right');
-    setAnswers(prev => ({ ...prev, [id]: isPositive }));
+  const handleAnswer = useCallback((answer: boolean | null) => {
+    const questionId = questions[currentIndex].id;
+    setAnswers(prev => ({ ...prev, [questionId]: answer }));
     
-    // Задержка для анимации перед переходом к следующему вопросу
-    setTimeout(() => {
-      setDirection('none');
+    // Переход к следующему вопросу
+    if (currentIndex < questions.length - 1) {
       setCurrentIndex(prev => prev + 1);
-    }, 300);
-  }, []);
-
-  const handleDontKnow = useCallback((id: number) => {
-    setDirection('none');
-    setAnswers(prev => ({ ...prev, [id]: null }));
-    setCurrentIndex(prev => prev + 1);
-  }, []);
+    } else {
+      // Если это последний вопрос, сразу отправляем результаты
+      onSubmit({ ...answers, [questionId]: answer });
+    }
+  }, [currentIndex, questions, onSubmit, answers]);
 
   // При завершении опроса
   useEffect(() => {
@@ -75,11 +68,9 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
               Вопрос {currentIndex + 1} из {questions.length}
             </div>
             <div className="progress-bar w-full h-2 bg-tg-secondary rounded overflow-hidden">
-              <motion.div 
+              <div 
                 className="progress-fill h-full bg-tg-accent rounded"
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.3 }}
+                style={{ width: `${progress}%` }}
               />
             </div>
           </div>
@@ -91,42 +82,26 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
             Тест на выгорание
           </Dialog.Title>
 
-          <div className="test-container mt-8 flex justify-center items-center min-h-[200px]">
-            <AnimatePresence>
-              {currentIndex < questions.length && (
-                <TinderCard
-                  key={currentIndex}
-                  onSwipe={(dir) => handleSwipe(dir, questions[currentIndex].id)}
-                  preventSwipe={['up', 'down']}
-                  className="absolute w-full"
+          <div className="test-container mt-8 flex justify-center items-center min-h-[200px] relative">
+            {currentIndex < questions.length && (
+              <TinderCard
+                key={currentIndex}
+                onSwipe={(dir) => handleAnswer(dir === 'right')}
+                preventSwipe={['up', 'down']}
+                className="absolute w-full"
+              >
+                <div
+                  className="w-full p-6 bg-tg-secondary border border-tg-border rounded-xl shadow-md cursor-pointer"
                 >
-                  <motion.div
-                    className="w-full p-6 bg-tg-secondary border border-tg-border rounded-xl shadow-md cursor-pointer"
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ 
-                      scale: 1, 
-                      opacity: 1,
-                      rotate: direction === 'right' ? 10 : direction === 'left' ? -10 : 0,
-                      x: direction === 'right' ? 300 : direction === 'left' ? -300 : 0
-                    }}
-                    exit={{ scale: 0.8, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    onClick={() => handleDontKnow(questions[currentIndex].id)}
-                  >
-                    <p className="test-text text-tg-text text-xl font-medium text-center">
-                      {questions[currentIndex].text}
-                    </p>
-                  </motion.div>
-                </TinderCard>
-              )}
-            </AnimatePresence>
+                  <p className="test-text text-tg-text text-xl font-medium text-center">
+                    {questions[currentIndex].text}
+                  </p>
+                </div>
+              </TinderCard>
+            )}
 
             {currentIndex === questions.length && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="result-step text-center w-full"
-              >
+              <div className="result-step text-center w-full">
                 <div className="result-header">
                   <h2 className="text-2xl font-bold text-tg-text">Опрос завершен!</h2>
                 </div>
@@ -135,28 +110,28 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
                     Ваши ответы успешно сохранены. Результаты теста можно увидеть на главной странице.
                   </p>
                 </div>
-              </motion.div>
+              </div>
             )}
           </div>
 
           <div className="answers-container mt-8 grid grid-cols-3 gap-3">
             <button 
               className="answer-button bg-tg-secondary border border-tg-border rounded-xl py-3 px-4 text-tg-text transition-all hover:bg-tg-accent hover:bg-opacity-10"
-              onClick={() => handleSwipe('left', questions[currentIndex].id)}
+              onClick={() => handleAnswer(false)}
               disabled={currentIndex >= questions.length || isLoading}
             >
               Нет
             </button>
             <button 
               className="answer-button bg-tg-secondary border border-tg-border rounded-xl py-3 px-4 text-tg-text transition-all hover:bg-tg-accent hover:bg-opacity-10"
-              onClick={() => handleDontKnow(questions[currentIndex].id)}
+              onClick={() => handleAnswer(null)}
               disabled={currentIndex >= questions.length || isLoading}
             >
               Не знаю
             </button>
             <button 
               className="answer-button bg-tg-secondary border border-tg-border rounded-xl py-3 px-4 text-tg-text transition-all hover:bg-tg-accent hover:bg-opacity-10"
-              onClick={() => handleSwipe('right', questions[currentIndex].id)}
+              onClick={() => handleAnswer(true)}
               disabled={currentIndex >= questions.length || isLoading}
             >
               Да
