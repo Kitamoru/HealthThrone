@@ -39,6 +39,19 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     }
   }, [isOpen]);
 
+  // Блокируем прокрутку фоновой страницы при открытой модалке
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   const handleSwipe = (dir: Direction) => {
     if (dir === 'left' || dir === 'right') {
       const answer = dir === 'right' ? 'yes' : 'no';
@@ -91,12 +104,19 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   if (!isOpen || currentIndex >= questions.length) return null;
 
   return (
-    <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 z-[1000]">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+      {/* Затемнение фона */}
+      <div 
+        className="absolute inset-0 bg-black bg-opacity-50"
+        onClick={onClose}
+      />
+      
+      {/* Модальное окно */}
       <motion.div 
-        className="absolute top-0 left-0 w-full h-full bg-white flex flex-col"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        className="relative bg-white w-full max-w-lg h-[90vh] max-h-[800px] rounded-xl overflow-hidden flex flex-col z-10"
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
       >
         {/* Прогресс-бар */}
         <div className="h-2 bg-gray-200">
@@ -110,12 +130,12 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           />
         </div>
         
-        <div className="flex-1 flex flex-col p-4 md:p-6 overflow-auto">
+        <div className="flex-1 flex flex-col p-4 overflow-auto">
           <div className="text-center mb-4 text-gray-500 text-lg">
             Вопрос {currentIndex + 1} из {questions.length}
           </div>
           
-          {/* Контейнер для карточки - занимает основное пространство */}
+          {/* Контейнер для карточки */}
           <div 
             className="flex-1 relative mb-6 min-h-[50vh]"
             onTouchStart={handleDragStart}
@@ -172,6 +192,14 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
             </div>
           </div>
         </div>
+        
+        {/* Кнопка закрытия */}
+        <button 
+          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors"
+          onClick={onClose}
+        >
+          &times;
+        </button>
       </motion.div>
     </div>
   );
