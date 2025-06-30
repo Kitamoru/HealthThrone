@@ -30,7 +30,10 @@
     "telegraf": "^4.16.3",
     "typescript": "^5.0.0",
     "framer-motion": "^11.0.3",
-    "gsap": "^3.9.1"
+    "gsap": "^3.9.1",
+    "@headlessui/react": "^2.1.2",
+    "framer-motion": "^11.3.8",
+    "react-tinder-card": "^1.6.4"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.0.0",
