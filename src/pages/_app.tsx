@@ -10,10 +10,80 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
-// ... остальной код без изменений ...
+// Определим тип для ответа initUser
+interface InitUserResponse {
+  id: number;
+  // Другие поля пользователя
+}
+
+// Prefetch shop data
+const prefetchShopData = (initData?: string) => {
+  queryClient.prefetchQuery({
+    queryKey: ['sprites'],
+    queryFn: () => api.getSprites(initData),
+  });
+};
+
+// Prefetch friends data
+const prefetchFriends = (userId: number, initData: string) => {
+  queryClient.prefetchQuery({
+    queryKey: ['friends', userId.toString()],
+    queryFn: async () => {
+      const response = await api.getFriends(userId.toString(), initData);
+      if (response.success && response.data) {
+        return response.data.map(f => ({
+          id: f.id,
+          friend_id: f.friend.id,
+          friend_username: f.friend.username || 
+                          `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
+          burnout_level: f.friend.burnout_level
+        }));
+      }
+      throw new Error(response.error || 'Failed to load friends');
+    },
+  });
+};
+
+const Loader = dynamic(
+  () => import('../components/Loader').then(mod => mod.Loader),
+  { ssr: false, loading: () => <div>Загрузка...</div> }
+);
 
 function App({ Component, pageProps }: AppProps) {
-  // ... существующий код без изменений ...
+  const { initData, startParam, webApp } = useTelegram();
+  const [userInitialized, setUserInitialized] = useState(false); // Добавлено состояние
+
+  useEffect(() => {
+    if (!initData) return;
+
+    // Инициализируем пользователя
+    api.initUser(initData, startParam)
+      .then(response => {
+        if (response.success && response.data) {
+          const userData = response.data as InitUserResponse;
+          const userId = userData.id;
+          
+          // Предзагружаем данные друзей
+          prefetchFriends(userId, initData);
+          
+          // Сохраняем данные пользователя
+          queryClient.setQueryData(['userData', userId], userData);
+        }
+        return response;
+      })
+      .finally(() => setUserInitialized(true)); // Обновляем состояние
+  }, [initData, startParam]);
+
+  useEffect(() => {
+    if (!webApp || !initData) return;
+    
+    // Предзагружаем данные магазина
+    prefetchShopData(initData);
+    
+    // Предзагружаем страницы
+    const routes = ['/', '/shop', '/friends'];
+    routes.forEach(route => Router.prefetch(route));
+  }, [webApp, initData]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -34,10 +104,10 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      {/* Добавленный контейнер для порталов */}
+      {/* Контейнер для порталов */}
       <div id="portal-root"></div>
 
-      {userInitialized ? (
+      {userInitialized ? ( // Используем состояние
         <div className="page-transition">
           <Component {...pageProps} />
         </div>
