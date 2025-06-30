@@ -71,6 +71,14 @@ export interface ShopUserProfile {
   current_sprite_id?: number | null;
 }
 
+export interface Question {
+  id: number;
+  text: string;
+  positive_answer: string;
+  negative_answer: string;
+  weight: number;
+}
+
 export interface UserSprite {
   id: number;
   user_id: number;
