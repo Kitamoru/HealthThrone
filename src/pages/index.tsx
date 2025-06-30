@@ -346,16 +346,18 @@ const Home = () => {
           </div>
 
           {/* Добавленный блок с октаграммой */}
-          <AnimatePresence>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="octagram-container"
-            >
-              <Octagram values={octagramValues} size={280} />
-            </motion.div>
-          </AnimatePresence>
+            <div className="octagram-wrapper">
+            <AnimatePresence>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="octagram-container"
+              >
+                <Octagram values={octagramValues} size={280} />
+              </motion.div>
+            </AnimatePresence>
+          </div>
 
           <div className="menu">
             <Link href="/" passHref>
