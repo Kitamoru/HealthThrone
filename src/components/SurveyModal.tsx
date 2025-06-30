@@ -2,12 +2,12 @@ import React, { useState, useCallback, useEffect } from 'react';
 import TinderCard from 'react-tinder-card';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog } from '@headlessui/react';
-import { Question } from '../pages/index';
+import { Question } from '../pages/index'; // Исправлен импорт
 
 interface SurveyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  questions: Question[];
+  questions: Question[]; // Получаем вопросы через пропсы
   onSubmit: (answers: Record<number, boolean | null>) => void;
   isLoading: boolean;
 }
