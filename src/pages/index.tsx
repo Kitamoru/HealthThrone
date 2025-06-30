@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
+import TinderCard from 'react-tinder-card';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
@@ -11,13 +12,10 @@ import { UserProfile } from '../lib/types';
 import { BurnoutProgress } from '../components/BurnoutProgress';
 import Onboarding from '../components/Onboarding';
 import Octagram from '../components/Octagram';
-import { SurveyModal } from '../components/SurveyModal';
 
 interface Question {
   id: number;
   text: string;
-  positive_answer: string;
-  negative_answer: string;
   weight: number;
 }
 
@@ -25,81 +23,223 @@ const QUESTIONS: Question[] = [
   {
     id: 1,
     text: "Я чувствую усталость даже после отдыха",
-    positive_answer: "Да",
-    negative_answer: "Нет",
     weight: 3
   },
   {
     id: 2,
     text: "Мне трудно сосредоточиться на работе",
-    positive_answer: "Да",
-    negative_answer: "Нет",
     weight: 2
   },
   {
     id: 3,
     text: "Я часто чувствую раздражение",
-    positive_answer: "Да",
-    negative_answer: "Нет",
     weight: 2
   },
   {
     id: 4,
     text: "У меня снизилась мотивация к работе",
-    positive_answer: "Да",
-    negative_answer: "Нет",
     weight: 3
   },
   {
     id: 5,
     text: "Я испытываю физическое напряжение",
-    positive_answer: "Да",
-    negative_answer: "Нет",
     weight: 2
   },
   {
     id: 6,
     text: "Мне сложно расслабиться",
-    positive_answer: "Да",
-    negative_answer: "Нет",
     weight: 2
   },
   {
     id: 7,
     text: "Я чувствую себя эмоционально истощенным",
-    positive_answer: "Да",
-    negative_answer: "Нет",
     weight: 3
   },
   {
     id: 8,
     text: "У меня есть проблемы со сном",
-    positive_answer: "Да",
-    negative_answer: "Нет",
     weight: 2
   },
   {
     id: 9,
     text: "Я хорошо сплю",
-    positive_answer: "Да",
-    negative_answer: "Нет",
     weight: -2
   },
   {
     id: 10,
     text: "Я чувствую себя мотивированным",
-    positive_answer: "Да",
-    negative_answer: "Нет",
     weight: -2
   },
   {
     id: 11,
     text: "У меня хороший аппетит",
-    positive_answer: "Да",
-    negative_answer: "Нет",
     weight: -1
   }
 ];
+
+interface SurveyModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onComplete: (answers: Record<number, 'yes' | 'no' | 'skip'>) => void;
+  questions: Question[];
+}
+
+const SurveyModal: React.FC<SurveyModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onComplete,
+  questions 
+}) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, 'yes' | 'no' | 'skip'>>({});
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const swipeThreshold = 50;
+
+  useEffect(() => {
+    if (!isOpen) {
+      setCurrentIndex(0);
+      setAnswers({});
+    }
+  }, [isOpen]);
+
+  const handleSwipe = (dir: 'left' | 'right') => {
+    const answer = dir === 'right' ? 'yes' : 'no';
+    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
+    setSwipeDirection(dir);
+    
+    setTimeout(() => {
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex(prev => prev + 1);
+        setSwipeDirection(null);
+      } else {
+        onComplete(answers);
+        onClose();
+      }
+    }, 300);
+  };
+
+  const handleSkip = () => {
+    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: 'skip' }));
+    
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+    } else {
+      onComplete(answers);
+      onClose();
+    }
+  };
+
+  const handleDragStart = (e: React.TouchEvent | React.MouseEvent) => {
+    const point = 'touches' in e ? e.touches[0] : e;
+    setDragStart({ x: point.clientX, y: point.clientY });
+    setDragging(true);
+  };
+
+  const handleDragEnd = (e: React.TouchEvent | React.MouseEvent) => {
+    if (!dragging) return;
+    
+    const point = 'touches' in e ? e.changedTouches[0] : e;
+    const deltaX = point.clientX - dragStart.x;
+    const deltaY = point.clientY - dragStart.y;
+    
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > swipeThreshold) {
+      handleSwipe(deltaX > 0 ? 'right' : 'left');
+    }
+    
+    setDragging(false);
+  };
+
+  if (!isOpen || currentIndex >= questions.length) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <motion.div 
+        className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+      >
+        {/* Прогресс-бар */}
+        <div className="h-2 bg-gray-200">
+          <motion.div 
+            className="h-full bg-blue-500"
+            initial={{ width: "0%" }}
+            animate={{ 
+              width: `${((currentIndex + 1) / questions.length) * 100}%` 
+            }}
+            transition={{ duration: 0.3 }}
+          />
+        </div>
+        
+        <div className="p-6">
+          <div className="text-center mb-2 text-gray-500">
+            Вопрос {currentIndex + 1} из {questions.length}
+          </div>
+          
+          {/* Контейнер для карточки */}
+          <div 
+            className="relative h-64 mb-8"
+            onTouchStart={handleDragStart}
+            onTouchEnd={handleDragEnd}
+            onMouseDown={handleDragStart}
+            onMouseUp={handleDragEnd}
+            onMouseLeave={handleDragEnd}
+          >
+            <TinderCard
+              key={currentIndex}
+              onSwipe={handleSwipe}
+              preventSwipe={['up', 'down']}
+              swipeThreshold={swipeThreshold}
+              className="absolute w-full h-full"
+            >
+              <motion.div
+                className={`w-full h-full rounded-xl shadow-lg flex items-center justify-center p-6 text-center cursor-grab
+                  ${swipeDirection === 'right' ? 'bg-green-100' : 
+                    swipeDirection === 'left' ? 'bg-red-100' : 'bg-white'}`}
+                whileTap={{ scale: 0.98 }}
+                animate={{
+                  x: swipeDirection === 'right' ? 300 : swipeDirection === 'left' ? -300 : 0,
+                  opacity: swipeDirection ? 0 : 1,
+                  rotate: swipeDirection === 'right' ? 30 : swipeDirection === 'left' ? -30 : 0
+                }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                onClick={handleSkip}
+              >
+                <p className="text-lg font-medium">{questions[currentIndex].text}</p>
+              </motion.div>
+            </TinderCard>
+          </div>
+          
+          {/* Подсказки */}
+          <div className="flex justify-between items-center text-sm text-gray-500">
+            <div className="flex items-center">
+              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mr-2">
+                <span className="text-red-500">←</span>
+              </div>
+              Нет
+            </div>
+            
+            <div 
+              className="px-4 py-2 bg-gray-100 rounded-lg cursor-pointer"
+              onClick={handleSkip}
+            >
+              Не знаю
+            </div>
+            
+            <div className="flex items-center">
+              Да
+              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center ml-2">
+                <span className="text-green-500">→</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 const Home = () => {
   const router = useRouter();
@@ -107,12 +247,12 @@ const Home = () => {
   const queryClient = useQueryClient();
 
   const [questions] = useState<Question[]>(QUESTIONS);
+  const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [spriteLoaded, setSpriteLoaded] = useState(false);
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
-  const [isSurveyOpen, setIsSurveyOpen] = useState(false);
-  const [isSurveySubmitting, setIsSurveySubmitting] = useState(false);
+  const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
 
   const isTodayUTC = useCallback((dateStr: string) => {
     if (!dateStr) return false;
@@ -212,43 +352,12 @@ const Home = () => {
       });
       
       setSurveyCompleted(true);
+      setAnswers({});
     },
     onError: (error: Error) => {
       setApiError(error.message);
     }
   });
-
-  const handleSurveyComplete = useCallback(async (answers: Record<number, boolean | null>) => {
-    setIsSurveySubmitting(true);
-    
-    try {
-      // Рассчитываем общий балл
-      const totalScore = Object.entries(answers).reduce((sum, [id, ans]) => {
-        const questionId = parseInt(id);
-        const question = questions.find(q => q.id === questionId);
-        
-        if (!question) return sum;
-        
-        // Для ответа "Да" добавляем вес, для "Нет" - 0, для "Не знаю" - половину веса
-        return sum + (
-          ans === true ? question.weight : 
-          ans === false ? 0 : 
-          question.weight / 2
-        );
-      }, 0);
-      
-      // Отправляем результаты
-      await submitSurveyMutation.mutateAsync(Math.round(totalScore));
-      
-      // Закрываем модальное окно после успешной отправки
-      setIsSurveyOpen(false);
-    } catch (error) {
-      console.error('Ошибка при сохранении опроса:', error);
-      setApiError('Ошибка при сохранении результатов');
-    } finally {
-      setIsSurveySubmitting(false);
-    }
-  }, [submitSurveyMutation, questions]);
 
   const initialBurnoutLevel = userData?.burnout_level ?? 0;
   const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
@@ -260,8 +369,16 @@ const Home = () => {
     if (surveyCompleted && userData) {
       return userData.burnout_level;
     }
-    return initialBurnoutLevel;
-  }, [initialBurnoutLevel, surveyCompleted, userData]);
+
+    const answeredDelta = Object.entries(answers).reduce((sum, [id, ans]) => {
+      if (!ans) return sum;
+      const qId = parseInt(id);
+      const q = questions.find(q => q.id === qId);
+      return sum + (q?.weight || 0);
+    }, 0);
+
+    return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
+  }, [answers, initialBurnoutLevel, surveyCompleted, userData]);
 
   const octagramValues = useMemo(() => {
     return [
@@ -275,6 +392,20 @@ const Home = () => {
       -1.0  // Квантовое колдовство
     ];
   }, []);
+
+  const handleSurveyComplete = useCallback((answers: Record<number, 'yes' | 'no' | 'skip'>) => {
+    // Рассчитываем общий балл
+    const totalScore = Object.entries(answers).reduce((sum, [id, answer]) => {
+      const question = QUESTIONS.find(q => q.id === parseInt(id));
+      if (!question) return sum;
+      
+      if (answer === 'yes') return sum + question.weight;
+      if (answer === 'no') return sum;
+      return sum; // skip не влияет на результат
+    }, 0);
+    
+    submitSurveyMutation.mutate(totalScore);
+  }, [submitSurveyMutation]);
 
   const handleOnboardingComplete = useCallback(() => {
     setIsGlobalLoading(true);
@@ -334,13 +465,15 @@ const Home = () => {
                   </div>
                 </div>
               ) : (
-                <div className="flex justify-center mt-8">
-                  <button 
-                    onClick={() => setIsSurveyOpen(true)}
-                    className="px-6 py-3 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition"
+                <div className="flex justify-center mt-6">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="bg-blue-500 text-white px-8 py-3 rounded-xl shadow-lg font-medium"
+                    onClick={() => setIsSurveyModalOpen(true)}
                   >
-                    Пройти тест на выгорание
-                  </button>
+                    Пройти тест сегодня
+                  </motion.button>
                 </div>
               )}
 
@@ -376,11 +509,10 @@ const Home = () => {
       )}
 
       <SurveyModal
-        isOpen={isSurveyOpen}
-        onClose={() => !isSurveySubmitting && setIsSurveyOpen(false)}
+        isOpen={isSurveyModalOpen}
+        onClose={() => setIsSurveyModalOpen(false)}
+        onComplete={handleSurveyComplete}
         questions={QUESTIONS}
-        onSubmit={handleSurveyComplete}
-        isLoading={isSurveySubmitting}
       />
     </div>
   );
