@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import TinderCard from 'react-tinder-card';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog } from '@headlessui/react';
-import { Question } from '../pages/index';
+import { QUESTIONS } from '../pages/index';
 
 interface SurveyModalProps {
   isOpen: boolean;
