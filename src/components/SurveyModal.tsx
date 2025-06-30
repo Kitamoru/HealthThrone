@@ -2,12 +2,12 @@ import React, { useState, useCallback, useEffect } from 'react';
 import TinderCard from 'react-tinder-card';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog } from '@headlessui/react';
-import { Question } from '../lib/types';
+import { Question } from '../lib/questionTypes';
 
 interface SurveyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  questions: Question[]; // Получаем вопросы через пропсы
+  questions: Question[];
   onSubmit: (answers: Record<number, boolean | null>) => void;
   isLoading: boolean;
 }
@@ -65,9 +65,10 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
       onClose={onClose}
       className="fixed inset-0 z-50 overflow-y-auto"
     >
+      {/* Замена Dialog.Overlay на обычный div для бэкдропа */}
+      <div className="fixed inset-0 bg-black opacity-30" />
+      
       <div className="min-h-screen px-4 text-center">
-        <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
-
         <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
           <Dialog.Title
             as="h3"
