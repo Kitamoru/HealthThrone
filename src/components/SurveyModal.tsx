@@ -144,6 +144,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     onClick={handleSkip}
   >
     <p className="text-lg font-medium">{questions[currentIndex].text}</p>
+     </div>
   </motion.div>
 </TinderCard>
           
