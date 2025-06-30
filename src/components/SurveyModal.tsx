@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import TinderCard, { Direction } from 'react-tinder-card';
+import TinderCard from 'react-tinder-card';
 import { motion } from 'framer-motion';
+
+type Direction = 'left' | 'right' | 'up' | 'down';
 
 interface Question {
   id: number;
