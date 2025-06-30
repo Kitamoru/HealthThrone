@@ -35,7 +35,8 @@ body {
   display: flex;
   overflow-y: auto;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
+  width: 100%;
   padding: 15px;
   gap: 20px;
 }
@@ -165,14 +166,17 @@ body {
 
 /* Content Area */
 .content {
-  overflow-y: auto;
-  padding-bottom: 15px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .questions {
   display: flex;
   flex-direction: column;
   gap: 15px;
+  flex: 1;
 }
 
 .question-card {
@@ -1300,6 +1304,8 @@ strong {
   .vertical-flow {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  padding: 16px;
   gap: 20px;
   height: 100%;
 }
