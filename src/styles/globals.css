@@ -26,17 +26,58 @@ body {
   color: var(--tg-text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   height: calc(var(--vh, 1vh) * 100);
-  overflow-y: auto;
+  overflow: hidden;
   overscroll-behavior: none;
+}
+
+/* Loader Styles */
+.loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  gap: 10px;
+}
+
+.loader-spinner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pulse-circle {
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle, rgba(0, 123, 255, 0.7) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.loader-emoji {
+  font-size: 24px;
+  position: absolute;
+  animation: bounce 1.5s ease-in-out infinite;
+}
+
+.loader-text {
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+  animation: fade 1.5s ease-in-out infinite;
 }
 
 /* Main Container */
 .container {
   display: flex;
-  overflow-y: auto;
   flex-direction: column;
-  min-height: 100vh;
-  width: 100%;
+  height: calc(var(--vh, 1vh) * 100);
   padding: 15px;
   gap: 20px;
 }
@@ -166,17 +207,16 @@ body {
 
 /* Content Area */
 .content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0; 
+  flex-grow: 1;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  padding-bottom: 15px;
 }
 
 .questions {
   display: flex;
   flex-direction: column;
   gap: 15px;
-  flex: 1;
 }
 
 .question-card {
@@ -306,11 +346,14 @@ body {
 
 /* Menu */
 .menu {
-  position: fixed;
-  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 2px solid var(--tg-border);
   background: var(--tg-bg);
-  z-index: 100;
-  margin-top: 0;
+  position: sticky;
+  bottom: 0;
 }
 
 .menu > * {
@@ -1300,13 +1343,5 @@ strong {
     padding: 0.5rem;
     margin: 1rem 0;
   }
-}
-  .vertical-flow {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  padding: 16px;
-  gap: 20px;
-  height: 100%;
 }
 }
