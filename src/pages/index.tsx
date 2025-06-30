@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -12,6 +12,7 @@ import { BurnoutProgress } from '../components/BurnoutProgress';
 import Onboarding from '../components/Onboarding';
 import Octagram from '../components/Octagram';
 import { SurveyModal } from '../components/SurveyModal';
+import ReactDOM from 'react-dom';
 
 interface Question {
   id: number;
@@ -89,6 +90,37 @@ const Home = () => {
   const [spriteLoaded, setSpriteLoaded] = useState(false);
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
+  
+  // Создаем портал для модального окна
+  const modalPortalRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    // Создаем контейнер для портала при монтировании
+    const portalContainer = document.createElement('div');
+    portalContainer.id = 'modal-portal';
+    document.body.appendChild(portalContainer);
+    modalPortalRef.current = portalContainer;
+
+    return () => {
+      // Удаляем контейнер при размонтировании
+      if (modalPortalRef.current) {
+        document.body.removeChild(modalPortalRef.current);
+      }
+    };
+  }, []);
+
+  // Управление прокруткой страницы при открытии модалки
+  useEffect(() => {
+    if (isSurveyModalOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [isSurveyModalOpen]);
 
   const isTodayUTC = useCallback((dateStr: string) => {
     if (!dateStr) return false;
@@ -344,12 +376,16 @@ const Home = () => {
         </>
       )}
 
-      <SurveyModal
-        isOpen={isSurveyModalOpen}
-        onClose={() => setIsSurveyModalOpen(false)}
-        onComplete={handleSurveyComplete}
-        questions={QUESTIONS}
-      />
+      {/* Рендерим модальное окно через портал */}
+      {modalPortalRef.current && isSurveyModalOpen && ReactDOM.createPortal(
+        <SurveyModal
+          isOpen={isSurveyModalOpen}
+          onClose={() => setIsSurveyModalOpen(false)}
+          onComplete={handleSurveyComplete}
+          questions={QUESTIONS}
+        />,
+        modalPortalRef.current
+      )}
     </div>
   );
 };
