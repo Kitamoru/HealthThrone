@@ -1355,4 +1355,18 @@ strong {
 .control-button:active {
   transform: scale(0.95);
 }
+  /* Гарантируем, что модальное окно поверх всего */
+#modal-portal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9998;
+  width: 100%;
+  height: 100%;
+}
+
+/* Запрет прокрутки фона */
+body.modal-open {
+  overflow: hidden;
+}
 }
