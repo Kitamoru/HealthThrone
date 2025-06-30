@@ -1311,4 +1311,44 @@ strong {
   transform: translateZ(0); /* Аппаратное ускорение */
   overscroll-behavior: contain; /* Предотвращает эффект "отскока" */
 }
+  /* Стили для модального окна опроса */
+.card {
+  touch-action: pan-y;
+  user-select: none;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  transition: box-shadow 0.3s ease;
+}
+
+.card:active {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Анимации для свайпов */
+@keyframes swipe-right {
+  0% { transform: translateX(0) rotate(0); opacity: 1; }
+  100% { transform: translateX(200%) rotate(30deg); opacity: 0; }
+}
+
+@keyframes swipe-left {
+  0% { transform: translateX(0) rotate(0); opacity: 1; }
+  100% { transform: translateX(-200%) rotate(-30deg); opacity: 0; }
+}
+
+.swipe-right {
+  animation: swipe-right 0.5s forwards;
+}
+
+.swipe-left {
+  animation: swipe-left 0.5s forwards;
+}
+
+/* Кнопки управления */
+.control-button {
+  transition: all 0.2s ease;
+}
+
+.control-button:active {
+  transform: scale(0.95);
+}
 }
