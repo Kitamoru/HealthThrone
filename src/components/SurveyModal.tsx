@@ -108,7 +108,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Прогресс-бар в стиле Onboarding */}
+        {/* Прогресс-бар */}
         <div className="progress-container px-4 pt-4">
           <p className="progress-text text-center text-gray-500 mb-1">
             Вопрос {currentIndex + 1} из {questions.length}
@@ -125,60 +125,70 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           </div>
         </div>
         
-        <div className="flex-1 flex flex-col p-4 overflow-auto">
-          {/* Контейнер для карточки */}
-          <div 
-            className="flex-1 relative mb-4 min-h-[40vh] flex items-center justify-center"
+        {/* Область вопроса (3/4 экрана) */}
+        <div 
+          className="flex-1 flex items-center justify-center p-4 min-h-[50vh]"
+          onTouchStart={(e) => setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY })}
+          onTouchEnd={(e) => {
+            const point = e.changedTouches[0];
+            const deltaX = point.clientX - dragStart.x;
+            if (Math.abs(deltaX) > swipeThreshold) {
+              handleSwipe(deltaX > 0 ? 'right' : 'left');
+            }
+          }}
+        >
+          <TinderCard
+            key={currentIndex}
+            onSwipe={handleSwipe}
+            preventSwipe={['up', 'down']}
+            swipeThreshold={swipeThreshold}
+            className="w-full h-full"
           >
-            <TinderCard
-              key={currentIndex}
-              onSwipe={handleSwipe}
-              preventSwipe={['up', 'down']}
-              swipeThreshold={swipeThreshold}
-              className="absolute inset-0"
+            <motion.div
+              className={`w-full h-full rounded-xl flex items-center justify-center p-6 text-center cursor-grab
+                ${swipeDirection === 'right' ? 'bg-green-50' : 
+                  swipeDirection === 'left' ? 'bg-red-50' : 'bg-white'}`}
+              whileTap={{ scale: 0.98 }}
+              animate={{
+                x: swipeDirection === 'right' ? '100vw' : swipeDirection === 'left' ? '-100vw' : 0,
+                opacity: swipeDirection ? 0 : 1,
+                rotate: swipeDirection === 'right' ? 30 : swipeDirection === 'left' ? -30 : 0
+              }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             >
-              <motion.div
-                className={`w-full h-full rounded-xl flex items-center justify-center p-6 text-center cursor-grab
-                  ${swipeDirection === 'right' ? 'bg-green-50' : 
-                    swipeDirection === 'left' ? 'bg-red-50' : 'bg-white'}`}
-                whileTap={{ scale: 0.98 }}
-                animate={{
-                  x: swipeDirection === 'right' ? '100vw' : swipeDirection === 'left' ? '-100vw' : 0,
-                  opacity: swipeDirection ? 0 : 1,
-                  rotate: swipeDirection === 'right' ? 30 : swipeDirection === 'left' ? -30 : 0
-                }}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              >
-                <p className="test-text text-xl font-medium text-gray-800">
-                  {questions[currentIndex].text}
-                </p>
-              </motion.div>
-            </TinderCard>
-          </div>
+              <p className="text-xl font-medium text-gray-800">
+                {questions[currentIndex].text}
+              </p>
+            </motion.div>
+          </TinderCard>
+        </div>
+        
+        {/* Кнопки ответов (нижняя 1/4 экрана) */}
+        <div className="flex justify-between items-center p-4 border-t border-gray-200">
+          <button
+            onClick={() => handleAnswer('no')}
+            className="control-button bg-red-100 text-red-600 px-4 py-2 rounded-lg"
+          >
+            <div className="flex items-center">
+              <span className="mr-2">←</span> Нет
+            </div>
+          </button>
           
-          {/* Кнопки ответов в стиле Onboarding */}
-          <div className="answers-container grid grid-cols-3 gap-3 mt-4">
-            <button
-              onClick={() => handleAnswer('no')}
-              className="answer-button bg-red-50 text-red-600 hover:bg-red-100 active:scale-95 transition-all"
-            >
-              Нет
-            </button>
-            
-            <button
-              onClick={handleSkip}
-              className="answer-button bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95 transition-all"
-            >
-              Пропустить
-            </button>
-            
-            <button
-              onClick={() => handleAnswer('yes')}
-              className="answer-button bg-green-50 text-green-600 hover:bg-green-100 active:scale-95 transition-all"
-            >
-              Да
-            </button>
-          </div>
+          <button
+            onClick={handleSkip}
+            className="control-button bg-gray-100 text-gray-600 px-4 py-2 rounded-lg"
+          >
+            Пропустить
+          </button>
+          
+          <button
+            onClick={() => handleAnswer('yes')}
+            className="control-button bg-green-100 text-green-600 px-4 py-2 rounded-lg"
+          >
+            <div className="flex items-center">
+              Да <span className="ml-2">→</span>
+            </div>
+          </button>
         </div>
       </motion.div>
     </div>
