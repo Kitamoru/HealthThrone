@@ -98,6 +98,9 @@ const Home = () => {
     // Создаем контейнер для портала при монтировании
     const portalContainer = document.createElement('div');
     portalContainer.id = 'modal-portal';
+    portalContainer.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4';
+    portalContainer.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    
     document.body.appendChild(portalContainer);
     modalPortalRef.current = portalContainer;
 
