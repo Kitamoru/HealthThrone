@@ -32,7 +32,6 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   const [dragging, setDragging] = useState(false);
 
   useEffect(() => {
-    console.log(`SurveyModal isOpen: ${isOpen}, currentIndex: ${currentIndex}`);
     if (!isOpen) {
       setCurrentIndex(0);
       setAnswers({});
@@ -40,7 +39,6 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     }
   }, [isOpen]);
 
-  // Закрытие по клавише Esc
   useEffect(() => {
     if (!isOpen) return;
     
@@ -81,69 +79,56 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     }
   };
 
-  const handleDragStart = (e: React.TouchEvent | React.MouseEvent) => {
-    const point = 'touches' in e ? e.touches[0] : e;
-    setDragStart({ x: point.clientX, y: point.clientY });
-    setDragging(true);
-  };
+  const handleAnswer = (answer: 'yes' | 'no') => {
+    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
+    setSwipeDirection(answer === 'yes' ? 'right' : 'left');
 
-  const handleDragEnd = (e: React.TouchEvent | React.MouseEvent) => {
-    if (!dragging) return;
-
-    const point = 'touches' in e ? e.changedTouches[0] : e;
-    const deltaX = point.clientX - dragStart.x;
-    const deltaY = point.clientY - dragStart.y;
-
-    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > swipeThreshold) {
-      handleSwipe(deltaX > 0 ? 'right' : 'left');
-    }
-
-    setDragging(false);
+    setTimeout(() => {
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex(prev => prev + 1);
+        setSwipeDirection(null);
+      } else {
+        onComplete(answers);
+        onClose();
+      }
+    }, 300);
   };
 
   if (!isOpen || currentIndex >= questions.length) return null;
 
   return (
     <div 
-      className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
-      onClick={onClose}
+      className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black bg-opacity-70"
     >
-      {/* Затемнение фона */}
-      <div className="absolute inset-0 bg-black bg-opacity-50" />
-      
       {/* Модальное окно */}
       <motion.div 
-        className="relative bg-white w-full max-w-lg h-[90vh] max-h-[800px] rounded-xl overflow-hidden flex flex-col z-10 shadow-xl"
+        className="relative bg-white w-full max-w-lg max-h-[85vh] rounded-xl overflow-hidden flex flex-col z-10 shadow-xl"
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Прогресс-бар */}
-        <div className="h-2 bg-gray-200">
-          <motion.div 
-            className="h-full bg-blue-500"
-            initial={{ width: "0%" }}
-            animate={{ 
-              width: `${((currentIndex + 1) / questions.length) * 100}%` 
-            }}
-            transition={{ duration: 0.3 }}
-          />
+        {/* Прогресс-бар в стиле Onboarding */}
+        <div className="progress-container px-4 pt-4">
+          <p className="progress-text text-center text-gray-500 mb-1">
+            Вопрос {currentIndex + 1} из {questions.length}
+          </p>
+          <div className="progress-bar h-2 bg-gray-200 rounded-full overflow-hidden">
+            <motion.div 
+              className="progress-fill h-full bg-blue-500"
+              initial={{ width: "0%" }}
+              animate={{ 
+                width: `${((currentIndex + 1) / questions.length) * 100}%` 
+              }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
         </div>
         
         <div className="flex-1 flex flex-col p-4 overflow-auto">
-          <div className="text-center mb-4 text-gray-500 text-lg">
-            Вопрос {currentIndex + 1} из {questions.length}
-          </div>
-          
           {/* Контейнер для карточки */}
           <div 
-            className="flex-1 relative mb-6 min-h-[50vh]"
-            onTouchStart={handleDragStart}
-            onTouchEnd={handleDragEnd}
-            onMouseDown={handleDragStart}
-            onMouseUp={handleDragEnd}
-            onMouseLeave={handleDragEnd}
+            className="flex-1 relative mb-4 min-h-[40vh] flex items-center justify-center"
           >
             <TinderCard
               key={currentIndex}
@@ -153,9 +138,9 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
               className="absolute inset-0"
             >
               <motion.div
-                className={`w-full h-full rounded-xl shadow-lg flex items-center justify-center p-6 text-center cursor-grab
-                  ${swipeDirection === 'right' ? 'bg-green-100' : 
-                    swipeDirection === 'left' ? 'bg-red-100' : 'bg-white'}`}
+                className={`w-full h-full rounded-xl flex items-center justify-center p-6 text-center cursor-grab
+                  ${swipeDirection === 'right' ? 'bg-green-50' : 
+                    swipeDirection === 'left' ? 'bg-red-50' : 'bg-white'}`}
                 whileTap={{ scale: 0.98 }}
                 animate={{
                   x: swipeDirection === 'right' ? '100vw' : swipeDirection === 'left' ? '-100vw' : 0,
@@ -164,43 +149,37 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
                 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               >
-                <p className="text-xl font-medium">{questions[currentIndex].text}</p>
+                <p className="test-text text-xl font-medium text-gray-800">
+                  {questions[currentIndex].text}
+                </p>
               </motion.div>
             </TinderCard>
           </div>
           
-          {/* Подсказки */}
-          <div className="flex justify-between items-center text-base text-gray-500 pb-4">
-            <div className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mr-2">
-                <span className="text-red-500 text-xl">←</span>
-              </div>
-              <span className="hidden sm:inline">Нет</span>
-            </div>
-            
-            <div 
-              className="px-5 py-3 bg-gray-100 rounded-lg cursor-pointer text-base"
-              onClick={handleSkip}
+          {/* Кнопки ответов в стиле Onboarding */}
+          <div className="answers-container grid grid-cols-3 gap-3 mt-4">
+            <button
+              onClick={() => handleAnswer('no')}
+              className="answer-button bg-red-50 text-red-600 hover:bg-red-100 active:scale-95 transition-all"
             >
-              Не знаю
-            </div>
+              Нет
+            </button>
             
-            <div className="flex items-center">
-              <span className="hidden sm:inline">Да</span>
-              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center ml-2">
-                <span className="text-green-500 text-xl">→</span>
-              </div>
-            </div>
+            <button
+              onClick={handleSkip}
+              className="answer-button bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95 transition-all"
+            >
+              Пропустить
+            </button>
+            
+            <button
+              onClick={() => handleAnswer('yes')}
+              className="answer-button bg-green-50 text-green-600 hover:bg-green-100 active:scale-95 transition-all"
+            >
+              Да
+            </button>
           </div>
         </div>
-        
-        {/* Кнопка закрытия */}
-        <button 
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors"
-          onClick={onClose}
-        >
-          &times;
-        </button>
       </motion.div>
     </div>
   );
