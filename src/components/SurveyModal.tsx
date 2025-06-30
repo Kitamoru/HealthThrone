@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import TinderCard from 'react-tinder-card';
+import TinderCard, { Direction } from 'react-tinder-card';
 import { motion } from 'framer-motion';
 
 interface Question {
@@ -38,11 +38,11 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   }, [isOpen]);
 
   // Используем более гибкий тип для обработки всех направлений
-  const handleSwipe = (direction: 'left' | 'right' | 'up' | 'down') => {
-  if (direction === 'left' || direction === 'right') {
-    const answer = direction === 'right' ? 'yes' : 'no';
+  const handleSwipe = (dir: Direction) => {
+  if (dir === 'left' || dir === 'right') {
+    const answer = dir === 'right' ? 'yes' : 'no';
     setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
-    setSwipeDirection(direction);
+    setSwipeDirection(dir);
 
     setTimeout(() => {
       if (currentIndex < questions.length - 1) {
@@ -122,29 +122,28 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
             onMouseLeave={handleDragEnd}
           >
             <TinderCard
-              key={currentIndex}
-              onSwipe={handleSwipe}
-              preventSwipe={['up', 'down']}
-              swipeThreshold={swipeThreshold}
-              className="absolute w-full h-full"
-            >
-              <motion.div
-                className={`w-full h-full rounded-xl shadow-lg flex items-center justify-center p-6 text-center cursor-grab
-                  ${swipeDirection === 'right' ? 'bg-green-100' : 
-                    swipeDirection === 'left' ? 'bg-red-100' : 'bg-white'}`}
-                whileTap={{ scale: 0.98 }}
-                animate={{
-                  x: swipeDirection === 'right' ? 300 : swipeDirection === 'left' ? -300 : 0,
-                  opacity: swipeDirection ? 0 : 1,
-                  rotate: swipeDirection === 'right' ? 30 : swipeDirection === 'left' ? -30 : 0
-                }}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                onClick={handleSkip}
-              >
-                <p className="text-lg font-medium">{questions[currentIndex].text}</p>
-              </motion.div>
-            </TinderCard>
-          </div>
+  key={currentIndex}
+  onSwipe={handleSwipe}
+  preventSwipe={['up', 'down']}
+  swipeThreshold={swipeThreshold}
+  className="absolute w-full h-full"
+>
+  <motion.div
+    className={`w-full h-full rounded-xl shadow-lg flex items-center justify-center p-6 text-center cursor-grab
+      ${swipeDirection === 'right' ? 'bg-green-100' : 
+        swipeDirection === 'left' ? 'bg-red-100' : 'bg-white'}`}
+    whileTap={{ scale: 0.98 }}
+    animate={{
+      x: swipeDirection === 'right' ? 300 : swipeDirection === 'left' ? -300 : 0,
+      opacity: swipeDirection ? 0 : 1,
+      rotate: swipeDirection === 'right' ? 30 : swipeDirection === 'left' ? -30 : 0
+    }}
+    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+    onClick={handleSkip}
+  >
+    <p className="text-lg font-medium">{questions[currentIndex].text}</p>
+  </motion.div>
+</TinderCard>
           
           <div className="flex justify-between items-center text-sm text-gray-500">
             <div className="flex items-center">
