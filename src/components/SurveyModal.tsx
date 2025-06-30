@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import TinderCard, { Direction } from 'react-tinder-card';
+import TinderCard from 'react-tinder-card';
 import { motion } from 'framer-motion';
+
+// Определяем тип направления самостоятельно
+type Direction = 'left' | 'right' | 'up' | 'down';
 
 interface Question {
   id: number;
@@ -97,10 +100,24 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
       >
-        {/* ... остальной код без изменений */}
+        {/* Прогресс-бар */}
+        <div className="h-2 bg-gray-200">
+          <motion.div 
+            className="h-full bg-blue-500"
+            initial={{ width: "0%" }}
+            animate={{ 
+              width: `${((currentIndex + 1) / questions.length) * 100}%` 
+            }}
+            transition={{ duration: 0.3 }}
+          />
+        </div>
         
         <div className="p-6">
-          {/* ... */}
+          <div className="text-center mb-2 text-gray-500">
+            Вопрос {currentIndex + 1} из {questions.length}
+          </div>
+          
+          {/* Контейнер для карточки */}
           <div 
             className="relative h-64 mb-8"
             onTouchStart={handleDragStart}
@@ -111,7 +128,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           >
             <TinderCard
               key={currentIndex}
-              onSwipe={handleSwipe} {/* Теперь тип соответствует */}
+              onSwipe={handleSwipe}
               preventSwipe={['up', 'down']}
               swipeThreshold={swipeThreshold}
               className="absolute w-full h-full"
@@ -134,7 +151,29 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
             </TinderCard>
           </div>
           
-          {/* ... */}
+          {/* Подсказки */}
+          <div className="flex justify-between items-center text-sm text-gray-500">
+            <div className="flex items-center">
+              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mr-2">
+                <span className="text-red-500">←</span>
+              </div>
+              Нет
+            </div>
+            
+            <div 
+              className="px-4 py-2 bg-gray-100 rounded-lg cursor-pointer"
+              onClick={handleSkip}
+            >
+              Не знаю
+            </div>
+            
+            <div className="flex items-center">
+              Да
+              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center ml-2">
+                <span className="text-green-500">→</span>
+              </div>
+            </div>
+          </div>
         </div>
       </motion.div>
     </div>
