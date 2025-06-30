@@ -11,7 +11,7 @@ import { UserProfile } from '../lib/types';
 import { QuestionCard } from '../components/QuestionCard'; 
 import { BurnoutProgress } from '../components/BurnoutProgress';
 import Onboarding from '../components/Onboarding';
-import Octagram from '../components/Octagram';
+import Octagram from '../components/Octagram'; // Импорт компонента октаграммы
 
 interface Question {
   id: number;
@@ -311,7 +311,7 @@ const Home = () => {
           {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
         </div>
       ) : (
-        <div className="vertical-flow">
+        <>
           <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
           
           <div className="content">
@@ -346,18 +346,16 @@ const Home = () => {
           </div>
 
           {/* Добавленный блок с октаграммой */}
-            <div className="octagram-wrapper">
-            <AnimatePresence>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-                className="octagram-container"
-              >
-                <Octagram values={octagramValues} size={280} />
-              </motion.div>
-            </AnimatePresence>
-          </div>
+         <AnimatePresence>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="mt-4 mb-4 flex flex-col items-center octagram-container" // Уменьшен верхний отступ
+            >
+              <Octagram values={octagramValues} size={280} />
+            </motion.div>
+          </AnimatePresence>
 
           <div className="menu">
             <Link href="/" passHref>
@@ -373,10 +371,9 @@ const Home = () => {
               <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
             </Link>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
 };
-
 export default Home;
