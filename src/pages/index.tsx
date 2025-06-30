@@ -8,10 +8,10 @@ import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
 import { UserProfile } from '../lib/types';
-import { QuestionCard } from '../components/QuestionCard'; 
 import { BurnoutProgress } from '../components/BurnoutProgress';
 import Onboarding from '../components/Onboarding';
 import Octagram from '../components/Octagram';
+import { SurveyModal } from '../components/SurveyModal';
 
 interface Question {
   id: number;
@@ -107,11 +107,12 @@ const Home = () => {
   const queryClient = useQueryClient();
 
   const [questions] = useState<Question[]>(QUESTIONS);
-  const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [spriteLoaded, setSpriteLoaded] = useState(false);
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
+  const [isSurveyOpen, setIsSurveyOpen] = useState(false);
+  const [isSurveySubmitting, setIsSurveySubmitting] = useState(false);
 
   const isTodayUTC = useCallback((dateStr: string) => {
     if (!dateStr) return false;
@@ -154,7 +155,7 @@ const Home = () => {
     refetchOnWindowFocus: true,
   });
 
-  // Определяем необходимость онбординга сразу при получении данных
+  // Определяем необходимость онбординга
   const needsOnboarding = userData?.character_class === null;
 
   useEffect(() => {
@@ -211,12 +212,43 @@ const Home = () => {
       });
       
       setSurveyCompleted(true);
-      setAnswers({});
     },
     onError: (error: Error) => {
       setApiError(error.message);
     }
   });
+
+  const handleSurveyComplete = useCallback(async (answers: Record<number, boolean | null>) => {
+    setIsSurveySubmitting(true);
+    
+    try {
+      // Рассчитываем общий балл
+      const totalScore = Object.entries(answers).reduce((sum, [id, ans]) => {
+        const questionId = parseInt(id);
+        const question = questions.find(q => q.id === questionId);
+        
+        if (!question) return sum;
+        
+        // Для ответа "Да" добавляем вес, для "Нет" - 0, для "Не знаю" - половину веса
+        return sum + (
+          ans === true ? question.weight : 
+          ans === false ? 0 : 
+          question.weight / 2
+        );
+      }, 0);
+      
+      // Отправляем результаты
+      await submitSurveyMutation.mutateAsync(Math.round(totalScore));
+      
+      // Закрываем модальное окно после успешной отправки
+      setIsSurveyOpen(false);
+    } catch (error) {
+      console.error('Ошибка при сохранении опроса:', error);
+      setApiError('Ошибка при сохранении результатов');
+    } finally {
+      setIsSurveySubmitting(false);
+    }
+  }, [submitSurveyMutation, questions]);
 
   const initialBurnoutLevel = userData?.burnout_level ?? 0;
   const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
@@ -228,16 +260,8 @@ const Home = () => {
     if (surveyCompleted && userData) {
       return userData.burnout_level;
     }
-
-    const answeredDelta = Object.entries(answers).reduce((sum, [id, ans]) => {
-      if (!ans) return sum;
-      const qId = parseInt(id);
-      const q = questions.find(q => q.id === qId);
-      return sum + (q?.weight || 0);
-    }, 0);
-
-    return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
-  }, [answers, initialBurnoutLevel, surveyCompleted, userData]);
+    return initialBurnoutLevel;
+  }, [initialBurnoutLevel, surveyCompleted, userData]);
 
   const octagramValues = useMemo(() => {
     return [
@@ -252,28 +276,6 @@ const Home = () => {
     ];
   }, []);
 
-  const handleAnswer = (questionId: number, isPositive: boolean) => {
-    if (alreadyAttemptedToday || !user) return;
-
-    const question = questions.find(q => q.id === questionId);
-    if (!question) return;
-
-    const newAnswers = {
-      ...answers,
-      [questionId]: isPositive
-    };
-
-    setAnswers(newAnswers);
-
-    if (questions.every(q => q.id in newAnswers)) {
-      const totalScore = Object.values(newAnswers).reduce((sum, ans, idx) => {
-        return sum + (ans ? questions[idx].weight : 0);
-      }, 0);
-      
-      submitSurveyMutation.mutate(totalScore);
-    }
-  };
-
   const handleOnboardingComplete = useCallback(() => {
     setIsGlobalLoading(true);
     refetchUserData().finally(() => {
@@ -286,7 +288,7 @@ const Home = () => {
     return <Loader />;
   }
 
-  // Приоритет 2: Онбординг (проверяем без ожидания загрузки спрайта)
+  // Приоритет 2: Онбординг
   if (needsOnboarding) {
     return (
       <Onboarding 
@@ -332,15 +334,13 @@ const Home = () => {
                   </div>
                 </div>
               ) : (
-                <div className="questions">
-                  {questions.map(question => (
-                    <QuestionCard
-                      key={question.id}
-                      question={question}
-                      onAnswer={handleAnswer}
-                      answered={question.id in answers}
-                    />
-                  ))}
+                <div className="flex justify-center mt-8">
+                  <button 
+                    onClick={() => setIsSurveyOpen(true)}
+                    className="px-6 py-3 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition"
+                  >
+                    Пройти тест на выгорание
+                  </button>
                 </div>
               )}
 
@@ -374,6 +374,14 @@ const Home = () => {
           </div>
         </>
       )}
+
+      <SurveyModal
+        isOpen={isSurveyOpen}
+        onClose={() => !isSurveySubmitting && setIsSurveyOpen(false)}
+        questions={QUESTIONS}
+        onSubmit={handleSurveyComplete}
+        isLoading={isSurveySubmitting}
+      />
     </div>
   );
 };
