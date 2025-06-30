@@ -3,6 +3,7 @@ import TinderCard from 'react-tinder-card';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type Direction = 'left' | 'right' | 'up' | 'down';
+type AnswerType = 'yes' | 'no' | 'skip';
 
 interface Question {
   id: number;
@@ -13,7 +14,7 @@ interface Question {
 interface SurveyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onComplete: (answers: Record<number, 'yes' | 'no' | 'skip'>) => void;
+  onComplete: (answers: Record<number, AnswerType>) => void;
   questions: Question[];
 }
 
@@ -26,7 +27,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   questions 
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, 'yes' | 'no' | 'skip'>>({});
+  const [answers, setAnswers] = useState<Record<number, AnswerType>>({});
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -69,7 +70,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
 
   const handleSwipe = (dir: Direction) => {
     if (dir === 'left' || dir === 'right') {
-      const answer = dir === 'right' ? 'yes' : 'no';
+      const answer: AnswerType = dir === 'right' ? 'yes' : 'no';
       const newAnswers = {...answers, [questions[currentIndex].id]: answer};
       setAnswers(newAnswers);
       setSwipeDirection(dir);
@@ -121,7 +122,8 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   if (!isOpen || currentIndex >= questions.length) return null;
 
   return portalRef.current ? (
-    ReactDOM.createPortal(
+    // Используем ReactDOM.createPortal напрямую
+    (window as any).ReactDOM.createPortal(
       <AnimatePresence>
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000]">
           <motion.div 
