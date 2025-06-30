@@ -12,7 +12,7 @@ import { BurnoutProgress } from '../components/BurnoutProgress';
 import Onboarding from '../components/Onboarding';
 import Octagram from '../components/Octagram';
 import { SurveyModal } from '../components/SurveyModal';
-import ReactDOM from 'react-dom';
+import { createPortal } from 'react-dom';
 
 interface Question {
   id: number;
@@ -282,6 +282,11 @@ const Home = () => {
     });
   }, [refetchUserData]);
 
+  // Обработчик закрытия модального окна
+  const handleCloseModal = useCallback(() => {
+    setIsSurveyModalOpen(false);
+  }, []);
+
   // Приоритет 1: Глобальная загрузка
   if (isGlobalLoading) {
     return <Loader />;
@@ -338,7 +343,10 @@ const Home = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className="bg-blue-500 text-white px-8 py-3 rounded-xl shadow-lg font-medium"
-                    onClick={() => setIsSurveyModalOpen(true)}
+                    onClick={() => {
+                      console.log('Opening survey modal');
+                      setIsSurveyModalOpen(true);
+                    }}
                   >
                     Пройти тест сегодня
                   </motion.button>
@@ -377,10 +385,10 @@ const Home = () => {
       )}
 
       {/* Рендерим модальное окно через портал */}
-      {modalPortalRef.current && isSurveyModalOpen && ReactDOM.createPortal(
+      {modalPortalRef.current && isSurveyModalOpen && createPortal(
         <SurveyModal
           isOpen={isSurveyModalOpen}
-          onClose={() => setIsSurveyModalOpen(false)}
+          onClose={handleCloseModal}
           onComplete={handleSurveyComplete}
           questions={QUESTIONS}
         />,
