@@ -54,18 +54,24 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     document.body.appendChild(portalElement);
     portalRef.current = portalElement;
 
+    // Блокируем скролл основного контента
+    document.body.style.overflow = 'hidden';
+
     return () => {
       if (portalRef.current) {
         document.body.removeChild(portalRef.current);
         portalRef.current = null;
       }
+      // Восстанавливаем скролл
+      document.body.style.overflow = '';
     };
   }, [isOpen]);
 
   const handleSwipe = (dir: Direction) => {
     if (dir === 'left' || dir === 'right') {
       const answer = dir === 'right' ? 'yes' : 'no';
-      setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
+      const newAnswers = {...answers, [questions[currentIndex].id]: answer};
+      setAnswers(newAnswers);
       setSwipeDirection(dir);
 
       setTimeout(() => {
@@ -73,7 +79,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           setCurrentIndex(prev => prev + 1);
           setSwipeDirection(null);
         } else {
-          onComplete(answers);
+          onComplete(newAnswers);
           onClose();
         }
       }, 300);
@@ -81,12 +87,13 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   };
 
   const handleSkip = () => {
-    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: 'skip' }));
+    const newAnswers = {...answers, [questions[currentIndex].id]: 'skip'};
+    setAnswers(newAnswers);
 
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
-      onComplete(answers);
+      onComplete(newAnswers);
       onClose();
     }
   };
@@ -113,9 +120,8 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
 
   if (!isOpen || currentIndex >= questions.length) return null;
 
-  // Рендерим непосредственно в созданный портал
   return portalRef.current ? (
-    React.createPortal(
+    ReactDOM.createPortal(
       <AnimatePresence>
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000]">
           <motion.div 
@@ -141,7 +147,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
                 Вопрос {currentIndex + 1} из {questions.length}
               </div>
               
-              {/* Контейнер для карточки - занимает основное пространство */}
+              {/* Контейнер для карточки */}
               <div 
                 className="flex-1 relative mb-6"
                 onTouchStart={handleDragStart}
