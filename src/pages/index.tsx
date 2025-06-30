@@ -339,18 +339,15 @@ const Home = () => {
                 </div>
               ) : (
                 <div className="flex justify-center mt-6">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="bg-blue-500 text-white px-8 py-3 rounded-xl shadow-lg font-medium"
-                    onClick={() => {
-                      console.log('Opening survey modal');
-                      setIsSurveyModalOpen(true);
-                    }}
-                  >
-                    Пройти тест сегодня
-                  </motion.button>
-                </div>
+                 <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}    
+                  className="accept-button"
+                  onClick={() => setIsSurveyModalOpen(true)}        
+                >
+              Пройти тест сегодня
+            </motion.button>
+          </div>
               )}
 
               {/* Блок с октаграммой */}
