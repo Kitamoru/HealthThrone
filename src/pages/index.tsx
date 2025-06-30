@@ -11,7 +11,7 @@ import { UserProfile } from '../lib/types';
 import { QuestionCard } from '../components/QuestionCard'; 
 import { BurnoutProgress } from '../components/BurnoutProgress';
 import Onboarding from '../components/Onboarding';
-import Octagram from '../components/Octagram'; // Импорт компонента октаграммы
+import Octagram from '../components/Octagram';
 
 interface Question {
   id: number;
@@ -239,7 +239,6 @@ const Home = () => {
     return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
   }, [answers, initialBurnoutLevel, surveyCompleted, userData]);
 
-  // Временные данные для октаграммы
   const octagramValues = useMemo(() => {
     return [
       -1.0, // Техномантия
@@ -312,50 +311,52 @@ const Home = () => {
         </div>
       ) : (
         <>
-          <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
-          
-          <div className="content">
-            {apiError && !alreadyAttemptedToday && (
-              <div className="error-message">{apiError}</div>
-            )}
+          <div className="scrollable-content">
+            <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
+            
+            <div className="content">
+              {apiError && !alreadyAttemptedToday && (
+                <div className="error-message">{apiError}</div>
+              )}
 
-            {alreadyAttemptedToday ? (
-              <div className="time-message">
-                <div className="info-message">
-                  Вы уже прошли опрос сегодня. Ваш текущий уровень выгорания: {burnoutLevel}%
+              {alreadyAttemptedToday ? (
+                <div className="time-message">
+                  <div className="info-message">
+                    Вы уже прошли опрос сегодня. Ваш текущий уровень выгорания: {burnoutLevel}%
+                  </div>
                 </div>
-              </div>
-            ) : surveyCompleted ? (
-              <div className="time-message">
-                <div className="info-message">
-                  🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
+              ) : surveyCompleted ? (
+                <div className="time-message">
+                  <div className="info-message">
+                    🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="questions">
-                {questions.map(question => (
-                  <QuestionCard
-                    key={question.id}
-                    question={question}
-                    onAnswer={handleAnswer}
-                    answered={question.id in answers}
-                  />
-                ))}
-              </div>
-            )}
+              ) : (
+                <div className="questions">
+                  {questions.map(question => (
+                    <QuestionCard
+                      key={question.id}
+                      question={question}
+                      onAnswer={handleAnswer}
+                      answered={question.id in answers}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Блок с октаграммой */}
+              <AnimatePresence>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8 }}
+                  className="mt-4 mb-4 flex flex-col items-center octagram-container"
+                >
+                  <Octagram values={octagramValues} size={280} />
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
-
-          {/* Добавленный блок с октаграммой */}
-         <AnimatePresence>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="mt-4 mb-4 flex flex-col items-center octagram-container" // Уменьшен верхний отступ
-            >
-              <Octagram values={octagramValues} size={280} />
-            </motion.div>
-          </AnimatePresence>
 
           <div className="menu">
             <Link href="/" passHref>
@@ -376,4 +377,5 @@ const Home = () => {
     </div>
   );
 };
+
 export default Home;
