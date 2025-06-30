@@ -98,24 +98,24 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black bg-opacity-70"
+      className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black bg-opacity-80"
     >
       {/* Модальное окно */}
       <motion.div 
-        className="relative bg-white w-full max-w-lg max-h-[85vh] rounded-xl overflow-hidden flex flex-col z-10 shadow-xl"
+        className="relative bg-white w-full max-w-lg max-h-[90vh] rounded-xl overflow-hidden flex flex-col z-10 shadow-xl"
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Прогресс-бар */}
-        <div className="progress-container px-4 pt-4">
-          <p className="progress-text text-center text-gray-500 mb-1">
+        <div className="px-4 pt-4 bg-white">
+          <p className="text-center text-gray-500 mb-1">
             Вопрос {currentIndex + 1} из {questions.length}
           </p>
-          <div className="progress-bar h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
             <motion.div 
-              className="progress-fill h-full bg-blue-500"
+              className="h-full bg-blue-500"
               initial={{ width: "0%" }}
               animate={{ 
                 width: `${((currentIndex + 1) / questions.length) * 100}%` 
@@ -125,9 +125,9 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           </div>
         </div>
         
-        {/* Область вопроса (3/4 экрана) */}
+        {/* Область вопроса - занимает 2/3 высоты */}
         <div 
-          className="flex-1 flex items-center justify-center p-4 min-h-[50vh]"
+          className="flex-[2] flex items-center justify-center p-4"
           onTouchStart={(e) => setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY })}
           onTouchEnd={(e) => {
             const point = e.changedTouches[0];
@@ -156,38 +156,34 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
               }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             >
-              <p className="text-xl font-medium text-gray-800">
+              <p className="text-xl font-medium text-gray-800 px-4">
                 {questions[currentIndex].text}
               </p>
             </motion.div>
           </TinderCard>
         </div>
         
-        {/* Кнопки ответов (нижняя 1/4 экрана) */}
-        <div className="flex justify-between items-center p-4 border-t border-gray-200">
+        {/* Кнопки ответов - занимают 1/3 высоты */}
+        <div className="flex-[1] flex justify-between items-center p-6 pt-4 bg-white">
           <button
             onClick={() => handleAnswer('no')}
-            className="control-button bg-red-100 text-red-600 px-4 py-2 rounded-lg"
+            className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center shadow-md hover:bg-red-200 transition-colors"
           >
-            <div className="flex items-center">
-              <span className="mr-2">←</span> Нет
-            </div>
+            <span className="text-2xl">←</span>
           </button>
           
           <button
             onClick={handleSkip}
-            className="control-button bg-gray-100 text-gray-600 px-4 py-2 rounded-lg"
+            className="w-16 h-16 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center shadow-md hover:bg-gray-200 transition-colors"
           >
-            Пропустить
+            <span className="text-sm font-medium">↻</span>
           </button>
           
           <button
             onClick={() => handleAnswer('yes')}
-            className="control-button bg-green-100 text-green-600 px-4 py-2 rounded-lg"
+            className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center shadow-md hover:bg-green-200 transition-colors"
           >
-            <div className="flex items-center">
-              Да <span className="ml-2">→</span>
-            </div>
+            <span className="text-2xl">→</span>
           </button>
         </div>
       </motion.div>
