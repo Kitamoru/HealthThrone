@@ -32,6 +32,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   const [dragging, setDragging] = useState(false);
 
   useEffect(() => {
+    console.log(`SurveyModal isOpen: ${isOpen}, currentIndex: ${currentIndex}`);
     if (!isOpen) {
       setCurrentIndex(0);
       setAnswers({});
@@ -39,18 +40,17 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     }
   }, [isOpen]);
 
-  // Блокируем прокрутку фоновой страницы при открытой модалке
+  // Закрытие по клавише Esc
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    if (!isOpen) return;
     
-    return () => {
-      document.body.style.overflow = '';
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
     };
-  }, [isOpen]);
+    
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
 
   const handleSwipe = (dir: Direction) => {
     if (dir === 'left' || dir === 'right') {
@@ -104,19 +104,20 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   if (!isOpen || currentIndex >= questions.length) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+    <div 
+      className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
+      onClick={onClose}
+    >
       {/* Затемнение фона */}
-      <div 
-        className="absolute inset-0 bg-black bg-opacity-50"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black bg-opacity-50" />
       
       {/* Модальное окно */}
       <motion.div 
-        className="relative bg-white w-full max-w-lg h-[90vh] max-h-[800px] rounded-xl overflow-hidden flex flex-col z-10"
+        className="relative bg-white w-full max-w-lg h-[90vh] max-h-[800px] rounded-xl overflow-hidden flex flex-col z-10 shadow-xl"
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Прогресс-бар */}
         <div className="h-2 bg-gray-200">
