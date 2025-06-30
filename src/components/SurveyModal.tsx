@@ -88,16 +88,16 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   };
 
   const handleSkip = () => {
-    const newAnswers = {...answers, [questions[currentIndex].id]: 'skip'};
-    setAnswers(newAnswers);
+  const newAnswers = {...answers, [questions[currentIndex].id]: 'skip' as AnswerType}; // <-- исправлено здесь
+  setAnswers(newAnswers);
 
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    } else {
-      onComplete(newAnswers);
-      onClose();
-    }
-  };
+  if (currentIndex < questions.length - 1) {
+    setCurrentIndex(prev => prev + 1);
+  } else {
+    onComplete(newAnswers);
+    onClose();
+  }
+};
 
   const handleDragStart = (e: React.TouchEvent | React.MouseEvent) => {
     const point = 'touches' in e ? e.touches[0] : e;
