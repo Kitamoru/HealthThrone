@@ -39,23 +39,24 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     }
   }, [isOpen]);
 
-  const handleSwipe = (dir: Direction) => {
-    if (dir === 'left' || dir === 'right') {
-      const answer = dir === 'right' ? 'yes' : 'no';
-      setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
-      setSwipeDirection(dir);
+  const handleSwipe = (dir: 'left' | 'right' | 'up' | 'down') => {
+  if (dir === 'left' || dir === 'right') {
+    const answer = dir === 'right' ? 'yes' : 'no';
+    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
+    setSwipeDirection(dir);
 
-      setTimeout(() => {
-        if (currentIndex < questions.length - 1) {
-          setCurrentIndex(prev => prev + 1);
-          setSwipeDirection(null);
-        } else {
-          onComplete(answers);
-          onClose();
-        }
-      }, 300);
-    }
-  };
+    setTimeout(() => {
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex(prev => prev + 1);
+        setSwipeDirection(null);
+      } else {
+        onComplete(answers);
+        onClose();
+      }
+    }, 300);
+  }
+};
+
 
   const handleSkip = () => {
     setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: 'skip' }));
