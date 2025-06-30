@@ -117,5 +117,3 @@ function App({ Component, pageProps }: AppProps) {
 }
 
 export default App;
-
-Внеси все необходимые изменения и пришли исправленные файлы полностью
