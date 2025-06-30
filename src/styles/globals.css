@@ -306,7 +306,7 @@ body {
 
 /* Menu */
 .menu {
-  position: sticky;
+  position: fixed;
   bottom: 0;
   background: var(--tg-bg);
   z-index: 100;
