@@ -39,28 +39,27 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     }
   }, [isOpen]);
 
-  const handleSwipe = (dir: 'left' | 'right' | 'up' | 'down') => {
-  if (dir === 'left' || dir === 'right') {
-    const answer = dir === 'right' ? 'yes' : 'no';
-    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
-    setSwipeDirection(dir);
+  const handleSwipe = (dir: Direction) => {
+    if (dir === 'left' || dir === 'right') {
+      const answer = dir === 'right' ? 'yes' : 'no';
+      setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
+      setSwipeDirection(dir);
 
-    setTimeout(() => {
-      if (currentIndex < questions.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-        setSwipeDirection(null);
-      } else {
-        onComplete(answers);
-        onClose();
-      }
-    }, 300);
-  }
-};
-
+      setTimeout(() => {
+        if (currentIndex < questions.length - 1) {
+          setCurrentIndex(prev => prev + 1);
+          setSwipeDirection(null);
+        } else {
+          onComplete(answers);
+          onClose();
+        }
+      }, 300);
+    }
+  };
 
   const handleSkip = () => {
     setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: 'skip' }));
-    
+
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
@@ -77,15 +76,15 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
 
   const handleDragEnd = (e: React.TouchEvent | React.MouseEvent) => {
     if (!dragging) return;
-    
+
     const point = 'touches' in e ? e.changedTouches[0] : e;
     const deltaX = point.clientX - dragStart.x;
     const deltaY = point.clientY - dragStart.y;
-    
+
     if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > swipeThreshold) {
       handleSwipe(deltaX > 0 ? 'right' : 'left');
     }
-    
+
     setDragging(false);
   };
 
@@ -109,12 +108,12 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
             transition={{ duration: 0.3 }}
           />
         </div>
-        
+
         <div className="p-6">
           <div className="text-center mb-2 text-gray-500">
             Вопрос {currentIndex + 1} из {questions.length}
           </div>
-          
+
           <div 
             className="relative h-64 mb-8"
             onTouchStart={handleDragStart}
@@ -147,7 +146,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
               </motion.div>
             </TinderCard>
           </div>
-          
+
           <div className="flex justify-between items-center text-sm text-gray-500">
             <div className="flex items-center">
               <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mr-2">
@@ -155,14 +154,14 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
               </div>
               Нет
             </div>
-            
+
             <div 
               className="px-4 py-2 bg-gray-100 rounded-lg cursor-pointer"
               onClick={handleSkip}
             >
               Не знаю
             </div>
-            
+
             <div className="flex items-center">
               Да
               <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center ml-2">
