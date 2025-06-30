@@ -30,49 +30,6 @@ body {
   overscroll-behavior: none;
 }
 
-/* Loader Styles */
-.loader-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  width: 100vw;
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 1000;
-  gap: 10px;
-}
-
-.loader-spinner {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pulse-circle {
-  width: 60px;
-  height: 60px;
-  background: radial-gradient(circle, rgba(0, 123, 255, 0.7) 0%, transparent 70%);
-  border-radius: 50%;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-.loader-emoji {
-  font-size: 24px;
-  position: absolute;
-  animation: bounce 1.5s ease-in-out infinite;
-}
-
-.loader-text {
-  font-size: 16px;
-  color: #333;
-  font-weight: 500;
-  animation: fade 1.5s ease-in-out infinite;
-}
-
 /* Main Container */
 .container {
   display: flex;
@@ -80,6 +37,7 @@ body {
   height: calc(var(--vh, 1vh) * 100);
   padding: 15px;
   gap: 20px;
+  overflow: hidden; /* Отключаем общий скролл */
 }
 
 /* Header Styles */
@@ -1343,5 +1301,14 @@ strong {
     padding: 0.5rem;
     margin: 1rem 0;
   }
+}
+  .scrollable-content {
+  flex: 1; /* Занимает все доступное пространство */
+  overflow-y: auto; /* Включаем вертикальный скролл */
+  scroll-behavior: smooth;
+  padding-bottom: 20px; /* Отступ для меню */
+  -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+  transform: translateZ(0); /* Аппаратное ускорение */
+  overscroll-behavior: contain; /* Предотвращает эффект "отскока" */
 }
 }
