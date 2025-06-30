@@ -91,14 +91,9 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   if (!isOpen || currentIndex >= questions.length) return null;
 
   return (
-    <div className="fixed inset-0 z-[1000]">
-      <div 
-        className="absolute inset-0 bg-black bg-opacity-50"
-        onClick={onClose}
-      />
-      
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <motion.div 
-        className="relative bg-white w-full h-full flex flex-col z-[1001]"
+        className="bg-white w-full h-full flex flex-col"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
