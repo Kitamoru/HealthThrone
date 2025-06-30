@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import TinderCard from 'react-tinder-card';
 import { motion } from 'framer-motion';
 
-// Определяем тип направления самостоятельно
-type Direction = 'left' | 'right' | 'up' | 'down';
-
 interface Question {
   id: number;
   text: string;
@@ -28,7 +25,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, 'yes' | 'no' | 'skip'>>({});
-  const [swipeDirection, setSwipeDirection] = useState<Direction | null>(null);
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
 
@@ -40,8 +37,9 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     }
   }, [isOpen]);
 
-  const handleSwipe = (dir: Direction) => {
-    // Обрабатываем только левый и правый свайп
+  // Исправляем тип параметра на string
+  const handleSwipe = (dir: string) => {
+    // Проверяем, что это допустимое направление
     if (dir !== 'left' && dir !== 'right') return;
     
     const answer = dir === 'right' ? 'yes' : 'no';
@@ -100,7 +98,6 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
       >
-        {/* Прогресс-бар */}
         <div className="h-2 bg-gray-200">
           <motion.div 
             className="h-full bg-blue-500"
@@ -117,7 +114,6 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
             Вопрос {currentIndex + 1} из {questions.length}
           </div>
           
-          {/* Контейнер для карточки */}
           <div 
             className="relative h-64 mb-8"
             onTouchStart={handleDragStart}
@@ -151,7 +147,6 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
             </TinderCard>
           </div>
           
-          {/* Подсказки */}
           <div className="flex justify-between items-center text-sm text-gray-500">
             <div className="flex items-center">
               <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mr-2">
