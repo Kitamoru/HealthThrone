@@ -12,6 +12,7 @@ import { BurnoutProgress } from '../components/BurnoutProgress';
 import Onboarding from '../components/Onboarding';
 import Octagram from '../components/Octagram';
 import { SurveyModal } from '../components/SurveyModal';
+import { Question } from '../lib/types';
 
 interface Question {
   id: number;
