@@ -26,7 +26,7 @@ body {
   color: var(--tg-text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   height: calc(var(--vh, 1vh) * 100);
-  overflow: hidden;
+  overflow-y: auto;
   overscroll-behavior: none;
 }
 
@@ -166,7 +166,6 @@ body {
 /* Content Area */
 .content {
   overflow-y: auto;
-  scroll-behavior: smooth;
   padding-bottom: 15px;
 }
 
