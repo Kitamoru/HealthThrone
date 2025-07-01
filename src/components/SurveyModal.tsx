@@ -142,7 +142,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
                 onSwipe={handleSwipe}
                 preventSwipe={['down']}
                 swipeRequirementType="position"
-                swipeThreshold={80} // Уменьшенный порог свайпа
+                swipeThreshold={80}
                 className="swipe-card"
               >
                 <div className="survey-card">
@@ -169,7 +169,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
             className="survey-button survey-button-skip"
             aria-label="Пропустить"
           >
-            <span className="button-icon">↻</span>
+            <span className="button-icon">↑</span>
           </button>
           
           <button
