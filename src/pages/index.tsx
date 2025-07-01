@@ -126,7 +126,7 @@ const Home = () => {
     queryFn: async (): Promise<UserProfile | null> => {
       if (!user?.id) return null;
       
-      const response = await api.getUserData(Number(user.id), initData;
+      const response = await api.getUserData(Number(user.id), initData);
       
       if (!response.success) {
         throw new Error(response.error || "Ошибка загрузки данных");
