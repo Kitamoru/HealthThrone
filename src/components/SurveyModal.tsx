@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import TinderCard from 'react-tinder-card';
 import { motion } from 'framer-motion';
-import './SurveyModal.css';
 
 type Direction = 'left' | 'right' | 'up' | 'down';
 
