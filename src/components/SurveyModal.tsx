@@ -31,6 +31,19 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
 
+  // Управление блокировкой прокрутки
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [isOpen]);
+
   useEffect(() => {
     if (!isOpen) {
       setCurrentIndex(0);
@@ -94,15 +107,18 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     }, 300);
   };
 
-   if (!isOpen || currentIndex >= questions.length) return null;
+  if (!isOpen || currentIndex >= questions.length) return null;
 
   return (
     <div 
-      className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}
+      className="fixed inset-0 flex items-center justify-center p-4 z-[10000]"
+      style={{ 
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        display: isOpen ? 'flex' : 'none'
+      }}
     >
       <motion.div 
-        className="relative w-full max-w-lg max-h-[90vh] rounded-xl overflow-hidden flex flex-col z-10"
+        className="relative w-full max-w-lg max-h-[90vh] rounded-xl overflow-hidden flex flex-col"
         style={{ 
           backgroundColor: 'white',
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
