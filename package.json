@@ -33,7 +33,7 @@
     "stream-browserify": "^3.0.0",
     "telegraf": "^4.16.3",
     "typescript": "^5.0.0",
-    "@types/d3": "^7.9.0"
+    "d3": "^7.0.0"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.0.0",
