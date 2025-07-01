@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { motion, PanInfo, useAnimation } from 'framer-motion';
-import './SurveyModal.css';
 
 interface Question {
   id: number;
