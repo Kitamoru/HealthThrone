@@ -1,6 +1,6 @@
 import { motion, useAnimation } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
-import * as d3 from 'd3';
+import d3 from 'd3';
 import { createClient } from '@supabase/supabase-js';
 
 interface OctagramProps {
