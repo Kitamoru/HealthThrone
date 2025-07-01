@@ -1306,81 +1306,8 @@ strong {
     margin: 1rem 0;
   }
 }
-  .scrollable-content {
-  flex: 1; /* Занимает все доступное пространство */
-  overflow-y: auto; /* Включаем вертикальный скролл */
-  scroll-behavior: smooth;
-  padding-bottom: 20px; /* Отступ для меню */
-  -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
-  transform: translateZ(0); /* Аппаратное ускорение */
-  overscroll-behavior: contain; /* Предотвращает эффект "отскока" */
-}
-  /* Стили для модального окна опроса */
-.card {
-  position: fixed; /* Фиксируем окно */
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7); /* Полупрозрачный фон */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.card:active {
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-/* Анимации для свайпов */
-@keyframes swipe-right {
-  0% { transform: translateX(0) rotate(0); opacity: 1; }
-  100% { transform: translateX(200%) rotate(30deg); opacity: 0; }
-}
-
-@keyframes swipe-left {
-  0% { transform: translateX(0) rotate(0); opacity: 1; }
-  100% { transform: translateX(-200%) rotate(-30deg); opacity: 0; }
-}
-
-.swipe-right {
-  animation: swipe-right 0.5s forwards;
-}
-
-.swipe-left {
-  animation: swipe-left 0.5s forwards;
-}
-
-/* Кнопки управления */
-.control-button {
-  transition: all 0.2s ease;
-}
-
-.control-button:active {
-  transform: scale(0.95);
-}
-  /* Гарантируем, что модальное окно поверх всего */
-/* Гарантируем, что модальное окно поверх всего */
-#modal-portal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 10000;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-/* Запрет прокрутки фона */
-body.modal-open {
-  overflow: hidden;
-}
-
-/* Фикс для кнопок меню */
-.menu-btn {
-  position: relative;
-  z-index: 10;
-}
+ 
+/* ОСТАВИТЬ ТОЛЬКО ЭТИ СТИЛИ */
 /* SurveyModal.css */
 .survey-modal-overlay {
   position: fixed;
@@ -1406,26 +1333,27 @@ body.modal-open {
 /* Верхняя часть (черная) */
 .survey-modal-header {
   padding: 1rem 1rem 0;
-  background-color: black; /* Черный фон */
+  background-color: black;
 }
 
 .survey-progress-text {
   text-align: center;
-  color: white; /* Белый текст */
+  color: white;
   margin-bottom: 0.25rem;
+  font-size: 1rem;
 }
 
 .survey-progress-track {
   width: 100%;
   height: 0.5rem;
-  background-color: #333; /* Темно-серый */
+  background-color: #333;
   border-radius: 9999px;
   overflow: hidden;
 }
 
 .survey-progress-bar {
   height: 100%;
-  background-color: #3b82f6; /* Синий прогресс */
+  background-color: #3b82f6;
 }
 
 /* Центральная часть (черная) */
@@ -1437,7 +1365,7 @@ body.modal-open {
   padding: 1rem;
   min-height: 66vh;
   overflow: hidden;
-  background-color: black; /* Черный фон */
+  background-color: black;
 }
 
 .survey-card {
@@ -1448,16 +1376,18 @@ body.modal-open {
   justify-content: center;
   padding: 1.5rem;
   text-align: center;
-  background-color: black; /* Черный фон */
+  background-color: black;
   cursor: grab;
+  user-select: none;
+  touch-action: pan-y;
 }
 
 .survey-card-text {
-  font-size: 1.5rem; /* Увеличил размер текста */
+  font-size: 1.5rem;
   font-weight: 500;
-  color: white; /* Белый текст */
+  color: white;
   padding: 0 1rem;
-  line-height: 1.6; /* Улучшенный межстрочный интервал */
+  line-height: 1.6;
 }
 
 /* Нижняя часть (черная) */
@@ -1468,7 +1398,9 @@ body.modal-open {
   align-items: center;
   padding: 1.5rem;
   padding-top: 1rem;
-  background-color: black; /* Черный фон */
+  background-color: black;
+  position: relative;
+  z-index: 100;
 }
 
 .survey-button {
@@ -1478,11 +1410,11 @@ body.modal-open {
   width: 4rem;
   height: 4rem;
   border-radius: 50%;
-  box-shadow: 0 4px 6px -1px rgba(255, 255, 255, 0.1), /* Белая тень */
+  box-shadow: 0 4px 6px -1px rgba(255, 255, 255, 0.1), 
               0 2px 4px -1px rgba(255, 255, 255, 0.06);
-  transition: background-color 0.3s, transform 0.2s;
+  transition: transform 0.2s;
   cursor: pointer;
-  border: 2px solid rgba(255, 255, 255, 0.1); /* Светлая обводка */
+  border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .survey-button:active {
@@ -1523,7 +1455,11 @@ body.modal-open {
   animation: swipe-left 0.5s forwards;
 }
 
-/* Фикс для iOS */
+/* Глобальные стили (должны быть в global.css) */
+body.modal-open {
+  overflow: hidden;
+}
+
 .ios-scroll-fix {
   -webkit-overflow-scrolling: touch;
   transform: translateZ(0);
