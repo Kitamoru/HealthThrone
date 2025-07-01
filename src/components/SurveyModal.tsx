@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, PanInfo, useAnimation } from 'framer-motion';
+import './SurveyModal.css';
 
 interface Question {
   id: number;
@@ -14,8 +15,9 @@ interface SurveyModalProps {
   questions: Question[];
 }
 
-const SWIPE_THRESHOLD = 100; // Минимальное расстояние для свайпа
-const SWIPE_VELOCITY = 1; // Минимальная скорость для свайпа
+const SWIPE_THRESHOLD = 100;
+const VERTICAL_SWIPE_THRESHOLD = 100;
+const SWIPE_VELOCITY = 1;
 
 export const SurveyModal: React.FC<SurveyModalProps> = ({ 
   isOpen, 
@@ -66,12 +68,17 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   const handleDragEnd = async (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     setIsSwiping(false);
     
-    // Проверяем, достаточно ли сильный был свайп
-    const shouldSwipe = 
+    // Проверяем горизонтальный свайп
+    const horizontalSwipe = 
       Math.abs(info.offset.x) > SWIPE_THRESHOLD || 
       Math.abs(info.velocity.x) > SWIPE_VELOCITY;
     
-    if (shouldSwipe) {
+    // Проверяем вертикальный свайп вниз
+    const verticalSwipeDown = 
+      info.offset.y > VERTICAL_SWIPE_THRESHOLD || 
+      info.velocity.y > SWIPE_VELOCITY;
+    
+    if (horizontalSwipe) {
       const direction = info.offset.x > 0 ? 'right' : 'left';
       const answer = direction === 'right' ? 'yes' : 'no';
       
@@ -84,7 +91,19 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
       });
       
       handleAnswer(answer);
-    } else {
+    } 
+    // Обработка вертикального свайпа вниз
+    else if (verticalSwipeDown) {
+      // Анимация свайпа вниз
+      await controls.start({
+        y: '100vh',
+        opacity: 0,
+        transition: { duration: 0.3 }
+      });
+      
+      handleSkip();
+    }
+    else {
       // Возврат в исходное положение
       controls.start({ 
         x: 0, 
@@ -159,8 +178,8 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           {questions.length > 0 && (
             <motion.div
               className="survey-card"
-              drag="x" // Разрешаем перетаскивание только по горизонтали
-              dragConstraints={{ left: 0, right: 0 }} // Возвращаем в центр при отпускании
+              drag
+              dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               animate={controls}
