@@ -28,7 +28,6 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   const tinderCardRef = useRef<any>(null);
   const [lastDirection, setLastDirection] = useState<Direction | null>(null);
 
-  // Используем ref для синхронизации значений в асинхронных операциях
   const answersRef = useRef(answers);
   const currentIndexRef = useRef(currentIndex);
 
@@ -37,7 +36,6 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     currentIndexRef.current = currentIndex;
   }, [answers, currentIndex]);
 
-  // Блокировка прокрутки фона при открытой модалке
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -73,17 +71,14 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     setLastDirection(dir);
     const thisIndex = currentIndexRef.current;
     
-    // Обработка свайпа вверх (пропуск)
     if (dir === 'up') {
       setAnswers(prev => ({ ...prev, [questions[thisIndex].id]: 'skip' }));
     } 
-    // Обработка свайпов влево/вправо
     else if (dir === 'left' || dir === 'right') {
       const answer = dir === 'right' ? 'yes' : 'no';
       setAnswers(prev => ({ ...prev, [questions[thisIndex].id]: answer }));
     }
 
-    // Переход к следующему вопросу или завершение
     setTimeout(() => {
       if (thisIndex >= questions.length - 1) {
         onComplete(answersRef.current);
@@ -95,13 +90,9 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   };
 
   const handleSkip = () => {
-    // Вызываем программный свайп вверх для анимации
     if (tinderCardRef.current?.swipe) {
       tinderCardRef.current.swipe('up')
-        .catch(() => {
-          // Ручной вызов если свайп не сработал
-          handleSwipe('up');
-        });
+        .catch(() => handleSwipe('up'));
     } else {
       handleSwipe('up');
     }
@@ -110,14 +101,9 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   const handleAnswer = (answer: 'yes' | 'no') => {
     const direction = answer === 'yes' ? 'right' : 'left';
     
-    // Вызываем свайп через ref
     if (tinderCardRef.current && tinderCardRef.current.swipe) {
       tinderCardRef.current.swipe(direction)
-        .catch((err: any) => {
-          console.error('Swipe error:', err);
-          // Ручная обработка, если свайп не сработал
-          handleSwipe(direction);
-        });
+        .catch(() => handleSwipe(direction));
     }
   };
 
@@ -132,7 +118,6 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Прогресс-бар */}
         <div className="survey-modal-header">
           <p className="survey-progress-text">
             Вопрос {currentIndex + 1} из {questions.length}
@@ -148,7 +133,6 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           </div>
         </div>
         
-        {/* Область вопроса */}
         <div className="survey-question-container">
           {questions.length > 0 && (
             <div className="swipe-card-wrapper">
@@ -156,10 +140,9 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
                 key={currentIndex}
                 ref={tinderCardRef}
                 onSwipe={handleSwipe}
-                onCardLeftScreen={(dir) => console.log('Card left screen', dir)}
-                preventSwipe={['down']} // Разрешаем свайп вверх
+                preventSwipe={['down']}
                 swipeRequirementType="position"
-                swipeThreshold={150}
+                swipeThreshold={80} // Уменьшенный порог свайпа
                 className="swipe-card"
               >
                 <div className="survey-card">
@@ -172,11 +155,11 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           )}
         </div>
         
-        {/* Кнопки ответов */}
         <div className="survey-buttons-container">
           <button
             onClick={() => handleAnswer('no')}
             className="survey-button survey-button-no"
+            aria-label="Нет"
           >
             <span className="button-icon">←</span>
           </button>
@@ -184,6 +167,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           <button
             onClick={handleSkip}
             className="survey-button survey-button-skip"
+            aria-label="Пропустить"
           >
             <span className="button-icon">↻</span>
           </button>
@@ -191,6 +175,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           <button
             onClick={() => handleAnswer('yes')}
             className="survey-button survey-button-yes"
+            aria-label="Да"
           >
             <span className="button-icon">→</span>
           </button>
