@@ -28,6 +28,15 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   const tinderCardRef = useRef<any>(null);
   const [lastDirection, setLastDirection] = useState<Direction | null>(null);
 
+  // Используем ref для синхронизации значений в асинхронных операциях
+  const answersRef = useRef(answers);
+  const currentIndexRef = useRef(currentIndex);
+
+  useEffect(() => {
+    answersRef.current = answers;
+    currentIndexRef.current = currentIndex;
+  }, [answers, currentIndex]);
+
   // Блокировка прокрутки фона при открытой модалке
   useEffect(() => {
     if (isOpen) {
@@ -62,32 +71,39 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
 
   const handleSwipe = (dir: Direction) => {
     setLastDirection(dir);
+    const thisIndex = currentIndexRef.current;
     
-    if (dir === 'left' || dir === 'right') {
+    // Обработка свайпа вверх (пропуск)
+    if (dir === 'up') {
+      setAnswers(prev => ({ ...prev, [questions[thisIndex].id]: 'skip' }));
+    } 
+    // Обработка свайпов влево/вправо
+    else if (dir === 'left' || dir === 'right') {
       const answer = dir === 'right' ? 'yes' : 'no';
-      setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
-      
-      // Переход к следующему вопросу
-      setTimeout(() => {
-        if (currentIndex < questions.length - 1) {
-          setCurrentIndex(prev => prev + 1);
-        } else {
-          onComplete(answers);
-          onClose();
-        }
-      }, 300);
+      setAnswers(prev => ({ ...prev, [questions[thisIndex].id]: answer }));
     }
+
+    // Переход к следующему вопросу или завершение
+    setTimeout(() => {
+      if (thisIndex >= questions.length - 1) {
+        onComplete(answersRef.current);
+        onClose();
+      } else {
+        setCurrentIndex(prev => prev + 1);
+      }
+    }, 300);
   };
 
   const handleSkip = () => {
-    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: 'skip' }));
-    
-    // Переход к следующему вопросу
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(prev => prev + 1);
+    // Вызываем программный свайп вверх для анимации
+    if (tinderCardRef.current?.swipe) {
+      tinderCardRef.current.swipe('up')
+        .catch(() => {
+          // Ручной вызов если свайп не сработал
+          handleSwipe('up');
+        });
     } else {
-      onComplete(answers);
-      onClose();
+      handleSwipe('up');
     }
   };
 
@@ -97,9 +113,6 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     // Вызываем свайп через ref
     if (tinderCardRef.current && tinderCardRef.current.swipe) {
       tinderCardRef.current.swipe(direction)
-        .then(() => {
-          // Ответ обрабатывается в handleSwipe
-        })
         .catch((err: any) => {
           console.error('Swipe error:', err);
           // Ручная обработка, если свайп не сработал
@@ -140,12 +153,11 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           {questions.length > 0 && (
             <div className="swipe-card-wrapper">
               <TinderCard
-               
                 key={currentIndex}
                 ref={tinderCardRef}
                 onSwipe={handleSwipe}
                 onCardLeftScreen={(dir) => console.log('Card left screen', dir)}
-                preventSwipe={['up', 'down']}
+                preventSwipe={['down']} // Разрешаем свайп вверх
                 swipeRequirementType="position"
                 swipeThreshold={150}
                 className="swipe-card"
