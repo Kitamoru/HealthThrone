@@ -95,19 +95,20 @@ const Home = () => {
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    // Создаем контейнер для портала при монтировании
-    const portalContainer = document.createElement('div');
-    portalContainer.id = 'modal-portal';
-    portalContainer.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4';
-    portalContainer.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    // Создаем контейнер для портала только при открытии модалки
+    if (isSurveyModalOpen && !modalPortalRef.current) {
+      const portalContainer = document.createElement('div');
+      portalContainer.id = 'modal-portal';
+      portalContainer.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4';
+      document.body.appendChild(portalContainer);
+      modalPortalRef.current = portalContainer;
+    }
     
-    document.body.appendChild(portalContainer);
-    modalPortalRef.current = portalContainer;
-
     return () => {
       // Удаляем контейнер при размонтировании
       if (modalPortalRef.current) {
         document.body.removeChild(modalPortalRef.current);
+        modalPortalRef.current = null;
       }
     };
   }, []);
