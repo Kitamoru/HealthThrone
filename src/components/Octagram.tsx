@@ -60,7 +60,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
   // Vertex animation phase
   useEffect(() => {
     if (phase === 'vertices') {
-      setTimeout(() => setPhase('octagon'), 8 * 100 + 800);
+      setTimeout(() => setPhase('octagon'), 600); // Уменьшено с 1600мс
     }
   }, [phase]);
 
@@ -70,7 +70,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
       octagonControls.start({
         pathLength: 1,
         opacity: 1,
-        transition: { duration: 1.5, ease: 'easeInOut' },
+        transition: { duration: 0.6, ease: 'easeInOut' }, // Уменьшено с 1.5с
       }).then(() => {
         setPhase('rays');
       });
@@ -91,7 +91,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             ease: "easeInOut"
           }
         });
-      }, 2000);
+      }, 800); // Уменьшено с 2000мс
     }
   }, [phase, pulseControls]);
 
@@ -138,8 +138,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
                     }
               }
               transition={{
-                delay: index * 0.1,
-                duration: 0.8,
+                delay: index * 0.06, // Уменьшено с 0.1
+                duration: 0.4, // Уменьшено с 0.8
               }}
               filter="url(#glow)"
             />
@@ -177,8 +177,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
                   y2: point.y,
                 }}
                 transition={{
-                  delay: phase === 'rays' ? index * 0.1 : 0,
-                  duration: 1.0,
+                  delay: phase === 'rays' ? index * 0.06 : 0, // Уменьшено с 0.1
+                  duration: 0.5, // Уменьшено с 1.0
                   ease: 'easeOut',
                 }}
                 filter="url(#ray-glow)"
@@ -202,8 +202,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
               opacity: [0.8, 1, 0.8],
             }}
             transition={{
-              delay: 1.5,
-              duration: 1.0,
+              delay: 0.8, // Уменьшено с 1.5
+              duration: 0.6, // Уменьшено с 1.0
               opacity: {
                 duration: 3,
                 repeat: Infinity,
