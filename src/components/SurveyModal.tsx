@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import TinderCard from 'react-tinder-card';
 import { motion } from 'framer-motion';
 
@@ -28,7 +28,8 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, 'yes' | 'no' | 'skip'>>({});
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
-  const [isSwiping, setIsSwiping] = useState(false);
+  const tinderCardRef = useRef<any>(null);
+  const isSwipingRef = useRef(false);
 
   // Блокировка прокрутки фона при открытой модалке
   useEffect(() => {
@@ -63,8 +64,8 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   }, [isOpen, onClose]);
 
   const handleSwipe = (dir: Direction) => {
-    if (isSwiping) return;
-    setIsSwiping(true);
+    if (isSwipingRef.current) return;
+    isSwipingRef.current = true;
     
     if (dir === 'left' || dir === 'right') {
       const answer = dir === 'right' ? 'yes' : 'no';
@@ -73,27 +74,33 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
 
       setTimeout(() => {
         goToNextQuestion();
-        setIsSwiping(false);
+        isSwipingRef.current = false;
       }, 300);
     }
   };
 
   const handleSkip = () => {
-    if (isSwiping) return;
+    if (isSwipingRef.current) return;
     
     setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: 'skip' }));
     goToNextQuestion();
   };
 
   const handleAnswer = (answer: 'yes' | 'no') => {
-    if (isSwiping) return;
+    if (isSwipingRef.current) return;
     
-    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
-    setSwipeDirection(answer === 'yes' ? 'right' : 'left');
-
-    setTimeout(() => {
-      goToNextQuestion();
-    }, 300);
+    // Используем метод swipe из react-tinder-card для анимации
+    if (tinderCardRef.current && tinderCardRef.current.swipe) {
+      tinderCardRef.current.swipe(answer === 'yes' ? 'right' : 'left')
+        .then(() => {
+          setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
+          setSwipeDirection(answer === 'yes' ? 'right' : 'left');
+          
+          setTimeout(() => {
+            goToNextQuestion();
+          }, 300);
+        });
+    }
   };
 
   const goToNextQuestion = () => {
@@ -139,25 +146,18 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           {questions.length > 0 && (
             <TinderCard
               key={currentIndex}
+              ref={tinderCardRef}
               onSwipe={handleSwipe}
-              onCardLeftScreen={() => {}} // Необходимо для работы библиотеки
+              onCardLeftScreen={() => {}}
               preventSwipe={['up', 'down']}
               swipeThreshold={swipeThreshold}
               className="tinder-card-container"
             >
-              <motion.div
-                className="survey-card"
-                animate={{
-                  x: swipeDirection === 'right' ? '100vw' : swipeDirection === 'left' ? '-100vw' : 0,
-                  opacity: swipeDirection ? 0 : 1,
-                  rotate: swipeDirection === 'right' ? 30 : swipeDirection === 'left' ? -30 : 0
-                }}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              >
+              <div className="survey-card">
                 <p className="survey-card-text">
                   {questions[currentIndex]?.text}
                 </p>
-              </motion.div>
+              </div>
             </TinderCard>
           )}
         </div>
