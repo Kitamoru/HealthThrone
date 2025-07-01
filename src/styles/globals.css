@@ -1305,10 +1305,8 @@ strong {
     padding: 0.5rem;
     margin: 1rem 0;
   }
+  
 }
- 
-/* ОСТАВИТЬ ТОЛЬКО ЭТИ СТИЛИ */
-/* SurveyModal.css */
 .survey-modal-overlay {
   position: fixed;
   inset: 0;
@@ -1330,7 +1328,6 @@ strong {
   background-color: black;
 }
 
-/* Верхняя часть (черная) */
 .survey-modal-header {
   padding: 1rem 1rem 0;
   background-color: black;
@@ -1356,7 +1353,6 @@ strong {
   background-color: #3b82f6;
 }
 
-/* Центральная часть (черная) */
 .survey-question-container {
   flex: 2;
   display: flex;
@@ -1366,6 +1362,7 @@ strong {
   min-height: 66vh;
   overflow: hidden;
   background-color: black;
+  touch-action: none; /* Отключаем стандартные жесты браузера */
 }
 
 .survey-card {
@@ -1379,7 +1376,7 @@ strong {
   background-color: black;
   cursor: grab;
   user-select: none;
-  touch-action: pan-y;
+  touch-action: none;
 }
 
 .survey-card-text {
@@ -1390,7 +1387,6 @@ strong {
   line-height: 1.6;
 }
 
-/* Нижняя часть (черная) */
 .survey-buttons-container {
   flex: 1;
   display: flex;
@@ -1455,71 +1451,8 @@ strong {
   animation: swipe-left 0.5s forwards;
 }
 
-/* Глобальные стили (должны быть в global.css) */
+/* Глобальные стили */
 body.modal-open {
   overflow: hidden;
-}
-
-.ios-scroll-fix {
-  -webkit-overflow-scrolling: touch;
-  transform: translateZ(0);
-  overscroll-behavior: contain;
-}
-  /* Добавьте это в конец файла */
-.tinder-card-container {
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-.survey-card {
-  /* Улучшения для свайпа */
-  touch-action: pan-y;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
-/* Анимация для плавного появления вопроса */
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.tinder-card-container > div {
-  animation: fadeIn 0.3s ease-out;
-}
-  .tinder-card-container {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  overflow: hidden;
-}
-
-.survey-card {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  text-align: center;
-  background-color: black;
-  cursor: grab;
-  user-select: none;
-  touch-action: pan-y;
-  position: absolute;
-  top: 0;
-  left: 0;
-  transition: transform 0.3s ease;
-}
-
-/* Анимации для свайпов - теперь через CSS */
-.survey-card.swiping {
-  transition: none;
-}
-
-/* Анимация возврата */
-.survey-card.return {
-  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 }
