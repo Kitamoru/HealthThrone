@@ -91,39 +91,11 @@ const Home = () => {
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
   
-  // Создаем портал для модального окна
-  const modalPortalRef = useRef<HTMLDivElement | null>(null);
+  const modalContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    // Создаем контейнер для портала при монтировании
-    const portalContainer = document.createElement('div');
-    portalContainer.id = 'modal-portal';
-    portalContainer.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4';
-    portalContainer.style.backgroundColor = 'rgba(0,0,0,0.8)';
-    
-    document.body.appendChild(portalContainer);
-    modalPortalRef.current = portalContainer;
-
-    return () => {
-      // Удаляем контейнер при размонтировании
-      if (modalPortalRef.current) {
-        document.body.removeChild(modalPortalRef.current);
-      }
-    };
+    modalContainerRef.current = document.getElementById('modal-container') as HTMLDivElement;
   }, []);
-
-  // Управление прокруткой страницы при открытии модалки
-  useEffect(() => {
-    if (isSurveyModalOpen) {
-      document.body.classList.add('modal-open');
-    } else {
-      document.body.classList.remove('modal-open');
-    }
-    
-    return () => {
-      document.body.classList.remove('modal-open');
-    };
-  }, [isSurveyModalOpen]);
 
   const isTodayUTC = useCallback((dateStr: string) => {
     if (!dateStr) return false;
@@ -154,7 +126,7 @@ const Home = () => {
     queryFn: async (): Promise<UserProfile | null> => {
       if (!user?.id) return null;
       
-      const response = await api.getUserData(Number(user.id), initData);
+      const response = await api.getUserData(Number(user.id), initData;
       
       if (!response.success) {
         throw new Error(response.error || "Ошибка загрузки данных");
@@ -385,14 +357,14 @@ const Home = () => {
       )}
 
       {/* Рендерим модальное окно через портал */}
-      {modalPortalRef.current && isSurveyModalOpen && createPortal(
+      {isSurveyModalOpen && modalContainerRef.current && createPortal(
         <SurveyModal
           isOpen={isSurveyModalOpen}
           onClose={handleCloseModal}
           onComplete={handleSurveyComplete}
           questions={QUESTIONS}
         />,
-        modalPortalRef.current
+        modalContainerRef.current
       )}
     </div>
   );
