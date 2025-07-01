@@ -52,6 +52,21 @@ const Loader = dynamic(
 function App({ Component, pageProps }: AppProps) {
   const { initData, startParam, webApp } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
+  const [modalRoot, setModalRoot] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    // Создаем контейнер для модальных окон
+    const portalContainer = document.createElement('div');
+    portalContainer.id = 'modal-portal';
+    document.body.appendChild(portalContainer);
+    setModalRoot(portalContainer);
+
+    return () => {
+      if (portalContainer) {
+        document.body.removeChild(portalContainer);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!initData) return;
@@ -108,6 +123,15 @@ function App({ Component, pageProps }: AppProps) {
       {userInitialized ? (
         <div className="page-transition">
           <Component {...pageProps} />
+          
+          {/* Контейнер для модальных окон */}
+          {modalRoot && (
+            <div 
+              id="modal-container" 
+              className="fixed inset-0 z-[10000] hidden items-center justify-center p-4"
+              style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}
+            ></div>
+          )}
         </div>
       ) : (
         <Loader />
