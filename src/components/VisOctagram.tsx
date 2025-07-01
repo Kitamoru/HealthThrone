@@ -1,6 +1,6 @@
 import { motion, useAnimation } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
-import d3 from 'd3';
+import { line, curveCardinalClosed } from 'd3-shape';
 import { createClient } from '@supabase/supabase-js';
 
 interface OctagramProps {
