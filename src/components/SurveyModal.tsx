@@ -140,11 +140,14 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
           {questions.length > 0 && (
             <div className="swipe-card-wrapper">
               <TinderCard
+               
                 key={currentIndex}
                 ref={tinderCardRef}
                 onSwipe={handleSwipe}
                 onCardLeftScreen={(dir) => console.log('Card left screen', dir)}
                 preventSwipe={['up', 'down']}
+                swipeRequirementType="position"
+                swipeThreshold={150}
                 className="swipe-card"
               >
                 <div className="survey-card">
