@@ -134,26 +134,26 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
         </div>
         
         <div className="survey-question-container">
-          {questions.length > 0 && (
-            <div className="swipe-card-wrapper">
-              <TinderCard
-                key={currentIndex}
-                ref={tinderCardRef}
-                onSwipe={handleSwipe}
-                preventSwipe={['down']}
-                swipeRequirementType="position"
-                swipeThreshold={80}
-                className="swipe-card"
-              >
-                <div className="survey-card">
-                  <p className="survey-card-text">
-                    {questions[currentIndex]?.text}
-                  </p>
-                </div>
-              </TinderCard>
-            </div>
-          )}
-        </div>
+        {questions.length > 0 && (
+          <div className="swipe-card-wrapper">
+            <TinderCard
+              key={currentIndex}
+              ref={tinderCardRef}
+              onSwipe={handleSwipe}
+              preventSwipe={['down']}
+              swipeRequirementType="position"
+              swipeThreshold={50} // Уменьшенный порог для более легкого срабатывания
+              className="swipe-card"
+            >
+              <div className="survey-card">
+                <p className="survey-card-text">
+                  {questions[currentIndex]?.text}
+                </p>
+              </div>
+            </TinderCard>
+          </div>
+        )}
+      </div>
         
         <div className="survey-buttons-container">
           <button
