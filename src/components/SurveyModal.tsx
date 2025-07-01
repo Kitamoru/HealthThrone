@@ -1,8 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import TinderCard from 'react-tinder-card';
-import { motion } from 'framer-motion';
-
-type Direction = 'left' | 'right' | 'up' | 'down';
+mport React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useTelegram } from '../hooks/useTelegram';
+import { api } from '../lib/api';
+import { Loader } from '../components/Loader';
+import { UserProfile } from '../lib/types';
+import { BurnoutProgress } from '../components/BurnoutProgress';
+import Onboarding from '../components/Onboarding';
+import Octagram from '../components/Octagram';
+import { SurveyModal } from '../components/SurveyModal';
+import { createPortal } from 'react-dom';
 
 interface Question {
   id: number;
@@ -10,225 +20,382 @@ interface Question {
   weight: number;
 }
 
-interface SurveyModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onComplete: (answers: Record<number, 'yes' | 'no' | 'skip'>) => void;
-  questions: Question[];
-}
+const QUESTIONS: Question[] = [
+  {
+    id: 1,
+    text: "Я чувствую усталость даже после отдыха",
+    weight: 3
+  },
+  {
+    id: 2,
+    text: "Мне трудно сосредоточиться на работе",
+    weight: 2
+  },
+  {
+    id: 3,
+    text: "Я часто чувствую раздражение",
+    weight: 2
+  },
+  {
+    id: 4,
+    text: "У меня снизилась мотивация к работе",
+    weight: 3
+  },
+  {
+    id: 5,
+    text: "Я испытываю физическое напряжение",
+    weight: 2
+  },
+  {
+    id: 6,
+    text: "Мне сложно расслабиться",
+    weight: 2
+  },
+  {
+    id: 7,
+    text: "Я чувствую себя эмоционально истощенным",
+    weight: 3
+  },
+  {
+    id: 8,
+    text: "У меня есть проблемы со сном",
+    weight: 2
+  },
+  {
+    id: 9,
+    text: "Я хорошо сплю",
+    weight: -2
+  },
+  {
+    id: 10,
+    text: "Я чувствую себя мотивированным",
+    weight: -2
+  },
+  {
+    id: 11,
+    text: "У меня хороший аппетит",
+    weight: -1
+  }
+];
 
-const swipeThreshold = 50;
+const Home = () => {
+  const router = useRouter();
+  const { user, initData } = useTelegram();
+  const queryClient = useQueryClient();
 
-export const SurveyModal: React.FC<SurveyModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  onComplete,
-  questions 
-}) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, 'yes' | 'no' | 'skip'>>({});
-  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState(false);
+  const [questions] = useState<Question[]>(QUESTIONS);
+  const [answers, setAnswers] = useState<Record<number, boolean>>({});
+  const [surveyCompleted, setSurveyCompleted] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [spriteLoaded, setSpriteLoaded] = useState(false);
+  const [isGlobalLoading, setIsGlobalLoading] = useState(false);
+  const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
+  
+  // Создаем портал для модального окна
+  const modalPortalRef = useRef<HTMLDivElement | null>(null);
 
-  // Управление блокировкой прокрутки
   useEffect(() => {
-    if (isOpen) {
+    // Создаем контейнер для портала при монтировании
+    const portalContainer = document.createElement('div');
+    portalContainer.id = 'modal-portal';
+    portalContainer.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4';
+    portalContainer.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    
+    document.body.appendChild(portalContainer);
+    modalPortalRef.current = portalContainer;
+
+    return () => {
+      // Удаляем контейнер при размонтировании
+      if (modalPortalRef.current) {
+        document.body.removeChild(modalPortalRef.current);
+      }
+    };
+  }, []);
+
+  // Управление прокруткой страницы при открытии модалки
+  useEffect(() => {
+    if (isSurveyModalOpen) {
       document.body.classList.add('modal-open');
     } else {
       document.body.classList.remove('modal-open');
     }
-
+    
     return () => {
       document.body.classList.remove('modal-open');
     };
-  }, [isOpen]);
+  }, [isSurveyModalOpen]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      setCurrentIndex(0);
-      setAnswers({});
-      setSwipeDirection(null);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
+  const isTodayUTC = useCallback((dateStr: string) => {
+    if (!dateStr) return false;
     
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [isOpen, onClose]);
-
-  const handleSwipe = (dir: Direction) => {
-    if (dir === 'left' || dir === 'right') {
-      const answer = dir === 'right' ? 'yes' : 'no';
-      setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
-      setSwipeDirection(dir);
-
-      setTimeout(() => {
-        if (currentIndex < questions.length - 1) {
-          setCurrentIndex(prev => prev + 1);
-          setSwipeDirection(null);
-        } else {
-          onComplete(answers);
-          onClose();
-        }
-      }, 300);
+    try {
+      const date = new Date(dateStr);
+      const now = new Date();
+      
+      return (
+        date.getUTCFullYear() === now.getUTCFullYear() &&
+        date.getUTCMonth() === now.getUTCMonth() &&
+        date.getUTCDate() === now.getUTCDate()
+      );
+    } catch (e) {
+      console.error('Date parsing error:', e);
+      return false;
     }
-  };
+  }, []);
 
-  const handleSkip = () => {
-    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: 'skip' }));
-
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    } else {
-      onComplete(answers);
-      onClose();
-    }
-  };
-
-  const handleAnswer = (answer: 'yes' | 'no') => {
-    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
-    setSwipeDirection(answer === 'yes' ? 'right' : 'left');
-
-    setTimeout(() => {
-      if (currentIndex < questions.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-        setSwipeDirection(null);
-      } else {
-        onComplete(answers);
-        onClose();
+  const { 
+    data: userData, 
+    isLoading, 
+    isError,
+    error: queryError,
+    refetch: refetchUserData
+  } = useQuery<UserProfile | null>({
+    queryKey: ['userData', user?.id],
+    queryFn: async (): Promise<UserProfile | null> => {
+      if (!user?.id) return null;
+      
+      const response = await api.getUserData(Number(user.id), initData);
+      
+      if (!response.success) {
+        throw new Error(response.error || "Ошибка загрузки данных");
       }
-    }, 300);
-  };
+      
+      return response.data as UserProfile;
+    },
+    enabled: !!user?.id,
+    refetchOnWindowFocus: true,
+  });
 
-  if (!isOpen || currentIndex >= questions.length) return null;
+  // Определяем необходимость онбординга
+  const needsOnboarding = userData?.character_class === null;
 
+  useEffect(() => {
+    if (queryError) {
+      setApiError((queryError as Error).message);
+    }
+  }, [queryError]);
+
+  useEffect(() => {
+    if (user?.id) {
+      refetchUserData();
+    }
+  }, [user?.id, refetchUserData]);
+
+  useEffect(() => {
+    if (userData?.current_sprite_url) {
+      const img = new Image();
+      img.src = userData.current_sprite_url;
+      img.onload = () => setSpriteLoaded(true);
+      img.onerror = () => {
+        console.error('Failed to preload sprite');
+        setSpriteLoaded(true);
+      };
+    } else {
+      setSpriteLoaded(true);
+    }
+  }, [userData?.current_sprite_url]);
+
+  const submitSurveyMutation = useMutation({
+    mutationFn: async (totalScore: number) => {
+      if (!user?.id) throw new Error("Пользователь не определен");
+      
+      const response = await api.submitSurvey({
+        telegramId: Number(user.id),
+        newScore: totalScore,
+        initData
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || 'Ошибка сохранения результатов');
+      }
+      
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(['userData', user?.id], (oldData: any) => {
+        if (!oldData) return data;
+        
+        return {
+          ...oldData,
+          ...data,
+          current_sprite_url: oldData.current_sprite_url
+        };
+      });
+      
+      setSurveyCompleted(true);
+      setAnswers({});
+    },
+    onError: (error: Error) => {
+      setApiError(error.message);
+    }
+  });
+
+  const initialBurnoutLevel = userData?.burnout_level ?? 0;
+  const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
+  const alreadyAttemptedToday = userData?.last_attempt_date 
+    ? isTodayUTC(userData.last_attempt_date) 
+    : false;
+
+  const burnoutLevel = useMemo(() => {
+    if (surveyCompleted && userData) {
+      return userData.burnout_level;
+    }
+
+    const answeredDelta = Object.entries(answers).reduce((sum, [id, ans]) => {
+      if (!ans) return sum;
+      const qId = parseInt(id);
+      const q = questions.find(q => q.id === qId);
+      return sum + (q?.weight || 0);
+    }, 0);
+
+    return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
+  }, [answers, initialBurnoutLevel, surveyCompleted, userData]);
+
+  const octagramValues = useMemo(() => {
+    return [
+      -1.0, // Техномантия
+      -1.0, // Артефакты
+      -1.0,  // Эфирные потоки
+      -1.0, // Рунная связь
+      -1.0, // Киберчары
+      -1.0,  // Некросеть
+      -1.0,  // Астрал
+      -1.0  // Квантовое колдовство
+    ];
+  }, []);
+
+  const handleSurveyComplete = useCallback((answers: Record<number, 'yes' | 'no' | 'skip'>) => {
+    // Рассчитываем общий балл
+    const totalScore = Object.entries(answers).reduce((sum, [id, answer]) => {
+      const question = QUESTIONS.find(q => q.id === parseInt(id));
+      if (!question) return sum;
+      
+      if (answer === 'yes') return sum + question.weight;
+      if (answer === 'no') return sum;
+      return sum; // skip не влияет на результат
+    }, 0);
+    
+    submitSurveyMutation.mutate(totalScore);
+  }, [submitSurveyMutation]);
+
+  const handleOnboardingComplete = useCallback(() => {
+    setIsGlobalLoading(true);
+    refetchUserData().finally(() => {
+      setIsGlobalLoading(false);
+    });
+  }, [refetchUserData]);
+
+  // Обработчик закрытия модального окна
+  const handleCloseModal = useCallback(() => {
+    setIsSurveyModalOpen(false);
+  }, []);
+
+  // Приоритет 1: Глобальная загрузка
+  if (isGlobalLoading) {
+    return <Loader />;
+  }
+
+  // Приоритет 2: Онбординг
+  if (needsOnboarding) {
+    return (
+      <Onboarding 
+        onComplete={handleOnboardingComplete} 
+        userId={user?.id ? parseInt(user.id) : undefined}
+        initData={initData}
+      />
+    );
+  }
+
+  // Приоритет 3: Загрузка данных или спрайта
+  if (isLoading || !spriteLoaded) {
+    return <Loader />;
+  }
+
+  // Приоритет 4: Главная страница
   return (
-    <div 
-      className="fixed inset-0 flex items-center justify-center p-4 z-[10000]"
-      style={{ 
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        display: isOpen ? 'flex' : 'none'
-      }}
-    >
-      <motion.div 
-        className="relative w-full max-w-lg max-h-[90vh] rounded-xl overflow-hidden flex flex-col"
-        style={{ 
-          backgroundColor: 'white',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-        }}
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Прогресс-бар */}
-        <div className="px-4 pt-4" style={{ backgroundColor: 'white' }}>
-          <p className="text-center text-gray-500 mb-1">
-            Вопрос {currentIndex + 1} из {questions.length}
-          </p>
-          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-            <motion.div 
-              className="h-full bg-blue-500"
-              initial={{ width: "0%" }}
-              animate={{ 
-                width: `${((currentIndex + 1) / questions.length) * 100}%` 
-              }}
-              transition={{ duration: 0.3 }}
-            />
+    <div className="container">
+      {isError || !user ? (
+        <div className="error-message">
+          {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
+        </div>
+      ) : (
+        <>
+          <div className="scrollable-content">
+            <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
+            
+            <div className="content">
+              {apiError && !alreadyAttemptedToday && (
+                <div className="error-message">{apiError}</div>
+              )}
+
+              {alreadyAttemptedToday ? (
+                <div className="time-message">
+                  <div className="info-message">
+                    Вы уже прошли опрос сегодня. Ваш текущий уровень выгорания: {burnoutLevel}%
+                  </div>
+                </div>
+              ) : surveyCompleted ? (
+                <div className="time-message">
+                  <div className="info-message">
+                    🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-center mt-6">
+                 <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}    
+                  className="accept-button"
+                  onClick={() => setIsSurveyModalOpen(true)}        
+                >
+              Пройти тест сегодня
+            </motion.button>
           </div>
-        </div>
-        
-        {/* Область вопроса - занимает 2/3 высоты */}
-        <div 
-          className="flex-[2] flex items-center justify-center p-4"
-          style={{ minHeight: '50vh' }}
-          onTouchStart={(e) => setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY })}
-          onTouchEnd={(e) => {
-            const point = e.changedTouches[0];
-            const deltaX = point.clientX - dragStart.x;
-            if (Math.abs(deltaX) > swipeThreshold) {
-              handleSwipe(deltaX > 0 ? 'right' : 'left');
-            }
-          }}
-        >
-          <TinderCard
-            key={currentIndex}
-            onSwipe={handleSwipe}
-            preventSwipe={['up', 'down']}
-            swipeThreshold={swipeThreshold}
-            className="w-full h-full"
-          >
-            <motion.div
-              className={`w-full h-full rounded-xl flex items-center justify-center p-6 text-center cursor-grab
-                ${swipeDirection === 'right' ? 'bg-green-50' : 
-                  swipeDirection === 'left' ? 'bg-red-50' : 'bg-white'}`}
-              whileTap={{ scale: 0.98 }}
-              animate={{
-                x: swipeDirection === 'right' ? '100vw' : swipeDirection === 'left' ? '-100vw' : 0,
-                opacity: swipeDirection ? 0 : 1,
-                rotate: swipeDirection === 'right' ? 30 : swipeDirection === 'left' ? -30 : 0
-              }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            >
-              <p className="text-xl font-medium text-gray-800 px-4">
-                {questions[currentIndex].text}
-              </p>
-            </motion.div>
-          </TinderCard>
-        </div>
-        
-        {/* Кнопки ответов - занимают 1/3 высоты */}
-        <div className="flex-[1] flex justify-between items-center p-6 pt-4" style={{ backgroundColor: 'white' }}>
-          <button
-            onClick={() => handleAnswer('no')}
-            className="flex items-center justify-center shadow-md hover:bg-red-200 transition-colors"
-            style={{ 
-              width: '4rem', 
-              height: '4rem', 
-              borderRadius: '50%',
-              backgroundColor: '#fee2e2',
-              color: '#dc2626'
-            }}
-          >
-            <span className="text-2xl">←</span>
-          </button>
-          
-          <button
-            onClick={handleSkip}
-            className="flex items-center justify-center shadow-md hover:bg-gray-200 transition-colors"
-            style={{ 
-              width: '4rem', 
-              height: '4rem', 
-              borderRadius: '50%',
-              backgroundColor: '#f3f4f6',
-              color: '#4b5563'
-            }}
-          >
-            <span className="text-sm font-medium">↻</span>
-          </button>
-          
-          <button
-            onClick={() => handleAnswer('yes')}
-            className="flex items-center justify-center shadow-md hover:bg-green-200 transition-colors"
-            style={{ 
-              width: '4rem', 
-              height: '4rem', 
-              borderRadius: '50%',
-              backgroundColor: '#d1fae5',
-              color: '#059669'
-            }}
-          >
-            <span className="text-2xl">→</span>
-          </button>
-        </div>
-      </motion.div>
+              )}
+
+              {/* Блок с октаграммой */}
+              <AnimatePresence>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8 }}
+                  className="mt-4 mb-4 flex flex-col items-center octagram-container"
+                >
+                  <Octagram values={octagramValues} size={280} />
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+
+          <div className="menu">
+            <Link href="/" passHref>
+              <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
+            </Link>
+            <Link href="/friends" passHref>
+              <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
+            </Link>
+            <Link href="/shop" passHref>
+              <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
+            </Link>
+            <Link href="/reference" passHref>
+              <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
+            </Link>
+          </div>
+        </>
+      )}
+
+      {/* Рендерим модальное окно через портал */}
+      {modalPortalRef.current && isSurveyModalOpen && createPortal(
+        <SurveyModal
+          isOpen={isSurveyModalOpen}
+          onClose={handleCloseModal}
+          onComplete={handleSurveyComplete}
+          questions={QUESTIONS}
+        />,
+        modalPortalRef.current
+      )}
     </div>
   );
 };
+
+export default Home;
