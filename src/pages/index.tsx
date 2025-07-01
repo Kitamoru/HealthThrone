@@ -91,11 +91,39 @@ const Home = () => {
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
   
-  const modalContainerRef = useRef<HTMLDivElement | null>(null);
+  // Создаем портал для модального окна
+  const modalPortalRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    modalContainerRef.current = document.getElementById('modal-container') as HTMLDivElement;
+    // Создаем контейнер для портала при монтировании
+    const portalContainer = document.createElement('div');
+    portalContainer.id = 'modal-portal';
+    portalContainer.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4';
+    portalContainer.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    
+    document.body.appendChild(portalContainer);
+    modalPortalRef.current = portalContainer;
+
+    return () => {
+      // Удаляем контейнер при размонтировании
+      if (modalPortalRef.current) {
+        document.body.removeChild(modalPortalRef.current);
+      }
+    };
   }, []);
+
+  // Управление прокруткой страницы при открытии модалки
+  useEffect(() => {
+    if (isSurveyModalOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [isSurveyModalOpen]);
 
   const isTodayUTC = useCallback((dateStr: string) => {
     if (!dateStr) return false;
@@ -357,14 +385,14 @@ const Home = () => {
       )}
 
       {/* Рендерим модальное окно через портал */}
-      {isSurveyModalOpen && modalContainerRef.current && createPortal(
+      {modalPortalRef.current && isSurveyModalOpen && createPortal(
         <SurveyModal
           isOpen={isSurveyModalOpen}
           onClose={handleCloseModal}
           onComplete={handleSurveyComplete}
           questions={QUESTIONS}
         />,
-        modalContainerRef.current
+        modalPortalRef.current
       )}
     </div>
   );
