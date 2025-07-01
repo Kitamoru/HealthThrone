@@ -1306,7 +1306,6 @@ strong {
     margin: 1rem 0;
   }
   
-}
 .survey-modal-overlay {
   position: fixed;
   inset: 0;
@@ -1362,24 +1361,33 @@ strong {
   min-height: 66vh;
   overflow: hidden;
   background-color: black;
-  touch-action: none; /* Отключаем стандартные жесты браузера */
+  position: relative;
+}
+
+/* КОНТЕЙНЕР ДЛЯ TINDER CARD - КРИТИЧЕСКИ ВАЖНО */
+.swipe-card-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .survey-card {
-  will-change: transform;
-  backface-visibility: hidden;
-  transform: translate3d(0,0,0);
-  width: 100%;
-  height: 100%;
+  width: 90%;
+  height: 80%;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
   text-align: center;
   background-color: black;
-  cursor: grab;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
   user-select: none;
-  touch-action: none;
+  touch-action: pan-y;
 }
 
 .survey-card-text {
@@ -1435,7 +1443,7 @@ strong {
   color: #059669;
 }
 
-/* Анимации */
+/* Анимации для свайпов */
 @keyframes swipe-right {
   0% { transform: translateX(0) rotate(0); opacity: 1; }
   100% { transform: translateX(200%) rotate(30deg); opacity: 0; }
