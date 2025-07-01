@@ -94,18 +94,22 @@ const Home = () => {
   // Создаем портал для модального окна
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    // Создаем контейнер для портала только при открытии модалки
-    if (isSurveyModalOpen && !modalPortalRef.current) {
+  // Обработчик открытия модального окна
+  const handleOpenSurveyModal = useCallback(() => {
+    // Создаем контейнер для портала, если его нет
+    if (!modalPortalRef.current) {
       const portalContainer = document.createElement('div');
       portalContainer.id = 'modal-portal';
       portalContainer.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4';
       document.body.appendChild(portalContainer);
       modalPortalRef.current = portalContainer;
     }
-    
+    setIsSurveyModalOpen(true);
+  }, []);
+
+  // Удаляем контейнер при размонтировании компонента
+  useEffect(() => {
     return () => {
-      // Удаляем контейнер при размонтировании
       if (modalPortalRef.current) {
         document.body.removeChild(modalPortalRef.current);
         modalPortalRef.current = null;
@@ -347,7 +351,7 @@ const Home = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}    
                   className="accept-button"
-                  onClick={() => setIsSurveyModalOpen(true)}        
+                  onClick={handleOpenSurveyModal}        
                 >
               Пройти тест сегодня
             </motion.button>
