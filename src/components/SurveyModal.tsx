@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import TinderCard from 'react-tinder-card';
 import { motion } from 'framer-motion';
+import './SurveyModal.css';
 
 type Direction = 'left' | 'right' | 'up' | 'down';
 
@@ -17,8 +18,6 @@ interface SurveyModalProps {
   questions: Question[];
 }
 
-const swipeThreshold = 50;
-
 export const SurveyModal: React.FC<SurveyModalProps> = ({ 
   isOpen, 
   onClose, 
@@ -28,6 +27,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, 'yes' | 'no' | 'skip'>>({});
   const tinderCardRef = useRef<any>(null);
+  const [lastDirection, setLastDirection] = useState<Direction | null>(null);
 
   // Блокировка прокрутки фона при открытой модалке
   useEffect(() => {
@@ -46,6 +46,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     if (!isOpen) {
       setCurrentIndex(0);
       setAnswers({});
+      setLastDirection(null);
     }
   }, [isOpen]);
 
@@ -61,18 +62,22 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   }, [isOpen, onClose]);
 
   const handleSwipe = (dir: Direction) => {
-    const answer = dir === 'right' ? 'yes' : 'no';
-    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
+    setLastDirection(dir);
     
-    // Переход к следующему вопросу
-    setTimeout(() => {
-      if (currentIndex < questions.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-      } else {
-        onComplete(answers);
-        onClose();
-      }
-    }, 300);
+    if (dir === 'left' || dir === 'right') {
+      const answer = dir === 'right' ? 'yes' : 'no';
+      setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
+      
+      // Переход к следующему вопросу
+      setTimeout(() => {
+        if (currentIndex < questions.length - 1) {
+          setCurrentIndex(prev => prev + 1);
+        } else {
+          onComplete(answers);
+          onClose();
+        }
+      }, 300);
+    }
   };
 
   const handleSkip = () => {
@@ -95,6 +100,11 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
       tinderCardRef.current.swipe(direction)
         .then(() => {
           // Ответ обрабатывается в handleSwipe
+        })
+        .catch((err: any) => {
+          console.error('Swipe error:', err);
+          // Ручная обработка, если свайп не сработал
+          handleSwipe(direction);
         });
     }
   };
@@ -116,13 +126,12 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
             Вопрос {currentIndex + 1} из {questions.length}
           </p>
           <div className="survey-progress-track">
-            <motion.div 
+            <div 
               className="survey-progress-bar"
-              initial={{ width: "0%" }}
-              animate={{ 
-                width: `${((currentIndex + 1) / questions.length) * 100}%` 
+              style={{ 
+                width: `${((currentIndex + 1) / questions.length) * 100}%`,
+                transition: 'width 0.3s ease'
               }}
-              transition={{ duration: 0.3 }}
             />
           </div>
         </div>
@@ -130,21 +139,22 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
         {/* Область вопроса */}
         <div className="survey-question-container">
           {questions.length > 0 && (
-            <TinderCard
-              key={currentIndex}
-              ref={tinderCardRef}
-              onSwipe={handleSwipe}
-              onCardLeftScreen={() => {}} // Обязательный пропс
-              preventSwipe={['up', 'down']}
-              swipeThreshold={swipeThreshold}
-              className="swipe-card-container"
-            >
-              <div className="survey-card">
-                <p className="survey-card-text">
-                  {questions[currentIndex]?.text}
-                </p>
-              </div>
-            </TinderCard>
+            <div className="swipe-card-wrapper">
+              <TinderCard
+                key={currentIndex}
+                ref={tinderCardRef}
+                onSwipe={handleSwipe}
+                onCardLeftScreen={(dir) => console.log('Card left screen', dir)}
+                preventSwipe={['up', 'down']}
+                className="swipe-card"
+              >
+                <div className="survey-card">
+                  <p className="survey-card-text">
+                    {questions[currentIndex]?.text}
+                  </p>
+                </div>
+              </TinderCard>
+            </div>
           )}
         </div>
         
