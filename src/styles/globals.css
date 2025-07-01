@@ -1307,14 +1307,17 @@ strong {
   }
 }
 
+/* SurveyModal.css */
 .survey-modal-overlay {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
   background-color: rgba(0, 0, 0, 0.8);
 }
 
@@ -1324,49 +1327,57 @@ strong {
   height: 100%;
   display: flex;
   flex-direction: column;
-  z-index: 10;
   background-color: black;
 }
 
 .survey-modal-header {
-  padding: 1rem 1rem 0;
+  padding: 20px 20px 0;
   background-color: black;
 }
 
 .survey-progress-text {
   text-align: center;
   color: white;
-  margin-bottom: 0.25rem;
-  font-size: 1rem;
+  margin-bottom: 10px;
+  font-size: 16px;
 }
 
 .survey-progress-track {
   width: 100%;
-  height: 0.5rem;
+  height: 8px;
   background-color: #333;
-  border-radius: 9999px;
+  border-radius: 10px;
   overflow: hidden;
 }
 
 .survey-progress-bar {
   height: 100%;
   background-color: #3b82f6;
+  transition: width 0.3s ease;
 }
 
 .survey-question-container {
-  flex: 2;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
-  min-height: 66vh;
-  overflow: hidden;
+  padding: 20px;
   background-color: black;
   position: relative;
 }
 
-/* КОНТЕЙНЕР ДЛЯ TINDER CARD - КРИТИЧЕСКИ ВАЖНО */
-.swipe-card-container {
+/* ОБЕРТКА ДЛЯ КАРТОЧКИ - КРИТИЧЕСКИ ВАЖНО */
+.swipe-card-wrapper {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* КОНТЕЙНЕР TINDER CARD */
+.swipe-card {
   position: absolute;
   width: 100%;
   height: 100%;
@@ -1376,57 +1387,56 @@ strong {
 }
 
 .survey-card {
-  width: 90%;
-  height: 80%;
+  width: 85%;
+  height: 75%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: 30px;
   text-align: center;
   background-color: black;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(255, 255, 255, 0.15);
   user-select: none;
   touch-action: pan-y;
+  cursor: grab;
+}
+
+.survey-card:active {
+  cursor: grabbing;
 }
 
 .survey-card-text {
-  font-size: 1.5rem;
+  font-size: 24px;
   font-weight: 500;
   color: white;
-  padding: 0 1rem;
   line-height: 1.6;
 }
 
 .survey-buttons-container {
-  flex: 1;
+  padding: 20px;
+  background-color: black;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
-  padding-top: 1rem;
-  background-color: black;
-  position: relative;
-  z-index: 100;
 }
 
 .survey-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 4rem;
-  height: 4rem;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
-  box-shadow: 0 4px 6px -1px rgba(255, 255, 255, 0.1), 
-              0 2px 4px -1px rgba(255, 255, 255, 0.06);
-  transition: transform 0.2s;
+  box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
   cursor: pointer;
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  transition: transform 0.2s;
 }
 
 .survey-button:active {
-  transform: scale(0.95);
+  transform: scale(0.9);
 }
 
 .survey-button-no {
@@ -1444,26 +1454,16 @@ strong {
   color: #059669;
 }
 
+.button-icon {
+  font-size: 24px;
+  font-weight: bold;
+}
+
 /* Анимации для свайпов */
-@keyframes swipe-right {
-  0% { transform: translateX(0) rotate(0); opacity: 1; }
-  100% { transform: translateX(200%) rotate(30deg); opacity: 0; }
+.swipe-card .survey-card {
+  transition: transform 0.3s ease;
 }
 
-@keyframes swipe-left {
-  0% { transform: translateX(0) rotate(0); opacity: 1; }
-  100% { transform: translateX(-200%) rotate(-30deg); opacity: 0; }
-}
-
-.swipe-right {
-  animation: swipe-right 0.5s forwards;
-}
-
-.swipe-left {
-  animation: swipe-left 0.5s forwards;
-}
-
-/* Глобальные стили */
 body.modal-open {
   overflow: hidden;
 }
