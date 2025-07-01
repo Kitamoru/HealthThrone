@@ -1320,28 +1320,35 @@ strong {
 .survey-modal-container {
   position: relative;
   width: 100%;
-  height: 100%;
+  max-width: 500px;
+  height: 90vh;
+  max-height: 700px;
   display: flex;
   flex-direction: column;
-  background-color: black;
+  background-color: #111;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .survey-modal-header {
-  padding: 20px 20px 0;
-  background-color: black;
+  padding: 25px 25px 15px;
+  background-color: #111;
+  z-index: 10;
 }
 
 .survey-progress-text {
   text-align: center;
-  color: white;
-  margin-bottom: 10px;
+  color: #e0e0e0;
+  margin-bottom: 12px;
   font-size: 16px;
+  font-weight: 500;
 }
 
 .survey-progress-track {
   width: 100%;
-  height: 8px;
-  background-color: #333;
+  height: 6px;
+  background-color: #2a2a2a;
   border-radius: 10px;
   overflow: hidden;
 }
@@ -1358,13 +1365,19 @@ strong {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background-color: black;
   position: relative;
 }
 
-/* ОБЕРТКА ДЛЯ КАРТОЧКИ - КРИТИЧЕСКИ ВАЖНО */
 .swipe-card-wrapper {
-  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 20px; /* Опускаем карточку ниже */
+}
+
+.swipe-card {
   width: 100%;
   height: 100%;
   display: flex;
@@ -1372,21 +1385,24 @@ strong {
   align-items: center;
 }
 
-/* КОНТЕЙНЕР TINDER CARD */
-.swipe-card .react-tinder-card__card {
-  transition: transform 0.3s cubic-bezier(0.38, 0.13, 0.32, 0.96) !important;
-}
-
 .survey-card {
-  transform-origin: center center;
-  animation: none !important;
+  width: 90%;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+  border-radius: 20px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  padding: 30px;
   transition: 
     transform 0.3s cubic-bezier(0.18, 0.67, 0.6, 0.83),
-    opacity 0.2s ease !important;
+    opacity 0.2s ease;
+  border: 1px solid #333;
 }
 
 .survey-card:active {
-  transform: scale(0.99) !important;
+  transform: scale(0.98);
 }
 
 .survey-card-text {
@@ -1394,62 +1410,110 @@ strong {
   font-weight: 500;
   color: white;
   line-height: 1.6;
+  text-align: center;
+  word-break: break-word;
+  hyphens: auto;
+  padding: 0 10px;
 }
 
 .survey-buttons-container {
-  padding: 20px;
-  background-color: black;
+  padding: 25px 30px 40px; /* Увеличено нижнее расстояние */
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background-color: #111;
+  position: relative;
 }
 
 .survey-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 70px;
-  height: 70px;
+  width: 65px;
+  height: 65px;
   border-radius: 50%;
-  box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 5px 15px rgba(255, 255, 255, 0.15);
   cursor: pointer;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  transition: transform 0.2s;
+  border: none;
+  transition: all 0.2s ease;
+  position: relative;
+  top: -15px; /* Приподнимаем кнопки */
 }
 
 .survey-button:active {
-  transform: scale(0.9);
+  transform: scale(0.92);
+}
+
+.survey-button:hover {
+  filter: brightness(1.1);
 }
 
 .survey-button-no {
-  background-color: #fee2e2;
-  color: #dc2626;
+  background: linear-gradient(145deg, #ff4d4d, #cc0000);
+  color: white;
 }
 
 .survey-button-skip {
-  background-color: #f3f4f6;
-  color: #4b5563;
+  background: linear-gradient(145deg, #4d4dff, #0000cc);
+  color: white;
 }
 
 .survey-button-yes {
-  background-color: #d1fae5;
-  color: #059669;
+  background: linear-gradient(145deg, #4dff4d, #00cc00);
+  color: white;
 }
 
 .button-icon {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: bold;
 }
 
-/* Анимации для свайпов */
-.swipe-card .survey-card {
-  transition: 
-    transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
-    opacity 0.3s ease;
+/* Анимации */
+@keyframes cardAppear {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-body.modal-open {
-  overflow: hidden;
+.survey-card {
+  animation: cardAppear 0.4s ease-out;
 }
+
+/* Индикаторы свайпа */
+.swipe-card::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  width: 80%;
+  height: 4px;
+  background: rgba(59, 130, 246, 0.3);
+  border-radius: 2px;
+}
+
+@media (max-width: 500px) {
+  .survey-modal-container {
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
   
+  .survey-card {
+    height: 250px;
+    padding: 20px;
+  }
+  
+  .survey-card-text {
+    font-size: 22px;
+  }
+  
+  .survey-button {
+    width: 60px;
+    height: 60px;
+  }
+}
 }
