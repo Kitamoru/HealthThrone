@@ -1305,7 +1305,8 @@ strong {
     padding: 0.5rem;
     margin: 1rem 0;
   }
-  
+}
+
 .survey-modal-overlay {
   position: fixed;
   inset: 0;
