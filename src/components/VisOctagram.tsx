@@ -109,10 +109,10 @@ const Octagram = ({ values, size = 300, userId }: OctagramProps) => {
     // Замыкаем путь, добавляя первую точку в конец
     points.push(points[0]);
 
-    const lineGenerator = d3.line<{ x: number; y: number }>()
+    const lineGenerator = line<{ x: number; y: number }>()
       .x(d => d.x)
       .y(d => d.y)
-      .curve(d3.curveCardinalClosed); // Сглаживаем кривую
+      .curve(curveCardinalClosed);
 
     return lineGenerator(points) || '';
   };
