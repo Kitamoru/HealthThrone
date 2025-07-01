@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import TinderCard from 'react-tinder-card';
 import { motion } from 'framer-motion';
+import './SurveyModal.css';
 
 type Direction = 'left' | 'right' | 'up' | 'down';
 
@@ -28,8 +29,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, 'yes' | 'no' | 'skip'>>({});
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState(false);
+  const tinderCardRef = useRef<any>(null);
 
   // Блокировка прокрутки фона при открытой модалке
   useEffect(() => {
@@ -66,7 +66,10 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   const handleSwipe = (dir: Direction) => {
     if (dir === 'left' || dir === 'right') {
       const answer = dir === 'right' ? 'yes' : 'no';
-      setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
+      setAnswers(prev => ({ 
+        ...prev, 
+        [questions[currentIndex].id]: answer 
+      }));
       setSwipeDirection(dir);
 
       setTimeout(() => {
@@ -82,7 +85,10 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   };
 
   const handleSkip = () => {
-    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: 'skip' }));
+    setAnswers(prev => ({ 
+      ...prev, 
+      [questions[currentIndex].id]: 'skip' 
+    }));
 
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(prev => prev + 1);
@@ -93,18 +99,25 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   };
 
   const handleAnswer = (answer: 'yes' | 'no') => {
-    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: answer }));
-    setSwipeDirection(answer === 'yes' ? 'right' : 'left');
-
-    setTimeout(() => {
-      if (currentIndex < questions.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-        setSwipeDirection(null);
-      } else {
-        onComplete(answers);
-        onClose();
-      }
-    }, 300);
+    // Вызываем метод swipe библиотеки напрямую
+    if (tinderCardRef.current && tinderCardRef.current.swipe) {
+      tinderCardRef.current.swipe(answer === 'yes' ? 'right' : 'left')
+        .then(() => {
+          // После завершения анимации библиотеки
+          const newAnswers = { 
+            ...answers, 
+            [questions[currentIndex].id]: answer 
+          };
+          setAnswers(newAnswers);
+          
+          if (currentIndex < questions.length - 1) {
+            setCurrentIndex(prev => prev + 1);
+          } else {
+            onComplete(newAnswers);
+            onClose();
+          }
+        });
+    }
   };
 
   if (!isOpen) return null;
@@ -136,28 +149,18 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
         </div>
         
         {/* Область вопроса */}
-        <div 
-          className="survey-question-container"
-          onTouchStart={(e) => setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY })}
-          onTouchEnd={(e) => {
-            const point = e.changedTouches[0];
-            const deltaX = point.clientX - dragStart.x;
-            if (Math.abs(deltaX) > swipeThreshold) {
-              handleSwipe(deltaX > 0 ? 'right' : 'left');
-            }
-          }}
-        >
+        <div className="survey-question-container">
           {questions.length > 0 && (
             <TinderCard
               key={currentIndex}
+              ref={tinderCardRef}
               onSwipe={handleSwipe}
               preventSwipe={['up', 'down']}
               swipeThreshold={swipeThreshold}
-              className="w-full h-full"
+              className="tinder-card-container"
             >
               <motion.div
                 className="survey-card"
-                whileTap={{ scale: 0.98 }}
                 animate={{
                   x: swipeDirection === 'right' ? '100vw' : swipeDirection === 'left' ? '-100vw' : 0,
                   opacity: swipeDirection ? 0 : 1,
@@ -179,21 +182,21 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
             onClick={() => handleAnswer('no')}
             className="survey-button survey-button-no"
           >
-            <span className="text-2xl">←</span>
+            <span className="button-icon">←</span>
           </button>
           
           <button
             onClick={handleSkip}
             className="survey-button survey-button-skip"
           >
-            <span className="text-sm font-medium">↻</span>
+            <span className="button-icon">↻</span>
           </button>
           
           <button
             onClick={() => handleAnswer('yes')}
             className="survey-button survey-button-yes"
           >
-            <span className="text-2xl">→</span>
+            <span className="button-icon">→</span>
           </button>
         </div>
       </motion.div>
