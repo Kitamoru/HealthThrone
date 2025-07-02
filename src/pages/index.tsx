@@ -231,21 +231,21 @@ const Home = () => {
     ? isTodayUTC(userData.last_attempt_date) 
     : false;
 
-  const burnoutLevel = useMemo(() => {
-    if (surveyCompleted && userData) {
-      return userData.burnout_level;
-    }
+const burnoutLevel = useMemo(() => {
+  if (surveyCompleted && userData) {
+    return userData.burnout_level;
+  }
 
-    // Рассчитываем только по вопросам 1 и 2
-    const answeredDelta = [1, 2].reduce((sum, id) => {
-      const answer = answers[id];
-      if (answer === true) return sum + 2; // Для "Да"
-      if (answer === false) return sum - 2; // Для "Нет"
-      return sum; // Пропуск
-    }, 0);
+  // КОРРЕКТНЫЙ РАСЧЕТ: используем текущее значение из базы
+  const answeredDelta = [1, 2].reduce((sum, id) => {
+    const answer = answers[id];
+    if (answer === true) return sum + 2;
+    if (answer === false) return sum - 2;
+    return sum;
+  }, 0);
 
-    return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
-  }, [answers, initialBurnoutLevel, surveyCompleted, userData]);
+  return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
+}, [answers, initialBurnoutLevel, surveyCompleted, userData]);
 
   const octagramValues = useMemo(() => {
     return [
