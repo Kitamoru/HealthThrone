@@ -63,14 +63,14 @@ export default async function handler(
     if (error || !data) {
       console.log('No data found for user:', userIdNumber);
       return res.status(200).json({
-        factor1: data?.factor1 ?? 0,
-        factor2: data?.factor2 ?? 0,
-        factor3: data?.factor3 ?? 0,
-        factor4: data?.factor4 ?? 0,
-        factor5: data?.factor5 ?? 0,
-        factor6: data?.factor6 ?? 0,
-        factor7: data?.factor7 ?? 0,
-        factor8: data?.factor8 ?? 0
+        factor1: data.factor1,
+        factor2: data.factor2,
+        factor3: data.factor3,
+        factor4: data.factor4,
+        factor5: data.factor5,
+        factor6: data.factor6,
+        factor7: data.factor7,
+        factor8: data.factor8
     });
     }
 
