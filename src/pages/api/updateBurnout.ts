@@ -25,12 +25,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Invalid request body' });
   }
 
-  // Валидация факторов
   if (factors.length !== 8 || factors.some(f => typeof f !== 'number' || f < -1 || f > 1)) {
     return res.status(400).json({ error: 'Invalid factors format' });
   }
 
-  console.log(`[UpdateBurnout] Request for user ${telegramId} with delta: ${burnoutDelta}`);
+  console.log(`[UpdateBurnout] User: ${telegramId}, delta: ${burnoutDelta}, factors: ${factors}`);
 
   try {
     const { data, error } = await supabase.rpc('update_burnout_and_factors', {
@@ -40,6 +39,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     if (error) {
+      console.error('RPC error:', {
+        message: error.message,
+        code: error.code,
+        details: error.details
+      });
+      
       if (error.message.includes('User not found')) {
         return res.status(404).json({ error: 'User not found' });
       }
@@ -47,28 +52,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(429).json({ error: 'Daily attempt limit exceeded' });
       }
       
-      console.error('RPC execution error:', error);
       return res.status(500).json({ 
         error: 'Database operation failed',
-        code: error.code,
         details: error.message
       });
     }
 
     if (!data || data.length === 0) {
-      console.error('RPC returned empty result');
       return res.status(404).json({ error: 'User not found after update' });
     }
 
-    const updatedUser = data[0];
-    console.log(`[UpdateBurnout] Updated user ${telegramId}: burnout=${updatedUser.burnout_level}`);
-
     return res.status(200).json({
       success: true,
-      data: updatedUser
+      data: data[0]
     });
   } catch (e) {
-    console.error('Unhandled server error:', e);
+    console.error('Server error:', e);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
