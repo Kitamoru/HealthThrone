@@ -331,7 +331,7 @@ const Home = () => {
               {alreadyAttemptedToday ? (
                 <div className="time-message">
                   <div className="info-message">
-                    Вы уже прошли опрос сегодня. Ваш текущий уровень выгорания: {burnoutLevel}%
+                    Вы уже прошли испытание сегодня. Ваш текущий уровень выгорания: {burnoutLevel}%
                   </div>
                 </div>
               ) : surveyCompleted ? (
