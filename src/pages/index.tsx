@@ -70,11 +70,6 @@ const QUESTIONS: Question[] = [
     id: 10,
     text: "Я чувствую себя мотивированным",
     weight: -2
-  },
-  {
-    id: 11,
-    text: "У меня хороший аппетит",
-    weight: -1
   }
 ];
 
@@ -342,7 +337,7 @@ const Home = () => {
               ) : surveyCompleted ? (
                 <div className="time-message">
                   <div className="info-message">
-                    🎯 Тест завершен! Ваш уровень выгорания: {burnoutLevel}%
+                    🎯 Испытание завершено! Ваш уровень выгорания: {burnoutLevel}%
                   </div>
                 </div>
               ) : (
@@ -353,7 +348,7 @@ const Home = () => {
                   className="accept-button"
                   onClick={handleOpenSurveyModal}        
                 >
-              Пройти тест сегодня
+              Пройти ежедневное испытание
             </motion.button>
           </div>
               )}
