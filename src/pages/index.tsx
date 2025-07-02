@@ -85,6 +85,7 @@ const Home = () => {
   const [spriteLoaded, setSpriteLoaded] = useState(false);
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
+  const [octalysisFactors, setOctalysisFactors] = useState<number[] | null>(null);
   
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
 
@@ -189,6 +190,31 @@ const Home = () => {
     }
   }, [userData?.current_sprite_url]);
 
+  // Загрузка факторов для октаграммы
+  useEffect(() => {
+    if (userData?.id) {
+      const fetchFactors = async () => {
+        const response = await api.getOctalysisFactors(userData.id, initData);
+        if (response.success) {
+          setOctalysisFactors([
+            response.data.factor1 || 0,
+            response.data.factor2 || 0,
+            response.data.factor3 || 0,
+            response.data.factor4 || 0,
+            response.data.factor5 || 0,
+            response.data.factor6 || 0,
+            response.data.factor7 || 0,
+            response.data.factor8 || 0
+          ]);
+        } else {
+          console.error('Failed to load factors:', response.error);
+          setOctalysisFactors([0, 0, 0, 0, 0, 0, 0, 0]);
+        }
+      };
+      fetchFactors();
+    }
+  }, [userData?.id, initData]);
+
   const submitSurveyMutation = useMutation({
     mutationFn: async (data: { burnoutDelta: number; factors: number[] }) => {
       if (!user?.id) throw new Error("Пользователь не определен");
@@ -219,6 +245,26 @@ const Home = () => {
       
       setSurveyCompleted(true);
       setAnswers({});
+      
+      // Обновляем факторы после успешного прохождения опроса
+      if (userData?.id) {
+        const fetchFactors = async () => {
+          const response = await api.getOctalysisFactors(userData.id, initData);
+          if (response.success) {
+            setOctalysisFactors([
+              response.data.factor1 || 0,
+              response.data.factor2 || 0,
+              response.data.factor3 || 0,
+              response.data.factor4 || 0,
+              response.data.factor5 || 0,
+              response.data.factor6 || 0,
+              response.data.factor7 || 0,
+              response.data.factor8 || 0
+            ]);
+          }
+        };
+        fetchFactors();
+      }
     },
     onError: (error: Error) => {
       setApiError(error.message);
@@ -231,34 +277,34 @@ const Home = () => {
     ? isTodayUTC(userData.last_attempt_date) 
     : false;
 
-const burnoutLevel = useMemo(() => {
-  if (surveyCompleted && userData) {
-    return userData.burnout_level;
-  }
+  const burnoutLevel = useMemo(() => {
+    if (surveyCompleted && userData) {
+      return userData.burnout_level;
+    }
 
-  // КОРРЕКТНЫЙ РАСЧЕТ: используем текущее значение из базы
-  const answeredDelta = [1, 2].reduce((sum, id) => {
-    const answer = answers[id];
-    if (answer === true) return sum + 2;
-    if (answer === false) return sum - 2;
-    return sum;
-  }, 0);
+    // Рассчитываем только по вопросам 1 и 2
+    const answeredDelta = [1, 2].reduce((sum, id) => {
+      const answer = answers[id];
+      if (answer === true) return sum + 2;
+      if (answer === false) return sum - 2;
+      return sum;
+    }, 0);
 
-  return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
-}, [answers, initialBurnoutLevel, surveyCompleted, userData]);
+    return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
+  }, [answers, initialBurnoutLevel, surveyCompleted, userData]);
 
   const octagramValues = useMemo(() => {
-    return [
-      -1.0, // Техномантия
-      -1.0, // Артефакты
-      -1.0,  // Эфирные потоки
-      -1.0, // Рунная связь
-      -1.0, // Киберчары
-      -1.0,  // Некросеть
-      -1.0,  // Астрал
-      -1.0  // Квантовое колдовство
-    ];
-  }, []);
+    if (!octalysisFactors) {
+      return [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
+    }
+    
+    // Нормализуем значения факторов для октаграммы (0-1)
+    return octalysisFactors.map(factor => {
+      // Максимальное значение фактора - 10 (можно настраивать)
+      const maxFactorValue = 10;
+      return Math.min(1.0, factor / maxFactorValue);
+    });
+  }, [octalysisFactors]);
 
   const handleSurveyComplete = useCallback((answers: Record<number, 'yes' | 'no' | 'skip'>) => {
     // Рассчитываем burnoutDelta только по первым двум вопросам
@@ -305,7 +351,8 @@ const burnoutLevel = useMemo(() => {
     );
   }
 
-  if (isLoading || !spriteLoaded) {
+  // Показываем лоадер, пока не загружены данные пользователя, спрайт или факторы
+  if (isLoading || !spriteLoaded || octalysisFactors === null) {
     return <Loader />;
   }
 
