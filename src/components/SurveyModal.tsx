@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import TinderCard from 'react-tinder-card';
 import { motion } from 'framer-motion';
 
@@ -29,43 +29,19 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   const tinderCardRef = useRef<any>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
     if (!isOpen) {
       setCurrentIndex(0);
       setAnswers({});
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [isOpen, onClose]);
-
   const handleSwipe = (dir: Direction) => {
-    // Определяем тип ответа явно как AnswerType
     const answer: AnswerType = 
       dir === 'right' ? 'yes' : 
       dir === 'left' ? 'no' : 
       'skip';
     
-    const newAnswers: Record<number, AnswerType> = {
+    const newAnswers = {
       ...answers,
       [questions[currentIndex].id]: answer
     };
@@ -84,8 +60,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
 
   const handleSkip = () => {
     if (tinderCardRef.current?.swipe) {
-      tinderCardRef.current.swipe('up')
-        .catch(() => handleSwipe('up'));
+      tinderCardRef.current.swipe('up').catch(() => handleSwipe('up'));
     } else {
       handleSwipe('up');
     }
@@ -95,8 +70,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     const direction = answer === 'yes' ? 'right' : 'left';
     
     if (tinderCardRef.current?.swipe) {
-      tinderCardRef.current.swipe(direction)
-        .catch(() => handleSwipe(direction));
+      tinderCardRef.current.swipe(direction).catch(() => handleSwipe(direction));
     } else {
       handleSwipe(direction);
     }
