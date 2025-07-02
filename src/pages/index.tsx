@@ -24,7 +24,7 @@ const QUESTIONS: Question[] = [
   {
     id: 1,
     text: "Сумели ли вы сегодня удержаться на ногах под натиском тьмы подземелья?",
-    weight: 3
+    weight: 2
   },
   {
     id: 2,
@@ -34,42 +34,42 @@ const QUESTIONS: Question[] = [
   {
     id: 3,
     text: "Ощущали ли вы сегодня, что служите великой цели гильдии, а не просто выполняете команды гильдмастера?",
-    weight: 2
+    weight: 1
   },
   {
     id: 4,
     text: "Смогли ли вы сегодня продвинуться в мастерстве или заслужить знак признания от других героев?",
-    weight: 3
+    weight: 1
   },
   {
     id: 5,
     text: "Получилось ли сегодня проявить инициативу или получить полезный совет от союзников?",
-    weight: 2
+    weight: 1
   },
   {
     id: 6,
     text: "Чувствовали ли вы сегодня, что сами держите штурвал своего корабля, а не ведомы чужой волей?",
-    weight: 2
+    weight: 1
   },
   {
     id: 7,
     text: "Поддерживали ли союзники ваш дух сегодня в этом походе?",
-    weight: 3
+    weight: 1
   },
   {
     id: 8,
     text: "Придавали ли вам энергии сегодня редкие ресурсы или срочные вызовы?",
-    weight: 2
+    weight: 1
   },
   {
     id: 9,
     text: "Преподнесло ли вам подземелье сегодня неожиданную встречу, загадку или событие, что пробудило интерес?",
-    weight: -2
+    weight: -1
   },
   {
     id: 10,
     text: "Ощущали ли вы сегодня, что промедление может стоить вам важного шанса или артефакта?",
-    weight: -2
+    weight: -1
   }
 ];
 
@@ -86,12 +86,9 @@ const Home = () => {
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
   
-  // Создаем портал для модального окна
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
 
-  // Обработчик открытия модального окна
   const handleOpenSurveyModal = useCallback(() => {
-    // Создаем контейнер для портала, если его нет
     if (!modalPortalRef.current) {
       const portalContainer = document.createElement('div');
       portalContainer.id = 'modal-portal';
@@ -102,7 +99,6 @@ const Home = () => {
     setIsSurveyModalOpen(true);
   }, []);
 
-  // Удаляем контейнер при размонтировании компонента
   useEffect(() => {
     return () => {
       if (modalPortalRef.current) {
@@ -112,7 +108,6 @@ const Home = () => {
     };
   }, []);
 
-  // Управление прокруткой страницы при открытии модалки
   useEffect(() => {
     if (isSurveyModalOpen) {
       document.body.classList.add('modal-open');
@@ -166,7 +161,6 @@ const Home = () => {
     refetchOnWindowFocus: true,
   });
 
-  // Определяем необходимость онбординга
   const needsOnboarding = userData?.character_class === null;
 
   useEffect(() => {
@@ -196,12 +190,13 @@ const Home = () => {
   }, [userData?.current_sprite_url]);
 
   const submitSurveyMutation = useMutation({
-    mutationFn: async (totalScore: number) => {
+    mutationFn: async (data: { burnoutDelta: number; factors: number[] }) => {
       if (!user?.id) throw new Error("Пользователь не определен");
       
       const response = await api.submitSurvey({
         telegramId: Number(user.id),
-        newScore: totalScore,
+        burnoutDelta: data.burnoutDelta,
+        factors: data.factors,
         initData
       });
 
@@ -230,7 +225,7 @@ const Home = () => {
     }
   });
 
-  const initialBurnoutLevel = userData?.burnout_level ?? 0;
+  const initialBurnoutLevel = userData?.burnout_level ?? 100; // Начинаем с 100%
   const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
   const alreadyAttemptedToday = userData?.last_attempt_date 
     ? isTodayUTC(userData.last_attempt_date) 
@@ -241,11 +236,12 @@ const Home = () => {
       return userData.burnout_level;
     }
 
-    const answeredDelta = Object.entries(answers).reduce((sum, [id, ans]) => {
-      if (!ans) return sum;
-      const qId = parseInt(id);
-      const q = questions.find(q => q.id === qId);
-      return sum + (q?.weight || 0);
+    // Рассчитываем только по вопросам 1 и 2
+    const answeredDelta = [1, 2].reduce((sum, id) => {
+      const answer = answers[id];
+      if (answer === true) return sum + 2; // Для "Да"
+      if (answer === false) return sum - 2; // Для "Нет"
+      return sum; // Пропуск
     }, 0);
 
     return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
@@ -265,17 +261,23 @@ const Home = () => {
   }, []);
 
   const handleSurveyComplete = useCallback((answers: Record<number, 'yes' | 'no' | 'skip'>) => {
-    // Рассчитываем общий балл
-    const totalScore = Object.entries(answers).reduce((sum, [id, answer]) => {
-      const question = QUESTIONS.find(q => q.id === parseInt(id));
-      if (!question) return sum;
-      
-      if (answer === 'yes') return sum + question.weight;
-      if (answer === 'no') return sum;
-      return sum; // skip не влияет на результат
+    // Рассчитываем burnoutDelta только по первым двум вопросам
+    const burnoutDelta = [1, 2].reduce((sum, id) => {
+      const answer = answers[id];
+      if (answer === 'yes') return sum + 2;
+      if (answer === 'no') return sum - 2;
+      return sum;
     }, 0);
-    
-    submitSurveyMutation.mutate(totalScore);
+
+    // Формируем массив факторов для вопросов 3-10
+    const factors = [3, 4, 5, 6, 7, 8, 9, 10].map(id => {
+      const answer = answers[id];
+      if (answer === 'yes') return 1;
+      if (answer === 'no') return -1;
+      return 0; // Для 'skip'
+    });
+
+    submitSurveyMutation.mutate({ burnoutDelta, factors });
   }, [submitSurveyMutation]);
 
   const handleOnboardingComplete = useCallback(() => {
@@ -285,17 +287,14 @@ const Home = () => {
     });
   }, [refetchUserData]);
 
-  // Обработчик закрытия модального окна
   const handleCloseModal = useCallback(() => {
     setIsSurveyModalOpen(false);
   }, []);
 
-  // Приоритет 1: Глобальная загрузка
   if (isGlobalLoading) {
     return <Loader />;
   }
 
-  // Приоритет 2: Онбординг
   if (needsOnboarding) {
     return (
       <Onboarding 
@@ -306,12 +305,10 @@ const Home = () => {
     );
   }
 
-  // Приоритет 3: Загрузка данных или спрайта
   if (isLoading || !spriteLoaded) {
     return <Loader />;
   }
 
-  // Приоритет 4: Главная страница
   return (
     <div className="container">
       {isError || !user ? (
@@ -353,7 +350,6 @@ const Home = () => {
           </div>
               )}
 
-              {/* Блок с октаграммой */}
               <AnimatePresence>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -384,7 +380,6 @@ const Home = () => {
         </>
       )}
 
-      {/* Рендерим модальное окно через портал */}
       {modalPortalRef.current && isSurveyModalOpen && createPortal(
         <SurveyModal
           isOpen={isSurveyModalOpen}
