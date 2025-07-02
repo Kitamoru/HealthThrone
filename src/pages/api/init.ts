@@ -86,7 +86,7 @@ export default async function handler(
         coins: (existingUser?.coins || 0) + coinsToAdd,
         last_login_date: today,
         updated_at: now.toISOString(),
-        burnout_level: existingUser?.burnout_level || 0,
+        burnout_level: existingUser?.burnout_level || 100,
         created_at: existingUser?.created_at || now.toISOString(),
         current_sprite_id: existingUser?.current_sprite_id || null // Сохраняем текущий спрайт
       };
