@@ -2,6 +2,14 @@ import { ApiResponse, UserProfile, Sprite, Friend } from './types';
 import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
 import { queryClient } from './queryClient';
 
+// Добавлен интерфейс для запроса
+interface SubmitSurveyRequest {
+  telegramId: number;
+  burnoutDelta: number;
+  factors: number[];
+  initData?: string;
+}
+
 export const useUserData = (telegramId: number, initData?: string) => {
   return useQuery({
     queryKey: ['user', telegramId],
@@ -37,13 +45,10 @@ export const useOwnedSprites = (telegramId: number, initData?: string) => {
   });
 };
 
+// Обновленный хук
 export const useSubmitSurvey = () => {
   return useMutation({
-    mutationFn: (params: { 
-      telegramId: number; 
-      newScore: number; 
-      initData?: string 
-    }) => api.submitSurvey(params),
+    mutationFn: (params: SubmitSurveyRequest) => api.submitSurvey(params),
   });
 };
 
@@ -67,11 +72,10 @@ export const useEquipSprite = () => {
   });
 };
 
-// Добавлен хук для обновления класса пользователя
 export const useUpdateUserClass = () => {
   return useMutation({
     mutationFn: (params: {
-      telegramId: number; // Исправлен тип (было string)
+      telegramId: number;
       characterClass: string;
       initData?: string;
     }) => api.updateUserClass(params.telegramId, params.characterClass, params.initData),
@@ -243,38 +247,35 @@ class Api {
     );
   }
   
-  async submitSurvey(params: {
-    telegramId: number;
-    newScore: number;
-    initData?: string;
-  }): Promise<ApiResponse<UserProfile>> {
+  // Обновленный метод
+  async submitSurvey(params: SubmitSurveyRequest): Promise<ApiResponse<UserProfile>> {
     return this.makeRequest<UserProfile>(
       '/updateBurnout', 
       'POST', 
       {
         telegramId: params.telegramId,
-        newScore: params.newScore
+        burnoutDelta: params.burnoutDelta,
+        factors: params.factors
       },
       params.initData
     );
   }
 
-  // Добавлен метод для обновления класса пользователя
   async updateUserClass(
-  telegramId: number,
-  characterClass: string, 
-  initData?: string
-): Promise<ApiResponse> {
-  return this.makeRequest(
-  '/onboarding', 
-  'POST', 
-  { 
-    telegram_id: telegramId,
-    character_class: characterClass 
-  }, 
-  initData
-);
-}
+    telegramId: number,
+    characterClass: string, 
+    initData?: string
+  ): Promise<ApiResponse> {
+    return this.makeRequest(
+      '/onboarding', 
+      'POST', 
+      { 
+        telegram_id: telegramId,
+        character_class: characterClass 
+      }, 
+      initData
+    );
+  }
 }
 
 export const api = new Api();
