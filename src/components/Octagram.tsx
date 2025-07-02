@@ -93,7 +93,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
   }, [phase, pulseControls]);
 
   const renderRadialLevels = () => {
-    const levels = 9; // Только 9 внутренних уровней
+    const levels = 9; // 9 внутренних уровней
     return Array.from({ length: levels }).map((_, index) => {
       const levelRadius = (radius * (index + 1)) / 10;
       const points = getOctagonPointsByRadius(levelRadius);
@@ -187,7 +187,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
               d={octagonPath}
               fill="none"
               stroke="#1E90FF"
-              strokeWidth={1.5}
+              strokeWidth={1} // Толщина уменьшена до 1
               strokeOpacity={0.8}
               initial={{ pathLength: 0, opacity: 0 }}
               animate={octagonControls}
@@ -205,7 +205,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
                 y2={point.y}
                 stroke="#1E90FF"
                 strokeWidth={0.7} // Тоньше
-                strokeOpacity={0.4} // Бледнее
+                strokeOpacity={0.15} // Прозрачность как у внутренних уровней
                 strokeLinecap="round"
                 initial={{ opacity: 0, x2: center, y2: center }}
                 animate={{
