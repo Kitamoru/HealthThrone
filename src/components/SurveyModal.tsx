@@ -3,6 +3,7 @@ import TinderCard from 'react-tinder-card';
 import { motion } from 'framer-motion';
 
 type Direction = 'left' | 'right' | 'up' | 'down';
+type AnswerType = 'yes' | 'no' | 'skip';
 
 interface Question {
   id: number;
@@ -13,7 +14,7 @@ interface Question {
 interface SurveyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onComplete: (answers: Record<number, 'yes' | 'no' | 'skip'>) => void;
+  onComplete: (answers: Record<number, AnswerType>) => void;
   questions: Question[];
 }
 
@@ -24,11 +25,8 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   questions 
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, 'yes' | 'no' | 'skip'>>({});
+  const [answers, setAnswers] = useState<Record<number, AnswerType>>({});
   const tinderCardRef = useRef<any>(null);
-  const [lastDirection, setLastDirection] = useState<Direction | null>(null);
-
-  // Убраны useRef для answers и currentIndex - теперь работаем только с состоянием
 
   useEffect(() => {
     if (isOpen) {
@@ -42,16 +40,13 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     };
   }, [isOpen]);
 
-  // Сброс состояния при закрытии
   useEffect(() => {
     if (!isOpen) {
       setCurrentIndex(0);
       setAnswers({});
-      setLastDirection(null);
     }
   }, [isOpen]);
 
-  // Обработка Esc
   useEffect(() => {
     if (!isOpen) return;
     
@@ -64,27 +59,22 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   }, [isOpen, onClose]);
 
   const handleSwipe = (dir: Direction) => {
-    setLastDirection(dir);
-    
-    // Определяем ответ на основе направления
-    const answer = 
+    // Определяем тип ответа явно как AnswerType
+    const answer: AnswerType = 
       dir === 'right' ? 'yes' : 
       dir === 'left' ? 'no' : 
       'skip';
     
-    // Обновляем ответы СИНХРОННО
-    const newAnswers = {
+    const newAnswers: Record<number, AnswerType> = {
       ...answers,
       [questions[currentIndex].id]: answer
     };
     
     setAnswers(newAnswers);
     
-    // Переходим к следующему вопросу или завершаем
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      // Все вопросы пройдены - передаем ответы
       setTimeout(() => {
         onComplete(newAnswers);
         onClose();
@@ -95,10 +85,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   const handleSkip = () => {
     if (tinderCardRef.current?.swipe) {
       tinderCardRef.current.swipe('up')
-        .catch(() => {
-          // Если не удалось программно свайпнуть, обрабатываем вручную
-          handleSwipe('up');
-        });
+        .catch(() => handleSwipe('up'));
     } else {
       handleSwipe('up');
     }
@@ -109,10 +96,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     
     if (tinderCardRef.current?.swipe) {
       tinderCardRef.current.swipe(direction)
-        .catch(() => {
-          // Если не удалось программно свайпнуть, обрабатываем вручную
-          handleSwipe(direction);
-        });
+        .catch(() => handleSwipe(direction));
     } else {
       handleSwipe(direction);
     }
