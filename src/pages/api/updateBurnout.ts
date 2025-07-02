@@ -2,6 +2,12 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import { validateTelegramInitData } from '@/lib/telegramAuth';
 
+interface RequestBody {
+  telegramId: number;
+  burnoutDelta: number;
+  factors: number[];
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const initData = req.headers['x-telegram-init-data'] as string;
 
@@ -13,23 +19,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { telegramId, newScore } = req.body;
+  const { telegramId, burnoutDelta, factors } = req.body as RequestBody;
 
-  if (!telegramId || typeof newScore !== 'number') {
+  if (!telegramId || typeof burnoutDelta !== 'number' || !Array.isArray(factors)) {
     return res.status(400).json({ error: 'Invalid request body' });
   }
 
-  // Валидация диапазона баллов
-  if (newScore < -20 || newScore > 20) {
-    return res.status(400).json({ error: 'Invalid score delta value' });
+  // Валидация факторов
+  if (factors.length !== 8 || factors.some(f => typeof f !== 'number' || f < -1 || f > 1)) {
+    return res.status(400).json({ error: 'Invalid factors format' });
   }
 
-  console.log(`[UpdateBurnout] Request for user ${telegramId} with delta: ${newScore}`);
+  console.log(`[UpdateBurnout] Request for user ${telegramId} with delta: ${burnoutDelta}`);
 
   try {
-    const { data, error } = await supabase.rpc('update_burnout', {
+    const { data, error } = await supabase.rpc('update_burnout_and_factors', {
       p_telegram_id: telegramId,
-      p_score_delta: newScore
+      p_burnout_delta: burnoutDelta,
+      p_factors: factors
     });
 
     if (error) {
