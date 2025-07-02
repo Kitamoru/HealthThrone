@@ -87,10 +87,20 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             repeat: Infinity,
             ease: "easeInOut"
           }
+        }).then(() => {
+          // Запуск анимации кристалла после начала пульсации
+          crystalControls.start({
+            scale: [1, 1.1, 1],
+            transition: {
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }
+          });
         });
       }, 800);
     }
-  }, [phase, pulseControls]);
+  }, [phase, pulseControls, crystalControls]);
 
   const renderRadialLevels = () => {
     const levels = 9; // 9 внутренних уровней
@@ -123,6 +133,58 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     });
   };
 
+  // Функция для рендеринга секторов (по одному на каждый фактор)
+  const renderSectors = () => {
+    return values.map((value, index) => {
+      // Пропускаем сектора с нулевым значением
+      if (value <= 0) return null;
+      
+      const startAngle = index * 45 - 90;
+      const endAngle = (index + 1) * 45 - 90;
+      
+      // Внутренний радиус для сектора (10% от основного радиуса)
+      const innerRadius = radius * 0.1;
+      
+      // Внешний радиус рассчитывается на основе значения фактора
+      const outerRadius = innerRadius + (radius * 0.8) * value;
+      
+      // Рассчитываем точки для сектора
+      const startInner = getPoint(startAngle, innerRadius);
+      const startOuter = getPoint(startAngle, outerRadius);
+      const endOuter = getPoint(endAngle, outerRadius);
+      const endInner = getPoint(endAngle, innerRadius);
+      
+      // Строим путь для сектора
+      const pathData = `
+        M ${startInner.x},${startInner.y}
+        L ${startOuter.x},${startOuter.y}
+        A ${outerRadius} ${outerRadius} 0 0 1 ${endOuter.x},${endOuter.y}
+        L ${endInner.x},${endInner.y}
+        A ${innerRadius} ${innerRadius} 0 0 0 ${startInner.x},${startInner.y}
+        Z
+      `;
+      
+      return (
+        <motion.path
+          key={`sector-${index}`}
+          d={pathData}
+          fill="url(#sector-gradient)"
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ 
+            opacity: 1, 
+            scale: 1,
+            transition: { 
+              delay: 0.3 + index * 0.05, 
+              duration: 0.5,
+              ease: "easeOut"
+            }
+          }}
+          filter="url(#glow)"
+        />
+      );
+    });
+  };
+
   return (
     <div style={{ width: size, height: size }}>
       <svg width={size} height={size}>
@@ -139,6 +201,12 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
 
           <linearGradient id="crystalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#1E90FF" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.2" />
+          </linearGradient>
+          
+          {/* Новый градиент для секторов */}
+          <linearGradient id="sector-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#1E90FF" stopOpacity="0.6" />
             <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.2" />
           </linearGradient>
         </defs>
@@ -187,13 +255,16 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
               d={octagonPath}
               fill="none"
               stroke="#1E90FF"
-              strokeWidth={1} // Толщина уменьшена до 1
+              strokeWidth={1}
               strokeOpacity={0.8}
               initial={{ pathLength: 0, opacity: 0 }}
               animate={octagonControls}
               filter="url(#glow)"
             />
           )}
+
+          {/* Рендерим сектора только на фазе pulse */}
+          {phase === 'pulse' && renderSectors()}
 
           {phase === 'rays' || phase === 'pulse' ? (
             midPoints.map((point, index) => (
@@ -204,8 +275,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
                 x2={point.x}
                 y2={point.y}
                 stroke="#1E90FF"
-                strokeWidth={0.7} // Тоньше
-                strokeOpacity={0.15} // Прозрачность как у внутренних уровней
+                strokeWidth={0.7}
+                strokeOpacity={0.15}
                 strokeLinecap="round"
                 initial={{ opacity: 0, x2: center, y2: center }}
                 animate={{
@@ -226,13 +297,10 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           <motion.circle
             cx={center}
             cy={center}
-            r="7.5" // В два раза меньше
+            r="7.5"
             fill="url(#crystalGradient)"
             initial={{ scale: 0, opacity: 0 }}
-            animate={{
-              scale: 1,
-              opacity: 1 // Без прозрачности и пульсации
-            }}
+            animate={crystalControls}
             transition={{
               delay: 0.8,
               duration: 0.6
