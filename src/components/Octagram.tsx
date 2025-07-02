@@ -17,6 +17,9 @@ const Octagram = ({ values, size = 300, isLoading = false }: OctagramProps) => {
   const center = size / 2;
   const radius = size * 0.4;
 
+  // Нормализация значений (гарантируем 0-1 диапазон)
+  const normalizedValues = values.map(v => Math.max(0, Math.min(1, v)));
+
   const getPoint = (angle: number, r: number) => {
     const rad = (angle * Math.PI) / 180;
     return {
@@ -112,17 +115,26 @@ const Octagram = ({ values, size = 300, isLoading = false }: OctagramProps) => {
       );
     });
 
-  const renderSectors = () =>
-    values.map((value, i) => {
+  const renderSectors = () => {
+    // Защита от некорректных данных
+    if (!normalizedValues || normalizedValues.length !== 8) {
+      console.error('Invalid values for Octagram:', values);
+      return null;
+    }
+
+    return normalizedValues.map((value, i) => {
       if (value < 0.01) return null;
+      
       const angleStart = i * 45 - 90;
       const angleEnd = (i + 1) * 45 - 90;
       const rInner = radius * 0.1;
       const rOuter = rInner + radius * 0.8 * value;
+      
       const p1 = getPoint(angleStart, rInner);
       const p2 = getPoint(angleStart, rOuter);
       const p3 = getPoint(angleEnd, rOuter);
       const p4 = getPoint(angleEnd, rInner);
+      
       const d = `M ${p1.x},${p1.y} L ${p2.x},${p2.y} A ${rOuter} ${rOuter} 0 0 1 ${p3.x},${p3.y} L ${p4.x},${p4.y} A ${rInner} ${rInner} 0 0 0 ${p1.x},${p1.y} Z`;
 
       return (
@@ -137,6 +149,7 @@ const Octagram = ({ values, size = 300, isLoading = false }: OctagramProps) => {
         />
       );
     });
+  };
 
   return (
     <div style={{ width: size, height: size }}>
@@ -180,7 +193,7 @@ const Octagram = ({ values, size = 300, isLoading = false }: OctagramProps) => {
             filter="url(#glow)"
           />
 
-          {!isLoading && renderSectors()}
+          {renderSectors()}
 
           {(phase === 'rays' || phase === 'pulse') &&
             midPoints.map((p, i) => (
