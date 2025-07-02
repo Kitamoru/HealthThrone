@@ -1,309 +1,181 @@
-import { ApiResponse, UserProfile, Sprite, Friend } from './types';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import React, { useState, useEffect, useRef } from 'react';
+import TinderCard from 'react-tinder-card';
+import { motion } from 'framer-motion';
 
-interface SubmitSurveyRequest {
-  telegramId: number;
-  burnoutDelta: number;
-  factors: number[];
-  initData?: string;
+type Direction = 'left' | 'right' | 'up' | 'down';
+type AnswerType = 'yes' | 'no' | 'skip';
+
+interface Question {
+  id: number;
+  text: string;
+  weight: number;
 }
 
-interface OctalysisFactors {
-  factor1: number;
-  factor2: number;
-  factor3: number;
-  factor4: number;
-  factor5: number;
-  factor6: number;
-  factor7: number;
-  factor8: number;
+interface SurveyModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onComplete: (answers: Record<number, AnswerType>) => void;
+  questions: Question[];
 }
 
-export const useUserData = (telegramId: number, initData?: string) => {
-  return useQuery({
-    queryKey: ['user', telegramId],
-    queryFn: () => api.getUserData(telegramId, initData),
-    enabled: !!telegramId,
-    staleTime: 5 * 60 * 1000,
-  });
-};
+export const SurveyModal: React.FC<SurveyModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onComplete,
+  questions 
+}) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, AnswerType>>({});
+  const tinderCardRef = useRef<any>(null);
 
-export const useFriendsData = (telegramId: string, initData?: string) => {
-  return useQuery({
-    queryKey: ['friends', telegramId],
-    queryFn: () => api.getFriends(telegramId, initData),
-    enabled: !!telegramId,
-    staleTime: 5 * 60 * 1000,
-  });
-};
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
-export const useSpritesData = (initData?: string) => {
-  return useQuery({
-    queryKey: ['sprites'],
-    queryFn: () => api.getSprites(initData),
-    staleTime: 10 * 60 * 1000,
-  });
-};
+  useEffect(() => {
+    if (!isOpen) {
+      setCurrentIndex(0);
+      setAnswers({});
+    }
+  }, [isOpen]);
 
-export const useOwnedSprites = (telegramId: number, initData?: string) => {
-  return useQuery({
-    queryKey: ['ownedSprites', telegramId],
-    queryFn: () => api.getOwnedSprites(telegramId, initData),
-    enabled: !!telegramId,
-    staleTime: 5 * 60 * 1000,
-  });
-};
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
 
-export const useSubmitSurvey = () => {
-  return useMutation({
-    mutationFn: (params: SubmitSurveyRequest) => api.submitSurvey(params),
-  });
-};
-
-export const usePurchaseSprite = () => {
-  return useMutation({
-    mutationFn: (params: {
-      telegramId: number;
-      spriteId: number;
-      initData?: string;
-    }) => api.purchaseSprite(params.telegramId, params.spriteId, params.initData),
-  });
-};
-
-export const useEquipSprite = () => {
-  return useMutation({
-    mutationFn: (params: {
-      telegramId: number;
-      spriteId: number;
-      initData?: string;
-    }) => api.equipSprite(params.telegramId, params.spriteId, params.initData),
-  });
-};
-
-export const useUpdateUserClass = () => {
-  return useMutation({
-    mutationFn: (params: {
-      telegramId: number;
-      characterClass: string;
-      initData?: string;
-    }) => api.updateUserClass(params.telegramId, params.characterClass, params.initData),
-  });
-};
-
-export const useOctalysisFactors = (userId: number, initData?: string) => {
-  return useQuery({
-    queryKey: ['octalysisFactors', userId],
-    queryFn: () => api.getOctalysisFactors(userId, initData),
-    enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
-  });
-};
-
-class Api {
-  private baseUrl = '/api';
-  private defaultHeaders: Record<string, string> = {
-    'Content-Type': 'application/json'
+  const handleSwipe = (dir: Direction) => {
+    // Определяем тип ответа явно как AnswerType
+    const answer: AnswerType = 
+      dir === 'right' ? 'yes' : 
+      dir === 'left' ? 'no' : 
+      'skip';
+    
+    const newAnswers: Record<number, AnswerType> = {
+      ...answers,
+      [questions[currentIndex].id]: answer
+    };
+    
+    setAnswers(newAnswers);
+    
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      setTimeout(() => {
+        onComplete(newAnswers);
+        onClose();
+      }, 300);
+    }
   };
-  
-  private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
-    if (!response.ok) {
-      try {
-        const errorResponse = await response.json();
-        return {
-          success: false,
-          status: response.status,
-          error: errorResponse.error || JSON.stringify(errorResponse)
-        };
-      } catch {
-        return {
-          success: false,
-          status: response.status,
-          error: await response.text()
-        };
-      }
+
+  const handleSkip = () => {
+    if (tinderCardRef.current?.swipe) {
+      tinderCardRef.current.swipe('up')
+        .catch(() => handleSwipe('up'));
+    } else {
+      handleSwipe('up');
     }
+  };
 
-    try {
-      return await response.json();
-    } catch (parseError) {
-      return {
-        success: false,
-        status: 500,
-        error: 'Failed to parse response data'
-      };
+  const handleAnswer = (answer: 'yes' | 'no') => {
+    const direction = answer === 'yes' ? 'right' : 'left';
+    
+    if (tinderCardRef.current?.swipe) {
+      tinderCardRef.current.swipe(direction)
+        .catch(() => handleSwipe(direction));
+    } else {
+      handleSwipe(direction);
     }
-  }
+  };
 
-  private async makeRequest<T>(
-    endpoint: string,
-    method: string = 'GET',
-    body?: any,
-    initData?: string
-  ): Promise<ApiResponse<T>> {
-    const url = `${this.baseUrl}${endpoint}`;
-    const headers: Record<string, string> = { ...this.defaultHeaders };
+  if (!isOpen) return null;
 
-    if (initData) {
-      headers['X-Telegram-Init-Data'] = initData;
-    }
-
-    try {
-      const response = await fetch(url, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined
-      });
-
-      return this.handleResponse<T>(response);
-    } catch (error: any) {
-      return {
-        success: false,
-        status: 0,
-        error: error.message || 'Network request failed'
-      };
-    }
-  }
-
-  async initUser(initData: string, startParam?: string) {
-    return this.makeRequest('/init', 'POST', { initData, ref: startParam });
-  }
-
-  async getUserData(telegramId: number, initData?: string): Promise<ApiResponse<UserProfile>> {
-    return this.makeRequest<UserProfile>(
-      `/data?telegramId=${telegramId}`, 
-      'GET', 
-      undefined, 
-      initData
-    );
-  }
-
-  async updateBurnoutLevel(telegramId: number, level: number, initData?: string) {
-    return this.makeRequest(
-      '/update', 
-      'POST', 
-      { telegramId, burnoutLevel: level },
-      initData
-    );
-  }
-
-  async getFriends(telegramId: string, initData?: string): Promise<ApiResponse<Friend[]>> {
-    return this.makeRequest<Friend[]>(
-      `/friends?telegramId=${telegramId}`, 
-      'GET', 
-      undefined, 
-      initData
-    );
-  }
-
-  async addFriend(friendUsername: string, initData?: string): Promise<ApiResponse> {
-    return this.makeRequest(
-      '/friends', 
-      'POST', 
-      { friendUsername },
-      initData
-    );
-  }
-
-  async deleteFriend(friendId: number, initData?: string): Promise<ApiResponse> {
-    return this.makeRequest(
-      `/friends/${friendId}`, 
-      'DELETE', 
-      undefined, 
-      initData
-    );
-  }
-
-  async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
-    return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
-  }
-  
-  async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
-    return this.makeRequest<Sprite>(
-      `/shop/sprites/${spriteId}`, 
-      'GET', 
-      undefined, 
-      initData
-    );
-  }
-
-  async purchaseSprite(
-    telegramId: number, 
-    spriteId: number, 
-    initData?: string
-  ): Promise<ApiResponse> {
-    return this.makeRequest(
-      '/shop/purchase', 
-      'POST', 
-      { telegramId, spriteId },
-      initData
-    );
-  }
-
-  async getOwnedSprites(
-    telegramId: number, 
-    initData?: string
-  ): Promise<ApiResponse<number[]>> {
-    return this.makeRequest<number[]>(
-      `/shop/owned?telegramId=${telegramId}`, 
-      'GET', 
-      undefined, 
-      initData
-    );
-  }
-
-  async equipSprite(
-    telegramId: number, 
-    spriteId: number, 
-    initData?: string
-  ): Promise<ApiResponse> {
-    return this.makeRequest(
-      '/shop/equip', 
-      'POST', 
-      { telegramId, spriteId },
-      initData
-    );
-  }
-  
-  async submitSurvey(params: SubmitSurveyRequest): Promise<ApiResponse<UserProfile>> {
-    return this.makeRequest<UserProfile>(
-      '/updateBurnout', 
-      'POST', 
-      {
-        telegramId: params.telegramId,
-        burnoutDelta: params.burnoutDelta,
-        factors: params.factors
-      },
-      params.initData
-    );
-  }
-
-  async updateUserClass(
-    telegramId: number,
-    characterClass: string, 
-    initData?: string
-  ): Promise<ApiResponse> {
-    return this.makeRequest(
-      '/onboarding', 
-      'POST', 
-      { 
-        telegram_id: telegramId,
-        character_class: characterClass 
-      }, 
-      initData
-    );
-  }
-
-  async getOctalysisFactors(
-    userId: number, 
-    initData?: string
-  ): Promise<ApiResponse<OctalysisFactors>> {
-    return this.makeRequest<OctalysisFactors>(
-      `/octalysis?userId=${userId}`, 
-      'GET', 
-      undefined, 
-      initData
-    );
-  }
-}
-
-export const api = new Api();
+  return (
+    <div className="survey-modal-overlay" onClick={onClose}>
+      <motion.div 
+        className="survey-modal-container"
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="survey-modal-header">
+          <p className="survey-progress-text">
+            Вопрос {currentIndex + 1} из {questions.length}
+          </p>
+          <div className="survey-progress-track">
+            <div 
+              className="survey-progress-bar"
+              style={{ 
+                width: `${((currentIndex + 1) / questions.length) * 100}%`,
+                transition: 'width 0.3s ease'
+              }}
+            />
+          </div>
+        </div>
+        
+        <div className="survey-question-container">
+          {questions.length > 0 && currentIndex < questions.length && (
+            <div className="swipe-card-wrapper">
+              <TinderCard
+                key={currentIndex}
+                ref={tinderCardRef}
+                onSwipe={handleSwipe}
+                preventSwipe={['down']}
+                swipeRequirementType="position"
+                swipeThreshold={50}
+                className="swipe-card"
+              >
+                <div className="survey-card">
+                  <p className="survey-card-text">
+                    {questions[currentIndex]?.text}
+                  </p>
+                </div>
+              </TinderCard>
+            </div>
+          )}
+        </div>
+        
+        <div className="survey-buttons-container">
+          <button
+            onClick={() => handleAnswer('no')}
+            className="survey-button survey-button-no"
+            aria-label="Нет"
+          >
+            <span className="button-icon">←</span>
+          </button>
+          
+          <button
+            onClick={handleSkip}
+            className="survey-button survey-button-skip"
+            aria-label="Пропустить"
+          >
+            <span className="button-icon">↑</span>
+          </button>
+          
+          <button
+            onClick={() => handleAnswer('yes')}
+            className="survey-button survey-button-yes"
+            aria-label="Да"
+          >
+            <span className="button-icon">→</span>
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
