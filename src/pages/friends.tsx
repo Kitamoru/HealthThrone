@@ -124,7 +124,7 @@ export default function Friends() {
     <div className="container">
       <div className="scrollable-content">
         <div className="header">
-          <h2>Моя команда</h2>
+          <h2>Мои союзники</h2>
           <button 
             className="answer-btn positive"
             onClick={() => setShowModal(true)}
@@ -141,7 +141,7 @@ export default function Friends() {
         
         <div className="friends-list">
           {friends.length === 0 ? (
-            <div className="empty">У вас не призваны участники команды</div>
+            <div className="empty">У вас не призваны союзники</div>
           ) : (
             <div className="friends-grid">
               {friends.map((friend) => (
@@ -167,7 +167,7 @@ export default function Friends() {
           <div className="modal-overlay">
             <div className="modal-card">
               <div className="custom-modal-header">
-                <h3>Активировать свиток</h3>
+                <h3>Активировать свиток призыва</h3>
                 <button 
                   className="close-btn" 
                   onClick={() => setShowModal(false)}
@@ -176,7 +176,7 @@ export default function Friends() {
                 </button>
               </div>
               <div className="custom-modal-body">
-                <p>Призови участника команды</p>
+                <p>Призови союзников</p>
                 <div className="referral-link-container">
                   <input 
                     type="text" 
