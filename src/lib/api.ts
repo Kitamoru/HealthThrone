@@ -1,13 +1,22 @@
 import { ApiResponse, UserProfile, Sprite, Friend } from './types';
-import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
-import { queryClient } from './queryClient';
+import { useQuery, useMutation } from '@tanstack/react-query';
 
-// Добавлен интерфейс для запроса
 interface SubmitSurveyRequest {
   telegramId: number;
   burnoutDelta: number;
   factors: number[];
   initData?: string;
+}
+
+interface OctalysisFactors {
+  factor1: number;
+  factor2: number;
+  factor3: number;
+  factor4: number;
+  factor5: number;
+  factor6: number;
+  factor7: number;
+  factor8: number;
 }
 
 export const useUserData = (telegramId: number, initData?: string) => {
@@ -45,7 +54,6 @@ export const useOwnedSprites = (telegramId: number, initData?: string) => {
   });
 };
 
-// Обновленный хук
 export const useSubmitSurvey = () => {
   return useMutation({
     mutationFn: (params: SubmitSurveyRequest) => api.submitSurvey(params),
@@ -79,6 +87,15 @@ export const useUpdateUserClass = () => {
       characterClass: string;
       initData?: string;
     }) => api.updateUserClass(params.telegramId, params.characterClass, params.initData),
+  });
+};
+
+export const useOctalysisFactors = (userId: number, initData?: string) => {
+  return useQuery({
+    queryKey: ['octalysisFactors', userId],
+    queryFn: () => api.getOctalysisFactors(userId, initData),
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -247,7 +264,6 @@ class Api {
     );
   }
   
-  // Обновленный метод
   async submitSurvey(params: SubmitSurveyRequest): Promise<ApiResponse<UserProfile>> {
     return this.makeRequest<UserProfile>(
       '/updateBurnout', 
@@ -273,6 +289,18 @@ class Api {
         telegram_id: telegramId,
         character_class: characterClass 
       }, 
+      initData
+    );
+  }
+
+  async getOctalysisFactors(
+    userId: number, 
+    initData?: string
+  ): Promise<ApiResponse<OctalysisFactors>> {
+    return this.makeRequest<OctalysisFactors>(
+      `/octalysis?userId=${userId}`, 
+      'GET', 
+      undefined, 
       initData
     );
   }
