@@ -10,8 +10,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
   const [phase, setPhase] = useState<'vertices' | 'octagon' | 'rays' | 'pulse'>('vertices');
   const octagonControls = useAnimation();
   const raysControls = useAnimation();
-  const crystalControls = useAnimation();
   const pulseControls = useAnimation();
+  const levelsControls = useAnimation();
 
   const center = size / 2;
   const radius = size * 0.4;
@@ -81,9 +81,20 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     }
   }, [phase, octagonControls]);
 
-  // Rays animation phase
+  // Rays and levels animation phase
   useEffect(() => {
     if (phase === 'rays') {
+      // Animate radial levels
+      levelsControls.start((i) => ({
+        pathLength: 1,
+        opacity: i === 9 ? 0.8 : 0.15,
+        transition: { 
+          delay: i * 0.05, 
+          duration: 0.4,
+          ease: 'easeOut'
+        }
+      }));
+
       // Start pulse after rays animation completes
       setTimeout(() => {
         setPhase('pulse');
@@ -97,16 +108,14 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
         });
       }, 800);
     }
-  }, [phase, pulseControls]);
+  }, [phase, pulseControls, levelsControls]);
 
   // Генерация радиальных линий (10 уровней)
   const renderRadialLevels = () => {
     const levels = 10;
     return Array.from({ length: levels }).map((_, index) => {
       // Для последнего уровня используем основной радиус
-      const levelRadius = index === levels - 1 
-        ? radius 
-        : (radius * (index + 1)) / levels;
+      const levelRadius = (radius * (index + 1)) / levels;
       
       const points = getOctagonPointsByRadius(levelRadius);
       const path = createOctagonPath(points);
@@ -114,17 +123,19 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
       // Для внешнего контура делаем линию толще и ярче
       const isOuter = index === levels - 1;
       const strokeWidth = isOuter ? 1.5 : 0.5;
-      const strokeOpacity = isOuter ? 0.8 : 0.15;
       const strokeColor = "#1E90FF";
 
       return (
-        <path
+        <motion.path
           key={`level-${index}`}
+          custom={index}
           d={path}
           fill="none"
           stroke={strokeColor}
           strokeWidth={strokeWidth}
-          strokeOpacity={strokeOpacity}
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={levelsControls}
+          strokeOpacity={isOuter ? 0.8 : 0.15}
         />
       );
     });
@@ -145,8 +156,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           </filter>
 
           <linearGradient id="crystalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#1E90FF" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.2" />
+            <stop offset="0%" stopColor="#1E90FF" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.1" />
           </linearGradient>
         </defs>
 
@@ -166,7 +177,17 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
               initial={{ scale: 0, opacity: 0, y: 20 }}
               animate={
                 phase !== 'vertices'
-                  ? { scale: 1, opacity: 1, y: 0 }
+                  ? phase === 'pulse' 
+                    ? { 
+                        scale: [1, 1.1, 1],
+                        opacity: [0.8, 1, 0.8],
+                        transition: {
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }
+                      }
+                    : { scale: 1, opacity: 1, y: 0 }
                   : {
                       scale: [0, 1.3, 1],
                       opacity: 1,
@@ -174,7 +195,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
                     }
               }
               transition={{
-                delay: index * 0.06,
+                delay: phase === 'vertices' ? index * 0.06 : 0,
                 duration: 0.4,
               }}
               filter="url(#glow)"
@@ -205,8 +226,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
                 x2={point.x}
                 y2={point.y}
                 stroke="#1E90FF"
-                strokeWidth={1}
-                strokeOpacity={0.6}
+                strokeWidth={0.8}
+                strokeOpacity={0.4}
                 strokeLinecap="round"
                 initial={{ opacity: 0, x2: center, y2: center }}
                 animate={{
@@ -224,22 +245,22 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             ))
           ) : null}
 
-          {/* Central circle (вместо кристалла) */}
+          {/* Central circle */}
           <motion.circle
             cx={center}
             cy={center}
-            r="15"
+            r="8"
             fill="url(#crystalGradient)"
             initial={{ scale: 0, opacity: 0 }}
             animate={{
               scale: 1,
-              opacity: [0.8, 1, 0.8],
+              opacity: [0.6, 0.7, 0.6],
             }}
             transition={{
               delay: 0.8,
               duration: 0.6,
               opacity: {
-                duration: 3,
+                duration: 4,
                 repeat: Infinity,
                 repeatType: 'reverse',
               }
