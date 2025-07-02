@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import TinderCard from 'react-tinder-card';
 import { motion } from 'framer-motion';
 
 type Direction = 'left' | 'right' | 'up' | 'down';
-type AnswerType = 'yes' | 'no' | 'skip';
 
 interface Question {
   id: number;
@@ -14,7 +13,7 @@ interface Question {
 interface SurveyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onComplete: (answers: Record<number, AnswerType>) => void;
+  onComplete: (answers: Record<number, 'yes' | 'no' | 'skip'>) => void;
   questions: Question[];
 }
 
@@ -25,22 +24,55 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   questions 
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, AnswerType>>({});
+  const [answers, setAnswers] = useState<Record<number, 'yes' | 'no' | 'skip'>>({});
   const tinderCardRef = useRef<any>(null);
+  const [lastDirection, setLastDirection] = useState<Direction | null>(null);
 
+  // Убраны useRef для answers и currentIndex - теперь работаем только с состоянием
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  // Сброс состояния при закрытии
   useEffect(() => {
     if (!isOpen) {
       setCurrentIndex(0);
       setAnswers({});
+      setLastDirection(null);
     }
   }, [isOpen]);
 
+  // Обработка Esc
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
+
   const handleSwipe = (dir: Direction) => {
-    const answer: AnswerType = 
+    setLastDirection(dir);
+    
+    // Определяем ответ на основе направления
+    const answer = 
       dir === 'right' ? 'yes' : 
       dir === 'left' ? 'no' : 
       'skip';
     
+    // Обновляем ответы СИНХРОННО
     const newAnswers = {
       ...answers,
       [questions[currentIndex].id]: answer
@@ -48,9 +80,11 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     
     setAnswers(newAnswers);
     
+    // Переходим к следующему вопросу или завершаем
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
+      // Все вопросы пройдены - передаем ответы
       setTimeout(() => {
         onComplete(newAnswers);
         onClose();
@@ -60,7 +94,11 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
 
   const handleSkip = () => {
     if (tinderCardRef.current?.swipe) {
-      tinderCardRef.current.swipe('up').catch(() => handleSwipe('up'));
+      tinderCardRef.current.swipe('up')
+        .catch(() => {
+          // Если не удалось программно свайпнуть, обрабатываем вручную
+          handleSwipe('up');
+        });
     } else {
       handleSwipe('up');
     }
@@ -70,7 +108,11 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     const direction = answer === 'yes' ? 'right' : 'left';
     
     if (tinderCardRef.current?.swipe) {
-      tinderCardRef.current.swipe(direction).catch(() => handleSwipe(direction));
+      tinderCardRef.current.swipe(direction)
+        .catch(() => {
+          // Если не удалось программно свайпнуть, обрабатываем вручную
+          handleSwipe(direction);
+        });
     } else {
       handleSwipe(direction);
     }
