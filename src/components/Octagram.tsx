@@ -12,6 +12,26 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
   const raysControls = useAnimation();
   const crystalControls = useAnimation();
   const pulseControls = useAnimation();
+  
+  // Проверяем, являются ли значения начальными (все -1)
+  const isInitialValues = values.every(v => v < 0);
+  
+  // Сбрасываем анимацию при изменении values
+  useEffect(() => {
+    if (isInitialValues) return;
+    
+    const resetAnimation = async () => {
+      setPhase('vertices');
+      
+      // Сбрасываем контролы
+      await octagonControls.start({ pathLength: 0, opacity: 0 });
+      await raysControls.start({ opacity: 0 });
+      await crystalControls.start({ scale: 0, opacity: 0 });
+      await pulseControls.start({ scale: 1 });
+    };
+    
+    resetAnimation();
+  }, [values]);
 
   const center = size / 2;
   const radius = size * 0.4;
@@ -59,13 +79,13 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
   const octagonPath = createOctagonPath(octagonPoints);
 
   useEffect(() => {
-    if (phase === 'vertices') {
+    if (phase === 'vertices' && !isInitialValues) {
       setTimeout(() => setPhase('octagon'), 600);
     }
-  }, [phase]);
+  }, [phase, isInitialValues]);
 
   useEffect(() => {
-    if (phase === 'octagon') {
+    if (phase === 'octagon' && !isInitialValues) {
       octagonControls.start({
         pathLength: 1,
         opacity: 1,
@@ -74,10 +94,11 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
         setPhase('rays');
       });
     }
-  }, [phase, octagonControls]);
+  }, [phase, octagonControls, isInitialValues]);
 
   useEffect(() => {
-    if (phase === 'rays') {
+    // Запускаем фазу 'pulse' только когда данные получены
+    if (phase === 'rays' && !isInitialValues) {
       setTimeout(() => {
         setPhase('pulse');
         pulseControls.start({
@@ -88,7 +109,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             ease: "easeInOut"
           }
         }).then(() => {
-          // Запуск анимации кристалла после начала пульсации
           crystalControls.start({
             scale: [1, 1.1, 1],
             transition: {
@@ -100,27 +120,23 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
         });
       }, 800);
     }
-  }, [phase, pulseControls, crystalControls]);
+  }, [phase, pulseControls, crystalControls, isInitialValues]);
 
   const renderRadialLevels = () => {
-    const levels = 9; // 9 внутренних уровней
+    const levels = 9;
     return Array.from({ length: levels }).map((_, index) => {
       const levelRadius = (radius * (index + 1)) / 10;
       const points = getOctagonPointsByRadius(levelRadius);
       const path = createOctagonPath(points);
       
-      const strokeWidth = 0.5;
-      const strokeOpacity = 0.15;
-      const strokeColor = "#1E90FF";
-
       return (
         <motion.path
           key={`level-${index}`}
           d={path}
           fill="none"
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
-          strokeOpacity={strokeOpacity}
+          stroke="#1E90FF"
+          strokeWidth={0.5}
+          strokeOpacity={0.15}
           initial={{ pathLength: 0 }}
           animate={phase === 'rays' || phase === 'pulse' ? { pathLength: 1 } : {}}
           transition={{ 
@@ -133,28 +149,20 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     });
   };
 
-  // Функция для рендеринга секторов (по одному на каждый фактор)
   const renderSectors = () => {
     return values.map((value, index) => {
-      // Пропускаем сектора с нулевым значением
-      if (value <= 0) return null;
+      if (value < 0.01) return null;
       
       const startAngle = index * 45 - 90;
       const endAngle = (index + 1) * 45 - 90;
-      
-      // Внутренний радиус для сектора (10% от основного радиуса)
       const innerRadius = radius * 0.1;
-      
-      // Внешний радиус рассчитывается на основе значения фактора
       const outerRadius = innerRadius + (radius * 0.8) * value;
       
-      // Рассчитываем точки для сектора
       const startInner = getPoint(startAngle, innerRadius);
       const startOuter = getPoint(startAngle, outerRadius);
       const endOuter = getPoint(endAngle, outerRadius);
       const endInner = getPoint(endAngle, innerRadius);
       
-      // Строим путь для сектора
       const pathData = `
         M ${startInner.x},${startInner.y}
         L ${startOuter.x},${startOuter.y}
@@ -204,7 +212,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.2" />
           </linearGradient>
           
-          {/* Новый градиент для секторов */}
           <linearGradient id="sector-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#1E90FF" stopOpacity="0.6" />
             <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.2" />
@@ -263,8 +270,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             />
           )}
 
-          {/* Рендерим сектора только на фазе pulse */}
-          {phase === 'pulse' && renderSectors()}
+          {/* Отображаем сектора только когда данные загружены */}
+          {!isInitialValues && renderSectors()}
 
           {phase === 'rays' || phase === 'pulse' ? (
             midPoints.map((point, index) => (
