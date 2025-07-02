@@ -71,27 +71,19 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     setLastDirection(dir);
     const thisIndex = currentIndexRef.current;
     
-    // Определяем ответ на основе направления свайпа
-    const answer = 
-      dir === 'right' ? 'yes' : 
-      dir === 'left' ? 'no' : 
-      'skip';
-    
-    // Обновляем ответы
-    const newAnswers = {
-      ...answersRef.current,
-      [questions[thisIndex].id]: answer
-    };
-    
-    setAnswers(newAnswers);
-    
+    if (dir === 'up') {
+      setAnswers(prev => ({ ...prev, [questions[thisIndex].id]: 'skip' }));
+    } 
+    else if (dir === 'left' || dir === 'right') {
+      const answer = dir === 'right' ? 'yes' : 'no';
+      setAnswers(prev => ({ ...prev, [questions[thisIndex].id]: answer }));
+    }
+
     setTimeout(() => {
       if (thisIndex >= questions.length - 1) {
-        // Все вопросы пройдены - передаем ответы
-        onComplete(newAnswers);
+        onComplete(answersRef.current);
         onClose();
       } else {
-        // Переходим к следующему вопросу
         setCurrentIndex(prev => prev + 1);
       }
     }, 300);
@@ -100,20 +92,8 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
   const handleSkip = () => {
     if (tinderCardRef.current?.swipe) {
       tinderCardRef.current.swipe('up')
-        .catch(() => {
-          const newAnswers = {
-            ...answersRef.current,
-            [questions[currentIndexRef.current].id]: 'skip'
-          };
-          setAnswers(newAnswers);
-          handleSwipe('up');
-        });
+        .catch(() => handleSwipe('up'));
     } else {
-      const newAnswers = {
-        ...answersRef.current,
-        [questions[currentIndexRef.current].id]: 'skip'
-      };
-      setAnswers(newAnswers);
       handleSwipe('up');
     }
   };
@@ -123,21 +103,14 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
     
     if (tinderCardRef.current && tinderCardRef.current.swipe) {
       tinderCardRef.current.swipe(direction)
-        .catch(() => {
-          const newAnswers = {
-            ...answersRef.current,
-            [questions[currentIndexRef.current].id]: answer
-          };
-          setAnswers(newAnswers);
-          handleSwipe(direction);
-        });
+        .catch(() => handleSwipe(direction));
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="survey-modal-overlay" onClick={onClose}>
+    <div className="survey-modal-overlay">
       <motion.div 
         className="survey-modal-container"
         initial={{ scale: 0.95, opacity: 0 }}
@@ -161,26 +134,26 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
         </div>
         
         <div className="survey-question-container">
-          {questions.length > 0 && (
-            <div className="swipe-card-wrapper">
-              <TinderCard
-                key={currentIndex}
-                ref={tinderCardRef}
-                onSwipe={handleSwipe}
-                preventSwipe={['down']}
-                swipeRequirementType="position"
-                swipeThreshold={50}
-                className="swipe-card"
-              >
-                <div className="survey-card">
-                  <p className="survey-card-text">
-                    {questions[currentIndex]?.text}
-                  </p>
-                </div>
-              </TinderCard>
-            </div>
-          )}
-        </div>
+        {questions.length > 0 && (
+          <div className="swipe-card-wrapper">
+            <TinderCard
+              key={currentIndex}
+              ref={tinderCardRef}
+              onSwipe={handleSwipe}
+              preventSwipe={['down']}
+              swipeRequirementType="position"
+              swipeThreshold={50} // Уменьшенный порог для более легкого срабатывания
+              className="swipe-card"
+            >
+              <div className="survey-card">
+                <p className="survey-card-text">
+                  {questions[currentIndex]?.text}
+                </p>
+              </div>
+            </TinderCard>
+          </div>
+        )}
+      </div>
         
         <div className="survey-buttons-container">
           <button
