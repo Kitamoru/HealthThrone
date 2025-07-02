@@ -404,7 +404,7 @@ const Home = () => {
                   transition={{ duration: 0.8 }}
                   className="mt-4 mb-4 flex flex-col items-center octagram-container"
                 >
-                  <Octagram values={octagramValues} size={280} />
+                  <Octagram values={octagramValues} size={280} isLoading={isLoading || octalysisFactors === null} />
                 </motion.div>
               </AnimatePresence>
             </div>
