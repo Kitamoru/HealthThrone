@@ -195,7 +195,7 @@ const Home = () => {
     if (userData?.id) {
       const fetchFactors = async () => {
         const response = await api.getOctalysisFactors(userData.id, initData);
-        if (response.success) {
+        if (response.success && response.data) {
           setOctalysisFactors([
             response.data.factor1 || 0,
             response.data.factor2 || 0,
@@ -250,7 +250,7 @@ const Home = () => {
       if (userData?.id) {
         const fetchFactors = async () => {
           const response = await api.getOctalysisFactors(userData.id, initData);
-          if (response.success) {
+          if (response.success && response.data) {
             setOctalysisFactors([
               response.data.factor1 || 0,
               response.data.factor2 || 0,
