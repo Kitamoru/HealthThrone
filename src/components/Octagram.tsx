@@ -135,12 +135,12 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
       <svg width={size} height={size}>
         <defs>
           <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="blur" /> {/* Уменьшили размытие */}
+            <feGaussianBlur stdDeviation="2" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
           
           <filter id="ray-glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="1" result="blur" /> {/* Уменьшили размытие */}
+            <feGaussianBlur stdDeviation="1" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
 
@@ -161,7 +161,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
               key={`vertex-${index}`}
               cx={point.x}
               cy={point.y}
-              r="6" {/* Уменьшенный размер */}
+              r="6"
               fill="#1E90FF"
               initial={{ scale: 0, opacity: 0, y: 20 }}
               animate={
@@ -187,8 +187,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
               d={octagonPath}
               fill="none"
               stroke="#1E90FF"
-              strokeWidth={1.5} {/* Толще чем у внутренних линий */}
-              strokeOpacity={0.8} {/* Ярче чем у внутренних линий */}
+              strokeWidth={1.5}
+              strokeOpacity={0.8}
               initial={{ pathLength: 0, opacity: 0 }}
               animate={octagonControls}
               filter="url(#glow)"
@@ -205,8 +205,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
                 x2={point.x}
                 y2={point.y}
                 stroke="#1E90FF"
-                strokeWidth={1} {/* Более тонкие линии */}
-                strokeOpacity={0.6} {/* Меньшая непрозрачность */}
+                strokeWidth={1}
+                strokeOpacity={0.6}
                 strokeLinecap="round"
                 initial={{ opacity: 0, x2: center, y2: center }}
                 animate={{
@@ -228,7 +228,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           <motion.circle
             cx={center}
             cy={center}
-            r="15" {/* Радиус круга */}
+            r="15"
             fill="url(#crystalGradient)"
             initial={{ scale: 0, opacity: 0 }}
             animate={{
