@@ -8,7 +8,6 @@ export interface TelegramUser {
   photo_url?: string;
 }
 
-
 export interface TelegramContact {
   user_id?: number;
   first_name?: string;
@@ -21,7 +20,7 @@ export interface ApiResponse<T = any> {
   success: boolean;
   status: number;
   data?: T;
-  newCoins?: T;
+  newCoins?: T; 
   error?: string;
 }
 
@@ -74,8 +73,6 @@ export interface ShopUserProfile {
 export interface Question {
   id: number;
   text: string;
-  positive_answer: string;
-  negative_answer: string;
   weight: number;
 }
 
@@ -84,4 +81,23 @@ export interface UserSprite {
   user_id: number;
   sprite_id: number;
   purchased_at: string;
+}
+
+// Добавлен новый интерфейс для факторов Octalysis
+export interface OctalysisFactors {
+  factor1: number;
+  factor2: number;
+  factor3: number;
+  factor4: number;
+  factor5: number;
+  factor6: number;
+  factor7: number;
+  factor8: number;
+}
+
+// Добавлен интерфейс для запроса обновления класса
+export interface UpdateClassRequest {
+  telegramId: number;
+  characterClass: string;
+  initData?: string;
 }
