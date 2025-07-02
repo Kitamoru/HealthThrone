@@ -1,5 +1,5 @@
 import { motion, useAnimation } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react'; // Добавлен useMemo
 
 interface OctagramProps {
   values: number[]; // 8 значений от 0 до 1
@@ -169,7 +169,7 @@ const Octagram = ({ values, size = 300, isLoading = false }: OctagramProps) => {
     <div style={{ 
       width: size, 
       height: size,
-      backgroundColor: 'rgba(0,0,0,0.02)', // Для визуализации области
+      backgroundColor: 'rgba(0,0,0,0.02)',
       borderRadius: 8,
       border: '1px dashed rgba(0,0,0,0.1)'
     }}>
