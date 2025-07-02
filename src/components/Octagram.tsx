@@ -10,8 +10,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
   const [phase, setPhase] = useState<'vertices' | 'octagon' | 'rays' | 'pulse'>('vertices');
   const octagonControls = useAnimation();
   const raysControls = useAnimation();
+  const crystalControls = useAnimation();
   const pulseControls = useAnimation();
-  const levelsControls = useAnimation();
 
   const center = size / 2;
   const radius = size * 0.4;
@@ -24,7 +24,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     };
   };
 
-  // Функция для получения точек октагона с любым радиусом
   const getOctagonPointsByRadius = (r: number) => {
     const points = [];
     for (let i = 0; i < 8; i++) {
@@ -34,7 +33,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     return points;
   };
 
-  // Основные точки октагона (внешний контур)
   const getOctagonPoints = () => getOctagonPointsByRadius(radius);
 
   const createOctagonPath = (vertices: { x: number; y: number }[]) => {
@@ -45,7 +43,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     return path + ' Z';
   };
 
-  // Calculate midpoints between vertices for rays
   const getMidPoints = (vertices: { x: number; y: number }[]) => {
     const midPoints = [];
     for (let i = 0; i < vertices.length; i++) {
@@ -61,14 +58,12 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
   const midPoints = getMidPoints(octagonPoints);
   const octagonPath = createOctagonPath(octagonPoints);
 
-  // Vertex animation phase
   useEffect(() => {
     if (phase === 'vertices') {
       setTimeout(() => setPhase('octagon'), 600);
     }
   }, [phase]);
 
-  // Octagon animation phase
   useEffect(() => {
     if (phase === 'octagon') {
       octagonControls.start({
@@ -81,21 +76,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     }
   }, [phase, octagonControls]);
 
-  // Rays and levels animation phase
   useEffect(() => {
     if (phase === 'rays') {
-      // Animate radial levels
-      levelsControls.start((i) => ({
-        pathLength: 1,
-        opacity: i === 9 ? 0.8 : 0.15,
-        transition: { 
-          delay: i * 0.05, 
-          duration: 0.4,
-          ease: 'easeOut'
-        }
-      }));
-
-      // Start pulse after rays animation completes
       setTimeout(() => {
         setPhase('pulse');
         pulseControls.start({
@@ -108,34 +90,34 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
         });
       }, 800);
     }
-  }, [phase, pulseControls, levelsControls]);
+  }, [phase, pulseControls]);
 
-  // Генерация радиальных линий (10 уровней)
   const renderRadialLevels = () => {
-    const levels = 10;
+    const levels = 9; // Только 9 внутренних уровней
     return Array.from({ length: levels }).map((_, index) => {
-      // Для последнего уровня используем основной радиус
-      const levelRadius = (radius * (index + 1)) / levels;
-      
+      const levelRadius = (radius * (index + 1)) / 10;
       const points = getOctagonPointsByRadius(levelRadius);
       const path = createOctagonPath(points);
       
-      // Для внешнего контура делаем линию толще и ярче
-      const isOuter = index === levels - 1;
-      const strokeWidth = isOuter ? 1.5 : 0.5;
+      const strokeWidth = 0.5;
+      const strokeOpacity = 0.15;
       const strokeColor = "#1E90FF";
 
       return (
         <motion.path
           key={`level-${index}`}
-          custom={index}
           d={path}
           fill="none"
           stroke={strokeColor}
           strokeWidth={strokeWidth}
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={levelsControls}
-          strokeOpacity={isOuter ? 0.8 : 0.15}
+          strokeOpacity={strokeOpacity}
+          initial={{ pathLength: 0 }}
+          animate={phase === 'rays' || phase === 'pulse' ? { pathLength: 1 } : {}}
+          transition={{ 
+            delay: index * 0.06, 
+            duration: 0.5,
+            ease: 'easeOut'
+          }}
         />
       );
     });
@@ -156,17 +138,14 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           </filter>
 
           <linearGradient id="crystalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#1E90FF" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.1" />
+            <stop offset="0%" stopColor="#1E90FF" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.2" />
           </linearGradient>
         </defs>
 
-        {/* Обертка для пульсации всей фигуры */}
         <motion.g animate={pulseControls}>
-          {/* Радиальные уровни (отображаются всегда) */}
           {renderRadialLevels()}
 
-          {/* Vertices */}
           {octagonPoints.map((point, index) => (
             <motion.circle
               key={`vertex-${index}`}
@@ -177,32 +156,32 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
               initial={{ scale: 0, opacity: 0, y: 20 }}
               animate={
                 phase !== 'vertices'
-                  ? phase === 'pulse' 
-                    ? { 
-                        scale: [1, 1.1, 1],
-                        opacity: [0.8, 1, 0.8],
-                        transition: {
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }
-                      }
-                    : { scale: 1, opacity: 1, y: 0 }
+                  ? { 
+                      scale: [1, 1.1, 1],
+                      opacity: 1, 
+                      y: 0 
+                    }
                   : {
                       scale: [0, 1.3, 1],
                       opacity: 1,
                       y: 0,
                     }
               }
-              transition={{
-                delay: phase === 'vertices' ? index * 0.06 : 0,
-                duration: 0.4,
-              }}
+              transition={
+                phase === 'vertices'
+                  ? { delay: index * 0.06, duration: 0.4 }
+                  : { 
+                      scale: { 
+                        duration: 2, 
+                        repeat: Infinity, 
+                        ease: "easeInOut" 
+                      } 
+                    }
+              }
               filter="url(#glow)"
             />
           ))}
 
-          {/* Octagon */}
           {(phase === 'octagon' || phase === 'rays' || phase === 'pulse') && (
             <motion.path
               d={octagonPath}
@@ -216,7 +195,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             />
           )}
 
-          {/* Rays to midpoints */}
           {phase === 'rays' || phase === 'pulse' ? (
             midPoints.map((point, index) => (
               <motion.line
@@ -226,8 +204,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
                 x2={point.x}
                 y2={point.y}
                 stroke="#1E90FF"
-                strokeWidth={0.8}
-                strokeOpacity={0.4}
+                strokeWidth={0.7} // Тоньше
+                strokeOpacity={0.4} // Бледнее
                 strokeLinecap="round"
                 initial={{ opacity: 0, x2: center, y2: center }}
                 animate={{
@@ -245,25 +223,19 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             ))
           ) : null}
 
-          {/* Central circle */}
           <motion.circle
             cx={center}
             cy={center}
-            r="8"
+            r="7.5" // В два раза меньше
             fill="url(#crystalGradient)"
             initial={{ scale: 0, opacity: 0 }}
             animate={{
               scale: 1,
-              opacity: [0.6, 0.7, 0.6],
+              opacity: 1 // Без прозрачности и пульсации
             }}
             transition={{
               delay: 0.8,
-              duration: 0.6,
-              opacity: {
-                duration: 4,
-                repeat: Infinity,
-                repeatType: 'reverse',
-              }
+              duration: 0.6
             }}
             filter="url(#glow)"
           />
