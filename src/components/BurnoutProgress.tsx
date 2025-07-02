@@ -69,7 +69,7 @@ export const BurnoutProgress = React.memo(({
 
       <div className="burnout-section">
         <div className="level-display">
-          <span className="level-label">Уровень выгорания</span>
+          <span className="level-label">Уровень здоровья</span>
           <span className="level-value">{level}%</span>
         </div>
         <div className="progress-wrapper">
