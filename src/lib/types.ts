@@ -83,18 +83,6 @@ export interface UserSprite {
   purchased_at: string;
 }
 
-// Добавлен новый интерфейс для факторов Octalysis
-export interface OctalysisFactors {
-  factor1: number;
-  factor2: number;
-  factor3: number;
-  factor4: number;
-  factor5: number;
-  factor6: number;
-  factor7: number;
-  factor8: number;
-}
-
 // Добавлен интерфейс для запроса обновления класса
 export interface UpdateClassRequest {
   telegramId: number;
