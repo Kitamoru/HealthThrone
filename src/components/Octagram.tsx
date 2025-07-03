@@ -1,5 +1,14 @@
 import { motion, useAnimation } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+
+// Константы
+const CENTRAL_RADIUS = 7.5; // Уменьшено с 10 до 7.5
+const LEVELS_COUNT = 9;
+const STROKE_COLOR = "#1E90FF";
+const STROKE_OPACITY = 0.15;
+const STROKE_WIDTH = 0.5;
+const GLOW_FILTER = "url(#glow)";
+const RAY_GLOW_FILTER = "url(#ray-glow)";
 
 interface OctagramProps {
   values: number[]; // 8 values from 0 to 1
@@ -9,160 +18,123 @@ interface OctagramProps {
 const Octagram = ({ values, size = 300 }: OctagramProps) => {
   const [phase, setPhase] = useState<'vertices' | 'octagon' | 'rays' | 'pulse'>('vertices');
   const octagonControls = useAnimation();
-  const raysControls = useAnimation();
   const crystalControls = useAnimation();
   const pulseControls = useAnimation();
 
-  const center = size / 2;
-  const radius = size * 0.4;
+  const center = useMemo(() => size / 2, [size]);
+  const radius = useMemo(() => size * 0.4, [size]);
 
-  const getPoint = (angle: number, r: number) => {
+  const getPoint = useCallback((angle: number, r: number) => {
     const rad = (angle * Math.PI) / 180;
     return {
       x: center + r * Math.cos(rad),
       y: center + r * Math.sin(rad),
     };
-  };
+  }, [center]);
 
-  const getOctagonPointsByRadius = (r: number) => {
-    const points = [];
-    for (let i = 0; i < 8; i++) {
+  const getOctagonPointsByRadius = useCallback((r: number) => {
+    return Array.from({ length: 8 }, (_, i) => {
       const angle = i * 45 - 90;
-      points.push(getPoint(angle, r));
-    }
-    return points;
-  };
+      return getPoint(angle, r);
+    });
+  }, [getPoint]);
 
-  const getOctagonPoints = () => getOctagonPointsByRadius(radius);
+  const octagonPoints = useMemo(() => 
+    getOctagonPointsByRadius(radius), [radius, getOctagonPointsByRadius]
+  );
 
-  const createOctagonPath = (vertices: { x: number; y: number }[]) => {
-    let path = `M ${vertices[0].x},${vertices[0].y}`;
-    for (let i = 1; i < vertices.length; i++) {
-      path += ` L ${vertices[i].x},${vertices[i].y}`;
-    }
-    return path + ' Z';
-  };
+  const midPoints = useMemo(() => {
+    return octagonPoints.map((_, i) => {
+      const nextIndex = (i + 1) % octagonPoints.length;
+      return {
+        x: (octagonPoints[i].x + octagonPoints[nextIndex].x) / 2,
+        y: (octagonPoints[i].y + octagonPoints[nextIndex].y) / 2
+      };
+    });
+  }, [octagonPoints]);
 
-  const getMidPoints = (vertices: { x: number; y: number }[]) => {
-    const midPoints = [];
-    for (let i = 0; i < vertices.length; i++) {
-      const nextIndex = (i + 1) % vertices.length;
-      const midX = (vertices[i].x + vertices[nextIndex].x) / 2;
-      const midY = (vertices[i].y + vertices[nextIndex].y) / 2;
-      midPoints.push({ x: midX, y: midY });
-    }
-    return midPoints;
-  };
+  const octagonPath = useMemo(() => {
+    const [start, ...rest] = octagonPoints;
+    return `M ${start.x},${start.y} ${rest.map(p => `L ${p.x},${p.y}`).join(' ')} Z`;
+  }, [octagonPoints]);
 
-  const octagonPoints = getOctagonPoints();
-  const midPoints = getMidPoints(octagonPoints);
-  const octagonPath = createOctagonPath(octagonPoints);
+  const radialLevelsData = useMemo(() => {
+    return Array.from({ length: LEVELS_COUNT }, (_, index) => {
+      const levelRadius = (radius * (index + 1)) / 10;
+      const points = getOctagonPointsByRadius(levelRadius);
+      const path = `M ${points[0].x},${points[0].y} ${points.slice(1).map(p => `L ${p.x},${p.y}`).join(' ')} Z`;
+      return { path, index };
+    });
+  }, [radius, getOctagonPointsByRadius]);
 
   useEffect(() => {
+    let timer1: NodeJS.Timeout, timer2: NodeJS.Timeout;
+
     if (phase === 'vertices') {
-      // Show central ball immediately
       crystalControls.start({
         scale: 1,
         opacity: 1,
         transition: { duration: 0.6, ease: 'easeOut' }
       });
       
-      setTimeout(() => setPhase('octagon'), 600);
-    }
-  }, [phase, crystalControls]);
-
-  useEffect(() => {
-    if (phase === 'octagon') {
+      timer1 = setTimeout(() => setPhase('octagon'), 600);
+    } 
+    else if (phase === 'octagon') {
       octagonControls.start({
         pathLength: 1,
         opacity: 1,
         transition: { duration: 0.6, ease: 'easeInOut' },
       }).then(() => {
-        setPhase('rays');
+        timer2 = setTimeout(() => setPhase('rays'), 800);
       });
     }
-  }, [phase, octagonControls]);
-
-  useEffect(() => {
-    if (phase === 'rays') {
-      setTimeout(() => {
-        setPhase('pulse');
-        pulseControls.start({
-          scale: [1, 1.03, 1],
-          transition: {
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }
-        }).then(() => {
-          crystalControls.start({
-            scale: [1, 1.1, 1],
-            transition: {
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }
-          });
-        });
-      }, 800);
-    }
-  }, [phase, pulseControls, crystalControls]);
-
-  const renderRadialLevels = () => {
-    const levels = 9;
-    return Array.from({ length: levels }).map((_, index) => {
-      const levelRadius = (radius * (index + 1)) / 10;
-      const points = getOctagonPointsByRadius(levelRadius);
-      const path = createOctagonPath(points);
+    else if (phase === 'rays') {
+      setPhase('pulse');
+      pulseControls.start({
+        scale: [1, 1.03, 1],
+        transition: {
+          duration: 3,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }
+      });
       
-      const strokeWidth = 0.5;
-      const strokeOpacity = 0.15;
-      const strokeColor = "#1E90FF";
+      crystalControls.start({
+        scale: [1, 1.1, 1],
+        transition: {
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }
+      });
+    }
 
-      return (
-        <motion.path
-          key={`level-${index}`}
-          d={path}
-          fill="none"
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
-          strokeOpacity={strokeOpacity}
-          initial={{ pathLength: 0 }}
-          animate={phase === 'rays' || phase === 'pulse' ? { pathLength: 1 } : {}}
-          transition={{ 
-            delay: index * 0.06, 
-            duration: 0.5,
-            ease: 'easeOut'
-          }}
-        />
-      );
-    });
-  };
+    return () => {
+      timer1 && clearTimeout(timer1);
+      timer2 && clearTimeout(timer2);
+    };
+  }, [phase, octagonControls, crystalControls, pulseControls]);
 
-  // Fixed sector rendering to point at vertices
-  const renderSectors = () => {
+  const renderSectors = useCallback(() => {
     return values.map((value, index) => {
       if (value <= 0) return null;
       
-      // Calculate angles relative to vertices
-      const startAngle = index * 45 - 90 - 22.5; // Offset to align with vertices
+      const startAngle = index * 45 - 90 - 22.5;
       const endAngle = startAngle + 45;
+      const outerRadius = CENTRAL_RADIUS + (radius - CENTRAL_RADIUS) * value;
       
-      const innerRadius = 10; // Fixed to match central ball size
-      const outerRadius = innerRadius + (radius - innerRadius) * value;
-      
-      // Create sector path
-      const startInner = getPoint(startAngle, innerRadius);
+      const startInner = getPoint(startAngle, CENTRAL_RADIUS);
       const startOuter = getPoint(startAngle, outerRadius);
       const endOuter = getPoint(endAngle, outerRadius);
-      const endInner = getPoint(endAngle, innerRadius);
+      const endInner = getPoint(endAngle, CENTRAL_RADIUS);
       
+      // Убедимся, что внутренняя дуга использует CENTRAL_RADIUS
       const pathData = `
         M ${startInner.x},${startInner.y}
         L ${startOuter.x},${startOuter.y}
         A ${outerRadius} ${outerRadius} 0 0 1 ${endOuter.x},${endOuter.y}
         L ${endInner.x},${endInner.y}
-        A ${innerRadius} ${innerRadius} 0 0 0 ${startInner.x},${startInner.y}
+        A ${CENTRAL_RADIUS} ${CENTRAL_RADIUS} 0 0 0 ${startInner.x},${startInner.y}
         Z
       `;
       
@@ -181,11 +153,13 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
               ease: "easeOut"
             }
           }}
-          filter="url(#glow)"
+          filter={GLOW_FILTER}
+          // Добавляем небольшое перекрытие для устранения разрывов
+          style={{ stroke: STROKE_COLOR, strokeWidth: 0.5 }}
         />
       );
     });
-  };
+  }, [values, radius, getPoint]);
 
   return (
     <div style={{ width: size, height: size }}>
@@ -202,18 +176,34 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           </filter>
 
           <linearGradient id="crystalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#1E90FF" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.2" />
+            <stop offset="0%" stopColor={STROKE_COLOR} stopOpacity="0.8" />
+            <stop offset="100%" stopColor={STROKE_COLOR} stopOpacity="0.2" />
           </linearGradient>
           
           <linearGradient id="sector-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#1E90FF" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.2" />
+            <stop offset="0%" stopColor={STROKE_COLOR} stopOpacity="0.6" />
+            <stop offset="100%" stopColor={STROKE_COLOR} stopOpacity="0.2" />
           </linearGradient>
         </defs>
 
         <motion.g animate={pulseControls}>
-          {renderRadialLevels()}
+          {radialLevelsData.map(({ path, index }) => (
+            <motion.path
+              key={`level-${index}`}
+              d={path}
+              fill="none"
+              stroke={STROKE_COLOR}
+              strokeWidth={STROKE_WIDTH}
+              strokeOpacity={STROKE_OPACITY}
+              initial={{ pathLength: 0 }}
+              animate={phase !== 'vertices' ? { pathLength: 1 } : {}}
+              transition={{ 
+                delay: index * 0.06, 
+                duration: 0.5,
+                ease: 'easeOut'
+              }}
+            />
+          ))}
 
           {octagonPoints.map((point, index) => (
             <motion.circle
@@ -221,7 +211,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
               cx={point.x}
               cy={point.y}
               r="6"
-              fill="#1E90FF"
+              fill={STROKE_COLOR}
               initial={{ scale: 0, opacity: 0, y: 20 }}
               animate={
                 phase !== 'vertices'
@@ -247,7 +237,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
                       } 
                     }
               }
-              filter="url(#glow)"
+              filter={GLOW_FILTER}
             />
           ))}
 
@@ -255,55 +245,53 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             <motion.path
               d={octagonPath}
               fill="none"
-              stroke="#1E90FF"
+              stroke={STROKE_COLOR}
               strokeWidth={1}
               strokeOpacity={0.8}
               initial={{ pathLength: 0, opacity: 0 }}
               animate={octagonControls}
-              filter="url(#glow)"
+              filter={GLOW_FILTER}
             />
           )}
 
-          {/* Render sectors in pulse phase */}
           {phase === 'pulse' && renderSectors()}
 
-          {phase === 'rays' || phase === 'pulse' ? (
-            midPoints.map((point, index) => (
-              <motion.line
-                key={`ray-${index}`}
-                x1={center}
-                y1={center}
-                x2={point.x}
-                y2={point.y}
-                stroke="#1E90FF"
-                strokeWidth={0.7}
-                strokeOpacity={0.15}
-                strokeLinecap="round"
-                initial={{ opacity: 0, x2: center, y2: center }}
-                animate={{
-                  opacity: 1,
-                  x2: point.x,
-                  y2: point.y,
-                }}
-                transition={{
-                  delay: phase === 'rays' ? index * 0.06 : 0,
-                  duration: 0.5,
-                  ease: 'easeOut',
-                }}
-                filter="url(#ray-glow)"
-              />
-            ))
-          ) : null}
+          {(phase === 'rays' || phase === 'pulse') && midPoints.map((point, index) => (
+            <motion.line
+              key={`ray-${index}`}
+              x1={center}
+              y1={center}
+              x2={point.x}
+              y2={point.y}
+              stroke={STROKE_COLOR}
+              strokeWidth={0.7}
+              strokeOpacity={0.15}
+              strokeLinecap="round"
+              initial={{ opacity: 0, x2: center, y2: center }}
+              animate={{
+                opacity: 1,
+                x2: point.x,
+                y2: point.y,
+              }}
+              transition={{
+                delay: phase === 'rays' ? index * 0.06 : 0,
+                duration: 0.5,
+                ease: 'easeOut',
+              }}
+              filter={RAY_GLOW_FILTER}
+            />
+          ))}
 
-          {/* Central ball - now always visible from start */}
           <motion.circle
             cx={center}
             cy={center}
-            r="10"
+            r={CENTRAL_RADIUS}
             fill="url(#crystalGradient)"
             initial={{ scale: 0, opacity: 0 }}
             animate={crystalControls}
-            filter="url(#glow)"
+            filter={GLOW_FILTER}
+            // Добавляем обводку для плавного перехода к секторам
+            style={{ stroke: STROKE_COLOR, strokeWidth: 0.5 }}
           />
         </motion.g>
       </svg>
