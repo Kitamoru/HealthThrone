@@ -60,9 +60,16 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
 
   useEffect(() => {
     if (phase === 'vertices') {
+      // Show central ball immediately
+      crystalControls.start({
+        scale: 1,
+        opacity: 1,
+        transition: { duration: 0.6, ease: 'easeOut' }
+      });
+      
       setTimeout(() => setPhase('octagon'), 600);
     }
-  }, [phase]);
+  }, [phase, crystalControls]);
 
   useEffect(() => {
     if (phase === 'octagon') {
@@ -88,7 +95,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             ease: "easeInOut"
           }
         }).then(() => {
-          // Запуск анимации кристалла после начала пульсации
           crystalControls.start({
             scale: [1, 1.1, 1],
             transition: {
@@ -103,7 +109,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
   }, [phase, pulseControls, crystalControls]);
 
   const renderRadialLevels = () => {
-    const levels = 9; // 9 внутренних уровней
+    const levels = 9;
     return Array.from({ length: levels }).map((_, index) => {
       const levelRadius = (radius * (index + 1)) / 10;
       const points = getOctagonPointsByRadius(levelRadius);
@@ -133,28 +139,24 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     });
   };
 
-  // Функция для рендеринга секторов (по одному на каждый фактор)
+  // Fixed sector rendering to point at vertices
   const renderSectors = () => {
     return values.map((value, index) => {
-      // Пропускаем сектора с нулевым значением
       if (value <= 0) return null;
       
-      const startAngle = index * 45 - 90;
-      const endAngle = (index + 1) * 45 - 90;
+      // Calculate angles relative to vertices
+      const startAngle = index * 45 - 90 - 22.5; // Offset to align with vertices
+      const endAngle = startAngle + 45;
       
-      // Внутренний радиус для сектора (10% от основного радиуса)
-      const innerRadius = radius * 0.1;
+      const innerRadius = 10; // Fixed to match central ball size
+      const outerRadius = innerRadius + (radius - innerRadius) * value;
       
-      // Внешний радиус рассчитывается на основе значения фактора
-      const outerRadius = innerRadius + (radius * 0.8) * value;
-      
-      // Рассчитываем точки для сектора
+      // Create sector path
       const startInner = getPoint(startAngle, innerRadius);
       const startOuter = getPoint(startAngle, outerRadius);
       const endOuter = getPoint(endAngle, outerRadius);
       const endInner = getPoint(endAngle, innerRadius);
       
-      // Строим путь для сектора
       const pathData = `
         M ${startInner.x},${startInner.y}
         L ${startOuter.x},${startOuter.y}
@@ -204,7 +206,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.2" />
           </linearGradient>
           
-          {/* Новый градиент для секторов */}
           <linearGradient id="sector-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#1E90FF" stopOpacity="0.6" />
             <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.2" />
@@ -263,7 +264,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             />
           )}
 
-          {/* Рендерим сектора только на фазе pulse */}
+          {/* Render sectors in pulse phase */}
           {phase === 'pulse' && renderSectors()}
 
           {phase === 'rays' || phase === 'pulse' ? (
@@ -294,6 +295,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             ))
           ) : null}
 
+          {/* Central ball - now always visible from start */}
           <motion.circle
             cx={center}
             cy={center}
@@ -301,10 +303,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             fill="url(#crystalGradient)"
             initial={{ scale: 0, opacity: 0 }}
             animate={crystalControls}
-            transition={{
-              delay: 0.8,
-              duration: 0.6
-            }}
             filter="url(#glow)"
           />
         </motion.g>
