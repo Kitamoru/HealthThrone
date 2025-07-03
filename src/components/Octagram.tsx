@@ -1,7 +1,7 @@
+import React, { memo } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 
-// Константы
 const CENTRAL_RADIUS = 7.5;
 const LEVELS_COUNT = 9;
 const STROKE_COLOR = "#1E90FF";
@@ -11,11 +11,11 @@ const GLOW_FILTER = "url(#glow)";
 const RAY_GLOW_FILTER = "url(#ray-glow)";
 
 interface OctagramProps {
-  values: number[]; // 8 values from 0 to 1
+  values: number[];
   size?: number;
 }
 
-const Octagram = ({ values, size = 300 }: OctagramProps) => {
+const Octagram = memo(({ values, size = 300 }: OctagramProps) => {
   const [phase, setPhase] = useState<'vertices' | 'octagon' | 'rays' | 'pulse'>('vertices');
   const octagonControls = useAnimation();
   const crystalControls = useAnimation();
@@ -98,8 +98,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           ease: "easeInOut"
         }
       });
-      
-      // Убрана пульсация центрального шарика
     }
 
     return () => {
@@ -287,6 +285,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
       </svg>
     </div>
   );
-};
+});
 
 export default Octagram;
