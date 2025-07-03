@@ -92,8 +92,7 @@ export const useOctalysisFactors = (userId?: number, initData?: string) => {
       return [0,0,0,0,0,0,0,0];
     },
     enabled: !!userId,
-    staleTime: 60 * 60 * 1000, // 1 час кеширования
-    keepPreviousData: true, // Сохраняем предыдущие данные
+    staleTime: 5 * 60 * 1000, // 5 минут кеширования
   });
 };
 
