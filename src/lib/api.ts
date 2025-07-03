@@ -89,10 +89,12 @@ export const useOctalysisFactors = (userId?: number, initData?: string) => {
       if (response.success && Array.isArray(response.data)) {
         return response.data;
       }
-      return [0,0,0,0,0,0,0,0];
+      throw new Error(response.error || 'Failed to load factors');
     },
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 минут кеширования
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
+    initialData: [0,0,0,0,0,0,0,0] as number[]
   });
 };
 
