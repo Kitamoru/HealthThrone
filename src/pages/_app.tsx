@@ -10,13 +10,10 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
-// Определим тип для ответа initUser
 interface InitUserResponse {
   id: number;
-  // Другие поля пользователя, если они есть в ответе
 }
 
-// Prefetch shop data
 const prefetchShopData = (initData?: string) => {
   queryClient.prefetchQuery({
     queryKey: ['sprites'],
@@ -24,7 +21,6 @@ const prefetchShopData = (initData?: string) => {
   });
 };
 
-// Prefetch friends data
 const prefetchFriends = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
     queryKey: ['friends', userId.toString()],
@@ -44,6 +40,14 @@ const prefetchFriends = (userId: number, initData: string) => {
   });
 };
 
+const prefetchOctalysisFactors = (userId: number, initData: string) => {
+  queryClient.prefetchQuery({
+    queryKey: ['octalysisFactors', userId],
+    queryFn: () => api.getOctalysisFactors(userId, initData),
+    staleTime: 60 * 60 * 1000, // 1 hour cache
+  });
+};
+
 const Loader = dynamic(
   () => import('../components/Loader').then(mod => mod.Loader),
   { ssr: false, loading: () => <div>Загрузка...</div> }
@@ -56,18 +60,15 @@ function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     if (!initData) return;
 
-    // Инициализируем пользователя
     api.initUser(initData, startParam)
       .then(response => {
         if (response.success && response.data) {
-          // Приводим тип данных к InitUserResponse
           const userData = response.data as InitUserResponse;
           const userId = userData.id;
           
-          // Предзагружаем данные друзей
           prefetchFriends(userId, initData);
+          prefetchOctalysisFactors(userId, initData); // Добавлен префетч факторов
           
-          // Сохраняем данные пользователя для главной страницы
           queryClient.setQueryData(['userData', userId], userData);
         }
         return response;
@@ -78,10 +79,8 @@ function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     if (!webApp || !initData) return;
     
-    // Предзагружаем данные магазина
     prefetchShopData(initData);
     
-    // Предзагружаем страницы
     const routes = ['/', '/shop', '/friends'];
     routes.forEach(route => Router.prefetch(route));
   }, [webApp, initData]);
