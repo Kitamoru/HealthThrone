@@ -1,5 +1,5 @@
 import { motion, useAnimation } from 'framer-motion';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 
 interface OctagramProps {
   values: number[]; // 8 значений от 0 до 1
@@ -10,37 +10,12 @@ interface OctagramProps {
 const Octagram = ({ values, size = 300, isLoading = false }: OctagramProps) => {
   const [phase, setPhase] = useState<'vertices' | 'octagon' | 'rays' | 'pulse'>('vertices');
   const octagonControls = useAnimation();
+  const raysControls = useAnimation();
   const crystalControls = useAnimation();
   const pulseControls = useAnimation();
 
   const center = size / 2;
   const radius = size * 0.4;
-
-  // Проверка и нормализация значений
-  const normalizedValues = useMemo(() => {
-    console.log('Original values:', values);
-    
-    // Защита от некорректных данных
-    if (!Array.isArray(values) || values.length !== 8) {
-      console.error('Invalid values for Octagram:', values);
-      return [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
-    }
-    
-    // Проверяем, что все значения - числа и не NaN
-    const validValues = values.map(v => {
-      if (typeof v !== 'number' || isNaN(v)) {
-        console.warn('Invalid value detected, replacing with 0.5:', v);
-        return 0.5;
-      }
-      return v;
-    });
-    
-    return validValues.map(v => {
-      const clamped = Math.max(0, Math.min(1, v));
-      console.log(`Normalized value: ${v} -> ${clamped}`);
-      return clamped;
-    });
-  }, [values]);
 
   const getPoint = (angle: number, r: number) => {
     const rad = (angle * Math.PI) / 180;
@@ -69,188 +44,173 @@ const Octagram = ({ values, size = 300, isLoading = false }: OctagramProps) => {
   const midPoints = getMidPoints(octagonPoints);
   const octagonPath = createOctagonPath(octagonPoints);
 
-  // Анимация - упрощённая версия
   useEffect(() => {
     if (isLoading) return;
-    
-    const runAnimation = async () => {
-      // Сброс анимации
-      await octagonControls.start({
-        pathLength: 0,
-        opacity: 0
-      });
-      
-      // Показываем вершины
+
+    const resetAnimation = async () => {
       setPhase('vertices');
-      
-      // Показываем восьмиугольник
-      setTimeout(() => {
-        setPhase('octagon');
-        octagonControls.start({
+      await octagonControls.set({ pathLength: 0, opacity: 0 });
+      await raysControls.set({ opacity: 0 });
+      await crystalControls.set({ scale: 0, opacity: 0 });
+      await pulseControls.set({ scale: 1 });
+    };
+
+    resetAnimation();
+  }, [values, isLoading]);
+
+  useEffect(() => {
+    if (phase === 'vertices' && !isLoading) {
+      const timeout = setTimeout(() => setPhase('octagon'), 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [phase, isLoading]);
+
+  useEffect(() => {
+    if (phase === 'octagon' && !isLoading) {
+      octagonControls
+        .start({
           pathLength: 1,
           opacity: 1,
-          transition: { duration: 0.8 }
-        });
-      }, 300);
-      
-      // Показываем лучи и сектора
-      setTimeout(() => {
-        setPhase('rays');
-      }, 1000);
-      
-      // Финальная пульсация
+          transition: { duration: 0.6 },
+        })
+        .then(() => setPhase('rays'));
+    }
+  }, [phase, octagonControls, isLoading]);
+
+  useEffect(() => {
+    if (phase === 'rays' && !isLoading) {
       setTimeout(() => {
         setPhase('pulse');
         pulseControls.start({
-          scale: [1, 1.02, 1],
-          transition: { duration: 2, repeat: Infinity }
+          scale: [1, 1.03, 1],
+          transition: { duration: 3, repeat: Infinity },
         });
         crystalControls.start({
-          scale: [1, 1.05, 1],
-          transition: { duration: 1.5, repeat: Infinity }
+          scale: [1, 1.1, 1],
+          transition: { duration: 2, repeat: Infinity },
         });
-      }, 1500);
-    };
+      }, 800);
+    }
+  }, [phase, pulseControls, crystalControls, isLoading]);
 
-    runAnimation();
-  }, [normalizedValues, isLoading]);
-
-  const renderRadialLevels = () => {
-    return Array.from({ length: 5 }).map((_, i) => {
-      const r = radius * ((i + 1) / 6);
+  const renderRadialLevels = () =>
+    Array.from({ length: 9 }).map((_, i) => {
+      const r = radius * ((i + 1) / 10);
       const path = createOctagonPath(getOctagonPointsByRadius(r));
       return (
-        <path
+        <motion.path
           key={i}
           d={path}
           fill="none"
           stroke="#1E90FF"
           strokeWidth={0.5}
-          strokeOpacity={0.1}
+          strokeOpacity={0.15}
+          initial={{ pathLength: 0 }}
+          animate={(phase === 'rays' || phase === 'pulse') ? { pathLength: 1 } : {}}
+          transition={{ delay: i * 0.06, duration: 0.5 }}
         />
       );
     });
-  };
 
-  const renderSectors = () => {
-    console.log('Rendering sectors with values:', normalizedValues);
-    
-    return normalizedValues.map((value, i) => {
-      if (value < 0.01) {
-        console.log(`Skipping sector ${i} with value ${value}`);
-        return null;
-      }
-      
+  const renderSectors = () =>
+    values.map((value, i) => {
+      if (value < 0.01) return null;
       const angleStart = i * 45 - 90;
       const angleEnd = (i + 1) * 45 - 90;
       const rInner = radius * 0.1;
       const rOuter = rInner + radius * 0.8 * value;
-      
       const p1 = getPoint(angleStart, rInner);
       const p2 = getPoint(angleStart, rOuter);
       const p3 = getPoint(angleEnd, rOuter);
       const p4 = getPoint(angleEnd, rInner);
-      
-      // Упрощённый путь без дуг
-      const d = `M ${p1.x},${p1.y}
-                L ${p2.x},${p2.y}
-                L ${p3.x},${p3.y}
-                L ${p4.x},${p4.y}
-                Z`;
-      
-      console.log(`Sector ${i} path:`, d);
-      
+      const d = `M ${p1.x},${p1.y} L ${p2.x},${p2.y} A ${rOuter} ${rOuter} 0 0 1 ${p3.x},${p3.y} L ${p4.x},${p4.y} A ${rInner} ${rInner} 0 0 0 ${p1.x},${p1.y} Z`;
+
       return (
         <motion.path
           key={i}
           d={d}
-          fill="#1E90FF"
-          fillOpacity={0.6}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          fill="url(#sector-gradient)"
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3 + i * 0.05, duration: 0.5 }}
+          filter="url(#glow)"
         />
       );
     });
-  };
 
-  console.log('Rendering Octagram. Phase:', phase);
-  
   return (
-    <div style={{ 
-      width: size, 
-      height: size,
-      backgroundColor: 'rgba(0,0,0,0.02)',
-      borderRadius: 8,
-      border: '1px dashed rgba(0,0,0,0.1)'
-    }}>
+    <div style={{ width: size, height: size }}>
       <svg width={size} height={size}>
         <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
           <linearGradient id="sector-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#1E90FF" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.3" />
+            <stop offset="0%" stopColor="#1E90FF" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="#1E90FF" stopOpacity="0.2" />
           </linearGradient>
         </defs>
 
         <motion.g animate={pulseControls}>
-          {/* Концентрические круги */}
           {renderRadialLevels()}
 
-          {/* Вершины восьмиугольника */}
           {octagonPoints.map((p, i) => (
-            <circle
+            <motion.circle
               key={i}
               cx={p.x}
               cy={p.y}
               r="6"
               fill="#1E90FF"
-              opacity={phase !== 'vertices' ? 1 : 0}
+              initial={{ scale: 0, opacity: 0, y: 20 }}
+              animate={{ scale: [0, 1.3, 1], opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.06, duration: 0.4 }}
+              filter="url(#glow)"
             />
           ))}
 
-          {/* Основной восьмиугольник */}
           <motion.path
             d={octagonPath}
             fill="none"
             stroke="#1E90FF"
-            strokeWidth={1.5}
+            strokeWidth={1}
             strokeOpacity={0.8}
+            initial={{ pathLength: 0, opacity: 0 }}
             animate={octagonControls}
+            filter="url(#glow)"
           />
 
-          {/* Сектора - всегда видимые */}
-          {renderSectors()}
+          {!isLoading && renderSectors()}
 
-          {/* Лучи */}
-          {phase !== 'vertices' && midPoints.map((p, i) => (
-            <line
-              key={i}
-              x1={center}
-              y1={center}
-              x2={p.x}
-              y2={p.y}
-              stroke="#1E90FF"
-              strokeWidth={0.7}
-              strokeOpacity={0.15}
-              strokeLinecap="round"
-            />
-          ))}
+          {(phase === 'rays' || phase === 'pulse') &&
+            midPoints.map((p, i) => (
+              <motion.line
+                key={i}
+                x1={center}
+                y1={center}
+                x2={p.x}
+                y2={p.y}
+                stroke="#1E90FF"
+                strokeWidth={0.7}
+                strokeOpacity={0.15}
+                strokeLinecap="round"
+                initial={{ opacity: 0, x2: center, y2: center }}
+                animate={{ opacity: 1, x2: p.x, y2: p.y }}
+                transition={{ delay: i * 0.06, duration: 0.5 }}
+              />
+            ))}
 
-          {/* Центральный кристалл */}
           <motion.circle
             cx={center}
             cy={center}
-            r="8"
+            r="7.5"
             fill="url(#sector-gradient)"
+            initial={{ scale: 0, opacity: 0 }}
             animate={crystalControls}
+            transition={{ delay: 0.8, duration: 0.6 }}
+            filter="url(#glow)"
           />
         </motion.g>
-        
-        {/* Вспомогательные элементы для отладки */}
-        <circle cx={center} cy={center} r="2" fill="red" />
-        <text x="10" y="20" fill="black" fontSize="12">
-          Phase: {phase} | Values: {normalizedValues.map(v => v.toFixed(1)).join(',')}
-        </text>
       </svg>
     </div>
   );
