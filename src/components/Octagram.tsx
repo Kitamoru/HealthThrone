@@ -2,7 +2,7 @@ import { motion, useAnimation } from 'framer-motion';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 
 // Константы
-const CENTRAL_RADIUS = 7.5; // Уменьшено с 10 до 7.5
+const CENTRAL_RADIUS = 7.5;
 const LEVELS_COUNT = 9;
 const STROKE_COLOR = "#1E90FF";
 const STROKE_OPACITY = 0.15;
@@ -99,14 +99,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
         }
       });
       
-      crystalControls.start({
-        scale: [1, 1.1, 1],
-        transition: {
-          duration: 2,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }
-      });
+      // Убрана пульсация центрального шарика
     }
 
     return () => {
@@ -128,7 +121,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
       const endOuter = getPoint(endAngle, outerRadius);
       const endInner = getPoint(endAngle, CENTRAL_RADIUS);
       
-      // Убедимся, что внутренняя дуга использует CENTRAL_RADIUS
       const pathData = `
         M ${startInner.x},${startInner.y}
         L ${startOuter.x},${startOuter.y}
@@ -154,7 +146,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             }
           }}
           filter={GLOW_FILTER}
-          // Добавляем небольшое перекрытие для устранения разрывов
           style={{ stroke: STROKE_COLOR, strokeWidth: 0.5 }}
         />
       );
@@ -290,7 +281,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             initial={{ scale: 0, opacity: 0 }}
             animate={crystalControls}
             filter={GLOW_FILTER}
-            // Добавляем обводку для плавного перехода к секторам
             style={{ stroke: STROKE_COLOR, strokeWidth: 0.5 }}
           />
         </motion.g>
