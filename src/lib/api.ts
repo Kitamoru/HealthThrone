@@ -89,7 +89,7 @@ export const useOctalysisFactors = (userId: number, initData?: string) => {
       if (response.success && Array.isArray(response.data)) {
         // Нормализуем значения: делим на 60 (максимальное значение)
         return response.data.map(factor => {
-          const normalized = factor / 20;
+          const normalized = factor / 30;
           return Math.max(0, Math.min(1, normalized)); // Ограничиваем 0-1
         });
       }
