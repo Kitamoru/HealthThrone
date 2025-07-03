@@ -1,5 +1,5 @@
 import { ApiResponse, UserProfile, Sprite, Friend } from './types';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
 
 interface SubmitSurveyRequest {
   telegramId: number;
@@ -79,22 +79,21 @@ export const useUpdateUserClass = () => {
   });
 };
 
-export const useOctalysisFactors = (userId: number, initData?: string) => {
+export const useOctalysisFactors = (userId?: number, initData?: string) => {
   return useQuery({
     queryKey: ['octalysisFactors', userId],
-    queryFn: () => api.getOctalysisFactors(userId, initData),
-    enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
-    select: (response) => {
+    queryFn: async () => {
+      if (!userId) return [0,0,0,0,0,0,0,0];
+      
+      const response = await api.getOctalysisFactors(userId, initData);
       if (response.success && Array.isArray(response.data)) {
-        // Нормализуем значения: делим на 60 (максимальное значение)
-        return response.data.map(factor => {
-          const normalized = factor / 30;
-          return Math.max(0, Math.min(1, normalized)); // Ограничиваем 0-1
-        });
+        return response.data;
       }
       return [0,0,0,0,0,0,0,0];
-    }
+    },
+    enabled: !!userId,
+    staleTime: 60 * 60 * 1000, // 1 час кеширования
+    keepPreviousData: true, // Сохраняем предыдущие данные
   });
 };
 
