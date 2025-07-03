@@ -2,20 +2,9 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import { validateTelegramInitData } from '@/lib/telegramAuth';
 
-interface FactorsResponse {
-  factor1: number;
-  factor2: number;
-  factor3: number;
-  factor4: number;
-  factor5: number;
-  factor6: number;
-  factor7: number;
-  factor8: number;
-}
-
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<FactorsResponse | { error: string }>
+  res: NextApiResponse<number[] | { error: string }>
 ) {
   console.log('Received request for octalysis factors');
   const initData = req.headers['x-telegram-init-data'] as string;
@@ -66,18 +55,20 @@ export default async function handler(
       console.log('Retrieved data from Supabase:', data);
     }
 
-    const response: FactorsResponse = {
-      factor1: data?.factor1 ?? 0,
-      factor2: data?.factor2 ?? 0,
-      factor3: data?.factor3 ?? 0,
-      factor4: data?.factor4 ?? 0,
-      factor5: data?.factor5 ?? 0,
-      factor6: data?.factor6 ?? 0,
-      factor7: data?.factor7 ?? 0,
-      factor8: data?.factor8 ?? 0
-    };
+    const response: number[] = data
+      ? [
+          data.factor1,
+          data.factor2,
+          data.factor3,
+          data.factor4,
+          data.factor5,
+          data.factor6,
+          data.factor7,
+          data.factor8
+        ]
+      : [0, 0, 0, 0, 0, 0, 0, 0];
 
-    console.log('Prepared response:', response);
+    console.log('Prepared response array:', response);
     res.status(200).json(response);
     
   } catch (error) {
