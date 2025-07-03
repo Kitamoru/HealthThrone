@@ -141,10 +141,8 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
 
   // Fixed sector rendering to point at vertices
   const renderSectors = () => {
-  const innerRadius = 7.5; // 👈 Используем радиус центрального шара
-  
-  return values.map((value, index) => {
-    if (value <= 0) return null;
+    return values.map((value, index) => {
+      if (value <= 0) return null;
       
       // Calculate angles relative to vertices
       const startAngle = index * 45 - 90 - 22.5; // Offset to align with vertices
@@ -301,7 +299,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
           <motion.circle
             cx={center}
             cy={center}
-            r="7.5"
+            r="10"
             fill="url(#crystalGradient)"
             initial={{ scale: 0, opacity: 0 }}
             animate={crystalControls}
