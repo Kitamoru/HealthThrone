@@ -196,16 +196,7 @@ const Home = () => {
       const fetchFactors = async () => {
         const response = await api.getOctalysisFactors(userData.id, initData);
         if (response.success && response.data) {
-          setOctalysisFactors([
-            response.data.factor1 || 0,
-            response.data.factor2 || 0,
-            response.data.factor3 || 0,
-            response.data.factor4 || 0,
-            response.data.factor5 || 0,
-            response.data.factor6 || 0,
-            response.data.factor7 || 0,
-            response.data.factor8 || 0
-          ]);
+          setOctalysisFactors(response.data);
         } else {
           console.error('Failed to load factors:', response.error);
           setOctalysisFactors([0, 0, 0, 0, 0, 0, 0, 0]);
@@ -251,16 +242,7 @@ const Home = () => {
         const fetchFactors = async () => {
           const response = await api.getOctalysisFactors(userData.id, initData);
           if (response.success && response.data) {
-            setOctalysisFactors([
-              response.data.factor1 || 0,
-              response.data.factor2 || 0,
-              response.data.factor3 || 0,
-              response.data.factor4 || 0,
-              response.data.factor5 || 0,
-              response.data.factor6 || 0,
-              response.data.factor7 || 0,
-              response.data.factor8 || 0
-            ]);
+            setOctalysisFactors(response.data);
           }
         };
         fetchFactors();
@@ -298,12 +280,8 @@ const Home = () => {
       return [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
     }
     
-    // Нормализуем значения факторов для октаграммы (0-1)
-    return octalysisFactors.map(factor => {
-      // Максимальное значение фактора - 10 (можно настраивать)
-      const maxFactorValue = 10;
-      return Math.min(1.0, factor / maxFactorValue);
-    });
+    // Возвращаем факторы напрямую (уже нормализованы)
+    return octalysisFactors;
   }, [octalysisFactors]);
 
   const handleSurveyComplete = useCallback((answers: Record<number, 'yes' | 'no' | 'skip'>) => {
