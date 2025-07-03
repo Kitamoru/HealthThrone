@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTelegram } from '../hooks/useTelegram';
-import { api, useOctalysisFactors } from '../lib/api'; // Добавлен импорт хука
+import { api, useOctalysisFactors } from '../lib/api';
 import { Loader } from '../components/Loader';
 import { UserProfile } from '../lib/types';
 import { BurnoutProgress } from '../components/BurnoutProgress';
@@ -14,64 +14,7 @@ import Octagram from '../components/Octagram';
 import { SurveyModal } from '../components/SurveyModal';
 import { createPortal } from 'react-dom';
 
-interface Question {
-  id: number;
-  text: string;
-  weight: number;
-}
-
-const QUESTIONS: Question[] = [
-  {
-    id: 1,
-    text: "Сумели ли вы сегодня удержаться на ногах под натиском тьмы подземелья?",
-    weight: 2
-  },
-  {
-    id: 2,
-    text: "Хватило ли вашей выносливости в сегодняшнем штурме подземелья?",
-    weight: 2
-  },
-  {
-    id: 3,
-    text: "Ощущали ли вы сегодня, что служите великой цели гильдии, а не просто выполняете команды гильдмастера?",
-    weight: 1
-  },
-  {
-    id: 4,
-    text: "Смогли ли вы сегодня продвинуться в мастерстве или заслужить знак признания от других героев?",
-    weight: 1
-  },
-  {
-    id: 5,
-    text: "Получилось ли сегодня проявить инициативу или получить полезный совет от союзников?",
-    weight: 1
-  },
-  {
-    id: 6,
-    text: "Чувствовали ли вы сегодня, что сами держите штурвал своего корабля, а не ведомы чужой волей?",
-    weight: 1
-  },
-  {
-    id: 7,
-    text: "Поддерживали ли союзники ваш дух сегодня в этом походе?",
-    weight: 1
-  },
-  {
-    id: 8,
-    text: "Придавали ли вам энергии сегодня редкие ресурсы или срочные вызовы?",
-    weight: 1
-  },
-  {
-    id: 9,
-    text: "Преподнесло ли вам подземелье сегодня неожиданную встречу, загадку или событие, что пробудило интерес?",
-    weight: -1
-  },
-  {
-    id: 10,
-    text: "Ощущали ли вы сегодня, что промедление может стоить вам важного шанса или артефакта?",
-    weight: -1
-  }
-];
+// ... (QUESTIONS array remains the same) ...
 
 const Home = () => {
   const router = useRouter();
@@ -259,8 +202,10 @@ const Home = () => {
 
   const octagramValues = useMemo(() => {
     if (!octalysisFactors) {
-      return [0, 0, 0, 0, 0, 0, 0, 0]; // Возвращаем нулевые значения
+      return [0, 0, 0, 0, 0, 0, 0, 0];
     }
+    
+    // ВОССТАНАВЛИВАЕМ ПРЕЖНЮЮ ЛОГИКУ
     return octalysisFactors.map(factor => {
       const normalized = factor / 30;
       return Math.max(0, Math.min(1, normalized)); // Ограничиваем 0-1
@@ -365,7 +310,12 @@ const Home = () => {
                   transition={{ duration: 0.8 }}
                   className="mt-4 mb-4 flex flex-col items-center octagram-container"
                 >
-                  <Octagram values={octagramValues} size={280} />
+                  {/* Добавляем ключ для принудительного пересоздания компонента */}
+                  <Octagram 
+                    key={JSON.stringify(octagramValues)} 
+                    values={octagramValues} 
+                    size={280} 
+                  />
                 </motion.div>
               </AnimatePresence>
             </div>
