@@ -57,14 +57,10 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
   const octagonPoints = getOctagonPoints();
   const midPoints = getMidPoints(octagonPoints);
   const octagonPath = createOctagonPath(octagonPoints);
-  
-  // Центральный октагон
-  const centralOctagonRadius = 12;
-  const centralOctagonPoints = getOctagonPointsByRadius(centralOctagonRadius);
-  const centralOctagonPath = createOctagonPath(centralOctagonPoints);
 
   useEffect(() => {
     if (phase === 'vertices') {
+      // Show central ball immediately
       crystalControls.start({
         scale: 1,
         opacity: 1,
@@ -143,16 +139,19 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     });
   };
 
+  // Fixed sector rendering to point at vertices
   const renderSectors = () => {
     return values.map((value, index) => {
       if (value <= 0) return null;
       
-      const startAngle = index * 45 - 90 - 22.5;
+      // Calculate angles relative to vertices
+      const startAngle = index * 45 - 90 - 22.5; // Offset to align with vertices
       const endAngle = startAngle + 45;
       
-      const innerRadius = centralOctagonRadius * 1.1; // Увеличиваем чтобы перекрыть центральный октагон
+      const innerRadius = 10; // Fixed to match central ball size
       const outerRadius = innerRadius + (radius - innerRadius) * value;
       
+      // Create sector path
       const startInner = getPoint(startAngle, innerRadius);
       const startOuter = getPoint(startAngle, outerRadius);
       const endOuter = getPoint(endAngle, outerRadius);
@@ -265,6 +264,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             />
           )}
 
+          {/* Render sectors in pulse phase */}
           {phase === 'pulse' && renderSectors()}
 
           {phase === 'rays' || phase === 'pulse' ? (
@@ -295,9 +295,11 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             ))
           ) : null}
 
-          {/* Центральный октагон вместо шарика */}
-          <motion.path
-            d={centralOctagonPath}
+          {/* Central ball - now always visible from start */}
+          <motion.circle
+            cx={center}
+            cy={center}
+            r="10"
             fill="url(#crystalGradient)"
             initial={{ scale: 0, opacity: 0 }}
             animate={crystalControls}
