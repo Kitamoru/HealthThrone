@@ -276,9 +276,14 @@ const Home = () => {
   }, [answers, initialBurnoutLevel, surveyCompleted, userData]);
 
   const octagramValues = useMemo(() => {
-    if (!octalysisFactors) {
-      return [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
-    }
+  if (!octalysisFactors) {
+    return [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
+  }
+  return octalysisFactors.map(factor => {
+    const normalized = factor / 10;
+    return Math.max(0, Math.min(1, normalized)); // Ограничиваем 0-1
+  });
+}, [octalysisFactors]);
     
     // Возвращаем факторы напрямую (уже нормализованы)
     return octalysisFactors;
