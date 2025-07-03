@@ -13,7 +13,7 @@ import Onboarding from '../components/Onboarding';
 import Octagram from '../components/Octagram';
 import { SurveyModal } from '../components/SurveyModal';
 import { createPortal } from 'react-dom';
-import { useOctalysisFactors } from '../lib/api'; // Добавлен импорт хука
+import { useOctalysisFactors } from '../lib/api';
 
 interface Question {
   id: number;
@@ -80,7 +80,6 @@ const Home = () => {
   const queryClient = useQueryClient();
 
   const [questions] = useState<Question[]>(QUESTIONS);
-  const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [spriteLoaded, setSpriteLoaded] = useState(false);
@@ -95,7 +94,7 @@ const Home = () => {
     isLoading: isFactorsLoading,
     refetch: refetchFactors 
   } = useOctalysisFactors(
-    userData?.id, 
+    user?.id ? parseInt(user.id) : undefined, 
     initData
   );
 
@@ -151,7 +150,7 @@ const Home = () => {
 
   const { 
     data: userData, 
-    isLoading, 
+    isLoading: isUserLoading, 
     isError,
     error: queryError,
     refetch: refetchUserData
@@ -211,19 +210,13 @@ const Home = () => {
       return userData.burnout_level;
     }
 
-    const answeredDelta = [1, 2].reduce((sum, id) => {
-      const answer = answers[id];
-      if (answer === true) return sum + 2;
-      if (answer === false) return sum - 2;
-      return sum;
-    }, 0);
-
-    return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
-  }, [answers, initialBurnoutLevel, surveyCompleted, userData]);
+    // Для демонстрации - в реальном приложении здесь должна быть логика расчета
+    return initialBurnoutLevel;
+  }, [initialBurnoutLevel, surveyCompleted, userData]);
 
   const octagramValues = useMemo(() => {
     if (!octalysisFactors) {
-      return [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
+      return [0, 0, 0, 0, 0, 0, 0, 0];
     }
     return octalysisFactors.map(factor => {
       const normalized = factor / 30;
@@ -247,7 +240,7 @@ const Home = () => {
     });
 
     submitSurveyMutation.mutate({ burnoutDelta, factors });
-  }, [submitSurveyMutation]);
+  }, []);
 
   const submitSurveyMutation = useMutation({
     mutationFn: async (data: { burnoutDelta: number; factors: number[] }) => {
@@ -278,7 +271,6 @@ const Home = () => {
       });
       
       setSurveyCompleted(true);
-      setAnswers({});
       
       // Обновляем факторы
       refetchFactors();
@@ -300,7 +292,7 @@ const Home = () => {
   }, []);
 
   // Оптимизированная проверка загрузки
-  const showLoader = isLoading || !spriteLoaded || (isFactorsLoading && !octalysisFactors);
+  const showLoader = isUserLoading || !spriteLoaded || isFactorsLoading;
 
   if (isGlobalLoading) {
     return <Loader />;
