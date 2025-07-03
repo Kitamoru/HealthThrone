@@ -280,7 +280,7 @@ const Home = () => {
       return [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
     }
     return octalysisFactors.map(factor => {
-      const normalized = factor / 10;
+      const normalized = factor / 30;
       return Math.max(0, Math.min(1, normalized)); // Ограничиваем 0-1
     });
   }, [octalysisFactors]);
