@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTelegram } from '../hooks/useTelegram';
-import { api, useOctalysisFactors } from '../lib/api';
+import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
 import { UserProfile } from '../lib/types';
 import { BurnoutProgress } from '../components/BurnoutProgress';
@@ -85,15 +85,9 @@ const Home = () => {
   const [spriteLoaded, setSpriteLoaded] = useState(false);
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
+  const [octalysisFactors, setOctalysisFactors] = useState<number[] | null>(null);
   
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
-
-  // Используем хук для получения факторов октализиса
-  const { 
-    data: octalysisFactors, 
-    isLoading: isLoadingFactors,
-    refetch: refetchFactors 
-  } = useOctalysisFactors(user?.id ? parseInt(user.id) : undefined, initData);
 
   const handleOpenSurveyModal = useCallback(() => {
     if (!modalPortalRef.current) {
@@ -196,6 +190,22 @@ const Home = () => {
     }
   }, [userData?.current_sprite_url]);
 
+  // Загрузка факторов для октаграммы
+  useEffect(() => {
+    if (userData?.id) {
+      const fetchFactors = async () => {
+        const response = await api.getOctalysisFactors(userData.id, initData);
+        if (response.success && response.data) {
+          setOctalysisFactors(response.data);
+        } else {
+          console.error('Failed to load factors:', response.error);
+          setOctalysisFactors([0, 0, 0, 0, 0, 0, 0, 0]);
+        }
+      };
+      fetchFactors();
+    }
+  }, [userData?.id, initData]);
+
   const submitSurveyMutation = useMutation({
     mutationFn: async (data: { burnoutDelta: number; factors: number[] }) => {
       if (!user?.id) throw new Error("Пользователь не определен");
@@ -227,8 +237,16 @@ const Home = () => {
       setSurveyCompleted(true);
       setAnswers({});
       
-      // Обновляем факторы через хук
-      refetchFactors();
+      // Обновляем факторы после успешного прохождения опроса
+      if (userData?.id) {
+        const fetchFactors = async () => {
+          const response = await api.getOctalysisFactors(userData.id, initData);
+          if (response.success && response.data) {
+            setOctalysisFactors(response.data);
+          }
+        };
+        fetchFactors();
+      }
     },
     onError: (error: Error) => {
       setApiError(error.message);
@@ -259,10 +277,8 @@ const Home = () => {
 
   const octagramValues = useMemo(() => {
     if (!octalysisFactors) {
-      return [0, 0, 0, 0, 0, 0, 0, 0];
+      return [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
     }
-    
-    // ВОССТАНАВЛИВАЕМ ПРЕЖНЮЮ ЛОГИКУ
     return octalysisFactors.map(factor => {
       const normalized = factor / 30;
       return Math.max(0, Math.min(1, normalized)); // Ограничиваем 0-1
@@ -314,8 +330,8 @@ const Home = () => {
     );
   }
 
-  // Обновлено условие: учитываем загрузку факторов
-  if (isLoading || !spriteLoaded || isLoadingFactors) {
+  // Показываем лоадер, пока не загружены данные пользователя, спрайт или факторы
+  if (isLoading || !spriteLoaded === null) {
     return <Loader />;
   }
 
@@ -367,12 +383,7 @@ const Home = () => {
                   transition={{ duration: 0.8 }}
                   className="mt-4 mb-4 flex flex-col items-center octagram-container"
                 >
-                  {/* Добавляем ключ для принудительного пересоздания компонента */}
-                  <Octagram 
-                    key={JSON.stringify(octagramValues)} 
-                    values={octagramValues} 
-                    size={280} 
-                  />
+                  <Octagram values={octagramValues} size={280} />
                 </motion.div>
               </AnimatePresence>
             </div>
