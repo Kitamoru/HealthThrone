@@ -44,7 +44,7 @@ const prefetchOctalysisFactors = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
     queryFn: () => api.getOctalysisFactors(userId, initData),
-    staleTime: 60 * 60 * 1000, // 1 hour cache
+    staleTime: 5 * 60 * 1000, // 5 минут кеширования
   });
 };
 
