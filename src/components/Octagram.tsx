@@ -15,7 +15,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
 
   const center = size / 2;
   const radius = size * 0.4;
-  const centralRadius = 12; // Радиус центрального октагона
 
   const getPoint = (angle: number, r: number) => {
     const rad = (angle * Math.PI) / 180;
@@ -58,9 +57,10 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
   const octagonPoints = getOctagonPoints();
   const midPoints = getMidPoints(octagonPoints);
   const octagonPath = createOctagonPath(octagonPoints);
-
-  // Точки для центрального октагона
-  const centralOctagonPoints = getOctagonPointsByRadius(centralRadius);
+  
+  // Центральный октагон
+  const centralOctagonRadius = 12;
+  const centralOctagonPoints = getOctagonPointsByRadius(centralOctagonRadius);
   const centralOctagonPath = createOctagonPath(centralOctagonPoints);
 
   useEffect(() => {
@@ -143,29 +143,27 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     });
   };
 
-  // Новый метод для рендеринга секторов с правильной формой
   const renderSectors = () => {
     return values.map((value, index) => {
       if (value <= 0) return null;
       
-      const innerRadius = centralRadius;
+      const startAngle = index * 45 - 90 - 22.5;
+      const endAngle = startAngle + 45;
+      
+      const innerRadius = centralOctagonRadius * 1.1; // Увеличиваем чтобы перекрыть центральный октагон
       const outerRadius = innerRadius + (radius - innerRadius) * value;
       
-      // Получаем точки для внутреннего и внешнего октагонов
-      const innerPoints = getOctagonPointsByRadius(innerRadius);
-      const outerPoints = getOctagonPointsByRadius(outerRadius);
-      
-      // Создаем сектор как многоугольник
-      const currentInner = innerPoints[index];
-      const nextInner = innerPoints[(index + 1) % 8];
-      const currentOuter = outerPoints[index];
-      const nextOuter = outerPoints[(index + 1) % 8];
+      const startInner = getPoint(startAngle, innerRadius);
+      const startOuter = getPoint(startAngle, outerRadius);
+      const endOuter = getPoint(endAngle, outerRadius);
+      const endInner = getPoint(endAngle, innerRadius);
       
       const pathData = `
-        M ${currentInner.x},${currentInner.y}
-        L ${nextInner.x},${nextInner.y}
-        L ${nextOuter.x},${nextOuter.y}
-        L ${currentOuter.x},${currentOuter.y}
+        M ${startInner.x},${startInner.y}
+        L ${startOuter.x},${startOuter.y}
+        A ${outerRadius} ${outerRadius} 0 0 1 ${endOuter.x},${endOuter.y}
+        L ${endInner.x},${endInner.y}
+        A ${innerRadius} ${innerRadius} 0 0 0 ${startInner.x},${startInner.y}
         Z
       `;
       
@@ -267,7 +265,6 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             />
           )}
 
-          {/* Секторы с правильной формой */}
           {phase === 'pulse' && renderSectors()}
 
           {phase === 'rays' || phase === 'pulse' ? (
