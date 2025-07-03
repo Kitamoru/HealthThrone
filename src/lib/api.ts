@@ -86,7 +86,14 @@ export const useOctalysisFactors = (userId: number, initData?: string) => {
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
     select: (response) => {
-      return response.success ? response.data : [0,0,0,0,0,0,0,0];
+      if (response.success && Array.isArray(response.data)) {
+        // Нормализуем значения: делим на 60 (максимальное значение)
+        return response.data.map(factor => {
+          const normalized = factor / 20;
+          return Math.max(0, Math.min(1, normalized)); // Ограничиваем 0-1
+        });
+      }
+      return [0,0,0,0,0,0,0,0];
     }
   });
 };
