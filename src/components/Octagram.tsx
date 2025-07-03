@@ -15,6 +15,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
 
   const center = size / 2;
   const radius = size * 0.4;
+  const centralRadius = 12; // Радиус центрального октагона
 
   const getPoint = (angle: number, r: number) => {
     const rad = (angle * Math.PI) / 180;
@@ -58,9 +59,12 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
   const midPoints = getMidPoints(octagonPoints);
   const octagonPath = createOctagonPath(octagonPoints);
 
+  // Точки для центрального октагона
+  const centralOctagonPoints = getOctagonPointsByRadius(centralRadius);
+  const centralOctagonPath = createOctagonPath(centralOctagonPoints);
+
   useEffect(() => {
     if (phase === 'vertices') {
-      // Show central ball immediately
       crystalControls.start({
         scale: 1,
         opacity: 1,
@@ -139,30 +143,29 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
     });
   };
 
-  // Fixed sector rendering to point at vertices
+  // Новый метод для рендеринга секторов с правильной формой
   const renderSectors = () => {
     return values.map((value, index) => {
       if (value <= 0) return null;
       
-      // Calculate angles relative to vertices
-      const startAngle = index * 45 - 90 - 22.5; // Offset to align with vertices
-      const endAngle = startAngle + 45;
-      
-      const innerRadius = 10; // Fixed to match central ball size
+      const innerRadius = centralRadius;
       const outerRadius = innerRadius + (radius - innerRadius) * value;
       
-      // Create sector path
-      const startInner = getPoint(startAngle, innerRadius);
-      const startOuter = getPoint(startAngle, outerRadius);
-      const endOuter = getPoint(endAngle, outerRadius);
-      const endInner = getPoint(endAngle, innerRadius);
+      // Получаем точки для внутреннего и внешнего октагонов
+      const innerPoints = getOctagonPointsByRadius(innerRadius);
+      const outerPoints = getOctagonPointsByRadius(outerRadius);
+      
+      // Создаем сектор как многоугольник
+      const currentInner = innerPoints[index];
+      const nextInner = innerPoints[(index + 1) % 8];
+      const currentOuter = outerPoints[index];
+      const nextOuter = outerPoints[(index + 1) % 8];
       
       const pathData = `
-        M ${startInner.x},${startInner.y}
-        L ${startOuter.x},${startOuter.y}
-        A ${outerRadius} ${outerRadius} 0 0 1 ${endOuter.x},${endOuter.y}
-        L ${endInner.x},${endInner.y}
-        A ${innerRadius} ${innerRadius} 0 0 0 ${startInner.x},${startInner.y}
+        M ${currentInner.x},${currentInner.y}
+        L ${nextInner.x},${nextInner.y}
+        L ${nextOuter.x},${nextOuter.y}
+        L ${currentOuter.x},${currentOuter.y}
         Z
       `;
       
@@ -264,7 +267,7 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             />
           )}
 
-          {/* Render sectors in pulse phase */}
+          {/* Секторы с правильной формой */}
           {phase === 'pulse' && renderSectors()}
 
           {phase === 'rays' || phase === 'pulse' ? (
@@ -295,11 +298,9 @@ const Octagram = ({ values, size = 300 }: OctagramProps) => {
             ))
           ) : null}
 
-          {/* Central ball - now always visible from start */}
-          <motion.circle
-            cx={center}
-            cy={center}
-            r="10"
+          {/* Центральный октагон вместо шарика */}
+          <motion.path
+            d={centralOctagonPath}
             fill="url(#crystalGradient)"
             initial={{ scale: 0, opacity: 0 }}
             animate={crystalControls}
