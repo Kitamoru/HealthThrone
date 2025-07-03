@@ -83,9 +83,11 @@ export interface UserSprite {
   purchased_at: string;
 }
 
-// Добавлен интерфейс для запроса обновления класса
 export interface UpdateClassRequest {
   telegramId: number;
   characterClass: string;
   initData?: string;
 }
+
+// Добавляем тип для факторов октаграммы
+export type OctalysisFactors = [number, number, number, number, number, number, number, number];
