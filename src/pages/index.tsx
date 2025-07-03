@@ -304,7 +304,7 @@ const Home = () => {
       setAnswers({});
       
       // Инвалидируем кеш факторов для принудительного обновления
-      queryClient.invalidateQueries(['octalysisFactors', user?.id]);
+      queryClient.invalidateQueries({ queryKey: ['octalysisFactors', user?.id] });
     },
     onError: (error: Error) => {
       setApiError(error.message);
