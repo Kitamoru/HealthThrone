@@ -73,6 +73,30 @@ const QUESTIONS: Question[] = [
   }
 ];
 
+// Кастомный хук для кеширования факторов октаграммы
+const useCachedOctalysisFactors = (userId?: number, initData?: string) => {
+  const queryClient = useQueryClient();
+  
+  return useQuery({
+    queryKey: ['octalysisFactors', userId],
+    queryFn: async () => {
+      if (!userId) return [0, 0, 0, 0, 0, 0, 0, 0];
+      
+      const response = await api.getOctalysisFactors(userId, initData);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      return [0, 0, 0, 0, 0, 0, 0, 0];
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000, // Кешируем на 5 минут
+    initialData: () => {
+      // Пытаемся получить данные из кеша
+      return queryClient.getQueryData(['octalysisFactors', userId]) as number[] | undefined;
+    },
+  });
+};
+
 const Home = () => {
   const router = useRouter();
   const { user, initData } = useTelegram();
@@ -85,9 +109,15 @@ const Home = () => {
   const [spriteLoaded, setSpriteLoaded] = useState(false);
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
-  const [octalysisFactors, setOctalysisFactors] = useState<number[] | null>(null);
   
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
+
+  // Используем кастомный хук для факторов с кешированием
+  const { 
+    data: octalysisFactors, 
+    isLoading: isFactorsLoading,
+    refetch: refetchFactors
+  } = useCachedOctalysisFactors(user?.id ? parseInt(user.id) : undefined, initData);
 
   const handleOpenSurveyModal = useCallback(() => {
     if (!modalPortalRef.current) {
@@ -141,7 +171,7 @@ const Home = () => {
 
   const { 
     data: userData, 
-    isLoading, 
+    isLoading: isUserLoading, 
     isError,
     error: queryError,
     refetch: refetchUserData
@@ -190,21 +220,57 @@ const Home = () => {
     }
   }, [userData?.current_sprite_url]);
 
-  // Загрузка факторов для октаграммы
-  useEffect(() => {
-    if (userData?.id) {
-      const fetchFactors = async () => {
-        const response = await api.getOctalysisFactors(userData.id, initData);
-        if (response.success && response.data) {
-          setOctalysisFactors(response.data);
-        } else {
-          console.error('Failed to load factors:', response.error);
-          setOctalysisFactors([0, 0, 0, 0, 0, 0, 0, 0]);
-        }
-      };
-      fetchFactors();
+  const initialBurnoutLevel = userData?.burnout_level ?? 100;
+  const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
+  const alreadyAttemptedToday = userData?.last_attempt_date 
+    ? isTodayUTC(userData.last_attempt_date) 
+    : false;
+
+  const burnoutLevel = useMemo(() => {
+    if (surveyCompleted && userData) {
+      return userData.burnout_level;
     }
-  }, [userData?.id, initData]);
+
+    // Рассчитываем только по вопросам 1 и 2
+    const answeredDelta = [1, 2].reduce((sum, id) => {
+      const answer = answers[id];
+      if (answer === true) return sum + 2;
+      if (answer === false) return sum - 2;
+      return sum;
+    }, 0);
+
+    return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
+  }, [answers, initialBurnoutLevel, surveyCompleted, userData]);
+
+  const octagramValues = useMemo(() => {
+    if (!octalysisFactors) {
+      return [0, 0, 0, 0, 0, 0, 0, 0];
+    }
+    return octalysisFactors.map(factor => {
+      const normalized = factor / 30;
+      return Math.max(0, Math.min(1, normalized));
+    });
+  }, [octalysisFactors]);
+
+  const handleSurveyComplete = useCallback((answers: Record<number, 'yes' | 'no' | 'skip'>) => {
+    // Рассчитываем burnoutDelta только по первым двум вопросам
+    const burnoutDelta = [1, 2].reduce((sum, id) => {
+      const answer = answers[id];
+      if (answer === 'yes') return sum + 2;
+      if (answer === 'no') return sum - 2;
+      return sum;
+    }, 0);
+
+    // Формируем массив факторов для вопросов 3-10
+    const factors = [3, 4, 5, 6, 7, 8, 9, 10].map(id => {
+      const answer = answers[id];
+      if (answer === 'yes') return 1;
+      if (answer === 'no') return -1;
+      return 0; // Для 'skip'
+    });
+
+    submitSurveyMutation.mutate({ burnoutDelta, factors });
+  }, []);
 
   const submitSurveyMutation = useMutation({
     mutationFn: async (data: { burnoutDelta: number; factors: number[] }) => {
@@ -237,73 +303,13 @@ const Home = () => {
       setSurveyCompleted(true);
       setAnswers({});
       
-      // Обновляем факторы после успешного прохождения опроса
-      if (userData?.id) {
-        const fetchFactors = async () => {
-          const response = await api.getOctalysisFactors(userData.id, initData);
-          if (response.success && response.data) {
-            setOctalysisFactors(response.data);
-          }
-        };
-        fetchFactors();
-      }
+      // Инвалидируем кеш факторов для принудительного обновления
+      queryClient.invalidateQueries(['octalysisFactors', user?.id]);
     },
     onError: (error: Error) => {
       setApiError(error.message);
     }
   });
-
-  const initialBurnoutLevel = userData?.burnout_level ?? 100; // Начинаем с 100%
-  const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
-  const alreadyAttemptedToday = userData?.last_attempt_date 
-    ? isTodayUTC(userData.last_attempt_date) 
-    : false;
-
-  const burnoutLevel = useMemo(() => {
-    if (surveyCompleted && userData) {
-      return userData.burnout_level;
-    }
-
-    // Рассчитываем только по вопросам 1 и 2
-    const answeredDelta = [1, 2].reduce((sum, id) => {
-      const answer = answers[id];
-      if (answer === true) return sum + 2;
-      if (answer === false) return sum - 2;
-      return sum;
-    }, 0);
-
-    return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
-  }, [answers, initialBurnoutLevel, surveyCompleted, userData]);
-
-  const octagramValues = useMemo(() => {
-    if (!octalysisFactors) {
-      return [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
-    }
-    return octalysisFactors.map(factor => {
-      const normalized = factor / 30;
-      return Math.max(0, Math.min(1, normalized)); // Ограничиваем 0-1
-    });
-  }, [octalysisFactors]);
-
-  const handleSurveyComplete = useCallback((answers: Record<number, 'yes' | 'no' | 'skip'>) => {
-    // Рассчитываем burnoutDelta только по первым двум вопросам
-    const burnoutDelta = [1, 2].reduce((sum, id) => {
-      const answer = answers[id];
-      if (answer === 'yes') return sum + 2;
-      if (answer === 'no') return sum - 2;
-      return sum;
-    }, 0);
-
-    // Формируем массив факторов для вопросов 3-10
-    const factors = [3, 4, 5, 6, 7, 8, 9, 10].map(id => {
-      const answer = answers[id];
-      if (answer === 'yes') return 1;
-      if (answer === 'no') return -1;
-      return 0; // Для 'skip'
-    });
-
-    submitSurveyMutation.mutate({ burnoutDelta, factors });
-  }, [submitSurveyMutation]);
 
   const handleOnboardingComplete = useCallback(() => {
     setIsGlobalLoading(true);
@@ -315,6 +321,9 @@ const Home = () => {
   const handleCloseModal = useCallback(() => {
     setIsSurveyModalOpen(false);
   }, []);
+
+  // Оптимизированная проверка загрузки
+  const showLoader = isUserLoading || !spriteLoaded || isFactorsLoading;
 
   if (isGlobalLoading) {
     return <Loader />;
@@ -330,8 +339,7 @@ const Home = () => {
     );
   }
 
-  // Показываем лоадер, пока не загружены данные пользователя, спрайт или факторы
-  if (isLoading || !spriteLoaded || octalysisFactors === null) {
+  if (showLoader) {
     return <Loader />;
   }
 
