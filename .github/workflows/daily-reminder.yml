@@ -1,31 +1,26 @@
-name: Daily Reminder Cron Debug
+name: Daily Reminder Cron
 
 on:
-  workflow_dispatch:
+  schedule:
+    - cron: '37 17 * * *'  # UTC время (20:37 МСК)
+  workflow_dispatch:        # Разрешить ручной запуск
 
 jobs:
-  debug-secrets:
+  trigger-reminder:
     runs-on: ubuntu-latest
     steps:
-      - name: Check secrets availability
+      - name: Trigger daily reminder
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          VERCEL_URL: ${{ secrets.VERCEL_URL }}
         run: |
-          echo "Diagnostic information:"
-          echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
+          response_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "https://$VERCEL_URL/api/cron/daily-reminder")
           
-          # Проверка VERCEL_URL
-          if [ -z "${{ secrets.VERCEL_URL }}" ]; then
-            echo "::error::VERCEL_URL is MISSING"
+          if [ "$response_code" -ne 200 ]; then
+            echo "❌ Error: Received HTTP $response_code"
+            exit 1
           else
-            echo "VERCEL_URL: exists (length: ${#{{ secrets.VERCEL_URL }}})"
+            echo "✅ Success: Daily reminder triggered"
           fi
-          
-          # Проверка CRON_SECRET
-          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
-            echo "::error::CRON_SECRET is MISSING"
-          else
-            echo "CRON_SECRET: exists (length: ${#{{ secrets.CRON_SECRET }}})"
-          fi
-          
-          # Всегда завершаем с ошибкой чтобы показать вывод
-          echo "::error::This step intentionally fails to show diagnostic info"
-          exit 1
