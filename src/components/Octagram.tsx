@@ -4,7 +4,8 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 
 const CENTRAL_RADIUS = 7.5;
 const LEVELS_COUNT = 9;
-const STROKE_COLOR = "#0FEE9E"; // Изменен основной цвет
+const BASE_COLOR = "#f8fcfd"; // Основной цвет для всех элементов кроме секторов
+const SECTOR_COLOR = "#0FEE9E"; // Цвет для секторов
 const STROKE_OPACITY = 0.15;
 const STROKE_WIDTH = 0.5;
 const GLOW_FILTER = "url(#glow)";
@@ -132,8 +133,8 @@ const Octagram = memo(({ values, size = 300 }: OctagramProps) => {
         <motion.path
           key={`sector-${index}`}
           d={pathData}
-          fill="#0FEE9E" // Сплошной цвет вместо градиента
-          fillOpacity={0.2} // Прозрачность 20%
+          fill={SECTOR_COLOR}
+          fillOpacity={0.2}
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ 
             opacity: 1, 
@@ -145,7 +146,7 @@ const Octagram = memo(({ values, size = 300 }: OctagramProps) => {
             }
           }}
           filter={GLOW_FILTER}
-          style={{ stroke: STROKE_COLOR, strokeWidth: 0.5 }}
+          style={{ stroke: BASE_COLOR, strokeWidth: 0.5 }}
         />
       );
     });
@@ -166,8 +167,8 @@ const Octagram = memo(({ values, size = 300 }: OctagramProps) => {
           </filter>
 
           <linearGradient id="crystalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#0FEE9E" stopOpacity="0.8" /> {/* Обновленный цвет */}
-            <stop offset="100%" stopColor="#0FEE9E" stopOpacity="0.2" /> {/* Обновленный цвет */}
+            <stop offset="0%" stopColor={BASE_COLOR} stopOpacity="0.8" />
+            <stop offset="100%" stopColor={BASE_COLOR} stopOpacity="0.2" />
           </linearGradient>
         </defs>
 
@@ -177,7 +178,7 @@ const Octagram = memo(({ values, size = 300 }: OctagramProps) => {
               key={`level-${index}`}
               d={path}
               fill="none"
-              stroke={STROKE_COLOR} // Используем новый цвет
+              stroke={BASE_COLOR}
               strokeWidth={STROKE_WIDTH}
               strokeOpacity={STROKE_OPACITY}
               initial={{ pathLength: 0 }}
@@ -196,7 +197,7 @@ const Octagram = memo(({ values, size = 300 }: OctagramProps) => {
               cx={point.x}
               cy={point.y}
               r="6"
-              fill={STROKE_COLOR} // Используем новый цвет
+              fill={BASE_COLOR}
               initial={{ scale: 0, opacity: 0, y: 20 }}
               animate={
                 phase !== 'vertices'
@@ -230,7 +231,7 @@ const Octagram = memo(({ values, size = 300 }: OctagramProps) => {
             <motion.path
               d={octagonPath}
               fill="none"
-              stroke={STROKE_COLOR} // Используем новый цвет
+              stroke={BASE_COLOR}
               strokeWidth={1}
               strokeOpacity={0.8}
               initial={{ pathLength: 0, opacity: 0 }}
@@ -248,7 +249,7 @@ const Octagram = memo(({ values, size = 300 }: OctagramProps) => {
               y1={center}
               x2={point.x}
               y2={point.y}
-              stroke={STROKE_COLOR} // Используем новый цвет
+              stroke={BASE_COLOR}
               strokeWidth={0.7}
               strokeOpacity={0.15}
               strokeLinecap="round"
@@ -275,7 +276,7 @@ const Octagram = memo(({ values, size = 300 }: OctagramProps) => {
             initial={{ scale: 0, opacity: 0 }}
             animate={crystalControls}
             filter={GLOW_FILTER}
-            style={{ stroke: STROKE_COLOR, strokeWidth: 0.5 }} // Используем новый цвет
+            style={{ stroke: BASE_COLOR, strokeWidth: 0.5 }}
           />
         </motion.g>
       </svg>
