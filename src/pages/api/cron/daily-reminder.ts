@@ -72,7 +72,7 @@ async function sendTelegramMessage(
   const endpoint = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
   try {
-    const text = `Привет, ${firstName}! Пора пройти ежедневное испытание и получить награду!`;
+    const text = `Привет, ${firstName}! ⚔️ Пора пройти ежедневное испытание и получить награду!`;
     
     const payload = {
       chat_id: telegramId,
