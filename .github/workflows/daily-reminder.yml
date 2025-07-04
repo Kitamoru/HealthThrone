@@ -3,70 +3,50 @@ name: Daily Reminder Cron
 on:
   schedule:
     - cron: '37 17 * * *'  # UTC время (20:37 МСК)
-  workflow_dispatch:        # Разрешить ручной запуск
+  workflow_dispatch:
 
 jobs:
-  trigger-reminder:
+  debug-secrets:
     runs-on: ubuntu-latest
     steps:
-      # Шаг 1: Проверка существования секретов
-      - name: Verify secrets exist
+      - name: List all available secrets
         run: |
+          echo "Available secrets:"
+          echo "${{ toJSON(secrets) }}" | jq -r 'keys[]'
+          
+          echo "Checking specific secrets:"
+          echo "VERCEL_URL exists: ${{ secrets.VERCEL_URL != '' }}"
+          echo "CRON_SECRET exists: ${{ secrets.CRON_SECRET != '' }}"
+          
           if [ -z "${{ secrets.VERCEL_URL }}" ]; then
-            echo "::error::VERCEL_URL secret is missing in GitHub repository settings"
-            exit 1
-          fi
-          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
-            echo "::error::CRON_SECRET secret is missing in GitHub repository settings"
-            exit 1
-          fi
-          echo "✅ All required secrets are present"
-      
-      # Шаг 2: Установка переменных окружения
-      - name: Setup environment
-        id: setup
-        run: |
-          echo "VERCEL_URL=${{ secrets.VERCEL_URL }}" >> $GITHUB_ENV
-          echo "CRON_SECRET=${{ secrets.CRON_SECRET }}" >> $GITHUB_ENV
-          echo "URL=https://${{ secrets.VERCEL_URL }}/api/cron/daily-reminder" >> $GITHUB_ENV
-          echo "::notice::Using Vercel URL: ${{ secrets.VERCEL_URL }}"
-          echo "::notice::CRON_SECRET length: ${#CRON_SECRET}"
-      
-      # Шаг 3: Выполнение запроса с диагностикой
-      - name: Trigger daily reminder
-        run: |
-          # Проверка переменных окружения
-          if [ -z "$VERCEL_URL" ]; then
-            echo "::error::VERCEL_URL is empty!"
-            exit 1
-          fi
-          
-          if [ -z "$CRON_SECRET" ]; then
-            echo "::error::CRON_SECRET is empty!"
-            exit 1
-          fi
-          
-          echo "🔧 Making request to: $URL"
-          
-          # Выполняем запрос с подробным логированием
-          response=$(curl -i -s -X POST \
-            -H "Authorization: Bearer $CRON_SECRET" \
-            -H "User-Agent: GitHub-Actions-Cron/1.0" \
-            -w "\nHTTP_STATUS:%{http_code}" \
-            "$URL")
-            
-          # Извлекаем HTTP статус
-          http_status=$(echo "$response" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d':' -f2)
-          response_body=$(echo "$response" | sed '/HTTP_STATUS/d')
-          
-          echo "📊 Response status: $http_status"
-          echo "📄 Response body:"
-          echo "$response_body"
-          
-          # Проверяем успешность выполнения
-          if [ "$http_status" -eq 200 ]; then
-            echo "✅ Success: Daily reminder triggered"
+            echo "::error::VERCEL_URL is empty or missing"
           else
-            echo "::error::❌ Error: Received HTTP $http_status"
-            exit 1
+            echo "VERCEL_URL length: ${#{{ secrets.VERCEL_URL }}}"
           fi
+          
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "::error::CRON_SECRET is empty or missing"
+          else
+            echo "CRON_SECRET length: ${#{{ secrets.CRON_SECRET }}}"
+          fi
+          
+          # Always fail to show output
+          echo "::error::This step intentionally fails to show secret diagnostics"
+          exit 1
+
+  trigger-reminder:
+    needs: debug-secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger daily reminder
+        env:
+          VERCEL_URL: ${{ secrets.VERCEL_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          echo "VERCEL_URL: $VERCEL_URL"
+          echo "CRON_SECRET length: ${#CRON_SECRET}"
+          
+          # Ваш код запроса
+          curl -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "https://$VERCEL_URL/api/cron/daily-reminder"
