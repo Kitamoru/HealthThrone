@@ -13,57 +13,34 @@ export default async function handler(
   }
 
   try {
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const dateFilter = sevenDaysAgo.toISOString().split('T')[0];
+    const TARGET_USER_ID = 425693173; // ID целевого пользователя
     
-    console.log(`Fetching active users since ${dateFilter}`);
-    
+    // Получаем только целевого пользователя
     const { data: activeUsers, error } = await supabase
       .from('users')
       .select('telegram_id, first_name')
-      .not('telegram_id', 'is', null)
-      .gte('last_login_date', dateFilter)
-      .limit(100);
+      .eq('telegram_id', TARGET_USER_ID) // Фильтр по конкретному ID
+      .limit(1);
 
     if (error) {
       console.error('Supabase query error:', error);
       throw error;
     }
     
-    console.log(`Found ${activeUsers?.length || 0} active users`);
+    console.log(`Found ${activeUsers?.length || 0} target users`);
     
     if (!activeUsers?.length) {
-      console.log('No active users found');
-      return res.status(200).json({ success: true, message: 'No active users' });
+      console.log('Target user not found');
+      return res.status(200).json({ success: true, message: 'Target user not found' });
     }
 
     const botToken = process.env.TOKEN!;
-    console.log(`Starting message sending to ${activeUsers.length} users`);
     
-    // Диагностика: проверка доступности чата с тестовым пользователем
-    const TEST_USER_ID = 425693173; // ID Булата
-    try {
-      const testResponse = await fetch(`https://api.telegram.org/bot${botToken}/getChat?chat_id=${TEST_USER_ID}`);
-      const testData = await testResponse.json();
-      console.log('Тест доступности чата:', JSON.stringify(testData));
-      
-      if (!testData.ok) {
-        console.error(`Ошибка доступа к чату ${TEST_USER_ID}: ${testData.description}`);
-      } else {
-        console.log(`Пользователь ${TEST_USER_ID} доступен:`, testData.result);
-      }
-    } catch (testError) {
-      console.error('Ошибка проверки чата:', testError);
-    }
-
-    // Отправка сообщений с задержкой
+    // Отправляем сообщение только целевому пользователю
     const results = [];
-    for (let i = 0; i < activeUsers.length; i++) {
-      const user = activeUsers[i];
-      console.log(`[${i+1}/${activeUsers.length}] Sending to ${user.telegram_id} (${user.first_name})`);
-      
+    for (const user of activeUsers) {
       try {
+        console.log(`Sending to target user ${user.telegram_id} (${user.first_name})`);
         const result = await sendTelegramMessage(user.telegram_id, user.first_name, botToken);
         results.push({ status: 'success', user, result });
         console.log(`[${user.telegram_id}] Message sent successfully`);
@@ -71,27 +48,11 @@ export default async function handler(
         results.push({ status: 'error', user, error: error.message });
         console.error(`[${user.telegram_id}] Failed to send:`, error.message);
       }
-      
-      // Задержка 300 мс между сообщениями
-      await new Promise(resolve => setTimeout(resolve, 300));
     }
-
-    const successes = results.filter(r => r.status === 'success').length;
-    const failures = results.filter(r => r.status === 'error').length;
-    
-    console.log(`Message delivery report:
-      Success: ${successes}
-      Failed: ${failures}
-    `);
-    
-    // Логирование деталей ошибок
-    results.filter(r => r.status === 'error').forEach((failure, index) => {
-      console.error(`[${index+1}] User ${failure.user.telegram_id} error:`, failure.error);
-    });
 
     return res.status(200).json({
       success: true,
-      message: `Processed ${activeUsers.length} users (${successes} success, ${failures} failed)`,
+      message: `Processed target user`,
       details: results
     });
 
@@ -107,21 +68,19 @@ async function sendTelegramMessage(
   botToken: string
 ) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000); // Увеличено до 15 секунд
+  const timeout = setTimeout(() => controller.abort(), 15000);
   const endpoint = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
   try {
-    // Упрощенное сообщение без кнопки
     const text = `Привет, ${firstName}! Пора пройти ежедневное испытание и получить награду!`;
     
     const payload = {
       chat_id: telegramId,
       text: text,
-      parse_mode: 'Markdown', // Более простой режим разметки
+      parse_mode: 'Markdown',
     };
 
     console.log(`[${telegramId}] Sending message: ${text.substring(0, 30)}...`);
-    console.debug(`[${telegramId}] Request payload:`, JSON.stringify(payload));
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -137,6 +96,7 @@ async function sendTelegramMessage(
       let errorMessage = `HTTP ${response.status}: ${responseData.description}`;
       console.error(`[${telegramId}] Telegram API error:`, errorMessage);
       
+      // Обновляем статус пользователя при ошибках
       if (responseData.description.includes('bot was blocked')) {
         console.log(`[${telegramId}] User blocked bot, updating database`);
         await supabase
