@@ -2,8 +2,8 @@ name: Daily Reminder Cron
 
 on:
   schedule:
-    # Запускать каждый день в 17:37 UTC (20:37 по Москве)
-    - cron: '37 17 * * *'
+    - cron: '37 17 * * *'  # UTC время (20:37 МСК)
+  workflow_dispatch:        # Разрешить ручной запуск
 
 jobs:
   trigger-reminder:
@@ -12,7 +12,15 @@ jobs:
       - name: Trigger daily reminder
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          VERCEL_URL: ${{ secrets.VERCEL_URL }}
         run: |
-          curl -X POST \
+          response_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
-            https://${{ secrets.https://health-throne.vercel.app }}/api/cron/daily-reminder
+            "https://$VERCEL_URL/api/cron/daily-reminder")
+          
+          if [ "$response_code" -ne 200 ]; then
+            echo "❌ Error: Received HTTP $response_code"
+            exit 1
+          else
+            echo "✅ Success: Daily reminder triggered"
+          fi
