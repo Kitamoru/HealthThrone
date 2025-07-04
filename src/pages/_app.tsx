@@ -54,28 +54,38 @@ const Loader = dynamic(
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp } = useTelegram();
+  const { initData, startParam, webApp, isTelegramReady } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
+  const [minLoadingShown, setMinLoadingShown] = useState(false);
 
+  // Минимальное время показа лоадера (700 мс)
   useEffect(() => {
-    if (!initData) return;
+    const timer = setTimeout(() => setMinLoadingShown(true), 700);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Инициализация пользователя (с учетом готовности Telegram WebApp)
+  useEffect(() => {
+    if (!isTelegramReady || !initData) return;
 
     api.initUser(initData, startParam)
       .then(response => {
-        if (response.success && response.data) {
-          const userData = response.data as InitUserResponse;
+        // Исправлено: response.user вместо response.data
+        if (response.success && response.user) {
+          const userData = response.user;
           const userId = userData.id;
           
           prefetchFriends(userId, initData);
-          prefetchOctalysisFactors(userId, initData); // Добавлен префетч факторов
+          prefetchOctalysisFactors(userId, initData);
           
           queryClient.setQueryData(['userData', userId], userData);
         }
         return response;
       })
       .finally(() => setUserInitialized(true));
-  }, [initData, startParam]);
+  }, [initData, startParam, isTelegramReady]);
 
+  // Префетч данных магазина
   useEffect(() => {
     if (!webApp || !initData) return;
     
@@ -104,7 +114,7 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      {userInitialized ? (
+      {userInitialized && minLoadingShown ? (
         <div className="page-transition">
           <Component {...pageProps} />
         </div>
