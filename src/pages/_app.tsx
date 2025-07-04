@@ -10,10 +10,6 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
-interface InitUserResponse {
-  id: number;
-}
-
 const prefetchShopData = (initData?: string) => {
   queryClient.prefetchQuery({
     queryKey: ['sprites'],
@@ -63,11 +59,11 @@ function App({ Component, pageProps }: AppProps) {
     api.initUser(initData, startParam)
       .then(response => {
         if (response.success && response.data) {
-          const userData = response.data as InitUserResponse;
+          const userData = response.data;
           const userId = userData.id;
           
           prefetchFriends(userId, initData);
-          prefetchOctalysisFactors(userId, initData); // Добавлен префетч факторов
+          prefetchOctalysisFactors(userId, initData);
           
           queryClient.setQueryData(['userData', userId], userData);
         }
