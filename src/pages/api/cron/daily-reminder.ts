@@ -85,7 +85,7 @@ async function sendTelegramPhoto(
   const endpoint = `https://api.telegram.org/bot${botToken}/sendPhoto`;
 
   try {
-    const caption = `Привет, ${firstName}! Пора пройти ежедневное испытание и получить награду!`;
+    const caption = `Испытание дня: Опрос Мудреца!🧙‍♂️\nНаграда: +1 к точности Октаграммы.`;
     
     // Создаем FormData для загрузки изображения
     const formData = new FormData();
@@ -101,7 +101,7 @@ async function sendTelegramPhoto(
     if (process.env.WEBAPPURL) {
       formData.append('reply_markup', JSON.stringify({
         inline_keyboard: [[{
-          text: 'Пройти испытание',
+          text: '⚔️Принять вызов',
           url: process.env.WEBAPPURL
         }]]
       }));
