@@ -1,0 +1,18 @@
+name: Daily Reminder Cron
+
+on:
+  schedule:
+    # Запускать каждый день в 17:37 UTC (20:37 по Москве)
+    - cron: '37 17 * * *'
+
+jobs:
+  trigger-reminder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger daily reminder
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            https://${{ secrets.https://health-throne.vercel.app }}/api/cron/daily-reminder
