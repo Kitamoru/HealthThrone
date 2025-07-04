@@ -89,5 +89,4 @@ export interface UpdateClassRequest {
   initData?: string;
 }
 
-// Добавляем тип для факторов октаграммы
 export type OctalysisFactors = [number, number, number, number, number, number, number, number];
