@@ -29,7 +29,7 @@ export default async function handler(
     const botToken = process.env.BOT_TOKEN!;
     
     // URL к изображению в публичной директории
-    const imageUrl = `${process.env.NEXTAUTH_URL}/IMG_6516.jpeg`;
+    const imageUrl = `${process.env.NEXTAUTH_URL}/IMG_5385.png`;
     
     const sendPromises = activeUsers.map(user => 
       sendTelegramPhoto(user.telegram_id, user.first_name, botToken, imageUrl)
