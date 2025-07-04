@@ -37,6 +37,7 @@ export default async function handler(
     }
 
     const botToken = process.env.TOKEN!;
+    const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME!; // Добавлено получение username бота
     
     // Загружаем изображение из public-директории
     const imagePath = join(process.cwd(), 'public', 'IMG_5389.png');
@@ -52,6 +53,7 @@ export default async function handler(
           user.telegram_id, 
           user.first_name, 
           botToken,
+          botUsername, // Передаем username бота
           imageBase64
         );
         results.push({ status: 'success', user, result });
@@ -78,10 +80,11 @@ async function sendTelegramPhoto(
   telegramId: number,
   firstName: string,
   botToken: string,
+  botUsername: string, // Добавлен новый параметр
   imageBase64: string
 ) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20000); // Увеличено до 20 секунд для загрузки фото
+  const timeout = setTimeout(() => controller.abort(), 20000);
   const endpoint = `https://api.telegram.org/bot${botToken}/sendPhoto`;
 
   try {
@@ -97,23 +100,24 @@ async function sendTelegramPhoto(
     const blob = new Blob([Buffer.from(imageBase64, 'base64')], { type: 'image/png' });
     formData.append('photo', blob, 'daily-challenge.png');
     
-    // Добавляем кнопку, если нужно
-    if (process.env.WEBAPPURL) {
-      formData.append('reply_markup', JSON.stringify({
-        inline_keyboard: [[{
-          text: '⚔️Принять вызов',
-          url: process.env.WEBAPPURL
-        }]]
-      }));
-    }
+    // Формируем deep link для мини-приложения
+    const webAppUrl = `https://t.me/${botUsername}/Moraleon?startapp`;
+    
+    // Добавляем кнопку с web_app вместо обычной url
+    formData.append('reply_markup', JSON.stringify({
+      inline_keyboard: [[{
+        text: '⚔️Принять вызов',
+        web_app: { url: webAppUrl } // Используем web_app для открытия мини-приложения
+      }]]
+    }));
 
     console.log(`[${telegramId}] Sending photo with caption: ${caption.substring(0, 30)}...`);
+    console.log(`[${telegramId}] Using webapp URL: ${webAppUrl}`);
 
     const response = await fetch(endpoint, {
       method: 'POST',
       body: formData,
       signal: controller.signal
-      // Заголовки не нужны, FormData установит multipart/form-data автоматически
     });
 
     const responseData = await response.json();
