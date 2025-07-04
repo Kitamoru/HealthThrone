@@ -1,52 +1,31 @@
-name: Daily Reminder Cron
+name: Daily Reminder Cron Debug
 
 on:
-  schedule:
-    - cron: '37 17 * * *'  # UTC время (20:37 МСК)
   workflow_dispatch:
 
 jobs:
   debug-secrets:
     runs-on: ubuntu-latest
     steps:
-      - name: List all available secrets
+      - name: Check secrets availability
         run: |
-          echo "Available secrets:"
-          echo "${{ toJSON(secrets) }}" | jq -r 'keys[]'
+          echo "Diagnostic information:"
+          echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
           
-          echo "Checking specific secrets:"
-          echo "VERCEL_URL exists: ${{ secrets.VERCEL_URL != '' }}"
-          echo "CRON_SECRET exists: ${{ secrets.CRON_SECRET != '' }}"
-          
+          # Проверка VERCEL_URL
           if [ -z "${{ secrets.VERCEL_URL }}" ]; then
-            echo "::error::VERCEL_URL is empty or missing"
+            echo "::error::VERCEL_URL is MISSING"
           else
-            echo "VERCEL_URL length: ${#{{ secrets.VERCEL_URL }}}"
+            echo "VERCEL_URL: exists (length: ${#{{ secrets.VERCEL_URL }}})"
           fi
           
+          # Проверка CRON_SECRET
           if [ -z "${{ secrets.CRON_SECRET }}" ]; then
-            echo "::error::CRON_SECRET is empty or missing"
+            echo "::error::CRON_SECRET is MISSING"
           else
-            echo "CRON_SECRET length: ${#{{ secrets.CRON_SECRET }}}"
+            echo "CRON_SECRET: exists (length: ${#{{ secrets.CRON_SECRET }}})"
           fi
           
-          # Always fail to show output
-          echo "::error::This step intentionally fails to show secret diagnostics"
+          # Всегда завершаем с ошибкой чтобы показать вывод
+          echo "::error::This step intentionally fails to show diagnostic info"
           exit 1
-
-  trigger-reminder:
-    needs: debug-secrets
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger daily reminder
-        env:
-          VERCEL_URL: ${{ secrets.VERCEL_URL }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-        run: |
-          echo "VERCEL_URL: $VERCEL_URL"
-          echo "CRON_SECRET length: ${#CRON_SECRET}"
-          
-          # Ваш код запроса
-          curl -X POST \
-            -H "Authorization: Bearer $CRON_SECRET" \
-            "https://$VERCEL_URL/api/cron/daily-reminder"
