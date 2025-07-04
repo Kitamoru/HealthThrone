@@ -2,36 +2,71 @@ name: Daily Reminder Cron
 
 on:
   schedule:
-    - cron: '37 17 * * *'
-  workflow_dispatch:
+    - cron: '37 17 * * *'  # UTC время (20:37 МСК)
+  workflow_dispatch:        # Разрешить ручной запуск
 
 jobs:
   trigger-reminder:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger daily reminder
-        env:
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          VERCEL_URL: ${{ secrets.VERCEL_URL }}
+      # Шаг 1: Проверка существования секретов
+      - name: Verify secrets exist
         run: |
-          # Выводим информацию для отладки (секреты не покажутся в логах)
-          echo "VERCEL_URL: $VERCEL_URL"
-          echo "CRON_SECRET length: ${#CRON_SECRET}"
-          
-          # Полный запрос с выводом ответа
-          response=$(curl -i -X POST \
-            -H "Authorization: Bearer $CRON_SECRET" \
-            "https://$VERCEL_URL/api/cron/daily-reminder")
-          
-          # Выводим полный ответ для диагностики
-          echo "Full response:"
-          echo "$response"
-          
-          # Проверяем статус код
-          status_code=$(echo "$response" | grep HTTP | awk '{print $2}')
-          if [ "$status_code" -ne 200 ]; then
-            echo "❌ Error: Received HTTP $status_code"
+          if [ -z "${{ secrets.VERCEL_URL }}" ]; then
+            echo "::error::VERCEL_URL secret is missing in GitHub repository settings"
             exit 1
-          else
+          fi
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "::error::CRON_SECRET secret is missing in GitHub repository settings"
+            exit 1
+          fi
+          echo "✅ All required secrets are present"
+      
+      # Шаг 2: Установка переменных окружения
+      - name: Setup environment
+        id: setup
+        run: |
+          echo "VERCEL_URL=${{ secrets.VERCEL_URL }}" >> $GITHUB_ENV
+          echo "CRON_SECRET=${{ secrets.CRON_SECRET }}" >> $GITHUB_ENV
+          echo "URL=https://${{ secrets.VERCEL_URL }}/api/cron/daily-reminder" >> $GITHUB_ENV
+          echo "::notice::Using Vercel URL: ${{ secrets.VERCEL_URL }}"
+          echo "::notice::CRON_SECRET length: ${#CRON_SECRET}"
+      
+      # Шаг 3: Выполнение запроса с диагностикой
+      - name: Trigger daily reminder
+        run: |
+          # Проверка переменных окружения
+          if [ -z "$VERCEL_URL" ]; then
+            echo "::error::VERCEL_URL is empty!"
+            exit 1
+          fi
+          
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET is empty!"
+            exit 1
+          fi
+          
+          echo "🔧 Making request to: $URL"
+          
+          # Выполняем запрос с подробным логированием
+          response=$(curl -i -s -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "User-Agent: GitHub-Actions-Cron/1.0" \
+            -w "\nHTTP_STATUS:%{http_code}" \
+            "$URL")
+            
+          # Извлекаем HTTP статус
+          http_status=$(echo "$response" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d':' -f2)
+          response_body=$(echo "$response" | sed '/HTTP_STATUS/d')
+          
+          echo "📊 Response status: $http_status"
+          echo "📄 Response body:"
+          echo "$response_body"
+          
+          # Проверяем успешность выполнения
+          if [ "$http_status" -eq 200 ]; then
             echo "✅ Success: Daily reminder triggered"
+          else
+            echo "::error::❌ Error: Received HTTP $http_status"
+            exit 1
           fi
