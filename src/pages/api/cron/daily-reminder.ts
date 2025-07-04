@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 export default async function handler(
   req: NextApiRequest,
@@ -19,7 +21,7 @@ export default async function handler(
     const { data: activeUsers, error } = await supabase
       .from('users')
       .select('telegram_id, first_name')
-      .eq('telegram_id', TARGET_USER_ID) // Фильтр по конкретному ID
+      .eq('telegram_id', TARGET_USER_ID)
       .limit(1);
 
     if (error) {
@@ -36,14 +38,24 @@ export default async function handler(
 
     const botToken = process.env.TOKEN!;
     
-    // Отправляем сообщение только целевому пользователю
+    // Загружаем изображение из public-директории
+    const imagePath = join(process.cwd(), 'public', 'IMG_5389.png');
+    const imageBuffer = readFileSync(imagePath);
+    const imageBase64 = imageBuffer.toString('base64');
+    
+    // Отправляем сообщение с изображением целевому пользователю
     const results = [];
     for (const user of activeUsers) {
       try {
         console.log(`Sending to target user ${user.telegram_id} (${user.first_name})`);
-        const result = await sendTelegramMessage(user.telegram_id, user.first_name, botToken);
+        const result = await sendTelegramPhoto(
+          user.telegram_id, 
+          user.first_name, 
+          botToken,
+          imageBase64
+        );
         results.push({ status: 'success', user, result });
-        console.log(`[${user.telegram_id}] Message sent successfully`);
+        console.log(`[${user.telegram_id}] Photo sent successfully`);
       } catch (error: any) {
         results.push({ status: 'error', user, error: error.message });
         console.error(`[${user.telegram_id}] Failed to send:`, error.message);
@@ -52,7 +64,7 @@ export default async function handler(
 
     return res.status(200).json({
       success: true,
-      message: `Processed target user`,
+      message: `Processed target user with photo`,
       details: results
     });
 
@@ -62,42 +74,56 @@ export default async function handler(
   }
 }
 
-async function sendTelegramMessage(
+async function sendTelegramPhoto(
   telegramId: number,
   firstName: string,
-  botToken: string
+  botToken: string,
+  imageBase64: string
 ) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
-  const endpoint = `https://api.telegram.org/bot${botToken}/sendMessage`;
+  const timeout = setTimeout(() => controller.abort(), 20000); // Увеличено до 20 секунд для загрузки фото
+  const endpoint = `https://api.telegram.org/bot${botToken}/sendPhoto`;
 
   try {
-    const text = `Привет, ${firstName}! ⚔️ Пора пройти ежедневное испытание и получить награду!`;
+    const caption = `Привет, ${firstName}! Пора пройти ежедневное испытание и получить награду!`;
     
-    const payload = {
-      chat_id: telegramId,
-      text: text,
-      parse_mode: 'Markdown',
-    };
+    // Создаем FormData для загрузки изображения
+    const formData = new FormData();
+    formData.append('chat_id', telegramId.toString());
+    formData.append('caption', caption);
+    formData.append('parse_mode', 'Markdown');
+    
+    // Создаем Blob из base64
+    const blob = new Blob([Buffer.from(imageBase64, 'base64')], { type: 'image/png' });
+    formData.append('photo', blob, 'daily-challenge.png');
+    
+    // Добавляем кнопку, если нужно
+    if (process.env.WEBAPPURL) {
+      formData.append('reply_markup', JSON.stringify({
+        inline_keyboard: [[{
+          text: 'Пройти испытание',
+          url: process.env.WEBAPPURL
+        }]]
+      }));
+    }
 
-    console.log(`[${telegramId}] Sending message: ${text.substring(0, 30)}...`);
+    console.log(`[${telegramId}] Sending photo with caption: ${caption.substring(0, 30)}...`);
 
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: formData,
       signal: controller.signal
+      // Заголовки не нужны, FormData установит multipart/form-data автоматически
     });
 
     const responseData = await response.json();
     console.log(`[${telegramId}] Telegram API response:`, JSON.stringify(responseData));
 
     if (!response.ok) {
-      let errorMessage = `HTTP ${response.status}: ${responseData.description}`;
+      let errorMessage = `HTTP ${response.status}: ${responseData.description || 'Unknown error'}`;
       console.error(`[${telegramId}] Telegram API error:`, errorMessage);
       
-      // Обновляем статус пользователя при ошибках
-      if (responseData.description.includes('bot was blocked')) {
+      if (responseData.description?.includes('bot was blocked')) {
         console.log(`[${telegramId}] User blocked bot, updating database`);
         await supabase
           .from('users')
@@ -105,7 +131,7 @@ async function sendTelegramMessage(
           .eq('telegram_id', telegramId);
       }
       
-      if (responseData.description.includes('chat not found')) {
+      if (responseData.description?.includes('chat not found')) {
         console.log(`[${telegramId}] Chat not found, updating database`);
         await supabase
           .from('users')
@@ -119,7 +145,7 @@ async function sendTelegramMessage(
     return responseData;
 
   } catch (error: any) {
-    console.error(`[${telegramId}] Send message failed:`, error.message);
+    console.error(`[${telegramId}] Send photo failed:`, error.message);
     throw error;
   } finally {
     clearTimeout(timeout);
