@@ -2,6 +2,25 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 
+// Функция проверки доступности изображения
+async function checkImageAvailability(url: string): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    
+    const response = await fetch(url, {
+      method: 'HEAD',
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeout);
+    return response.ok;
+  } catch (error) {
+    console.error(`Image availability check failed: ${url}`, error);
+    return false;
+  }
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -28,16 +47,31 @@ export default async function handler(
 
     const botToken = process.env.BOT_TOKEN!;
     
-    // URL к изображению в публичной директории
-    const imageUrl = `${process.env.NEXTAUTH_URL}/IMG_5385.png`;
+    // Генерируем URL изображения с параметром для избежания кэширования
+    const imageUrl = `${process.env.NEXTAUTH_URL}/IMG_5385.png?ts=${Date.now()}`;
     
+    // Проверяем доступность изображения
+    const isImageAvailable = await checkImageAvailability(imageUrl);
+    if (!isImageAvailable) {
+      console.error('Daily reminder image is not available:', imageUrl);
+      return res.status(500).json({ 
+        error: 'Image not available',
+        details: `Failed to access image at ${imageUrl}`
+      });
+    }
+
     const sendPromises = activeUsers.map(user => 
       sendTelegramPhoto(user.telegram_id, user.first_name, botToken, imageUrl)
     );
 
     Promise.allSettled(sendPromises).then(results => {
       const successes = results.filter(r => r.status === 'fulfilled').length;
-      console.log(`Sent ${successes}/${activeUsers.length} messages with image`);
+      const failures = results.filter(r => r.status === 'rejected').length;
+      
+      console.log(`Sent ${successes}/${activeUsers.length} messages`);
+      if (failures > 0) {
+        console.error(`Failed to send ${failures} messages`);
+      }
     });
 
     return res.status(200).json({
@@ -46,12 +80,15 @@ export default async function handler(
     });
 
   } catch (error) {
-    console.error('Error sending daily reminders:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('Error in daily reminder cron:', error);
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 }
 
-// Функция отправки сообщения с изображением
+// Функция отправки сообщения с изображением (исправленная)
 async function sendTelegramPhoto(
   telegramId: number,
   firstName: string,
@@ -59,7 +96,8 @@ async function sendTelegramPhoto(
   imageUrl: string
 ) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000); // Увеличиваем таймаут для изображений
+  // Увеличенный таймаут для обработки изображений
+  const timeout = setTimeout(() => controller.abort(), 30000);
 
   try {
     const caption = `Привет, ${firstName}! ⚔️ Пора пройти ежедневное испытание и получить награду!`;
@@ -82,19 +120,31 @@ async function sendTelegramPhoto(
       signal: controller.signal
     });
 
+    const data = await response.json();
+    
     if (!response.ok) {
-      const error = await response.json();
-      console.error(`Error sending to ${telegramId}:`, error.description);
+      console.error(`Telegram API error for ${telegramId}:`, data.description || data);
       
-      if (error.description.includes('bot was blocked')) {
+      // Помечаем пользователя как неактивного если бот заблокирован
+      if (data.description.includes('bot was blocked')) {
         await supabase
           .from('users')
           .update({ last_login_date: '2000-01-01' })
           .eq('telegram_id', telegramId);
+        console.log(`Marked user ${telegramId} as inactive (bot blocked)`);
       }
+      throw new Error(data.description || 'Telegram API error');
     }
-  } catch (error) {
-    console.error(`Error sending photo to ${telegramId}:`, error);
+    
+    return data;
+  } catch (error: any) {
+    // Специфичная обработка ошибки таймаута
+    if (error.name === 'AbortError') {
+      console.error(`⏰ Timeout sending to ${telegramId}: Image processing took too long`);
+    } else {
+      console.error(`❌ Error sending to ${telegramId}:`, error.message || error);
+    }
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
