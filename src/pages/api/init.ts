@@ -12,7 +12,11 @@ export default async function handler(
 
   if (req.method !== 'POST') {
     console.warn('[Init API] Invalid method', req.method);
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ 
+      success: false, 
+      status: 405, // Добавлено поле status
+      error: 'Method not allowed' 
+    });
   }
 
   try {
@@ -20,24 +24,40 @@ export default async function handler(
     
     if (!initData) {
       console.error('[Init API] initData is required');
-      return res.status(400).json({ success: false, error: 'initData required' });
+      return res.status(400).json({ 
+        success: false, 
+        status: 400, // Добавлено поле status
+        error: 'initData required' 
+      });
     }
 
     if (!validateTelegramInitData(initData)) {
       console.warn('[Init API] Invalid Telegram auth data');
-      return res.status(401).json({ success: false, error: 'Unauthorized' });
+      return res.status(401).json({ 
+        success: false, 
+        status: 401, // Добавлено поле status
+        error: 'Unauthorized' 
+      });
     }
 
     const telegramUser = extractTelegramUser(initData);
     if (!telegramUser?.id) {
       console.error('[Init API] User ID is missing');
-      return res.status(400).json({ success: false, error: 'Invalid user data' });
+      return res.status(400).json({ 
+        success: false, 
+        status: 400, // Добавлено поле status
+        error: 'Invalid user data' 
+      });
     }
 
     const telegramId = Number(telegramUser.id);
     if (isNaN(telegramId)) {
       console.error('[Init API] Invalid Telegram ID format');
-      return res.status(400).json({ success: false, error: 'Invalid Telegram ID format' });
+      return res.status(400).json({ 
+        success: false, 
+        status: 400, // Добавлено поле status
+        error: 'Invalid Telegram ID format' 
+      });
     }
 
     const now = new Date();
@@ -190,6 +210,7 @@ export default async function handler(
       console.log('[Init API] Returning success response');
       return res.status(200).json({
         success: true,
+        status: 200, // Добавлено поле status
         data: responseUser
       });
 
@@ -197,6 +218,7 @@ export default async function handler(
       console.error('[Init API] User upsert error:', error);
       return res.status(500).json({ 
         success: false,
+        status: 500, // Добавлено поле status
         error: 'Failed to create/update user'
       });
     }
@@ -205,6 +227,7 @@ export default async function handler(
     console.error('[Init API] Unhandled error:', error);
     return res.status(500).json({ 
       success: false,
+      status: 500, // Добавлено поле status
       error: 'Internal server error'
     });
   }
