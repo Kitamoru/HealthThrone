@@ -1,20 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import { validateTelegramInitData, extractTelegramUser } from '@/lib/telegramAuth';
-import { UserProfile } from '@/lib/types';
+import { UserProfile, ApiResponse } from '@/lib/types';
 import { format } from 'date-fns';
-
-interface InitResponse {
-  success: boolean;
-  user?: UserProfile;
-  coinsAdded?: number;
-  isNewUser?: boolean;
-  error?: string;
-}
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<InitResponse>
+  res: NextApiResponse<ApiResponse<UserProfile>>
 ) {
   console.log('[Init API] Received request', req.method, req.url);
 
@@ -52,13 +44,12 @@ export default async function handler(
     const today = format(now, 'yyyy-MM-dd');
     console.log(`[Init API] Current date: ${today}, timestamp: ${now.toISOString()}`);
 
-    // Поиск существующего пользователя с JOIN к спрайтам
     const { data: existingUser, error: userError } = await supabase
       .from('users')
       .select(`
         *,
         sprites:current_sprite_id (image_url)
-      `) // Добавляем JOIN к таблице спрайтов
+      `)
       .eq('telegram_id', telegramId)
       .maybeSingle();
 
@@ -88,10 +79,9 @@ export default async function handler(
         updated_at: now.toISOString(),
         burnout_level: existingUser?.burnout_level || 100,
         created_at: existingUser?.created_at || now.toISOString(),
-        current_sprite_id: existingUser?.current_sprite_id || null // Сохраняем текущий спрайт
+        current_sprite_id: existingUser?.current_sprite_id || null
       };
 
-      // Выполняем upsert без немедленного возврата данных
       const { error: upsertError } = await supabase
         .from('users')
         .upsert(updates, {
@@ -100,13 +90,12 @@ export default async function handler(
 
       if (upsertError) throw upsertError;
 
-      // Повторно запрашиваем пользователя с JOIN к спрайтам
       const { data: userRecord, error: selectError } = await supabase
         .from('users')
         .select(`
           *,
           sprites:current_sprite_id (image_url)
-        `) // Добавляем JOIN к таблице спрайтов
+        `)
         .eq('telegram_id', telegramId)
         .single();
 
@@ -114,7 +103,6 @@ export default async function handler(
 
       console.log('[Init API] User upsert successful:', JSON.stringify(userRecord, null, 2));
 
-      // Обработка реферальной системы
       if (ref && typeof ref === 'string' && ref.startsWith('ref_')) {
         try {
           const cleanRef = ref.replace('ref_', '');
@@ -123,7 +111,6 @@ export default async function handler(
           if (!isNaN(referrerTelegramId) && referrerTelegramId !== telegramId) {
             console.log(`[Referral] Processing referral: ${referrerTelegramId} for user: ${telegramId}`);
             
-            // Поиск реферера
             const { data: referrer, error: referrerError } = await supabase
               .from('users')
               .select('id, coins')
@@ -135,7 +122,6 @@ export default async function handler(
             } else if (referrer) {
               console.log(`[Referral] Referrer found: ${referrer.id}`);
               
-              // Проверка существования связи
               const { count, error: friendshipError } = await supabase
                 .from('friends')
                 .select('*', { count: 'exact' })
@@ -145,7 +131,6 @@ export default async function handler(
               if (friendshipError) {
                 console.error('[Referral] Friendship check error:', friendshipError);
               } else if (count === 0) {
-                // Создание дружеской связи
                 const { error: insertError } = await supabase
                   .from('friends')
                   .insert([{
@@ -160,7 +145,6 @@ export default async function handler(
                 } else {
                   console.log(`[Referral] Friendship added: ${referrer.id} -> ${userRecord.id}`);
                   
-                  // Начисление бонуса рефереру
                   const { error: updateError } = await supabase
                     .from('users')
                     .update({ coins: referrer.coins + 200 })
@@ -186,7 +170,6 @@ export default async function handler(
         }
       }
 
-      // Формируем ответ с URL спрайта
       const responseUser: UserProfile = {
         id: userRecord.id,
         telegram_id: userRecord.telegram_id,
@@ -200,7 +183,6 @@ export default async function handler(
         updated_at: userRecord.updated_at,
         current_sprite_id: userRecord.current_sprite_id,
         last_login_date: userRecord.last_login_date,
-        // Добавляем URL активного спрайта
         current_sprite_url: userRecord.sprites?.image_url || null,
         character_class: userRecord.character_class
       };
@@ -208,9 +190,7 @@ export default async function handler(
       console.log('[Init API] Returning success response');
       return res.status(200).json({
         success: true,
-        user: responseUser,
-        coinsAdded: coinsToAdd,
-        isNewUser: !existingUser
+        data: responseUser
       });
 
     } catch (error) {
