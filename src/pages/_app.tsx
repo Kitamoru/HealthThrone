@@ -54,38 +54,28 @@ const Loader = dynamic(
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp, isTelegramReady } = useTelegram();
+  const { initData, startParam, webApp } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
-  const [minLoadingShown, setMinLoadingShown] = useState(false);
 
-  // Минимальное время показа лоадера (700 мс)
   useEffect(() => {
-    const timer = setTimeout(() => setMinLoadingShown(true), 700);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Инициализация пользователя (с учетом готовности Telegram WebApp)
-  useEffect(() => {
-    if (!isTelegramReady || !initData) return;
+    if (!initData) return;
 
     api.initUser(initData, startParam)
       .then(response => {
-        // Исправлено: response.user вместо response.data
-        if (response.success && response.user) {
-          const userData = response.user;
+        if (response.success && response.data) {
+          const userData = response.data as InitUserResponse;
           const userId = userData.id;
           
           prefetchFriends(userId, initData);
-          prefetchOctalysisFactors(userId, initData);
+          prefetchOctalysisFactors(userId, initData); // Добавлен префетч факторов
           
           queryClient.setQueryData(['userData', userId], userData);
         }
         return response;
       })
       .finally(() => setUserInitialized(true));
-  }, [initData, startParam, isTelegramReady]);
+  }, [initData, startParam]);
 
-  // Префетч данных магазина
   useEffect(() => {
     if (!webApp || !initData) return;
     
@@ -103,7 +93,7 @@ function App({ Component, pageProps }: AppProps) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <meta name="theme-color" content="#18222d" />
       </Head>
-      
+
       <Script 
         src="https://telegram.org/js/telegram-web-app.js" 
         strategy="beforeInteractive" 
@@ -114,7 +104,7 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      {userInitialized && minLoadingShown ? (
+      {userInitialized ? (
         <div className="page-transition">
           <Component {...pageProps} />
         </div>
