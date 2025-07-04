@@ -16,7 +16,7 @@ jobs:
         run: |
           response_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
-            "https://$VERCEL_URL/api/cron/daily-reminder")
+            "https://health-throne.vercel.app/api/cron/daily-reminder")
           
           if [ "$response_code" -ne 200 ]; then
             echo "❌ Error: Received HTTP $response_code"
