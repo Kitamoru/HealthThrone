@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useTelegram } from '../hooks/useTelegram';
+import { useTelegram } from '../contexts/TelegramContext';
+import { useQueryClient } from '@tanstack/react-query';
 import { Loader } from '../components/Loader';
 import { 
   useUserData, 
@@ -88,8 +89,12 @@ const SpriteCard = React.memo(({
 
 export default function Shop() {
   const router = useRouter();
-  const { user, initData } = useTelegram();
-  const telegramId = Number(user?.id);
+  const { initData } = useTelegram();
+  const queryClient = useQueryClient();
+  
+  // Получаем данные пользователя из кеша
+  const userData = queryClient.getQueryData<any>(['userData']);
+  const telegramId = userData?.id;
   
   const { 
     data: userResponse, 
@@ -134,18 +139,8 @@ export default function Shop() {
     (ownedResponse && !ownedResponse.success ? ownedResponse.error : null);
 
   const handlePurchase = useCallback(async (spriteId: number) => {
-    const validationError = validateRequiredFields(
-      { user, initData },
-      ['user', 'initData'],
-      'Необходимо наличие обоих данных'
-    );
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    if (!user?.id) {
-      setError('Пользователь не определен');
+    if (!initData || !telegramId) {
+      setError('Необходимо наличие данных авторизации');
       return;
     }
 
@@ -170,15 +165,14 @@ export default function Shop() {
       setError(null);
       
       const purchaseResult = await purchaseMutation.mutateAsync({
-        telegramId: Number(user.id),
+        telegramId: telegramId,
         spriteId,
         initData
       });
       
       if (purchaseResult.success) {
-        // Ожидаем завершения всех операций обновления данных
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
+          queryClient.invalidateQueries({ queryKey: ['userData', String(telegramId)] }),
           queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] }),
           queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
         ]);
@@ -188,24 +182,13 @@ export default function Shop() {
     } catch (err) {
       setError('Возникла проблема с сетью при покупке.');
     } finally {
-      // Снимаем блокировку только после ВСЕХ операций
       setProcessing(null);
     }
-  }, [user, initData, sprites, ownedSprites, coins, purchaseMutation]);
+  }, [telegramId, initData, sprites, ownedSprites, coins, purchaseMutation, queryClient]);
 
   const handleEquip = useCallback(async (spriteId: number) => {
-    const validationError = validateRequiredFields(
-      { user, initData },
-      ['user', 'initData'],
-      'Необходимые данные отсутствуют.'
-    );
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    if (!user?.id) {
-      setError('Пользователь не определен');
+    if (!initData || !telegramId) {
+      setError('Необходимые данные отсутствуют.');
       return;
     }
 
@@ -214,15 +197,14 @@ export default function Shop() {
       setError(null);
       
       const equipResult = await equipMutation.mutateAsync({
-        telegramId: Number(user.id),
+        telegramId: telegramId,
         spriteId,
         initData
       });
       
       if (equipResult.success) {
-        // Ожидаем завершения операций обновления
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
+          queryClient.invalidateQueries({ queryKey: ['userData', String(telegramId)] }),
           queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
         ]);
       } else {
@@ -231,13 +213,20 @@ export default function Shop() {
     } catch (err) {
       setError('Проблема с сетью при попытке применить спрайт.');
     } finally {
-      // Снимаем блокировку только после ВСЕХ операций
       setProcessing(null);
     }
-  }, [user, initData, equipMutation]);
+  }, [telegramId, initData, equipMutation, queryClient]);
 
-  if (isLoading) {
+  if (isLoading || !telegramId) {
     return <Loader />;
+  }
+
+  if (!telegramId) {
+    return (
+      <div className="error">
+        Пользователь не авторизован. Перезагрузите страницу.
+      </div>
+    );
   }
 
   return (
@@ -250,11 +239,7 @@ export default function Shop() {
 
         {errorMessage && <div className="error">{errorMessage}</div>}
 
-        {!user?.id ? (
-          <div className="error">
-            Пользователь не авторизован. Перезагрузите страницу.
-          </div>
-        ) : sprites.length === 0 ? (
+        {sprites.length === 0 ? (
           <div className="info">Нет доступных спрайтов.</div>
         ) : (
           <div className="sprites-grid">
