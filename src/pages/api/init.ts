@@ -2,7 +2,6 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import { validateTelegramInitData, extractTelegramUser } from '@/lib/telegramAuth';
 import { UserProfile, ApiResponse } from '@/lib/types';
-import { format, utcToZonedTime } from 'date-fns-tz';
 
 export default async function handler(
   req: NextApiRequest,
@@ -60,10 +59,9 @@ export default async function handler(
       });
     }
 
-    // Исправлено: использование UTC для корректного определения дня
+    // Простой способ получения текущей даты в формате YYYY-MM-DD (UTC)
     const now = new Date();
-    const utcDate = utcToZonedTime(now, 'UTC');
-    const today = format(utcDate, 'yyyy-MM-dd');
+    const today = now.toISOString().split('T')[0];
     console.log(`[Init API] Current UTC date: ${today}`);
 
     const { data: existingUser, error: userError } = await supabase
@@ -113,7 +111,7 @@ export default async function handler(
 
       if (upsertError) throw upsertError;
 
-      // Исправлено: всегда получаем обновленные данные после upsert
+      // Всегда получаем обновленные данные после upsert
       const { data: updatedUser, error: selectError } = await supabase
         .from('users')
         .select(`
@@ -134,7 +132,7 @@ export default async function handler(
           const cleanRef = ref.replace('ref_', '');
           const referrerTelegramId = parseInt(cleanRef, 10);
           
-          if (!isNaN(referrerTelegramId) {
+          if (!isNaN(referrerTelegramId)) {
             // Проверка на самоссылку
             if (referrerTelegramId === telegramId) {
               console.log('[Referral] Self-referral attempt blocked');
