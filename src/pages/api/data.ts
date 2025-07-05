@@ -15,9 +15,10 @@ export default async function handler(
 ) {
   console.log('[Data API] Received request', req.method, req.url);
 
-  // Заголовки для предотвращения кеширования
-  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  // Усиленные заголовки против кеширования
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
 
   if (req.method !== 'GET') {
     console.warn('[Data API] Invalid method', req.method);
@@ -51,46 +52,53 @@ export default async function handler(
 
     // Дополнительная проверка пользователя из initData
     const telegramUser = extractTelegramUser(initData);
-    if (!telegramUser || Number(telegramUser.id) !== telegramIdNumber) {
-      console.warn('[Data API] User ID mismatch');
+    if (!telegramUser) {
+      console.warn('[Data API] Failed to extract Telegram user');
+      return res.status(400).json({ success: false, error: 'Invalid user data' });
+    }
+
+    const userTelegramId = Number(telegramUser.id);
+    if (isNaN(userTelegramId)) {
+      console.warn('[Data API] Invalid Telegram user ID');
+      return res.status(400).json({ success: false, error: 'Invalid Telegram ID' });
+    }
+
+    // Проверка соответствия ID в запросе и авторизации
+    if (userTelegramId !== telegramIdNumber) {
+      console.warn(
+        `[Data API] User ID mismatch: auth=${userTelegramId}, request=${telegramIdNumber}`
+      );
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
 
     console.log(`[Data API] Fetching user data for ID: ${telegramIdNumber}`);
 
-    // Устанавливаем контекст пользователя для RLS
-    const setUserResult = await supabase.rpc('set_current_user', { 
-      user_id: telegramIdNumber.toString() 
-    });
-
-    if (setUserResult.error) {
-      console.error('[Data API] RLS error:', setUserResult.error);
-      return res.status(500).json({ 
-        success: false,
-        error: 'RLS configuration failed'
-      });
-    }
-
-    // Запрашиваем данные пользователя из базы данных с JOIN к спрайтам
+    // Запрашиваем данные пользователя из базы данных
     const { data: user, error: dbError } = await supabase
       .from('users')
       .select(`
         *,
         sprites:current_sprite_id (image_url)
-      `) // Добавляем JOIN к таблице спрайтов
+      `)
       .eq('telegram_id', telegramIdNumber)
       .single();
 
     if (dbError) {
       console.error('[Data API] Database error:', dbError);
+      
+      // Проверяем, является ли ошибка отсутствием пользователя
+      if (dbError.code === 'PGRST116') { // Код "Resource not found"
+        return res.status(404).json({ 
+          success: false,
+          error: 'User not found. Please complete initialization first.'
+        });
+      }
+      
       return res.status(500).json({ 
         success: false,
         error: 'Database error'
       });
     }
-
-    // Дополнительный лог: печатаем сырые данные пользователя
-    console.log('[Data API] Retrieved raw user data:', user);
 
     // Формируем данные пользователя для ответа
     const userData: UserProfile = {
@@ -106,14 +114,11 @@ export default async function handler(
       updated_at: user.updated_at,
       current_sprite_id: user.current_sprite_id,
       last_login_date: user.last_login_date,
-      // Добавляем URL активного спрайта
       current_sprite_url: user.sprites?.image_url || null,
       character_class: user.character_class
     };
 
-    console.log('[Data API] Final user profile:', userData);
-
-    // Возвращаем сформированный профиль пользователя
+    console.log('[Data API] Successfully fetched user profile');
     return res.status(200).json({
       success: true,
       data: userData
