@@ -11,14 +11,14 @@ import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
 const prefetchShopData = (initData?: string) => {
-  queryClient.prefetchQuery({
+  return queryClient.prefetchQuery({
     queryKey: ['sprites'],
     queryFn: () => api.getSprites(initData),
   });
 };
 
 const prefetchFriends = (userId: number, initData: string) => {
-  queryClient.prefetchQuery({
+  return queryClient.prefetchQuery({
     queryKey: ['friends', userId.toString()],
     queryFn: async () => {
       const response = await api.getFriends(userId.toString(), initData);
@@ -37,7 +37,7 @@ const prefetchFriends = (userId: number, initData: string) => {
 };
 
 const prefetchOctalysisFactors = (userId: number, initData: string) => {
-  queryClient.prefetchQuery({
+  return queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
     queryFn: () => api.getOctalysisFactors(userId, initData),
     staleTime: 5 * 60 * 1000, // 5 минут кеширования
@@ -74,12 +74,22 @@ function App({ Component, pageProps }: AppProps) {
           const userData = response.data;
           const userId = userData.id;
           
-          prefetchFriends(userId, initData);
-          prefetchOctalysisFactors(userId, initData);
-          prefetchShopData(initData);
-          
+          // 1. Сначала устанавливаем основные данные пользователя
           queryClient.setQueryData(['userData', userId], userData);
-          setAppState('authenticated');
+          
+          // 2. Параллельно загружаем дополнительные данные
+          Promise.all([
+            prefetchFriends(userId, initData),
+            prefetchOctalysisFactors(userId, initData),
+            prefetchShopData(initData)
+          ])
+            .then(() => {
+              setAppState('authenticated');
+            })
+            .catch(error => {
+              console.error("Prefetch failed, continuing anyway", error);
+              setAppState('authenticated');
+            });
         } else {
           setError(response.error || "Ошибка инициализации пользователя");
           setAppState('error');
@@ -101,12 +111,12 @@ function App({ Component, pageProps }: AppProps) {
 
   // Показываем лоадер, пока приложение не инициализировано или в процессе загрузки
   if (appState === 'loading' || appState === 'uninitialized') {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <Loader fullScreen />
-      </QueryClientProvider>
-    );
-  }
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Loader /> {/* Убрали пропс fullScreen */}
+    </QueryClientProvider>
+  );
+}
 
   return (
     <QueryClientProvider client={queryClient}>
