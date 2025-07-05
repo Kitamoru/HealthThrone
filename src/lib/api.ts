@@ -1,12 +1,12 @@
-import { ApiResponse, UserProfile, Sprite, Friend } from './types';
+import { 
+  ApiResponse, 
+  UserProfile, 
+  Sprite, 
+  Friend, 
+  SubmitSurveyRequest,
+  OctalysisFactors
+} from './types';
 import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
-
-interface SubmitSurveyRequest {
-  telegramId: number;
-  burnoutDelta: number;
-  factors: number[];
-  initData?: string;
-}
 
 export const useUserData = (telegramId: number, initData?: string) => {
   return useQuery({
@@ -92,7 +92,7 @@ export const useOctalysisFactors = (userId?: number, initData?: string) => {
       return [0,0,0,0,0,0,0,0];
     },
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 минут кеширования
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -293,8 +293,8 @@ class Api {
   async getOctalysisFactors(
     userId: number, 
     initData?: string
-  ): Promise<ApiResponse<number[]>> {
-    return this.makeRequest<number[]>(
+  ): Promise<ApiResponse<OctalysisFactors>> {
+    return this.makeRequest<OctalysisFactors>(
       `/octalysis?userId=${userId}`, 
       'GET', 
       undefined, 
