@@ -10,40 +10,6 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
-const prefetchShopData = (initData?: string) => {
-  queryClient.prefetchQuery({
-    queryKey: ['sprites'],
-    queryFn: () => api.getSprites(initData),
-  });
-};
-
-const prefetchFriends = (userId: number, initData: string) => {
-  queryClient.prefetchQuery({
-    queryKey: ['friends', userId.toString()],
-    queryFn: async () => {
-      const response = await api.getFriends(userId.toString(), initData);
-      if (response.success && response.data) {
-        return response.data.map(f => ({
-          id: f.id,
-          friend_id: f.friend.id,
-          friend_username: f.friend.username || 
-                          `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
-          burnout_level: f.friend.burnout_level
-        }));
-      }
-      throw new Error(response.error || 'Failed to load friends');
-    },
-  });
-};
-
-const prefetchOctalysisFactors = (userId: number, initData: string) => {
-  queryClient.prefetchQuery({
-    queryKey: ['octalysisFactors', userId],
-    queryFn: () => api.getOctalysisFactors(userId, initData),
-    staleTime: 5 * 60 * 1000, // 5 минут кеширования
-  });
-};
-
 const Loader = dynamic(
   () => import('../components/Loader').then(mod => mod.Loader),
   { ssr: false, loading: () => <div>Загрузка...</div> }
@@ -69,9 +35,7 @@ function App({ Component, pageProps }: AppProps) {
           const userData = response.data;
           const userId = userData.id;
           
-          prefetchFriends(userId, initData);
-          prefetchOctalysisFactors(userId, initData);
-          
+          // Устанавливаем данные пользователя в кеш
           queryClient.setQueryData(['userData', userId], userData);
         } else {
           setError(response.error || "Ошибка инициализации пользователя");
@@ -87,8 +51,7 @@ function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     if (!isTelegramReady || !initData) return;
     
-    prefetchShopData(initData);
-    
+    // Предзагрузка страниц
     const routes = ['/', '/shop', '/friends'];
     routes.forEach(route => Router.prefetch(route));
   }, [initData, isTelegramReady]);
