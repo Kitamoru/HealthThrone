@@ -72,7 +72,7 @@ export const useTelegram = () => {
     initData: '',
     user: null as TelegramUser | null,
     startParam: '',
-    isReady: false, // Добавлен флаг готовности
+    isReady: false,
   });
 
   useEffect(() => {
@@ -91,27 +91,28 @@ export const useTelegram = () => {
         initData: tg.initData,
         user: tg.initDataUnsafe.user || null,
         startParam: tg.initDataUnsafe.start_param || '',
-        isReady: true, // Помечаем как готово
+        isReady: true,
       });
+    };
+
+    const handleReady = () => {
+      initTelegram();
+      window.removeEventListener('telegram-ready', handleReady);
     };
 
     if (window.Telegram?.WebApp) {
       initTelegram();
     } else {
-      const handleReady = () => {
-        initTelegram();
-        window.removeEventListener('telegram-ready', handleReady);
-      };
       window.addEventListener('telegram-ready', handleReady);
     }
 
     return () => {
-      window.removeEventListener('telegram-ready', initTelegram);
+      window.removeEventListener('telegram-ready', handleReady);
     };
   }, []);
 
   return {
     ...state,
-    isTelegramReady: state.isReady, // Добавляем флаг готовности в результат
+    isTelegramReady: state.isReady,
   };
 };
