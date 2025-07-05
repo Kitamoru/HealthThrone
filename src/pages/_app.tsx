@@ -4,7 +4,7 @@ import Script from 'next/script';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import Router from 'next/router';
-import { useTelegram } from '../hooks/useTelegram';
+import { TelegramProvider, useTelegram } from '../contexts/TelegramContext';
 import { api } from '../lib/api';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
@@ -40,7 +40,7 @@ const prefetchOctalysisFactors = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
     queryFn: () => api.getOctalysisFactors(userId, initData),
-    staleTime: 5 * 60 * 1000, // 5 минут кеширования
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -49,8 +49,8 @@ const Loader = dynamic(
   { ssr: false, loading: () => <div>Загрузка...</div> }
 );
 
-function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp } = useTelegram();
+function AppInner({ Component, pageProps }: AppProps) {
+  const { initData, startParam, webApp, updateUser } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
 
   useEffect(() => {
@@ -66,11 +66,19 @@ function App({ Component, pageProps }: AppProps) {
           prefetchOctalysisFactors(userId, initData);
           
           queryClient.setQueryData(['userData', userId], userData);
+          
+          // Обновляем контекст Telegram
+          updateUser({
+            id: String(userData.telegram_id),
+            first_name: userData.first_name || '',
+            last_name: userData.last_name || undefined,
+            username: userData.username || undefined,
+          });
         }
         return response;
       })
       .finally(() => setUserInitialized(true));
-  }, [initData, startParam]);
+  }, [initData, startParam, updateUser]);
 
   useEffect(() => {
     if (!webApp || !initData) return;
@@ -111,4 +119,10 @@ function App({ Component, pageProps }: AppProps) {
   );
 }
 
-export default App;
+export default function App(props: AppProps) {
+  return (
+    <TelegramProvider>
+      <AppInner {...props} />
+    </TelegramProvider>
+  );
+}
