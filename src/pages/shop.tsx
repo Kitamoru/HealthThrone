@@ -1,18 +1,18 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useTelegram } from '@/hooks/useTelegram';
-import { Loader } from '@/components/Loader';
+import { useTelegram } from '../hooks/useTelegram';
+import { Loader } from '../components/Loader';
 import { 
   useUserData, 
   useSpritesData, 
   useOwnedSprites,
   usePurchaseSprite,
   useEquipSprite
-} from '@/lib/api';
-import { Sprite } from '@/lib/types';
-import { validateRequiredFields } from '@/utils/validation';
-import { queryClient } from '@/lib/queryClient';
+} from '../lib/api';
+import { Sprite } from '../lib/types';
+import { validateRequiredFields } from '../utils/validation';
+import { queryClient } from '../lib/queryClient';
 
 const SpriteCard = React.memo(({ 
   sprite, 
@@ -115,12 +115,6 @@ export default function Shop() {
   const [processing, setProcessing] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Добавлено: отмена запросов при размонтировании
-  useEffect(() => {
-    const controller = new AbortController();
-    return () => controller.abort();
-  }, []);
-
   const coins = userResponse?.success ? userResponse.data?.coins || 0 : 0;
   const currentSprite = userResponse?.success 
     ? userResponse.data?.current_sprite_id || null 
@@ -182,17 +176,11 @@ export default function Shop() {
       });
       
       if (purchaseResult.success) {
-        // Исправлено: правильная инвалидация ключей
+        // Ожидаем завершения всех операций обновления данных
         await Promise.all([
-          queryClient.invalidateQueries({ 
-            queryKey: ['user', telegramId] 
-          }),
-          queryClient.invalidateQueries({ 
-            queryKey: ['ownedSprites', telegramId] 
-          }),
-          queryClient.invalidateQueries({ 
-            queryKey: ['sprites'] 
-          })
+          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
+          queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] }),
+          queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
         ]);
       } else {
         setError(purchaseResult.error || 'Ошибка покупки спрайта.');
@@ -200,9 +188,10 @@ export default function Shop() {
     } catch (err) {
       setError('Возникла проблема с сетью при покупке.');
     } finally {
+      // Снимаем блокировку только после ВСЕХ операций
       setProcessing(null);
     }
-  }, [user, initData, sprites, ownedSprites, coins, purchaseMutation, telegramId]);
+  }, [user, initData, sprites, ownedSprites, coins, purchaseMutation]);
 
   const handleEquip = useCallback(async (spriteId: number) => {
     const validationError = validateRequiredFields(
@@ -231,14 +220,10 @@ export default function Shop() {
       });
       
       if (equipResult.success) {
-        // Исправлено: правильная инвалидация
+        // Ожидаем завершения операций обновления
         await Promise.all([
-          queryClient.invalidateQueries({ 
-            queryKey: ['user', telegramId] 
-          }),
-          queryClient.invalidateQueries({ 
-            queryKey: ['sprites'] 
-          })
+          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
+          queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
         ]);
       } else {
         setError(equipResult.error || 'Ошибка при применении спрайта.');
@@ -246,9 +231,10 @@ export default function Shop() {
     } catch (err) {
       setError('Проблема с сетью при попытке применить спрайт.');
     } finally {
+      // Снимаем блокировку только после ВСЕХ операций
       setProcessing(null);
     }
-  }, [user, initData, equipMutation, telegramId]);
+  }, [user, initData, equipMutation]);
 
   if (isLoading) {
     return <Loader />;
