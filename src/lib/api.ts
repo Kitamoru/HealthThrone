@@ -1,17 +1,10 @@
-import { ApiResponse, UserProfile, Sprite, Friend } from './types';
+import { ApiResponse, UserProfile, Sprite, Friend, SubmitSurveyRequest } from './types';
 import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
-
-interface SubmitSurveyRequest {
-  telegramId: number;
-  burnoutDelta: number;
-  factors: number[];
-  initData?: string;
-}
 
 export const useUserData = (telegramId: number, initData?: string) => {
   return useQuery({
     queryKey: ['user', telegramId],
-    queryFn: () => api.getUserData(telegramId, initData),
+    queryFn: ({ signal }) => api.getUserData(telegramId, initData, signal),
     enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
   });
@@ -20,7 +13,7 @@ export const useUserData = (telegramId: number, initData?: string) => {
 export const useFriendsData = (telegramId: string, initData?: string) => {
   return useQuery({
     queryKey: ['friends', telegramId],
-    queryFn: () => api.getFriends(telegramId, initData),
+    queryFn: ({ signal }) => api.getFriends(telegramId, initData, signal),
     enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
   });
@@ -29,7 +22,7 @@ export const useFriendsData = (telegramId: string, initData?: string) => {
 export const useSpritesData = (initData?: string) => {
   return useQuery({
     queryKey: ['sprites'],
-    queryFn: () => api.getSprites(initData),
+    queryFn: ({ signal }) => api.getSprites(initData, signal),
     staleTime: 10 * 60 * 1000,
   });
 };
@@ -37,7 +30,7 @@ export const useSpritesData = (initData?: string) => {
 export const useOwnedSprites = (telegramId: number, initData?: string) => {
   return useQuery({
     queryKey: ['ownedSprites', telegramId],
-    queryFn: () => api.getOwnedSprites(telegramId, initData),
+    queryFn: ({ signal }) => api.getOwnedSprites(telegramId, initData, signal),
     enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
   });
@@ -82,17 +75,17 @@ export const useUpdateUserClass = () => {
 export const useOctalysisFactors = (userId?: number, initData?: string) => {
   return useQuery({
     queryKey: ['octalysisFactors', userId],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!userId) return [0,0,0,0,0,0,0,0];
       
-      const response = await api.getOctalysisFactors(userId, initData);
+      const response = await api.getOctalysisFactors(userId, initData, signal);
       if (response.success && Array.isArray(response.data)) {
         return response.data;
       }
       return [0,0,0,0,0,0,0,0];
     },
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 минут кеширования
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -135,7 +128,8 @@ class Api {
     endpoint: string,
     method: string = 'GET',
     body?: any,
-    initData?: string
+    initData?: string,
+    signal?: AbortSignal
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
     const headers: Record<string, string> = { ...this.defaultHeaders };
@@ -148,7 +142,8 @@ class Api {
       const response = await fetch(url, {
         method,
         headers,
-        body: body ? JSON.stringify(body) : undefined
+        body: body ? JSON.stringify(body) : undefined,
+        signal
       });
 
       return this.handleResponse<T>(response);
@@ -161,65 +156,57 @@ class Api {
     }
   }
 
-  async initUser(initData: string, startParam?: string): Promise<ApiResponse<UserProfile>> {
-    return this.makeRequest<UserProfile>('/init', 'POST', { initData, ref: startParam });
+  async initUser(initData: string, startParam?: string, signal?: AbortSignal): Promise<ApiResponse<UserProfile>> {
+    return this.makeRequest<UserProfile>(
+      '/init', 
+      'POST', 
+      { initData, ref: startParam },
+      undefined,
+      signal
+    );
   }
 
-  async getUserData(telegramId: number, initData?: string): Promise<ApiResponse<UserProfile>> {
+  async getUserData(telegramId: number, initData?: string, signal?: AbortSignal): Promise<ApiResponse<UserProfile>> {
     return this.makeRequest<UserProfile>(
       `/data?telegramId=${telegramId}`, 
       'GET', 
       undefined, 
-      initData
+      initData,
+      signal
     );
   }
 
-  async updateBurnoutLevel(telegramId: number, level: number, initData?: string) {
-    return this.makeRequest(
-      '/update', 
-      'POST', 
-      { telegramId, burnoutLevel: level },
-      initData
-    );
-  }
-
-  async getFriends(telegramId: string, initData?: string): Promise<ApiResponse<Friend[]>> {
+  async getFriends(telegramId: string, initData?: string, signal?: AbortSignal): Promise<ApiResponse<Friend[]>> {
     return this.makeRequest<Friend[]>(
       `/friends?telegramId=${telegramId}`, 
       'GET', 
       undefined, 
-      initData
+      initData,
+      signal
     );
   }
 
-  async addFriend(friendUsername: string, initData?: string): Promise<ApiResponse> {
-    return this.makeRequest(
-      '/friends', 
-      'POST', 
-      { friendUsername },
-      initData
-    );
-  }
-
-  async deleteFriend(friendId: number, initData?: string): Promise<ApiResponse> {
-    return this.makeRequest(
-      `/friends/${friendId}`, 
-      'DELETE', 
-      undefined, 
-      initData
-    );
-  }
-
-  async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
-    return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
-  }
-  
-  async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
-    return this.makeRequest<Sprite>(
-      `/shop/sprites/${spriteId}`, 
+  async getSprites(initData?: string, signal?: AbortSignal): Promise<ApiResponse<Sprite[]>> {
+    return this.makeRequest<Sprite[]>(
+      '/shop/sprites', 
       'GET', 
       undefined, 
-      initData
+      initData,
+      signal
+    );
+  }
+  
+  async getOwnedSprites(
+    telegramId: number, 
+    initData?: string,
+    signal?: AbortSignal
+  ): Promise<ApiResponse<number[]>> {
+    return this.makeRequest<number[]>(
+      `/shop/owned?telegramId=${telegramId}`, 
+      'GET', 
+      undefined, 
+      initData,
+      signal
     );
   }
 
@@ -232,18 +219,6 @@ class Api {
       '/shop/purchase', 
       'POST', 
       { telegramId, spriteId },
-      initData
-    );
-  }
-
-  async getOwnedSprites(
-    telegramId: number, 
-    initData?: string
-  ): Promise<ApiResponse<number[]>> {
-    return this.makeRequest<number[]>(
-      `/shop/owned?telegramId=${telegramId}`, 
-      'GET', 
-      undefined, 
       initData
     );
   }
@@ -292,13 +267,15 @@ class Api {
 
   async getOctalysisFactors(
     userId: number, 
-    initData?: string
+    initData?: string,
+    signal?: AbortSignal
   ): Promise<ApiResponse<number[]>> {
     return this.makeRequest<number[]>(
       `/octalysis?userId=${userId}`, 
       'GET', 
       undefined, 
-      initData
+      initData,
+      signal
     );
   }
 }
