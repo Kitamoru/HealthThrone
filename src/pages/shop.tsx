@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useTelegram } from '../contexts/TelegramContext';
-import { useQueryClient } from '@tanstack/react-query';
+import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { 
   useUserData, 
@@ -89,11 +88,8 @@ const SpriteCard = React.memo(({
 
 export default function Shop() {
   const router = useRouter();
-  const { initData, user } = useTelegram(); // Добавляем user
-  const queryClient = useQueryClient();
-  
-  // Получаем telegramId из контекста Telegram
-  const telegramId = user?.id ? Number(user.id) : null;
+  const { user, initData, isLoading } = useTelegram();
+  const telegramId = user?.id ? Number(user.id) : 0;
   
   const { 
     data: userResponse, 
@@ -119,6 +115,26 @@ export default function Shop() {
   const [processing, setProcessing] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  if (isLoading) {
+    return <Loader />;
+  }
+
+  if (!user?.id) {
+    return (
+      <div className="container">
+        <div className="error">
+          <p>Пользователь не авторизован</p>
+          <button 
+            className="reload-btn"
+            onClick={() => window.location.reload()}
+          >
+            Перезагрузить страницу
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const coins = userResponse?.success ? userResponse.data?.coins || 0 : 0;
   const currentSprite = userResponse?.success 
     ? userResponse.data?.current_sprite_id || null 
@@ -130,7 +146,7 @@ export default function Shop() {
     ? spritesResponse.data || [] 
     : [];
 
-  const isLoading = userLoading || spritesLoading || ownedLoading;
+  const isDataLoading = userLoading || spritesLoading || ownedLoading;
   const errorMessage = error || userError?.message || 
     spritesError?.message || ownedError?.message ||
     (userResponse && !userResponse.success ? userResponse.error : null) ||
@@ -138,8 +154,18 @@ export default function Shop() {
     (ownedResponse && !ownedResponse.success ? ownedResponse.error : null);
 
   const handlePurchase = useCallback(async (spriteId: number) => {
-    if (!initData || !telegramId) {
-      setError('Необходимо наличие данных авторизации');
+    const validationError = validateRequiredFields(
+      { user, initData },
+      ['user', 'initData'],
+      'Необходимо наличие обоих данных'
+    );
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    if (!user?.id) {
+      setError('Пользователь не определен');
       return;
     }
 
@@ -164,14 +190,14 @@ export default function Shop() {
       setError(null);
       
       const purchaseResult = await purchaseMutation.mutateAsync({
-        telegramId: telegramId,
+        telegramId: Number(user.id),
         spriteId,
         initData
       });
       
       if (purchaseResult.success) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['userData', String(telegramId)] }),
+          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
           queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] }),
           queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
         ]);
@@ -183,11 +209,21 @@ export default function Shop() {
     } finally {
       setProcessing(null);
     }
-  }, [telegramId, initData, sprites, ownedSprites, coins, purchaseMutation, queryClient]);
+  }, [user, initData, sprites, ownedSprites, coins, purchaseMutation]);
 
   const handleEquip = useCallback(async (spriteId: number) => {
-    if (!initData || !telegramId) {
-      setError('Необходимые данные отсутствуют.');
+    const validationError = validateRequiredFields(
+      { user, initData },
+      ['user', 'initData'],
+      'Необходимые данные отсутствуют.'
+    );
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    if (!user?.id) {
+      setError('Пользователь не определен');
       return;
     }
 
@@ -196,14 +232,14 @@ export default function Shop() {
       setError(null);
       
       const equipResult = await equipMutation.mutateAsync({
-        telegramId: telegramId,
+        telegramId: Number(user.id),
         spriteId,
         initData
       });
       
       if (equipResult.success) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['userData', String(telegramId)] }),
+          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
           queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
         ]);
       } else {
@@ -214,9 +250,9 @@ export default function Shop() {
     } finally {
       setProcessing(null);
     }
-  }, [telegramId, initData, equipMutation, queryClient]);
+  }, [user, initData, equipMutation]);
 
-  if (isLoading || !telegramId) {
+  if (isDataLoading) {
     return <Loader />;
   }
 
