@@ -14,14 +14,84 @@ import { Sprite } from '@/lib/types';
 import { validateRequiredFields } from '@/utils/validation';
 import { queryClient } from '@/lib/queryClient';
 
-// ... (SpriteCard component remains the same)
+// Компонент карточки спрайта
+const SpriteCard = React.memo(({ 
+  sprite, 
+  coins, 
+  isOwned, 
+  isEquipped, 
+  isProcessing, 
+  onPurchase, 
+  onEquip 
+}: { 
+  sprite: Sprite;
+  coins: number;
+  isOwned: boolean;
+  isEquipped: boolean;
+  isProcessing: boolean;
+  onPurchase: (id: number) => void;
+  onEquip: (id: number) => void;
+}) => (
+  <div className="sprite-card">
+    <img
+      src={sprite.image_url}
+      alt={sprite.name}
+      className="sprite-image"
+      onError={(e) =>
+        (e.currentTarget.src =
+          'https://via.placeholder.com/150?text=No+Image')
+      }
+    />
+    <div className="sprite-info">
+      <h3>{sprite.name}</h3>
+      <div className="sprite-price">
+        Цена:{' '}
+        {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'}
+      </div>
+      <div className="sprite-actions">
+        {!isOwned ? (
+          coins >= sprite.price ? (
+            <button
+              className={`buy-btn ${isProcessing ? 'processing' : ''}`}
+              onClick={() => !isProcessing && onPurchase(sprite.id)}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <span className="button-loader">⏳</span>
+              ) : (
+                'Купить'
+              )}
+            </button>
+          ) : (
+            <button className="buy-btn disabled" disabled>
+              Недостаточно
+            </button>
+          )
+        ) : (
+          <button
+            className={`equip-btn ${isEquipped ? 'equipped' : ''} ${isProcessing ? 'processing' : ''}`}
+            onClick={() => !isProcessing && onEquip(sprite.id)}
+            disabled={isProcessing || isEquipped}
+          >
+            {isProcessing ? (
+              <span className="button-loader">⏳</span>
+            ) : isEquipped ? (
+              'Применён'
+            ) : (
+              'Применить'
+            )}
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+));
 
 export default function Shop() {
   const router = useRouter();
   const { user, initData, webApp } = useTelegram();
   const telegramId = user?.id ? Number(user.id) : null;
   
-  // Используем новый флаг isFetched для определения завершения запросов
   const { 
     data: userResponse, 
     isLoading: userLoading,
@@ -70,8 +140,114 @@ export default function Shop() {
     ? spritesResponse.data || [] 
     : [];
 
-  // Обработчики покупки и применения (остаются без изменений)
-  // ...
+  const handlePurchase = useCallback(async (spriteId: number) => {
+    const validationError = validateRequiredFields(
+      { user, initData },
+      ['user', 'initData'],
+      'Необходимо наличие обоих данных'
+    );
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    if (!user?.id) {
+      setError('Пользователь не определен');
+      return;
+    }
+
+    const sprite = sprites.find((item) => item.id === spriteId);
+    if (!sprite) {
+      setError('Спрайт не найден');
+      return;
+    }
+
+    if (ownedSprites.includes(spriteId)) {
+      setError('Вы уже приобрели этот спрайт.');
+      return;
+    }
+
+    if (coins < sprite.price) {
+      setError('У вас недостаточно монет для покупки.');
+      return;
+    }
+
+    try {
+      setProcessing(spriteId);
+      setError(null);
+      
+      const purchaseResult = await purchaseMutation.mutateAsync({
+        telegramId: Number(user.id),
+        spriteId,
+        initData
+      });
+      
+      if (purchaseResult.success) {
+        await Promise.all([
+          queryClient.invalidateQueries({ 
+            queryKey: ['user', telegramId] 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: ['ownedSprites', telegramId] 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: ['sprites'] 
+          })
+        ]);
+      } else {
+        setError(purchaseResult.error || 'Ошибка покупки спрайта.');
+      }
+    } catch (err) {
+      setError('Возникла проблема с сетью при покупке.');
+    } finally {
+      setProcessing(null);
+    }
+  }, [user, initData, sprites, ownedSprites, coins, purchaseMutation, telegramId]);
+
+  const handleEquip = useCallback(async (spriteId: number) => {
+    const validationError = validateRequiredFields(
+      { user, initData },
+      ['user', 'initData'],
+      'Необходимые данные отсутствуют.'
+    );
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    if (!user?.id) {
+      setError('Пользователь не определен');
+      return;
+    }
+
+    try {
+      setProcessing(spriteId);
+      setError(null);
+      
+      const equipResult = await equipMutation.mutateAsync({
+        telegramId: Number(user.id),
+        spriteId,
+        initData
+      });
+      
+      if (equipResult.success) {
+        await Promise.all([
+          queryClient.invalidateQueries({ 
+            queryKey: ['user', telegramId] 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: ['sprites'] 
+          })
+        ]);
+      } else {
+        setError(equipResult.error || 'Ошибка при применении спрайта.');
+      }
+    } catch (err) {
+      setError('Проблема с сетью при попытке применить спрайт.');
+    } finally {
+      setProcessing(null);
+    }
+  }, [user, initData, equipMutation, telegramId]);
 
   // Если данные еще загружаются, показываем лоадер
   if (!allFetched) {
@@ -91,7 +267,9 @@ export default function Shop() {
     
     return (
       <div className="container">
-        <div className="error">{errorMessage}</div>
+        <div className="scrollable-content">
+          <div className="error">{errorMessage}</div>
+        </div>
       </div>
     );
   }
@@ -100,8 +278,10 @@ export default function Shop() {
   if (!telegramId) {
     return (
       <div className="container">
-        <div className="error">
-          Пользователь не авторизован. Перезагрузите страницу.
+        <div className="scrollable-content">
+          <div className="error">
+            Пользователь не авторизован. Перезагрузите страницу.
+          </div>
         </div>
       </div>
     );
@@ -139,7 +319,18 @@ export default function Shop() {
       </div>
 
       <div className="menu">
-        {/* Навигация */}
+        <Link href="/" passHref>
+          <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
+        </Link>
+        <Link href="/friends" passHref>
+          <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>📈</button>
+        </Link>
+        <Link href="/shop" passHref>
+          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>🛍️</button>
+        </Link>
+        <Link href="/reference" passHref>
+          <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>ℹ️</button>
+        </Link>
       </div>
     </div>
   );
