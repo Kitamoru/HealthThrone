@@ -30,7 +30,8 @@ export const useSpritesData = (initData?: string) => {
   return useQuery({
     queryKey: ['sprites'],
     queryFn: () => api.getSprites(initData),
-    staleTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    enabled: !!initData, 
   });
 };
 
