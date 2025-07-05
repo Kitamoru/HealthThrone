@@ -1,105 +1,65 @@
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
-import dynamic from 'next/dynamic';
 import { useEffect, useState, useRef } from 'react';
-import Router from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
-import { api } from '../lib/api';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
-// Упрощенные функции префетча
-const prefetchShopData = (initData?: string) => {
-  return queryClient.prefetchQuery({
-    queryKey: ['sprites'],
-    queryFn: () => api.getSprites(initData),
-  });
-};
-
-const prefetchFriends = (userId: number, initData: string) => {
-  return queryClient.prefetchQuery({
-    queryKey: ['friends', userId.toString()],
-    queryFn: () => api.getFriends(userId.toString(), initData),
-  });
-};
-
-const prefetchOctalysisFactors = (userId: number, initData: string) => {
-  return queryClient.prefetchQuery({
-    queryKey: ['octalysisFactors', userId],
-    queryFn: () => api.getOctalysisFactors(userId, initData),
-  });
-};
-
-const Loader = dynamic(
-  () => import('../components/Loader').then(mod => mod.Loader),
-  { ssr: false }
+// Временный простой лоадер
+const Loader = () => (
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'black',
+    color: 'white',
+    fontSize: '24px',
+    zIndex: 1000
+  }}>
+    Loading...
+  </div>
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp, isTelegramReady } = useTelegram();
-  const [appState, setAppState] = useState<
-    'uninitialized' | 'loading' | 'authenticated' | 'error'
-  >('uninitialized');
-  const [error, setError] = useState<string | null>(null);
-  const initialized = useRef(false); // Флаг для отслеживания выполнения инициализации
+  const { initData, startParam, isTelegramReady } = useTelegram();
+  const [appState, setAppState] = useState('uninitialized');
+  const [error, setError] = useState('');
+  const initialized = useRef(false);
+  
+  // Диагностический лог
+  useEffect(() => {
+    console.group('App Status');
+    console.log('isTelegramReady:', isTelegramReady);
+    console.log('initData:', initData);
+    console.log('appState:', appState);
+    console.log('error:', error);
+    console.groupEnd();
+  }, [isTelegramReady, initData, appState, error]);
 
   useEffect(() => {
     if (!isTelegramReady || initialized.current) return;
     initialized.current = true;
 
-    if (!initData) {
-      setError("Приложение должно быть запущено внутри Telegram");
-      setAppState('error');
-      return;
-    }
-
-    setAppState('loading');
+    console.log('Starting initialization...');
     
-    api.initUser(initData, startParam)
-      .then(response => {
-        if (response.success && response.data) {
-          const userData = response.data;
-          const userId = userData.id;
-          
-          queryClient.setQueryData(['userData', userId], userData);
-          
-          // Параллельный префетч с обработкой ошибок
-          Promise.allSettled([
-            prefetchFriends(userId, initData),
-            prefetchOctalysisFactors(userId, initData),
-            prefetchShopData(initData)
-          ])
-            .then(() => {
-              console.log("Prefetch completed");
-              setAppState('authenticated');
-            })
-            .catch(error => {
-              console.error("Prefetch failed", error);
-              setAppState('authenticated'); // Переходим в основное состояние даже с ошибками
-            });
-        } else {
-          setError(response.error || "Ошибка инициализации пользователя");
-          setAppState('error');
-        }
-      })
-      .catch(error => {
-        console.error("User initialization failed:", error);
-        setError("Сетевая ошибка при инициализации");
-        setAppState('error');
-      });
-  }, [initData, startParam, isTelegramReady]);
+    // Имитация успешной инициализации через 3 секунды
+    const timeout = setTimeout(() => {
+      console.warn('FORCE SETTING AUTHENTICATED STATE');
+      setAppState('authenticated');
+    }, 3000);
 
-  useEffect(() => {
-    if (appState === 'authenticated' && initData) {
-      Router.prefetch('/');
-      Router.prefetch('/shop');
-      Router.prefetch('/friends');
-    }
-  }, [initData, appState]);
+    // Очистка таймаута при размонтировании
+    return () => clearTimeout(timeout);
+  }, [isTelegramReady]);
 
-  if (appState === 'loading' || appState === 'uninitialized') {
+  if (appState === 'uninitialized' || appState === 'loading') {
     return (
       <QueryClientProvider client={queryClient}>
         <Loader />
@@ -110,39 +70,30 @@ function App({ Component, pageProps }: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <Head>
-        <title>Burnout Tracker - Отслеживание выгорания</title>
-        <meta name="description" content="Telegram Mini App для отслеживания уровня выгорания" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <meta name="theme-color" content="#18222d" />
+        <title>Debug App</title>
       </Head>
-
+      
       <Script 
         src="https://telegram.org/js/telegram-web-app.js" 
         strategy="beforeInteractive" 
-        onLoad={() => {
-          if (window.Telegram?.WebApp) {
-            window.dispatchEvent(new Event('telegram-ready'));
-          }
-        }}
+        onLoad={() => console.log('Telegram script loaded')}
+        onError={(e) => console.error('Telegram script error', e)}
       />
 
-      {appState === 'error' ? (
-        <div className="error-container">
-          <h2>Ошибка запуска</h2>
-          <p>{error}</p>
-          <p>Пожалуйста, откройте приложение через Telegram</p>
-          <button 
-            className="retry-button"
-            onClick={() => window.location.reload()}
-          >
-            Попробовать снова
-          </button>
-        </div>
-      ) : (
-        <div className="page-transition">
-          <Component {...pageProps} />
-        </div>
-      )}
+      <div style={{ padding: '20px' }}>
+        <h1>Debug Information</h1>
+        <p>isTelegramReady: {isTelegramReady.toString()}</p>
+        <p>initData: {initData || 'none'}</p>
+        <p>appState: {appState}</p>
+        <p>error: {error}</p>
+        
+        <button onClick={() => {
+          console.log('Manual reload');
+          window.location.reload();
+        }}>
+          Reload App
+        </button>
+      </div>
     </QueryClientProvider>
   );
 }
