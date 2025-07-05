@@ -1,4 +1,3 @@
-Types.ts
 export interface TelegramUser {
   id: string;
   first_name: string;
