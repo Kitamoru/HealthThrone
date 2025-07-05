@@ -294,7 +294,7 @@ class Api {
     userId: number, 
     initData?: string
   ): Promise<ApiResponse<OctalysisFactors>> {
-    return this.makeRequest<OctalyticsFactors>(
+    return this.makeRequest<OctalysisFactors>(
       `/octalysis?userId=${userId}`, 
       'GET', 
       undefined, 
