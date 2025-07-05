@@ -67,7 +67,7 @@ function AppInner({ Component, pageProps }: AppProps) {
           
           queryClient.setQueryData(['userData', userId], userData);
           
-          // Обновляем контекст Telegram
+          // Обновляем контекст Telegram с реальными данными пользователя
           updateUser({
             id: String(userData.telegram_id),
             first_name: userData.first_name || '',
