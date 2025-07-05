@@ -4,22 +4,30 @@ import Script from 'next/script';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import Router from 'next/router';
-import { useTelegram } from '../hooks/useTelegram';
-import { api } from '../lib/api';
+import { useTelegram } from '@/hooks/useTelegram';
+import { api } from '@/lib/api';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { queryClient } from '../lib/queryClient';
-import '../styles/globals.css';
+import { queryClient } from '@/lib/queryClient';
+import '@/styles/globals.css';
 
-const prefetchShopData = (initData?: string) => {
+// Функция для префетча данных магазина
+const prefetchShopData = (telegramId: number, initData?: string) => {
   queryClient.prefetchQuery({
     queryKey: ['sprites'],
     queryFn: () => api.getSprites(initData),
   });
+  
+  // Добавляем префетч для спрайтов пользователя
+  queryClient.prefetchQuery({
+    queryKey: ['ownedSprites', telegramId],
+    queryFn: () => api.getOwnedSprites(telegramId, initData),
+  });
 };
 
+// Функция для префетча данных друзей
 const prefetchFriends = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
-    queryKey: ['friends', userId.toString()],
+    queryKey: ['friends', userId],
     queryFn: async () => {
       const response = await api.getFriends(userId.toString(), initData);
       if (response.success && response.data) {
@@ -36,22 +44,24 @@ const prefetchFriends = (userId: number, initData: string) => {
   });
 };
 
+// Функция для префетча факторов Octalysis
 const prefetchOctalysisFactors = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
     queryFn: () => api.getOctalysisFactors(userId, initData),
-    staleTime: 5 * 60 * 1000, // 5 минут кеширования
+    staleTime: 5 * 60 * 1000,
   });
 };
 
 const Loader = dynamic(
-  () => import('../components/Loader').then(mod => mod.Loader),
+  () => import('@/components/Loader').then(mod => mod.Loader),
   { ssr: false, loading: () => <div>Загрузка...</div> }
 );
 
 function App({ Component, pageProps }: AppProps) {
   const { initData, startParam, webApp } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initData) return;
@@ -61,21 +71,30 @@ function App({ Component, pageProps }: AppProps) {
         if (response.success && response.data) {
           const userData = response.data;
           const userId = userData.id;
+          const telegramId = userData.telegram_id;
           
+          // Устанавливаем данные пользователя в кеш
+          queryClient.setQueryData(['user', userId], userData);
+          
+          // Префетчим все зависимые данные ПОСЛЕ установки данных пользователя
           prefetchFriends(userId, initData);
           prefetchOctalysisFactors(userId, initData);
-          
-          queryClient.setQueryData(['userData', userId], userData);
+          prefetchShopData(telegramId, initData); // Добавлен префетч спрайтов
+        } else if (response.error) {
+          setInitError(response.error);
         }
         return response;
+      })
+      .catch(error => {
+        console.error('User initialization failed:', error);
+        setInitError('Failed to initialize user');
       })
       .finally(() => setUserInitialized(true));
   }, [initData, startParam]);
 
   useEffect(() => {
+    // Префетч статических маршрутов (не зависит от данных пользователя)
     if (!webApp || !initData) return;
-    
-    prefetchShopData(initData);
     
     const routes = ['/', '/shop', '/friends'];
     routes.forEach(route => Router.prefetch(route));
@@ -100,12 +119,18 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      {userInitialized ? (
+      {!userInitialized ? (
+        <Loader />
+      ) : initError ? (
+        <div className="error-container">
+          <h2>Ошибка инициализации</h2>
+          <p>{initError}</p>
+          <button onClick={() => window.location.reload()}>Попробовать снова</button>
+        </div>
+      ) : (
         <div className="page-transition">
           <Component {...pageProps} />
         </div>
-      ) : (
-        <Loader />
       )}
     </QueryClientProvider>
   );
