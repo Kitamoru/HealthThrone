@@ -11,14 +11,14 @@ import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
 const prefetchShopData = (initData?: string) => {
-  return queryClient.prefetchQuery({
+  queryClient.prefetchQuery({
     queryKey: ['sprites'],
     queryFn: () => api.getSprites(initData),
   });
 };
 
 const prefetchFriends = (userId: number, initData: string) => {
-  return queryClient.prefetchQuery({
+  queryClient.prefetchQuery({
     queryKey: ['friends', userId.toString()],
     queryFn: async () => {
       const response = await api.getFriends(userId.toString(), initData);
@@ -37,10 +37,10 @@ const prefetchFriends = (userId: number, initData: string) => {
 };
 
 const prefetchOctalysisFactors = (userId: number, initData: string) => {
-  return queryClient.prefetchQuery({
+  queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
     queryFn: () => api.getOctalysisFactors(userId, initData),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 минут кеширования
   });
 };
 
@@ -50,50 +50,36 @@ const Loader = dynamic(
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp, isTelegramReady } = useTelegram();
-  const [appReady, setAppReady] = useState(false);
+  const { initData, startParam, webApp } = useTelegram();
+  const [userInitialized, setUserInitialized] = useState(false);
 
   useEffect(() => {
-    if (!isTelegramReady || !initData) return;
+    if (!initData) return;
 
-    const initializeApp = async () => {
-      try {
-        const response = await api.initUser(initData, startParam);
-        
+    api.initUser(initData, startParam)
+      .then(response => {
         if (response.success && response.data) {
-          const userId = response.data.id;
+          const userData = response.data;
+          const userId = userData.id;
           
-          await Promise.all([
-            prefetchFriends(userId, initData),
-            prefetchOctalysisFactors(userId, initData),
-            prefetchShopData(initData),
-            queryClient.prefetchQuery({
-              queryKey: ['userData', userId],
-              queryFn: () => api.getUserData(userId, initData)
-            })
-          ]);
+          prefetchFriends(userId, initData);
+          prefetchOctalysisFactors(userId, initData);
+          
+          queryClient.setQueryData(['userData', userId], userData);
         }
-      } catch (error) {
-        console.error('App initialization error:', error);
-      } finally {
-        setAppReady(true);
-      }
-    };
-
-    initializeApp();
-  }, [initData, startParam, isTelegramReady]);
+        return response;
+      })
+      .finally(() => setUserInitialized(true));
+  }, [initData, startParam]);
 
   useEffect(() => {
-    if (isTelegramReady && initData) {
-      Router.prefetch('/');
-      Router.prefetch('/shop');
-      Router.prefetch('/friends');
-    }
-  }, [isTelegramReady, initData]);
-
-  if (!isTelegramReady || !appReady) {
-    return <Loader />;
-  }
+    if (!webApp || !initData) return;
+    
+    prefetchShopData(initData);
+    
+    const routes = ['/', '/shop', '/friends'];
+    routes.forEach(route => Router.prefetch(route));
+  }, [webApp, initData]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -114,9 +100,13 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      <div className="page-transition">
-        <Component {...pageProps} />
-      </div>
+      {userInitialized ? (
+        <div className="page-transition">
+          <Component {...pageProps} />
+        </div>
+      ) : (
+        <Loader />
+      )}
     </QueryClientProvider>
   );
 }
