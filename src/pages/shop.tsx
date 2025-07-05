@@ -88,23 +88,8 @@ const SpriteCard = React.memo(({
 
 export default function Shop() {
   const router = useRouter();
-  const { user, initData, isTelegramReady } = useTelegram();
-  
-  // Если Telegram еще не готов, показываем лоадер
-  if (!isTelegramReady) {
-    return <Loader />;
-  }
-
-  // Если нет пользователя (ошибка инициализации), показываем сообщение
-  if (!user) {
-    return (
-      <div className="error-message">
-        Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение.
-      </div>
-    );
-  }
-  
-  const telegramId = Number(user.id);
+  const { user, initData } = useTelegram();
+  const telegramId = Number(user?.id);
   
   const { 
     data: userResponse, 
@@ -149,35 +134,35 @@ export default function Shop() {
     (ownedResponse && !ownedResponse.success ? ownedResponse.error : null);
 
   const handlePurchase = useCallback(async (spriteId: number) => {
-    if (!user?.id) {
-      setError('User not defined');
-      return;
-    }
+  if (!user?.id) {
+    setError('User not defined');
+    return;
+  }
 
-    try {
-      setProcessing(spriteId);
-      setError(null);
-      
-      const purchaseResult = await purchaseMutation.mutateAsync({
-        telegramId: Number(user.id),
-        spriteId,
-        initData
-      });
-      
-      if (purchaseResult.success) {
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
-          queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] })
-        ]);
-      }
-    } catch (err) {
-      // Ошибки теперь обрабатываются на бэкенде
-      const error = err as { message?: string };
-      setError(error.message || 'Purchase failed');
-    } finally {
-      setProcessing(null);
+  try {
+    setProcessing(spriteId);
+    setError(null);
+    
+    const purchaseResult = await purchaseMutation.mutateAsync({
+      telegramId: Number(user.id),
+      spriteId,
+      initData
+    });
+    
+    if (purchaseResult.success) {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
+        queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] })
+      ]);
     }
-  }, [user, initData, purchaseMutation]);
+  } catch (err) {
+    // Ошибки теперь обрабатываются на бэкенде
+    const error = err as { message?: string };
+    setError(error.message || 'Purchase failed');
+  } finally {
+    setProcessing(null);
+  }
+}, [user, initData, purchaseMutation]);
 
   const handleEquip = useCallback(async (spriteId: number) => {
     const validationError = validateRequiredFields(
