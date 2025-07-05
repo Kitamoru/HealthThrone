@@ -89,12 +89,11 @@ const SpriteCard = React.memo(({
 
 export default function Shop() {
   const router = useRouter();
-  const { initData } = useTelegram();
+  const { initData, user } = useTelegram(); // Добавляем user
   const queryClient = useQueryClient();
   
-  // Получаем данные пользователя из кеша
-  const userData = queryClient.getQueryData<any>(['userData']);
-  const telegramId = userData?.id;
+  // Получаем telegramId из контекста Telegram
+  const telegramId = user?.id ? Number(user.id) : null;
   
   const { 
     data: userResponse, 
@@ -219,14 +218,6 @@ export default function Shop() {
 
   if (isLoading || !telegramId) {
     return <Loader />;
-  }
-
-  if (!telegramId) {
-    return (
-      <div className="error">
-        Пользователь не авторизован. Перезагрузите страницу.
-      </div>
-    );
   }
 
   return (
