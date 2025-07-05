@@ -1,3 +1,4 @@
+Types.ts
 export interface TelegramUser {
   id: string;
   first_name: string;
@@ -90,10 +91,3 @@ export interface UpdateClassRequest {
 }
 
 export type OctalysisFactors = [number, number, number, number, number, number, number, number];
-
-export interface SubmitSurveyRequest {
-  telegramId: number;
-  burnoutDelta: number;
-  factors: number[];
-  initData?: string;
-}
