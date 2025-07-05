@@ -101,12 +101,12 @@ function App({ Component, pageProps }: AppProps) {
 
   // Показываем лоадер, пока приложение не инициализировано или в процессе загрузки
   if (appState === 'loading' || appState === 'uninitialized') {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <Loader fullScreen />
-      </QueryClientProvider>
-    );
-  }
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Loader /> {/* Убрали пропс fullScreen */}
+    </QueryClientProvider>
+  );
+}
 
   return (
     <QueryClientProvider client={queryClient}>
