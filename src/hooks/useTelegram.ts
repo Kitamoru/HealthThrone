@@ -1,90 +1,48 @@
 import { useEffect, useState } from 'react';
 
-interface TelegramUser {
-  id: string;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  language_code?: string;
-  is_premium?: boolean;
-  photo_url?: string;
-}
-
-interface TelegramContact {
-  user_id?: number;
-  first_name?: string;
-  last_name?: string;
-  username?: string;
-  phone_number?: string;
-}
-
+// Упростим интерфейсы для читаемости
 interface TelegramWebApp {
   initData: string;
   initDataUnsafe: {
-    user?: TelegramUser;
-    chat_instance?: string;
-    chat_type?: string;
+    user?: {
+      id: string;
+      first_name: string;
+      last_name?: string;
+      username?: string;
+    };
     start_param?: string;
   };
-  colorScheme: 'light' | 'dark';
-  themeParams: {
-    bg_color?: string;
-    text_color?: string;
-    hint_color?: string;
-    link_color?: string;
-    button_color?: string;
-    button_text_color?: string;
-  };
-  isExpanded: boolean;
-  viewportHeight: number;
-  viewportStableHeight: number;
   ready: () => void;
   expand: () => void;
-  close: () => void;
-  sendData: (data: string) => void;
-  showAlert: (message: string) => void;
-  showConfirm: (message: string, callback: (confirmed: boolean) => void) => void;
-  showPopup: (params: any, callback?: (buttonId: string) => void) => void;
-  openTelegramLink: (url: string) => void;
-  openLink: (url: string, options?: { try_instant_view?: boolean }) => void;
-  HapticFeedback: {
-    impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
-    notificationOccurred: (type: 'error' | 'success' | 'warning') => void;
-    selectionChanged: () => void;
-  };
-  showContactPicker?: (
-    options: { title?: string },
-    callback: (contact: TelegramContact) => void
-  ) => void;
-}
-
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: TelegramWebApp;
-    };
-  }
 }
 
 export const useTelegram = () => {
   const [state, setState] = useState({
     webApp: null as TelegramWebApp | null,
     initData: '',
-    user: null as TelegramUser | null,
+    user: null as { id: string; [key: string]: any } | null,
     startParam: '',
     isReady: false,
   });
 
   useEffect(() => {
+    // Важно: код только для клиентской стороны
     if (typeof window === 'undefined') return;
     
     const initTelegram = () => {
       const telegram = window.Telegram;
-      if (!telegram?.WebApp) return;
+      if (!telegram?.WebApp) {
+        console.error('Telegram.WebApp not found');
+        return;
+      }
 
       const tg = telegram.WebApp;
-      tg.ready();
-      tg.expand();
+      try {
+        tg.ready();
+        tg.expand();
+      } catch (e) {
+        console.error('Error in Telegram WebApp methods:', e);
+      }
 
       setState({
         webApp: tg,
@@ -95,19 +53,41 @@ export const useTelegram = () => {
       });
     };
 
+    // Обработчик для кастомного события
     const handleReady = () => {
       initTelegram();
       window.removeEventListener('telegram-ready', handleReady);
     };
 
+    // Если объект уже доступен
     if (window.Telegram?.WebApp) {
       initTelegram();
-    } else {
+    } 
+    // Если еще не загружен, ждем события
+    else {
       window.addEventListener('telegram-ready', handleReady);
     }
 
+    // Fallback: проверяем каждые 100мс в течение 2 секунд
+    const intervalId = setInterval(() => {
+      if (window.Telegram?.WebApp) {
+        initTelegram();
+        clearInterval(intervalId);
+      }
+    }, 100);
+
+    const timeoutId = setTimeout(() => {
+      clearInterval(intervalId);
+      if (!state.isReady) {
+        console.warn('Telegram initialization timed out');
+        setState(prev => ({ ...prev, isReady: true }));
+      }
+    }, 2000);
+
     return () => {
       window.removeEventListener('telegram-ready', handleReady);
+      clearInterval(intervalId);
+      clearTimeout(timeoutId);
     };
   }, []);
 
