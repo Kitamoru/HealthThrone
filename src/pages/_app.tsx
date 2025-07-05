@@ -10,23 +10,40 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import '@/styles/globals.css';
 
-// Функция для префетча данных магазина
-const prefetchShopData = (telegramId: number, initData?: string) => {
-  queryClient.prefetchQuery({
-    queryKey: ['sprites'],
-    queryFn: () => api.getSprites(initData),
-  });
-  
-  // Добавляем префетч для спрайтов пользователя
-  queryClient.prefetchQuery({
-    queryKey: ['ownedSprites', telegramId],
-    queryFn: () => api.getOwnedSprites(telegramId, initData),
-  });
+// Устанавливаем глобальные параметры кеширования
+queryClient.setDefaultOptions({
+  queries: {
+    staleTime: 5 * 1000, // 5 секунд
+    refetchOnWindowFocus: false,
+    retry: 1,
+  },
+});
+
+// Функция для префетча данных магазина с инвалидацией кеша
+const prefetchShopData = async (telegramId: number, initData?: string) => {
+  // Инвалидируем старые данные перед загрузкой новых
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['sprites'] }),
+    queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] }),
+  ]);
+
+  await Promise.all([
+    queryClient.prefetchQuery({
+      queryKey: ['sprites'],
+      queryFn: () => api.getSprites(initData),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: ['ownedSprites', telegramId],
+      queryFn: () => api.getOwnedSprites(telegramId, initData),
+    }),
+  ]);
 };
 
-// Функция для префетча данных друзей
-const prefetchFriends = (userId: number, initData: string) => {
-  queryClient.prefetchQuery({
+// Функция для префетча данных друзей с инвалидацией кеша
+const prefetchFriends = async (userId: number, initData: string) => {
+  await queryClient.invalidateQueries({ queryKey: ['friends', userId] });
+  
+  await queryClient.prefetchQuery({
     queryKey: ['friends', userId],
     queryFn: async () => {
       const response = await api.getFriends(userId.toString(), initData);
@@ -44,9 +61,11 @@ const prefetchFriends = (userId: number, initData: string) => {
   });
 };
 
-// Функция для префетча факторов Octalysis
-const prefetchOctalysisFactors = (userId: number, initData: string) => {
-  queryClient.prefetchQuery({
+// Функция для префетча факторов Octalysis с инвалидацией кеша
+const prefetchOctalysisFactors = async (userId: number, initData: string) => {
+  await queryClient.invalidateQueries({ queryKey: ['octalysisFactors', userId] });
+  
+  await queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
     queryFn: () => api.getOctalysisFactors(userId, initData),
     staleTime: 5 * 60 * 1000,
@@ -66,11 +85,11 @@ function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     if (!initData) return;
 
-    // Флаг для отслеживания актуальности запроса
     let isActive = true;
 
-    api.initUser(initData, startParam)
-      .then(response => {
+    const initializeUser = async () => {
+      try {
+        const response = await api.initUser(initData, startParam);
         if (!isActive) return;
         
         if (response.success && response.data) {
@@ -78,25 +97,27 @@ function App({ Component, pageProps }: AppProps) {
           const userId = userData.id;
           const telegramId = userData.telegram_id;
           
-          // Устанавливаем данные в кеш
+          // Обновляем данные пользователя
           queryClient.setQueryData(['user', telegramId], userData);
           
-          // Префетчим зависимые данные
-          prefetchFriends(userId, initData);
-          prefetchOctalysisFactors(userId, initData);
-          prefetchShopData(telegramId, initData);
+          // Префетчим зависимые данные с инвалидацией кеша
+          await Promise.all([
+            prefetchFriends(userId, initData),
+            prefetchOctalysisFactors(userId, initData),
+            prefetchShopData(telegramId, initData),
+          ]);
         } else if (response.error) {
           setInitError(response.error);
         }
-      })
-      .catch(error => {
-        if (!isActive) return;
+      } catch (error) {
         console.error('User initialization failed:', error);
         setInitError('Failed to initialize user');
-      })
-      .finally(() => {
+      } finally {
         if (isActive) setUserInitialized(true);
-      });
+      }
+    };
+
+    initializeUser();
 
     return () => {
       isActive = false;
@@ -104,7 +125,6 @@ function App({ Component, pageProps }: AppProps) {
   }, [initData, startParam]);
 
   useEffect(() => {
-    // Префетч статических маршрутов (не зависит от данных пользователя)
     if (!webApp || !initData) return;
     
     const routes = ['/', '/shop', '/friends'];
