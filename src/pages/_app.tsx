@@ -66,30 +66,41 @@ function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     if (!initData) return;
 
+    // Флаг для отслеживания актуальности запроса
+    let isActive = true;
+
     api.initUser(initData, startParam)
       .then(response => {
+        if (!isActive) return;
+        
         if (response.success && response.data) {
           const userData = response.data;
           const userId = userData.id;
           const telegramId = userData.telegram_id;
           
-          // Устанавливаем данные пользователя в кеш
-          queryClient.setQueryData(['user', userId], userData);
+          // Устанавливаем данные в кеш
+          queryClient.setQueryData(['user', telegramId], userData);
           
-          // Префетчим все зависимые данные ПОСЛЕ установки данных пользователя
+          // Префетчим зависимые данные
           prefetchFriends(userId, initData);
           prefetchOctalysisFactors(userId, initData);
-          prefetchShopData(telegramId, initData); // Добавлен префетч спрайтов
+          prefetchShopData(telegramId, initData);
         } else if (response.error) {
           setInitError(response.error);
         }
-        return response;
       })
       .catch(error => {
+        if (!isActive) return;
         console.error('User initialization failed:', error);
         setInitError('Failed to initialize user');
       })
-      .finally(() => setUserInitialized(true));
+      .finally(() => {
+        if (isActive) setUserInitialized(true);
+      });
+
+    return () => {
+      isActive = false;
+    };
   }, [initData, startParam]);
 
   useEffect(() => {
