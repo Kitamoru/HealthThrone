@@ -88,8 +88,8 @@ const SpriteCard = React.memo(({
 
 export default function Shop() {
   const router = useRouter();
-  const { user, initData, isLoading } = useTelegram();
-  const telegramId = user?.id ? Number(user.id) : 0;
+  const { user, initData } = useTelegram();
+  const telegramId = Number(user?.id);
   
   const { 
     data: userResponse, 
@@ -115,26 +115,6 @@ export default function Shop() {
   const [processing, setProcessing] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  if (isLoading) {
-    return <Loader />;
-  }
-
-  if (!user?.id) {
-    return (
-      <div className="container">
-        <div className="error">
-          <p>Пользователь не авторизован</p>
-          <button 
-            className="reload-btn"
-            onClick={() => window.location.reload()}
-          >
-            Перезагрузить страницу
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const coins = userResponse?.success ? userResponse.data?.coins || 0 : 0;
   const currentSprite = userResponse?.success 
     ? userResponse.data?.current_sprite_id || null 
@@ -146,7 +126,7 @@ export default function Shop() {
     ? spritesResponse.data || [] 
     : [];
 
-  const isDataLoading = userLoading || spritesLoading || ownedLoading;
+  const isLoading = userLoading || spritesLoading || ownedLoading;
   const errorMessage = error || userError?.message || 
     spritesError?.message || ownedError?.message ||
     (userResponse && !userResponse.success ? userResponse.error : null) ||
@@ -196,6 +176,7 @@ export default function Shop() {
       });
       
       if (purchaseResult.success) {
+        // Ожидаем завершения всех операций обновления данных
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
           queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] }),
@@ -207,6 +188,7 @@ export default function Shop() {
     } catch (err) {
       setError('Возникла проблема с сетью при покупке.');
     } finally {
+      // Снимаем блокировку только после ВСЕХ операций
       setProcessing(null);
     }
   }, [user, initData, sprites, ownedSprites, coins, purchaseMutation]);
@@ -238,6 +220,7 @@ export default function Shop() {
       });
       
       if (equipResult.success) {
+        // Ожидаем завершения операций обновления
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
           queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
@@ -248,11 +231,12 @@ export default function Shop() {
     } catch (err) {
       setError('Проблема с сетью при попытке применить спрайт.');
     } finally {
+      // Снимаем блокировку только после ВСЕХ операций
       setProcessing(null);
     }
   }, [user, initData, equipMutation]);
 
-  if (isDataLoading) {
+  if (isLoading) {
     return <Loader />;
   }
 
@@ -266,7 +250,11 @@ export default function Shop() {
 
         {errorMessage && <div className="error">{errorMessage}</div>}
 
-        {sprites.length === 0 ? (
+        {!user?.id ? (
+          <div className="error">
+            Пользователь не авторизован. Перезагрузите страницу.
+          </div>
+        ) : sprites.length === 0 ? (
           <div className="info">Нет доступных спрайтов.</div>
         ) : (
           <div className="sprites-grid">
