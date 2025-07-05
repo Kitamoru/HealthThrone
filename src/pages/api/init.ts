@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import { validateTelegramInitData, extractTelegramUser } from '@/lib/telegramAuth';
 import { UserProfile, ApiResponse } from '@/lib/types';
-import { format } from 'date-fns';
+import { format, utcToZonedTime } from 'date-fns-tz';
 
 export default async function handler(
   req: NextApiRequest,
@@ -14,7 +14,7 @@ export default async function handler(
     console.warn('[Init API] Invalid method', req.method);
     return res.status(405).json({ 
       success: false, 
-      status: 405, // Добавлено поле status
+      status: 405,
       error: 'Method not allowed' 
     });
   }
@@ -26,7 +26,7 @@ export default async function handler(
       console.error('[Init API] initData is required');
       return res.status(400).json({ 
         success: false, 
-        status: 400, // Добавлено поле status
+        status: 400,
         error: 'initData required' 
       });
     }
@@ -35,7 +35,7 @@ export default async function handler(
       console.warn('[Init API] Invalid Telegram auth data');
       return res.status(401).json({ 
         success: false, 
-        status: 401, // Добавлено поле status
+        status: 401,
         error: 'Unauthorized' 
       });
     }
@@ -45,7 +45,7 @@ export default async function handler(
       console.error('[Init API] User ID is missing');
       return res.status(400).json({ 
         success: false, 
-        status: 400, // Добавлено поле status
+        status: 400,
         error: 'Invalid user data' 
       });
     }
@@ -55,14 +55,16 @@ export default async function handler(
       console.error('[Init API] Invalid Telegram ID format');
       return res.status(400).json({ 
         success: false, 
-        status: 400, // Добавлено поле status
+        status: 400,
         error: 'Invalid Telegram ID format' 
       });
     }
 
+    // Исправлено: использование UTC для корректного определения дня
     const now = new Date();
-    const today = format(now, 'yyyy-MM-dd');
-    console.log(`[Init API] Current date: ${today}, timestamp: ${now.toISOString()}`);
+    const utcDate = utcToZonedTime(now, 'UTC');
+    const today = format(utcDate, 'yyyy-MM-dd');
+    console.log(`[Init API] Current UTC date: ${today}`);
 
     const { data: existingUser, error: userError } = await supabase
       .from('users')
@@ -99,7 +101,8 @@ export default async function handler(
         updated_at: now.toISOString(),
         burnout_level: existingUser?.burnout_level || 100,
         created_at: existingUser?.created_at || now.toISOString(),
-        current_sprite_id: existingUser?.current_sprite_id || null
+        current_sprite_id: existingUser?.current_sprite_id || null,
+        character_class: existingUser?.character_class || null
       };
 
       const { error: upsertError } = await supabase
@@ -110,7 +113,8 @@ export default async function handler(
 
       if (upsertError) throw upsertError;
 
-      const { data: userRecord, error: selectError } = await supabase
+      // Исправлено: всегда получаем обновленные данные после upsert
+      const { data: updatedUser, error: selectError } = await supabase
         .from('users')
         .select(`
           *,
@@ -121,69 +125,37 @@ export default async function handler(
 
       if (selectError) throw selectError;
 
-      console.log('[Init API] User upsert successful:', JSON.stringify(userRecord, null, 2));
+      console.log('[Init API] User upsert successful:', JSON.stringify(updatedUser, null, 2));
 
+      // Обработка реферальной системы
       if (ref && typeof ref === 'string' && ref.startsWith('ref_')) {
         try {
+          // Безопасное извлечение реферера
           const cleanRef = ref.replace('ref_', '');
           const referrerTelegramId = parseInt(cleanRef, 10);
           
-          if (!isNaN(referrerTelegramId) && referrerTelegramId !== telegramId) {
-            console.log(`[Referral] Processing referral: ${referrerTelegramId} for user: ${telegramId}`);
-            
-            const { data: referrer, error: referrerError } = await supabase
-              .from('users')
-              .select('id, coins')
-              .eq('telegram_id', referrerTelegramId)
-              .single();
-
-            if (referrerError) {
-              console.error('[Referral] Referrer fetch error:', referrerError);
-            } else if (referrer) {
-              console.log(`[Referral] Referrer found: ${referrer.id}`);
-              
-              const { count, error: friendshipError } = await supabase
-                .from('friends')
-                .select('*', { count: 'exact' })
-                .eq('user_id', referrer.id)
-                .eq('friend_id', userRecord.id);
-
-              if (friendshipError) {
-                console.error('[Referral] Friendship check error:', friendshipError);
-              } else if (count === 0) {
-                const { error: insertError } = await supabase
-                  .from('friends')
-                  .insert([{
-                    user_id: referrer.id,
-                    friend_id: userRecord.id,
-                    status: 'accepted',
-                    created_at: now.toISOString()
-                  }]);
-                
-                if (insertError) {
-                  console.error('[Referral] Insert friendship error:', insertError);
-                } else {
-                  console.log(`[Referral] Friendship added: ${referrer.id} -> ${userRecord.id}`);
-                  
-                  const { error: updateError } = await supabase
-                    .from('users')
-                    .update({ coins: referrer.coins + 200 })
-                    .eq('id', referrer.id);
-                  
-                  if (updateError) {
-                    console.error('[Referral] Update coins error:', updateError);
-                  } else {
-                    console.log(`[Referral] Added 200 coins to referrer: ${referrer.id}`);
-                  }
-                }
-              } else {
-                console.log('[Referral] Friendship already exists');
-              }
+          if (!isNaN(referrerTelegramId) {
+            // Проверка на самоссылку
+            if (referrerTelegramId === telegramId) {
+              console.log('[Referral] Self-referral attempt blocked');
             } else {
-              console.log('[Referral] Referrer not found in database');
+              console.log(`[Referral] Processing referral: ${referrerTelegramId} for user: ${telegramId}`);
+              
+              // Атомарное обновление баланса реферера
+              const { error: referralError } = await supabase.rpc('handle_referral', {
+                new_user_id: updatedUser.id,
+                referrer_tg_id: referrerTelegramId,
+                bonus_amount: 200
+              });
+
+              if (referralError) {
+                console.error('[Referral] Referral processing error:', referralError);
+              } else {
+                console.log('[Referral] Referral processed successfully');
+              }
             }
           } else {
-            console.log('[Referral] Invalid referrer ID or self-referral attempt');
+            console.log('[Referral] Invalid referrer ID format');
           }
         } catch (e) {
           console.error('[Referral] Unhandled error:', e);
@@ -191,26 +163,26 @@ export default async function handler(
       }
 
       const responseUser: UserProfile = {
-        id: userRecord.id,
-        telegram_id: userRecord.telegram_id,
-        created_at: userRecord.created_at,
-        username: userRecord.username,
-        first_name: userRecord.first_name,
-        last_name: userRecord.last_name,
-        burnout_level: userRecord.burnout_level,
-        last_attempt_date: userRecord.last_attempt_date,
-        coins: userRecord.coins,
-        updated_at: userRecord.updated_at,
-        current_sprite_id: userRecord.current_sprite_id,
-        last_login_date: userRecord.last_login_date,
-        current_sprite_url: userRecord.sprites?.image_url || null,
-        character_class: userRecord.character_class
+        id: updatedUser.id,
+        telegram_id: updatedUser.telegram_id,
+        created_at: updatedUser.created_at,
+        username: updatedUser.username,
+        first_name: updatedUser.first_name,
+        last_name: updatedUser.last_name,
+        burnout_level: updatedUser.burnout_level,
+        last_attempt_date: updatedUser.last_attempt_date,
+        coins: updatedUser.coins,
+        updated_at: updatedUser.updated_at,
+        current_sprite_id: updatedUser.current_sprite_id,
+        last_login_date: updatedUser.last_login_date,
+        current_sprite_url: updatedUser.sprites?.image_url || null,
+        character_class: updatedUser.character_class
       };
 
       console.log('[Init API] Returning success response');
       return res.status(200).json({
         success: true,
-        status: 200, // Добавлено поле status
+        status: 200,
         data: responseUser
       });
 
@@ -218,7 +190,7 @@ export default async function handler(
       console.error('[Init API] User upsert error:', error);
       return res.status(500).json({ 
         success: false,
-        status: 500, // Добавлено поле status
+        status: 500,
         error: 'Failed to create/update user'
       });
     }
@@ -227,7 +199,7 @@ export default async function handler(
     console.error('[Init API] Unhandled error:', error);
     return res.status(500).json({ 
       success: false,
-      status: 500, // Добавлено поле status
+      status: 500,
       error: 'Internal server error'
     });
   }
