@@ -22,44 +22,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     console.log(`Processing purchase for user ${telegramId}, sprite ${spriteId}`);
-    
     await setUserContext(telegramId);
 
-    // Вызываем транзакционную функцию
-    const { data, error } = await supabase
-      .rpc('purchase_sprite_transaction', {
+    // Вызов новой функции
+    const { data, error } = await supabase.rpc(
+      'purchase_sprite_transaction_v2', 
+      {
         p_telegram_id: telegramId,
         p_sprite_id: spriteId
-      })
-      .select()
-      .single();
+      }
+    );
 
     if (error) {
-      console.error('Transaction error:', error.message);
-      
-      // Обработка специфичных ошибок
-      let errorMessage = 'Purchase failed';
-      if (error.message.includes('User not found')) errorMessage = 'User not found';
-      if (error.message.includes('Sprite not found')) errorMessage = 'Sprite not found';
-      if (error.message.includes('Insufficient coins')) errorMessage = 'Insufficient coins';
-      
+      console.error('RPC error:', error.message);
       return res.status(400).json({ 
         success: false, 
-        error: errorMessage 
+        error: error.message 
       });
     }
 
-    return res.status(200).json({ 
-      success: true,
-      data: {
-        coins: data.new_coins,
-        spriteId
-      }
-    });
+    // Проверяем результат, возвращенный функцией
+    const result = data as any;
+    if (result.success) {
+      return res.status(200).json(result);
+    } else {
+      return res.status(400).json(result);
+    }
     
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
     console.error('Purchase error:', error.message);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
   }
 }
