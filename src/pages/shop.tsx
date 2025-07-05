@@ -1,20 +1,19 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useTelegram } from '@/hooks/useTelegram';
-import { Loader } from '@/components/Loader';
+import { useTelegram } from '../hooks/useTelegram';
+import { Loader } from '../components/Loader';
 import { 
   useUserData, 
   useSpritesData, 
   useOwnedSprites,
   usePurchaseSprite,
   useEquipSprite
-} from '@/lib/api';
-import { Sprite } from '@/lib/types';
-import { validateRequiredFields } from '@/utils/validation';
-import { queryClient } from '@/lib/queryClient';
+} from '../lib/api';
+import { Sprite } from '../lib/types';
+import { validateRequiredFields } from '../utils/validation';
+import { queryClient } from '../lib/queryClient';
 
-// Компонент карточки спрайта
 const SpriteCard = React.memo(({ 
   sprite, 
   coins, 
@@ -89,29 +88,26 @@ const SpriteCard = React.memo(({
 
 export default function Shop() {
   const router = useRouter();
-  const { user, initData, webApp } = useTelegram();
-  const telegramId = user?.id ? Number(user.id) : null;
+  const { user, initData } = useTelegram();
+  const telegramId = Number(user?.id);
   
   const { 
     data: userResponse, 
-    isLoading: userLoading,
-    isFetched: userFetched,
+    isLoading: userLoading, 
     error: userError 
-  } = useUserData(telegramId || 0, initData);
+  } = useUserData(telegramId, initData);
   
   const { 
     data: spritesResponse, 
-    isLoading: spritesLoading,
-    isFetched: spritesFetched,
+    isLoading: spritesLoading, 
     error: spritesError 
   } = useSpritesData(initData);
   
   const { 
     data: ownedResponse, 
-    isLoading: ownedLoading,
-    isFetched: ownedFetched,
+    isLoading: ownedLoading, 
     error: ownedError 
-  } = useOwnedSprites(telegramId || 0, initData);
+  } = useOwnedSprites(telegramId, initData);
   
   const purchaseMutation = usePurchaseSprite();
   const equipMutation = useEquipSprite();
@@ -119,26 +115,23 @@ export default function Shop() {
   const [processing, setProcessing] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Определяем, все ли данные загружены
-  const allFetched = userFetched && spritesFetched && ownedFetched;
-  const anyError = userError || spritesError || ownedError || 
-                  (userResponse && !userResponse.success) || 
-                  (spritesResponse && !spritesResponse.success) || 
-                  (ownedResponse && !ownedResponse.success);
-
-  // Данные пользователя
   const coins = userResponse?.success ? userResponse.data?.coins || 0 : 0;
   const currentSprite = userResponse?.success 
     ? userResponse.data?.current_sprite_id || null 
     : null;
-  
-  // Данные спрайтов
   const ownedSprites = ownedResponse?.success 
     ? ownedResponse.data || [] 
     : [];
   const sprites = spritesResponse?.success 
     ? spritesResponse.data || [] 
     : [];
+
+  const isLoading = userLoading || spritesLoading || ownedLoading;
+  const errorMessage = error || userError?.message || 
+    spritesError?.message || ownedError?.message ||
+    (userResponse && !userResponse.success ? userResponse.error : null) ||
+    (spritesResponse && !spritesResponse.success ? spritesResponse.error : null) ||
+    (ownedResponse && !ownedResponse.success ? ownedResponse.error : null);
 
   const handlePurchase = useCallback(async (spriteId: number) => {
     const validationError = validateRequiredFields(
@@ -183,16 +176,11 @@ export default function Shop() {
       });
       
       if (purchaseResult.success) {
+        // Ожидаем завершения всех операций обновления данных
         await Promise.all([
-          queryClient.invalidateQueries({ 
-            queryKey: ['user', telegramId] 
-          }),
-          queryClient.invalidateQueries({ 
-            queryKey: ['ownedSprites', telegramId] 
-          }),
-          queryClient.invalidateQueries({ 
-            queryKey: ['sprites'] 
-          })
+          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
+          queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] }),
+          queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
         ]);
       } else {
         setError(purchaseResult.error || 'Ошибка покупки спрайта.');
@@ -200,9 +188,10 @@ export default function Shop() {
     } catch (err) {
       setError('Возникла проблема с сетью при покупке.');
     } finally {
+      // Снимаем блокировку только после ВСЕХ операций
       setProcessing(null);
     }
-  }, [user, initData, sprites, ownedSprites, coins, purchaseMutation, telegramId]);
+  }, [user, initData, sprites, ownedSprites, coins, purchaseMutation]);
 
   const handleEquip = useCallback(async (spriteId: number) => {
     const validationError = validateRequiredFields(
@@ -231,13 +220,10 @@ export default function Shop() {
       });
       
       if (equipResult.success) {
+        // Ожидаем завершения операций обновления
         await Promise.all([
-          queryClient.invalidateQueries({ 
-            queryKey: ['user', telegramId] 
-          }),
-          queryClient.invalidateQueries({ 
-            queryKey: ['sprites'] 
-          })
+          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
+          queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
         ]);
       } else {
         setError(equipResult.error || 'Ошибка при применении спрайта.');
@@ -245,49 +231,15 @@ export default function Shop() {
     } catch (err) {
       setError('Проблема с сетью при попытке применить спрайт.');
     } finally {
+      // Снимаем блокировку только после ВСЕХ операций
       setProcessing(null);
     }
-  }, [user, initData, equipMutation, telegramId]);
+  }, [user, initData, equipMutation]);
 
-  // Если данные еще загружаются, показываем лоадер
-  if (!allFetched) {
+  if (isLoading) {
     return <Loader />;
   }
 
-  // Если есть ошибки, показываем сообщение
-  if (anyError) {
-    const errorMessage = 
-      userError?.message || 
-      spritesError?.message || 
-      ownedError?.message ||
-      (userResponse && !userResponse.success ? userResponse.error : null) ||
-      (spritesResponse && !spritesResponse.success ? spritesResponse.error : null) ||
-      (ownedResponse && !ownedResponse.success ? ownedResponse.error : null) ||
-      'Неизвестная ошибка';
-    
-    return (
-      <div className="container">
-        <div className="scrollable-content">
-          <div className="error">{errorMessage}</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Если пользователь не авторизован ПОСЛЕ загрузки данных
-  if (!telegramId) {
-    return (
-      <div className="container">
-        <div className="scrollable-content">
-          <div className="error">
-            Пользователь не авторизован. Перезагрузите страницу.
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Основной рендер магазина
   return (
     <div className="container">
       <div className="scrollable-content">
@@ -296,9 +248,13 @@ export default function Shop() {
           <div className="coins-display">Монеты: {coins}</div>
         </div>
 
-        {error && <div className="error">{error}</div>}
+        {errorMessage && <div className="error">{errorMessage}</div>}
 
-        {sprites.length === 0 ? (
+        {!user?.id ? (
+          <div className="error">
+            Пользователь не авторизован. Перезагрузите страницу.
+          </div>
+        ) : sprites.length === 0 ? (
           <div className="info">Нет доступных спрайтов.</div>
         ) : (
           <div className="sprites-grid">
