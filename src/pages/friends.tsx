@@ -31,27 +31,12 @@ const BurnoutProgress = React.memo(({ level }: BurnoutProgressProps) => {
 
 export default function Friends() {
   const router = useRouter();
-  const { user, initData, webApp, isTelegramReady } = useTelegram();
+  const { user, initData, webApp } = useTelegram();
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [deletingFriends, setDeletingFriends] = useState<number[]>([]);
   const queryClient = useQueryClient();
-  
-  // Если Telegram еще не готов, показываем лоадер
-  if (!isTelegramReady) {
-    return <Loader />;
-  }
-
-  // Если нет пользователя (ошибка инициализации), показываем сообщение
-  if (!user) {
-    return (
-      <div className="error-message">
-        Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение.
-      </div>
-    );
-  }
-  
-  const userId = user.id;
+  const userId = user?.id;
 
   const { 
     data: friends = [], 
