@@ -50,11 +50,18 @@ const Loader = dynamic(
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp } = useTelegram();
+  const { initData, startParam, webApp, isTelegramReady } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!initData) return;
+    if (!isTelegramReady) return;
+    
+    // Приложение должно работать только внутри Telegram
+    if (!initData) {
+      setError("Приложение должно быть запущено внутри Telegram");
+      return;
+    }
 
     api.initUser(initData, startParam)
       .then(response => {
@@ -66,20 +73,25 @@ function App({ Component, pageProps }: AppProps) {
           prefetchOctalysisFactors(userId, initData);
           
           queryClient.setQueryData(['userData', userId], userData);
+        } else {
+          setError(response.error || "Ошибка инициализации пользователя");
         }
-        return response;
+      })
+      .catch(error => {
+        console.error("User initialization failed:", error);
+        setError("Сетевая ошибка при инициализации");
       })
       .finally(() => setUserInitialized(true));
-  }, [initData, startParam]);
+  }, [initData, startParam, isTelegramReady]);
 
   useEffect(() => {
-    if (!webApp || !initData) return;
+    if (!isTelegramReady || !initData) return;
     
     prefetchShopData(initData);
     
     const routes = ['/', '/shop', '/friends'];
     routes.forEach(route => Router.prefetch(route));
-  }, [webApp, initData]);
+  }, [initData, isTelegramReady]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -100,7 +112,13 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      {userInitialized ? (
+      {error ? (
+        <div className="error-container">
+          <h2>Ошибка запуска</h2>
+          <p>{error}</p>
+          <p>Пожалуйста, откройте приложение через Telegram</p>
+        </div>
+      ) : userInitialized ? (
         <div className="page-transition">
           <Component {...pageProps} />
         </div>
