@@ -1,3 +1,4 @@
+_app.tsx
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
@@ -115,5 +116,3 @@ function App({ Component, pageProps }: AppProps) {
     </QueryClientProvider>
   );
 }
-
-export default App;
