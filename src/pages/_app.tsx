@@ -2,7 +2,7 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Router from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
@@ -10,88 +10,87 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
-const prefetchShopData = (initData?: string) => {
-  queryClient.prefetchQuery({
-    queryKey: ['sprites'],
-    queryFn: () => api.getSprites(initData),
-  });
-};
-
-const prefetchFriends = (userId: number, initData: string) => {
-  queryClient.prefetchQuery({
-    queryKey: ['friends', userId.toString()],
-    queryFn: async () => {
-      const response = await api.getFriends(userId.toString(), initData);
-      if (response.success && response.data) {
-        return response.data.map(f => ({
-          id: f.id,
-          friend_id: f.friend.id,
-          friend_username: f.friend.username || 
-                          `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
-          burnout_level: f.friend.burnout_level
-        }));
-      }
-      throw new Error(response.error || 'Failed to load friends');
-    },
-  });
-};
-
-const prefetchOctalysisFactors = (userId: number, initData: string) => {
-  queryClient.prefetchQuery({
-    queryKey: ['octalysisFactors', userId],
-    queryFn: () => api.getOctalysisFactors(userId, initData),
-    staleTime: 5 * 60 * 1000, // 5 минут кеширования
-  });
-};
-
 const Loader = dynamic(
   () => import('../components/Loader').then(mod => mod.Loader),
-  { ssr: false, loading: () => <div>Загрузка...</div> }
+  { ssr: false }
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp, isTelegramReady } = useTelegram();
-  const [userInitialized, setUserInitialized] = useState(false);
+  const { initData, startParam, isTelegramReady } = useTelegram();
+  const [appState, setAppState] = useState<'init' | 'loading' | 'ready' | 'error'>('init');
   const [error, setError] = useState<string | null>(null);
+  const initializedRef = useRef(false); // Флаг однократной инициализации
 
+  // Эффект для инициализации пользователя
   useEffect(() => {
-    if (!isTelegramReady) return;
+    // Выполняем только на клиенте
+    if (typeof window === 'undefined') return;
     
-    // Приложение должно работать только внутри Telegram
+    // Проверяем готовность Telegram и отсутствие предыдущей инициализации
+    if (!isTelegramReady || initializedRef.current) return;
+    
+    // Отмечаем начало инициализации
+    initializedRef.current = true;
+    setAppState('loading');
+    
+    // Проверка обязательных данных
     if (!initData) {
       setError("Приложение должно быть запущено внутри Telegram");
+      setAppState('error');
       return;
     }
 
+    // Инициализация пользователя
     api.initUser(initData, startParam)
       .then(response => {
         if (response.success && response.data) {
           const userData = response.data;
           const userId = userData.id;
           
-          prefetchFriends(userId, initData);
-          prefetchOctalysisFactors(userId, initData);
-          
+          // Устанавливаем данные пользователя в кеш
           queryClient.setQueryData(['userData', userId], userData);
+          
+          // Устанавливаем состояние приложения
+          setAppState('ready');
         } else {
           setError(response.error || "Ошибка инициализации пользователя");
+          setAppState('error');
         }
       })
       .catch(error => {
         console.error("User initialization failed:", error);
         setError("Сетевая ошибка при инициализации");
-      })
-      .finally(() => setUserInitialized(true));
+        setAppState('error');
+      });
   }, [initData, startParam, isTelegramReady]);
 
+  // Эффект для предзагрузки данных и роутов
   useEffect(() => {
-    if (!isTelegramReady || !initData) return;
+    if (appState !== 'ready' || !initData) return;
     
-    prefetchShopData(initData);
+    // Предзагрузка статических данных
+    api.getSprites(initData)
+      .then(response => {
+        if (response.success) {
+          queryClient.setQueryData(['sprites'], response.data);
+        }
+      })
+      .catch(console.error);
     
-    const routes = ['/', '/shop', '/friends'];
-    routes.forEach(route => Router.prefetch(route));
-  }, [initData, isTelegramReady]);
+    // Предзагрузка роутов
+    Router.prefetch('/');
+    Router.prefetch('/shop');
+    Router.prefetch('/friends');
+  }, [appState, initData]);
+
+  // Рендер лоадера во время загрузки
+  if (appState === 'init' || appState === 'loading') {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <Loader />
+      </QueryClientProvider>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -104,26 +103,28 @@ function App({ Component, pageProps }: AppProps) {
 
       <Script 
         src="https://telegram.org/js/telegram-web-app.js" 
-        strategy="beforeInteractive" 
+        strategy="afterInteractive"
         onLoad={() => {
           if (window.Telegram?.WebApp) {
             window.dispatchEvent(new Event('telegram-ready'));
           }
         }}
+        onError={(e) => console.error('Telegram script failed', e)}
       />
 
-      {error ? (
+      {appState === 'error' ? (
         <div className="error-container">
           <h2>Ошибка запуска</h2>
           <p>{error}</p>
           <p>Пожалуйста, откройте приложение через Telegram</p>
+          <button onClick={() => window.location.reload()}>
+            Попробовать снова
+          </button>
         </div>
-      ) : userInitialized ? (
+      ) : (
         <div className="page-transition">
           <Component {...pageProps} />
         </div>
-      ) : (
-        <Loader />
       )}
     </QueryClientProvider>
   );
