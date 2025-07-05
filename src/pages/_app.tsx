@@ -19,7 +19,7 @@ const prefetchShopData = (initData?: string) => {
 
 const prefetchFriends = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
-    queryKey: ['friends', userId],
+    queryKey: ['friends', userId.toString()],
     queryFn: async () => {
       const response = await api.getFriends(userId.toString(), initData);
       if (response.success && response.data) {
@@ -40,7 +40,7 @@ const prefetchOctalysisFactors = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
     queryFn: () => api.getOctalysisFactors(userId, initData),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 минут кеширования
   });
 };
 
@@ -52,7 +52,6 @@ const Loader = dynamic(
 function App({ Component, pageProps }: AppProps) {
   const { initData, startParam, webApp } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
-  const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initData) return;
@@ -63,32 +62,21 @@ function App({ Component, pageProps }: AppProps) {
           const userData = response.data;
           const userId = userData.id;
           
-          // Устанавливаем данные пользователя в кеш ПЕРЕД префетчем зависимых данных
-          queryClient.setQueryData(['user', userId], userData);
-          
-          // Только после установки данных пользователя префетчим зависимые данные
           prefetchFriends(userId, initData);
           prefetchOctalysisFactors(userId, initData);
-        } else if (response.error) {
-          setInitError(response.error);
+          
+          queryClient.setQueryData(['userData', userId], userData);
         }
         return response;
-      })
-      .catch(error => {
-        console.error('User initialization failed:', error);
-        setInitError('Failed to initialize user');
       })
       .finally(() => setUserInitialized(true));
   }, [initData, startParam]);
 
   useEffect(() => {
-    // Запросы, не зависящие от данных пользователя
     if (!webApp || !initData) return;
     
-    // Префетч данных магазина (не требует ID пользователя)
     prefetchShopData(initData);
     
-    // Префетч маршрутов
     const routes = ['/', '/shop', '/friends'];
     routes.forEach(route => Router.prefetch(route));
   }, [webApp, initData]);
@@ -112,18 +100,12 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      {!userInitialized ? (
-        <Loader />
-      ) : initError ? (
-        <div className="error-container">
-          <h2>Ошибка инициализации</h2>
-          <p>{initError}</p>
-          <button onClick={() => window.location.reload()}>Попробовать снова</button>
-        </div>
-      ) : (
+      {userInitialized ? (
         <div className="page-transition">
           <Component {...pageProps} />
         </div>
+      ) : (
+        <Loader />
       )}
     </QueryClientProvider>
   );
