@@ -22,13 +22,16 @@ const prefetchFriends = (userId: number, initData: string) => {
     queryKey: ['friends', userId.toString()],
     queryFn: async () => {
       const response = await api.getFriends(userId.toString(), initData);
-      return response.data.map(f => ({
-        id: f.id,
-        friend_id: f.friend.id,
-        friend_username: f.friend.username || 
-                        `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
-        burnout_level: f.friend.burnout_level
-      }));
+      if (response.success && response.data) {
+        return response.data.map(f => ({
+          id: f.id,
+          friend_id: f.friend.id,
+          friend_username: f.friend.username || 
+                          `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
+          burnout_level: f.friend.burnout_level
+        }));
+      }
+      throw new Error(response.error || 'Failed to load friends');
     },
   });
 };
@@ -37,7 +40,7 @@ const prefetchOctalysisFactors = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
     queryFn: () => api.getOctalysisFactors(userId, initData),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 минут кеширования
   });
 };
 
@@ -51,25 +54,34 @@ function App({ Component, pageProps }: AppProps) {
   const [userInitialized, setUserInitialized] = useState(false);
 
   useEffect(() => {
-    if (!isTelegramReady || !initData) return;
+    if (!isTelegramReady) return;
     
+    // Приложение должно работать только внутри Telegram
+    if (!initData) return;
+
     api.initUser(initData, startParam)
       .then(response => {
-        const userData = response.data;
-        const userId = userData.id;
-        
-        prefetchFriends(userId, initData);
-        prefetchOctalysisFactors(userId, initData);
-        
-        queryClient.setQueryData(['userData', userId], userData);
-        setUserInitialized(true);
-      });
+        if (response.success && response.data) {
+          const userData = response.data;
+          const userId = userData.id;
+          
+          prefetchFriends(userId, initData);
+          prefetchOctalysisFactors(userId, initData);
+          
+          queryClient.setQueryData(['userData', userId], userData);
+        }
+      })
+      .catch(error => {
+        console.error("User initialization failed:", error);
+      })
+      .finally(() => setUserInitialized(true));
   }, [initData, startParam, isTelegramReady]);
 
   useEffect(() => {
     if (!isTelegramReady || !initData) return;
     
     prefetchShopData(initData);
+    
     const routes = ['/', '/shop', '/friends'];
     routes.forEach(route => Router.prefetch(route));
   }, [initData, isTelegramReady]);
