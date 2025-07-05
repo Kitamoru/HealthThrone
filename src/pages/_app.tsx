@@ -4,11 +4,11 @@ import Script from 'next/script';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import Router from 'next/router';
-import { useTelegram } from '@/hooks/useTelegram';
-import { api } from '@/lib/api';
+import { useTelegram } from '../hooks/useTelegram';
+import { api } from '../lib/api';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { queryClient } from '@/lib/queryClient';
-import '@/styles/globals.css';
+import { queryClient } from '../lib/queryClient';
+import '../styles/globals.css';
 
 const prefetchShopData = (initData?: string) => {
   queryClient.prefetchQuery({
@@ -19,7 +19,7 @@ const prefetchShopData = (initData?: string) => {
 
 const prefetchFriends = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
-    queryKey: ['friends', userId],
+    queryKey: ['friends', userId.toString()],
     queryFn: async () => {
       const response = await api.getFriends(userId.toString(), initData);
       if (response.success && response.data) {
@@ -40,19 +40,18 @@ const prefetchOctalysisFactors = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
     queryFn: () => api.getOctalysisFactors(userId, initData),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 минут кеширования
   });
 };
 
 const Loader = dynamic(
-  () => import('@/components/Loader').then(mod => mod.Loader),
+  () => import('../components/Loader').then(mod => mod.Loader),
   { ssr: false, loading: () => <div>Загрузка...</div> }
 );
 
 function App({ Component, pageProps }: AppProps) {
   const { initData, startParam, webApp } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
-  const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initData) return;
@@ -63,19 +62,12 @@ function App({ Component, pageProps }: AppProps) {
           const userData = response.data;
           const userId = userData.id;
           
-          // Переносим префетчи после успешной инициализации
           prefetchFriends(userId, initData);
           prefetchOctalysisFactors(userId, initData);
           
-          queryClient.setQueryData(['user', userId], userData);
-        } else if (response.error) {
-          setInitError(response.error);
+          queryClient.setQueryData(['userData', userId], userData);
         }
         return response;
-      })
-      .catch(error => {
-        console.error('User initialization failed:', error);
-        setInitError('Failed to initialize user');
       })
       .finally(() => setUserInitialized(true));
   }, [initData, startParam]);
@@ -108,18 +100,12 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      {!userInitialized ? (
-        <Loader />
-      ) : initError ? (
-        <div className="error-container">
-          <h2>Ошибка инициализации</h2>
-          <p>{initError}</p>
-          <button onClick={() => window.location.reload()}>Попробовать снова</button>
-        </div>
-      ) : (
+      {userInitialized ? (
         <div className="page-transition">
           <Component {...pageProps} />
         </div>
+      ) : (
+        <Loader />
       )}
     </QueryClientProvider>
   );
