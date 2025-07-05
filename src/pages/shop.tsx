@@ -134,8 +134,6 @@ export default function Shop() {
     (ownedResponse && !ownedResponse.success ? ownedResponse.error : null);
 
   const handlePurchase = useCallback(async (spriteId: number) => {
-    if (processing !== null) return; // Защита от множественных кликов
-    
     const validationError = validateRequiredFields(
       { user, initData },
       ['user', 'initData'],
@@ -157,6 +155,11 @@ export default function Shop() {
       return;
     }
 
+    if (ownedSprites.includes(spriteId)) {
+      setError('Вы уже приобрели этот спрайт.');
+      return;
+    }
+
     if (coins < sprite.price) {
       setError('У вас недостаточно монет для покупки.');
       return;
@@ -173,37 +176,24 @@ export default function Shop() {
       });
       
       if (purchaseResult.success) {
-        // Оптимизированная инвалидация кэша
+        // Ожидаем завершения всех операций обновления данных
         await Promise.all([
-          queryClient.invalidateQueries({ 
-            queryKey: ['userData', String(user.id)] 
-          }),
-          queryClient.invalidateQueries({ 
-            queryKey: ['ownedSprites', telegramId] 
-          })
+          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
+          queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] }),
+          queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
         ]);
       } else {
-        // Обработка специфичных ошибок бекенда
-        const backendError = purchaseResult.error || 'Ошибка покупки спрайта.';
-        
-        if (backendError.includes('already owns')) {
-          setError('Вы уже приобрели этот спрайт.');
-        } else if (backendError.includes('Insufficient coins')) {
-          setError('У вас недостаточно монет.');
-        } else {
-          setError(backendError);
-        }
+        setError(purchaseResult.error || 'Ошибка покупки спрайта.');
       }
     } catch (err) {
       setError('Возникла проблема с сетью при покупке.');
     } finally {
+      // Снимаем блокировку только после ВСЕХ операций
       setProcessing(null);
     }
-  }, [user, initData, sprites, coins, purchaseMutation, processing]);
+  }, [user, initData, sprites, ownedSprites, coins, purchaseMutation]);
 
   const handleEquip = useCallback(async (spriteId: number) => {
-    if (processing !== null) return; // Защита от множественных кликов
-    
     const validationError = validateRequiredFields(
       { user, initData },
       ['user', 'initData'],
@@ -230,19 +220,21 @@ export default function Shop() {
       });
       
       if (equipResult.success) {
-        // Только необходимые инвалидации
-        await queryClient.invalidateQueries({ 
-          queryKey: ['userData', String(user.id)] 
-        });
+        // Ожидаем завершения операций обновления
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
+          queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
+        ]);
       } else {
         setError(equipResult.error || 'Ошибка при применении спрайта.');
       }
     } catch (err) {
       setError('Проблема с сетью при попытке применить спрайт.');
     } finally {
+      // Снимаем блокировку только после ВСЕХ операций
       setProcessing(null);
     }
-  }, [user, initData, equipMutation, processing]);
+  }, [user, initData, equipMutation]);
 
   if (isLoading) {
     return <Loader />;
