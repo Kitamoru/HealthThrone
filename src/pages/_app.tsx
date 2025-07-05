@@ -51,23 +51,18 @@ const Loader = dynamic(
 
 function App({ Component, pageProps }: AppProps) {
   const { initData, startParam, webApp, isTelegramReady } = useTelegram();
-  const [appState, setAppState] = useState<
-    'uninitialized' | 'loading' | 'authenticated' | 'error'
-  >('uninitialized');
+  const [userInitialized, setUserInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isTelegramReady) return;
-
+    
     // Приложение должно работать только внутри Telegram
     if (!initData) {
       setError("Приложение должно быть запущено внутри Telegram");
-      setAppState('error');
       return;
     }
 
-    setAppState('loading');
-    
     api.initUser(initData, startParam)
       .then(response => {
         if (response.success && response.data) {
@@ -76,37 +71,27 @@ function App({ Component, pageProps }: AppProps) {
           
           prefetchFriends(userId, initData);
           prefetchOctalysisFactors(userId, initData);
-          prefetchShopData(initData);
           
           queryClient.setQueryData(['userData', userId], userData);
-          setAppState('authenticated');
         } else {
           setError(response.error || "Ошибка инициализации пользователя");
-          setAppState('error');
         }
       })
       .catch(error => {
         console.error("User initialization failed:", error);
         setError("Сетевая ошибка при инициализации");
-        setAppState('error');
-      });
+      })
+      .finally(() => setUserInitialized(true));
   }, [initData, startParam, isTelegramReady]);
 
   useEffect(() => {
-    if (appState !== 'authenticated' || !initData) return;
+    if (!isTelegramReady || !initData) return;
+    
+    prefetchShopData(initData);
     
     const routes = ['/', '/shop', '/friends'];
     routes.forEach(route => Router.prefetch(route));
-  }, [initData, appState]);
-
-  // Показываем лоадер, пока приложение не инициализировано или в процессе загрузки
-  if (appState === 'loading' || appState === 'uninitialized') {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <Loader /> {/* Убрали пропс fullScreen */}
-    </QueryClientProvider>
-  );
-}
+  }, [initData, isTelegramReady]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -127,22 +112,18 @@ function App({ Component, pageProps }: AppProps) {
         }}
       />
 
-      {appState === 'error' ? (
+      {error ? (
         <div className="error-container">
           <h2>Ошибка запуска</h2>
           <p>{error}</p>
           <p>Пожалуйста, откройте приложение через Telegram</p>
-          <button 
-            className="retry-button"
-            onClick={() => window.location.reload()}
-          >
-            Попробовать снова
-          </button>
         </div>
-      ) : (
+      ) : userInitialized ? (
         <div className="page-transition">
           <Component {...pageProps} />
         </div>
+      ) : (
+        <Loader />
       )}
     </QueryClientProvider>
   );
