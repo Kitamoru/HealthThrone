@@ -75,7 +75,7 @@ const QUESTIONS: Question[] = [
 
 const Home = () => {
   const router = useRouter();
-  const { user, initData, isTelegramReady } = useTelegram();
+  const { user, initData } = useTelegram();
   const queryClient = useQueryClient();
 
   const [questions] = useState<Question[]>(QUESTIONS);
@@ -88,20 +88,6 @@ const Home = () => {
   const [octalysisFactors, setOctalysisFactors] = useState<number[] | null>(null);
   
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
-
-  // Если Telegram еще не готов, показываем лоадер
-  if (!isTelegramReady) {
-    return <Loader />;
-  }
-
-  // Если нет пользователя (ошибка инициализации), показываем сообщение
-  if (!user) {
-    return (
-      <div className="error-message">
-        Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение.
-      </div>
-    );
-  }
 
   const handleOpenSurveyModal = useCallback(() => {
     if (!modalPortalRef.current) {
@@ -345,13 +331,13 @@ const Home = () => {
   }
 
   // Показываем лоадер, пока не загружены данные пользователя, спрайт или факторы
-  if (isLoading || !spriteLoaded) {
+  if (isLoading || !spriteLoaded === null) {
     return <Loader />;
   }
 
   return (
     <div className="container">
-      {isError ? (
+      {isError || !user ? (
         <div className="error-message">
           {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
         </div>
