@@ -144,7 +144,7 @@ export default function Shop() {
       return;
     }
 
-    if (!telegramId) {
+    if (!user?.id) {
       setError('Пользователь не определен');
       return;
     }
@@ -170,38 +170,28 @@ export default function Shop() {
       setError(null);
       
       const purchaseResult = await purchaseMutation.mutateAsync({
-        telegramId,
+        telegramId: Number(user.id),
         spriteId,
         initData
       });
       
       if (purchaseResult.success) {
-        // Рассчитываем новые значения
-        const newCoins = coins - sprite.price;
-        const newOwnedSprites = [...ownedSprites, spriteId];
-        
-        // Мгновенно обновляем кеш
-        queryClient.setQueryData(['user', telegramId], (old: any) => ({
-          ...old,
-          coins: newCoins
-        }));
-        
-        queryClient.setQueryData(['ownedSprites', telegramId], newOwnedSprites);
-        
-        // Инвалидируем кеш спрайтов для фонового обновления
-        queryClient.invalidateQueries({ 
-          queryKey: ['sprites'],
-          refetchType: 'active'
-        });
+        // Ожидаем завершения всех операций обновления данных
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
+          queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] }),
+          queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
+        ]);
       } else {
         setError(purchaseResult.error || 'Ошибка покупки спрайта.');
       }
     } catch (err) {
       setError('Возникла проблема с сетью при покупке.');
     } finally {
+      // Снимаем блокировку только после ВСЕХ операций
       setProcessing(null);
     }
-  }, [user, initData, sprites, ownedSprites, coins, purchaseMutation, telegramId]);
+  }, [user, initData, sprites, ownedSprites, coins, purchaseMutation]);
 
   const handleEquip = useCallback(async (spriteId: number) => {
     const validationError = validateRequiredFields(
@@ -214,7 +204,7 @@ export default function Shop() {
       return;
     }
 
-    if (!telegramId) {
+    if (!user?.id) {
       setError('Пользователь не определен');
       return;
     }
@@ -224,26 +214,27 @@ export default function Shop() {
       setError(null);
       
       const equipResult = await equipMutation.mutateAsync({
-        telegramId,
+        telegramId: Number(user.id),
         spriteId,
         initData
       });
       
       if (equipResult.success) {
-        // Мгновенно обновляем текущий спрайт
-        queryClient.setQueryData(['user', telegramId], (old: any) => ({
-          ...old,
-          current_sprite_id: spriteId
-        }));
+        // Ожидаем завершения операций обновления
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
+          queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
+        ]);
       } else {
         setError(equipResult.error || 'Ошибка при применении спрайта.');
       }
     } catch (err) {
       setError('Проблема с сетью при попытке применить спрайт.');
     } finally {
+      // Снимаем блокировку только после ВСЕХ операций
       setProcessing(null);
     }
-  }, [user, initData, equipMutation, telegramId]);
+  }, [user, initData, equipMutation]);
 
   if (isLoading) {
     return <Loader />;
@@ -259,7 +250,7 @@ export default function Shop() {
 
         {errorMessage && <div className="error">{errorMessage}</div>}
 
-        {!telegramId ? (
+        {!user?.id ? (
           <div className="error">
             Пользователь не авторизован. Перезагрузите страницу.
           </div>
