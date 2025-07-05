@@ -11,14 +11,14 @@ import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
 const prefetchShopData = (initData?: string) => {
-  return queryClient.prefetchQuery({
+  queryClient.prefetchQuery({
     queryKey: ['sprites'],
     queryFn: () => api.getSprites(initData),
   });
 };
 
 const prefetchFriends = (userId: number, initData: string) => {
-  return queryClient.prefetchQuery({
+  queryClient.prefetchQuery({
     queryKey: ['friends', userId.toString()],
     queryFn: async () => {
       const response = await api.getFriends(userId.toString(), initData);
@@ -37,7 +37,7 @@ const prefetchFriends = (userId: number, initData: string) => {
 };
 
 const prefetchOctalysisFactors = (userId: number, initData: string) => {
-  return queryClient.prefetchQuery({
+  queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
     queryFn: () => api.getOctalysisFactors(userId, initData),
     staleTime: 5 * 60 * 1000, // 5 минут кеширования
@@ -74,22 +74,12 @@ function App({ Component, pageProps }: AppProps) {
           const userData = response.data;
           const userId = userData.id;
           
-          // 1. Сначала устанавливаем основные данные пользователя
-          queryClient.setQueryData(['userData', userId], userData);
+          prefetchFriends(userId, initData);
+          prefetchOctalysisFactors(userId, initData);
+          prefetchShopData(initData);
           
-          // 2. Параллельно загружаем дополнительные данные
-          Promise.all([
-            prefetchFriends(userId, initData),
-            prefetchOctalysisFactors(userId, initData),
-            prefetchShopData(initData)
-          ])
-            .then(() => {
-              setAppState('authenticated');
-            })
-            .catch(error => {
-              console.error("Prefetch failed, continuing anyway", error);
-              setAppState('authenticated');
-            });
+          queryClient.setQueryData(['userData', userId], userData);
+          setAppState('authenticated');
         } else {
           setError(response.error || "Ошибка инициализации пользователя");
           setAppState('error');
