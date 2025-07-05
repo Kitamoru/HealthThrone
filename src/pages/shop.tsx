@@ -134,64 +134,35 @@ export default function Shop() {
     (ownedResponse && !ownedResponse.success ? ownedResponse.error : null);
 
   const handlePurchase = useCallback(async (spriteId: number) => {
-    const validationError = validateRequiredFields(
-      { user, initData },
-      ['user', 'initData'],
-      'Необходимо наличие обоих данных'
-    );
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+  if (!user?.id) {
+    setError('User not defined');
+    return;
+  }
 
-    if (!user?.id) {
-      setError('Пользователь не определен');
-      return;
+  try {
+    setProcessing(spriteId);
+    setError(null);
+    
+    const purchaseResult = await purchaseMutation.mutateAsync({
+      telegramId: Number(user.id),
+      spriteId,
+      initData
+    });
+    
+    if (purchaseResult.success) {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
+        queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] })
+      ]);
     }
-
-    const sprite = sprites.find((item) => item.id === spriteId);
-    if (!sprite) {
-      setError('Спрайт не найден');
-      return;
-    }
-
-    if (ownedSprites.includes(spriteId)) {
-      setError('Вы уже приобрели этот спрайт.');
-      return;
-    }
-
-    if (coins < sprite.price) {
-      setError('У вас недостаточно монет для покупки.');
-      return;
-    }
-
-    try {
-      setProcessing(spriteId);
-      setError(null);
-      
-      const purchaseResult = await purchaseMutation.mutateAsync({
-        telegramId: Number(user.id),
-        spriteId,
-        initData
-      });
-      
-      if (purchaseResult.success) {
-        // Ожидаем завершения всех операций обновления данных
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
-          queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] }),
-          queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
-        ]);
-      } else {
-        setError(purchaseResult.error || 'Ошибка покупки спрайта.');
-      }
-    } catch (err) {
-      setError('Возникла проблема с сетью при покупке.');
-    } finally {
-      // Снимаем блокировку только после ВСЕХ операций
-      setProcessing(null);
-    }
-  }, [user, initData, sprites, ownedSprites, coins, purchaseMutation]);
+  } catch (err) {
+    // Ошибки теперь обрабатываются на бэкенде
+    const error = err as { message?: string };
+    setError(error.message || 'Purchase failed');
+  } finally {
+    setProcessing(null);
+  }
+}, [user, initData, purchaseMutation]);
 
   const handleEquip = useCallback(async (spriteId: number) => {
     const validationError = validateRequiredFields(
