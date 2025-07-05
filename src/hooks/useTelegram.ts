@@ -100,26 +100,14 @@ export const useTelegram = () => {
       window.removeEventListener('telegram-ready', handleReady);
     };
 
-    // 1. Проверяем, возможно WebApp уже доступен
     if (window.Telegram?.WebApp) {
       initTelegram();
-      return;
+    } else {
+      window.addEventListener('telegram-ready', handleReady);
     }
-
-    // 2. Добавляем обработчик события
-    window.addEventListener('telegram-ready', handleReady);
-
-    // 3. Таймер-фоллбек на случай если событие не сработает
-    const fallbackTimer = setTimeout(() => {
-      if (!state.isReady && window.Telegram?.WebApp) {
-        console.warn('Using fallback Telegram initialization');
-        initTelegram();
-      }
-    }, 1000);
 
     return () => {
       window.removeEventListener('telegram-ready', handleReady);
-      clearTimeout(fallbackTimer);
     };
   }, []);
 
