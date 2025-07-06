@@ -18,6 +18,8 @@ const prefetchShopData = (initData?: string) => {
 };
 
 const prefetchFriends = (userId: number, initData: string) => {
+  if (!userId || userId <= 0) return; // Добавлена проверка на валидность ID
+  
   queryClient.prefetchQuery({
     queryKey: ['friends', userId.toString()],
     queryFn: async () => {
@@ -37,6 +39,8 @@ const prefetchFriends = (userId: number, initData: string) => {
 };
 
 const prefetchOctalysisFactors = (userId: number, initData: string) => {
+  if (!userId || userId <= 0) return; // Добавлена проверка на валидность ID
+  
   queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
     queryFn: () => api.getOctalysisFactors(userId, initData),
@@ -74,12 +78,13 @@ function App({ Component, pageProps }: AppProps) {
           
           queryClient.setQueryData(['userData', userId], userData);
         } else {
-          setError(response.error || "Ошибка инициализации пользователя");
+          // Логируем предупреждение, но не устанавливаем состояние ошибки UI
+          console.warn("User initialization warning:", response.error);
         }
       })
       .catch(error => {
-        console.error("User initialization failed:", error);
-        setError("Сетевая ошибка при инициализации");
+        // Логируем ошибку, но не устанавливаем состояние ошибки UI
+        console.error("User initialization error:", error);
       })
       .finally(() => setUserInitialized(true));
   }, [initData, startParam, isTelegramReady]);
