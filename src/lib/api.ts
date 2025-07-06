@@ -17,11 +17,11 @@ export const useUserData = (telegramId: number, initData?: string) => {
   });
 };
 
-export const useFriendsData = (userId?: number, initData?: string) => {
+export const useFriendsData = (telegramId: number, initData?: string) => {
   return useQuery({
-    queryKey: ['friends', userId],
-    queryFn: () => userId ? api.getFriends(userId, initData) : null,
-    enabled: !!userId,
+    queryKey: ['friends', telegramId],
+    queryFn: () => api.getFriends(telegramId, initData),
+    enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
   });
 };
@@ -92,7 +92,7 @@ export const useOctalysisFactors = (userId?: number, initData?: string) => {
       return [0,0,0,0,0,0,0,0];
     },
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 минут кеширования
   });
 };
 
@@ -161,8 +161,8 @@ class Api {
     }
   }
 
-  async initUser(initData: string, startParam?: string): Promise<ApiResponse<UserProfile>> {
-    return this.makeRequest<UserProfile>('/init', 'POST', { initData, ref: startParam });
+  async initUser(initData: string, ref?: string): Promise<ApiResponse<UserProfile>> {
+    return this.makeRequest<UserProfile>('/init', 'POST', { initData, ref });
   }
 
   async getUserData(telegramId: number, initData?: string): Promise<ApiResponse<UserProfile>> {
@@ -183,24 +183,13 @@ class Api {
     );
   }
 
-  async getFriends(userId: number, initData?: string): Promise<ApiResponse<Friend[]>> {
-    const response = await this.makeRequest<Friend[]>(
-      `/friends?userId=${userId}`, 
+  async getFriends(telegramId: number, initData?: string): Promise<ApiResponse<Friend[]>> {
+    return this.makeRequest<Friend[]>(
+      `/friends?telegramId=${telegramId}`, 
       'GET', 
       undefined, 
       initData
     );
-    
-    if (response.success && response.data) {
-      response.data = response.data.map(f => ({
-        id: f.id,
-        friend_id: f.friend.id,
-        friend_username: f.friend.username || 
-                        `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
-        burnout_level: f.friend.burnout_level
-      }));
-    }
-    return response;
   }
 
   async addFriend(friendUsername: string, initData?: string): Promise<ApiResponse> {
