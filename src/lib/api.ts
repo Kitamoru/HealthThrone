@@ -1,118 +1,317 @@
-import { useEffect, useState } from 'react';
+import { ApiResponse, UserProfile, Sprite, Friend } from './types';
+import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
 
-interface TelegramUser {
-  id: string;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  language_code?: string;
-  is_premium?: boolean;
-  photo_url?: string;
+interface SubmitSurveyRequest {
+  telegramId: number;
+  burnoutDelta: number;
+  factors: number[];
+  initData?: string;
 }
 
-interface TelegramContact {
-  user_id?: number;
-  first_name?: string;
-  last_name?: string;
-  username?: string;
-  phone_number?: string;
-}
+export const useUserData = (telegramId: number, initData?: string) => {
+  return useQuery({
+    queryKey: ['user', telegramId],
+    queryFn: () => api.getUserData(telegramId, initData),
+    enabled: !!telegramId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
 
-interface TelegramWebApp {
-  initData: string;
-  initDataUnsafe: {
-    user?: TelegramUser;
-    chat_instance?: string;
-    chat_type?: string;
-    start_param?: string;
-  };
-  colorScheme: 'light' | 'dark';
-  themeParams: {
-    bg_color?: string;
-    text_color?: string;
-    hint_color?: string;
-    link_color?: string;
-    button_color?: string;
-    button_text_color?: string;
-  };
-  isExpanded: boolean;
-  viewportHeight: number;
-  viewportStableHeight: number;
-  ready: () => void;
-  expand: () => void;
-  close: () => void;
-  sendData: (data: string) => void;
-  showAlert: (message: string) => void;
-  showConfirm: (message: string, callback: (confirmed: boolean) => void) => void;
-  showPopup: (params: any, callback?: (buttonId: string) => void) => void;
-  openTelegramLink: (url: string) => void;
-  openLink: (url: string, options?: { try_instant_view?: boolean }) => void;
-  HapticFeedback: {
-    impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
-    notificationOccurred: (type: 'error' | 'success' | 'warning') => void;
-    selectionChanged: () => void;
-  };
-  showContactPicker?: (
-    options: { title?: string },
-    callback: (contact: TelegramContact) => void
-  ) => void;
-}
+export const useFriendsData = (userId?: number, initData?: string) => {
+  return useQuery({
+    queryKey: ['friends', userId],
+    queryFn: () => userId ? api.getFriends(userId, initData) : null,
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
 
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: TelegramWebApp;
-    };
+export const useSpritesData = (initData?: string) => {
+  return useQuery({
+    queryKey: ['sprites'],
+    queryFn: () => api.getSprites(initData),
+    staleTime: 10 * 60 * 1000,
+  });
+};
+
+export const useOwnedSprites = (telegramId: number, initData?: string) => {
+  return useQuery({
+    queryKey: ['ownedSprites', telegramId],
+    queryFn: () => api.getOwnedSprites(telegramId, initData),
+    enabled: !!telegramId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useSubmitSurvey = () => {
+  return useMutation({
+    mutationFn: (params: SubmitSurveyRequest) => api.submitSurvey(params),
+  });
+};
+
+export const usePurchaseSprite = () => {
+  return useMutation({
+    mutationFn: (params: {
+      telegramId: number;
+      spriteId: number;
+      initData?: string;
+    }) => api.purchaseSprite(params.telegramId, params.spriteId, params.initData),
+  });
+};
+
+export const useEquipSprite = () => {
+  return useMutation({
+    mutationFn: (params: {
+      telegramId: number;
+      spriteId: number;
+      initData?: string;
+    }) => api.equipSprite(params.telegramId, params.spriteId, params.initData),
+  });
+};
+
+export const useUpdateUserClass = () => {
+  return useMutation({
+    mutationFn: (params: {
+      telegramId: number;
+      characterClass: string;
+      initData?: string;
+    }) => api.updateUserClass(params.telegramId, params.characterClass, params.initData),
+  });
+};
+
+export const useOctalysisFactors = (userId?: number, initData?: string) => {
+  return useQuery({
+    queryKey: ['octalysisFactors', userId],
+    queryFn: async () => {
+      if (!userId) return [0,0,0,0,0,0,0,0];
+      
+      const response = await api.getOctalysisFactors(userId, initData);
+      if (response.success && Array.isArray(response.data)) {
+        return response.data;
+      }
+      return [0,0,0,0,0,0,0,0];
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+class Api {
+  private baseUrl = '/api';
+  private defaultHeaders: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
+  
+  private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
+    if (!response.ok) {
+      try {
+        const errorResponse = await response.json();
+        return {
+          success: false,
+          status: response.status,
+          error: errorResponse.error || JSON.stringify(errorResponse)
+        };
+      } catch {
+        return {
+          success: false,
+          status: response.status,
+          error: await response.text()
+        };
+      }
+    }
+
+    try {
+      return await response.json();
+    } catch (parseError) {
+      return {
+        success: false,
+        status: 500,
+        error: 'Failed to parse response data'
+      };
+    }
+  }
+
+  private async makeRequest<T>(
+    endpoint: string,
+    method: string = 'GET',
+    body?: any,
+    initData?: string
+  ): Promise<ApiResponse<T>> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const headers: Record<string, string> = { ...this.defaultHeaders };
+
+    if (initData) {
+      headers['X-Telegram-Init-Data'] = initData;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined
+      });
+
+      return this.handleResponse<T>(response);
+    } catch (error: any) {
+      return {
+        success: false,
+        status: 0,
+        error: error.message || 'Network request failed'
+      };
+    }
+  }
+
+  async initUser(initData: string, startParam?: string): Promise<ApiResponse<UserProfile>> {
+    return this.makeRequest<UserProfile>('/init', 'POST', { initData, ref: startParam });
+  }
+
+  async getUserData(telegramId: number, initData?: string): Promise<ApiResponse<UserProfile>> {
+    return this.makeRequest<UserProfile>(
+      `/data?telegramId=${telegramId}`, 
+      'GET', 
+      undefined, 
+      initData
+    );
+  }
+
+  async updateBurnoutLevel(telegramId: number, level: number, initData?: string) {
+    return this.makeRequest(
+      '/update', 
+      'POST', 
+      { telegramId, burnoutLevel: level },
+      initData
+    );
+  }
+
+  async getFriends(userId: number, initData?: string): Promise<ApiResponse<Friend[]>> {
+    const response = await this.makeRequest<Friend[]>(
+      `/friends?userId=${userId}`, 
+      'GET', 
+      undefined, 
+      initData
+    );
+    
+    if (response.success && response.data) {
+      response.data = response.data.map(f => ({
+        id: f.id,
+        friend_id: f.friend.id,
+        friend_username: f.friend.username || 
+                        `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
+        burnout_level: f.friend.burnout_level
+      }));
+    }
+    return response;
+  }
+
+  async addFriend(friendUsername: string, initData?: string): Promise<ApiResponse> {
+    return this.makeRequest(
+      '/friends', 
+      'POST', 
+      { friendUsername },
+      initData
+    );
+  }
+
+  async deleteFriend(friendId: number, initData?: string): Promise<ApiResponse> {
+    return this.makeRequest(
+      `/friends/${friendId}`, 
+      'DELETE', 
+      undefined, 
+      initData
+    );
+  }
+
+  async getSprites(initData?: string): Promise<ApiResponse<Sprite[]>> {
+    return this.makeRequest<Sprite[]>('/shop/sprites', 'GET', undefined, initData);
+  }
+  
+  async getSprite(spriteId: number, initData?: string): Promise<ApiResponse<Sprite>> {
+    return this.makeRequest<Sprite>(
+      `/shop/sprites/${spriteId}`, 
+      'GET', 
+      undefined, 
+      initData
+    );
+  }
+
+  async purchaseSprite(
+    telegramId: number, 
+    spriteId: number, 
+    initData?: string
+  ): Promise<ApiResponse> {
+    return this.makeRequest(
+      '/shop/purchase', 
+      'POST', 
+      { telegramId, spriteId },
+      initData
+    );
+  }
+
+  async getOwnedSprites(
+    telegramId: number, 
+    initData?: string
+  ): Promise<ApiResponse<number[]>> {
+    return this.makeRequest<number[]>(
+      `/shop/owned?telegramId=${telegramId}`, 
+      'GET', 
+      undefined, 
+      initData
+    );
+  }
+
+  async equipSprite(
+    telegramId: number, 
+    spriteId: number, 
+    initData?: string
+  ): Promise<ApiResponse> {
+    return this.makeRequest(
+      '/shop/equip', 
+      'POST', 
+      { telegramId, spriteId },
+      initData
+    );
+  }
+  
+  async submitSurvey(params: SubmitSurveyRequest): Promise<ApiResponse<UserProfile>> {
+    return this.makeRequest<UserProfile>(
+      '/updateBurnout', 
+      'POST', 
+      {
+        telegramId: params.telegramId,
+        burnoutDelta: params.burnoutDelta,
+        factors: params.factors
+      },
+      params.initData
+    );
+  }
+
+  async updateUserClass(
+    telegramId: number,
+    characterClass: string, 
+    initData?: string
+  ): Promise<ApiResponse> {
+    return this.makeRequest(
+      '/onboarding', 
+      'POST', 
+      { 
+        telegram_id: telegramId,
+        character_class: characterClass 
+      }, 
+      initData
+    );
+  }
+
+  async getOctalysisFactors(
+    userId: number, 
+    initData?: string
+  ): Promise<ApiResponse<number[]>> {
+    return this.makeRequest<number[]>(
+      `/octalysis?userId=${userId}`, 
+      'GET', 
+      undefined, 
+      initData
+    );
   }
 }
 
-export const useTelegram = () => {
-  const [state, setState] = useState({
-    webApp: null as TelegramWebApp | null,
-    initData: '',
-    user: null as TelegramUser | null,
-    startParam: '',
-    isReady: false,
-  });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    const initTelegram = () => {
-      const telegram = window.Telegram;
-      if (!telegram?.WebApp) return;
-
-      const tg = telegram.WebApp;
-      tg.ready();
-      tg.expand();
-
-      setState({
-        webApp: tg,
-        initData: tg.initData,
-        user: tg.initDataUnsafe.user || null,
-        startParam: tg.initDataUnsafe.start_param || '',
-        isReady: true,
-      });
-    };
-
-    const handleReady = () => {
-      initTelegram();
-      window.removeEventListener('telegram-ready', handleReady);
-    };
-
-    if (window.Telegram?.WebApp) {
-      initTelegram();
-    } else {
-      window.addEventListener('telegram-ready', handleReady);
-    }
-
-    return () => {
-      window.removeEventListener('telegram-ready', handleReady);
-    };
-  }, []);
-
-  return {
-    ...state,
-    isTelegramReady: state.isReady,
-  };
-};
+export const api = new Api();
