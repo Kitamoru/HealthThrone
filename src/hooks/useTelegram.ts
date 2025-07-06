@@ -67,13 +67,11 @@ declare global {
 }
 
 export const useTelegram = () => {
-  const [state, setState] = useState({
-    webApp: null as TelegramWebApp | null,
-    initData: '',
-    user: null as TelegramUser | null,
-    startParam: '',
-    isReady: false,
-  });
+  const [isReady, setIsReady] = useState(false);
+  const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
+  const [initData, setInitData] = useState('');
+  const [user, setUser] = useState<TelegramUser | null>(null);
+  const [startParam, setStartParam] = useState('');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -86,13 +84,11 @@ export const useTelegram = () => {
       tg.ready();
       tg.expand();
 
-      setState({
-        webApp: tg,
-        initData: tg.initData,
-        user: tg.initDataUnsafe.user || null,
-        startParam: tg.initDataUnsafe.start_param || '',
-        isReady: true,
-      });
+      setWebApp(tg);
+      setInitData(tg.initData);
+      setUser(tg.initDataUnsafe.user || null);
+      setStartParam(tg.initDataUnsafe.start_param || '');
+      setIsReady(true);
     };
 
     const handleReady = () => {
@@ -112,7 +108,10 @@ export const useTelegram = () => {
   }, []);
 
   return {
-    ...state,
-    isTelegramReady: state.isReady,
+    webApp,
+    initData,
+    user,
+    startParam,
+    isTelegramReady: isReady,
   };
 };
