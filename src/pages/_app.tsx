@@ -2,7 +2,7 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
 import dynamic from 'next/dynamic';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import Router from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
@@ -10,12 +10,12 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
-// Валидация initData для базовой безопасности
+// Basic initData validation
 const validateInitData = (initData: string) => {
   return /user=.+&hash=.+/.test(initData);
 };
 
-// Форматирование имени пользователя
+// Format username display
 const formatUserName = (user: { first_name: string; last_name?: string; username?: string }) => {
   return user.username || `${user.first_name} ${user.last_name || ''}`.trim();
 };
@@ -64,7 +64,7 @@ const Loader = dynamic(
   { ssr: false, loading: () => <div>Загрузка...</div> }
 );
 
-// Минимально поддерживаемая версия Telegram Web App
+// Minimum supported Telegram Web App version
 const MIN_WEBAPP_VERSION = '6.0';
 
 function App({ Component, pageProps }: AppProps) {
@@ -72,7 +72,7 @@ function App({ Component, pageProps }: AppProps) {
   const [userInitialized, setUserInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Применяем тему Telegram динамически
+  // Apply Telegram theme dynamically
   useEffect(() => {
     if (!themeParams || typeof document === 'undefined') return;
     
@@ -83,40 +83,42 @@ function App({ Component, pageProps }: AppProps) {
     if (themeParams.button_text_color) root.style.setProperty('--tg-button-text-color', themeParams.button_text_color);
   }, [themeParams]);
 
-  // Основная инициализация приложения
+  // Main app initialization
   useEffect(() => {
     if (!isTelegramReady) return;
     
-    // Проверка версии WebApp
+    // WebApp version check
     if (webApp?.version && webApp.version < MIN_WEBAPP_VERSION) {
-      setError(`Требуется обновить Telegram. Минимальная версия: ${MIN_WEBAPP_VERSION}`);
+      setError(`Please update Telegram. Minimum version: ${MIN_WEBAPP_VERSION}`);
       return;
     }
 
-    // Безопасность: валидация initData
+    // Security: initData validation
     if (!initData || !validateInitData(initData)) {
-      setError("Неверные данные инициализации. Пожалуйста, откройте приложение через Telegram");
+      setError("Invalid initialization data. Please open the app through Telegram");
       return;
     }
 
     const initializeApp = async () => {
       try {
-        // Инициализация пользователя
+        // User initialization
         const userResponse = await api.initUser(initData, startParam);
         if (!userResponse.success || !userResponse.data) {
-          throw new Error(userResponse.error || "Ошибка инициализации пользователя");
+          throw new Error(userResponse.error || "User initialization error");
         }
 
         const userData = userResponse.data;
         const userId = userData.id;
         queryClient.setQueryData(['userData', userId], userData);
 
-        // Последовательная предзагрузка данных
-        await prefetchShopData(initData);
-        await prefetchFriends(userId, initData);
-        await prefetchOctalysisFactors(userId, initData);
+        // PARALLEL DATA PREFETCHING
+        await Promise.all([
+          prefetchShopData(initData),
+          prefetchFriends(userId, initData),
+          prefetchOctalysisFactors(userId, initData)
+        ]);
 
-        // Префетч основных роутов
+        // Prefetch main routes
         Router.prefetch('/');
         Router.prefetch('/shop');
         Router.prefetch('/friends');
@@ -124,22 +126,26 @@ function App({ Component, pageProps }: AppProps) {
         setUserInitialized(true);
       } catch (err) {
         console.error("Initialization error:", err);
-        setError(err instanceof Error ? err.message : "Неизвестная ошибка");
+        setError(err instanceof Error ? err.message : "Unknown error");
         
-        // Тактильная обратная связь при ошибке
-        webApp?.HapticFeedback?.notificationOccurred?.('error');
+        // Haptic feedback on error
+        try {
+          webApp?.HapticFeedback?.notificationOccurred?.('error');
+        } catch (hapticError) {
+          console.warn('Haptic feedback failed', hapticError);
+        }
       }
     };
 
     initializeApp();
   }, [initData, startParam, isTelegramReady, webApp]);
 
-  // Показываем ошибку если приложение открыто вне Telegram
+  // Show error if app opened outside Telegram
   if (!isTelegramReady && typeof window !== 'undefined') {
     return (
       <div className="error-container">
-        <h2>Требуется Telegram</h2>
-        <p>Пожалуйста, откройте приложение через Telegram</p>
+        <h2>Telegram Required</h2>
+        <p>Please open the app through Telegram</p>
       </div>
     );
   }
@@ -147,8 +153,8 @@ function App({ Component, pageProps }: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <Head>
-        <title>Burnout Tracker - Отслеживание выгорания</title>
-        <meta name="description" content="Telegram Mini App для отслеживания уровня выгорания" />
+        <title>Burnout Tracker - Burnout Monitoring</title>
+        <meta name="description" content="Telegram Mini App for burnout level tracking" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <meta name="theme-color" content={themeParams?.bg_color || "#18222d"} />
       </Head>
@@ -165,9 +171,9 @@ function App({ Component, pageProps }: AppProps) {
 
       {error ? (
         <div className="error-container">
-          <h2>Ошибка запуска</h2>
+          <h2>Launch Error</h2>
           <p>{error}</p>
-          <p>Пожалуйста, перезапустите приложение</p>
+          <p>Please restart the application</p>
         </div>
       ) : userInitialized ? (
         <div className="page-transition">
