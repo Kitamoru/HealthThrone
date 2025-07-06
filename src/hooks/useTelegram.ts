@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 interface TelegramUser {
-  id: string;
+  id: number; // Изменено на number для совместимости с бекендом
   first_name: string;
   last_name?: string;
   username?: string;
@@ -73,46 +73,80 @@ export const useTelegram = () => {
     user: null as TelegramUser | null,
     startParam: '',
     isReady: false,
+    error: null as string | null, // Добавлено поле ошибки
   });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
     const initTelegram = () => {
-      const telegram = window.Telegram;
-      if (!telegram?.WebApp) return;
+      try {
+        const telegram = window.Telegram;
+        if (!telegram?.WebApp) {
+          throw new Error("Telegram WebApp SDK not loaded");
+        }
 
-      const tg = telegram.WebApp;
-      tg.ready();
-      tg.expand();
+        const tg = telegram.WebApp;
+        
+        // Проверяем готовность WebApp перед вызовами
+        if (tg.initDataUnsafe) {
+          tg.ready();
+          tg.expand();
+        } else {
+          throw new Error("Telegram WebApp not initialized");
+        }
 
-      setState({
-        webApp: tg,
-        initData: tg.initData,
-        user: tg.initDataUnsafe.user || null,
-        startParam: tg.initDataUnsafe.start_param || '',
-        isReady: true,
-      });
+        setState({
+          webApp: tg,
+          initData: tg.initData,
+          user: tg.initDataUnsafe.user ? {
+            ...tg.initDataUnsafe.user,
+            id: parseInt(tg.initDataUnsafe.user.id) // Конвертируем ID в число
+          } : null,
+          startParam: tg.initDataUnsafe.start_param || '',
+          isReady: true,
+          error: null,
+        });
+      } catch (error) {
+        setState(prev => ({
+          ...prev,
+          error: error instanceof Error ? error.message : "Unknown error",
+        }));
+      }
     };
 
-    const handleReady = () => {
+    const handleTelegramReady = () => {
       initTelegram();
-      window.removeEventListener('telegram-ready', handleReady);
+      window.removeEventListener('telegram-ready', handleTelegramReady);
     };
 
-    if (window.Telegram?.WebApp) {
-      initTelegram();
-    } else {
-      window.addEventListener('telegram-ready', handleReady);
+    // Пытаемся инициализировать сразу
+    initTelegram();
+
+    // Если не готово, ждем событие
+    if (!state.isReady && !state.error) {
+      window.addEventListener('telegram-ready', handleTelegramReady);
     }
 
+    // Таймаут для обработки случаев, когда SDK не загружается
+    const timeoutId = setTimeout(() => {
+      if (!state.isReady && !state.error) {
+        setState(prev => ({
+          ...prev,
+          error: "Telegram SDK loading timed out",
+        }));
+      }
+    }, 5000);
+
     return () => {
-      window.removeEventListener('telegram-ready', handleReady);
+      window.removeEventListener('telegram-ready', handleTelegramReady);
+      clearTimeout(timeoutId);
     };
   }, []);
 
   return {
     ...state,
     isTelegramReady: state.isReady,
+    error: state.error,
   };
 };
