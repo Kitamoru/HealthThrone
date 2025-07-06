@@ -49,7 +49,17 @@ export default function Friends() {
     if (!userId || !initData) return [];
     
     // Исправленный вызов:
-    const response = await api.getFriends(userId, initData);
+    const { 
+  data: friends = [], 
+  isInitialLoading,
+  isError,
+  error: queryError
+} = useQuery<Friend[]>({
+  queryKey: ['friends', userId],
+  queryFn: async () => {
+    if (!userId || !initData) return [];
+    
+    const response = await api.getFriends(Number(userId), initData);
     
     if (response.success && response.data) {
       return response.data.map(f => ({
