@@ -17,11 +17,13 @@ export const useUserData = (telegramId: number, initData?: string) => {
   });
 };
 
-export const useFriendsData = (telegramId: number, initData?: string) => {
+export const useFriendsData = (telegramId: number | string, initData?: string) => {
+  const id = typeof telegramId === 'string' ? Number(telegramId) : telegramId;
+  
   return useQuery({
-    queryKey: ['friends', telegramId],
-    queryFn: () => api.getFriends(telegramId, initData),
-    enabled: !!telegramId,
+    queryKey: ['friends', id],
+    queryFn: () => api.getFriends(id, initData),
+    enabled: !!id && !isNaN(id),
     staleTime: 5 * 60 * 1000,
   });
 };
