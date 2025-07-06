@@ -14,22 +14,22 @@ const prefetchShopData = (initData?: string) => {
   queryClient.prefetchQuery({
     queryKey: ['sprites'],
     queryFn: () => api.getSprites(initData),
-  }).catch(error => console.error("Prefetch sprites failed:", error));
+  });
 };
 
 const prefetchFriends = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
-    queryKey: ['friends', userId],
+    queryKey: ['friends', userId.toString()],
     queryFn: () => api.getFriends(userId, initData),
-  }).catch(error => console.error("Prefetch friends failed:", error));
+  });
 };
 
 const prefetchOctalysisFactors = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
     queryFn: () => api.getOctalysisFactors(userId, initData),
-    staleTime: 5 * 60 * 1000,
-  }).catch(error => console.error("Prefetch octalysis factors failed:", error));
+    staleTime: 5 * 60 * 1000, // 5 минут кеширования
+  });
 };
 
 const Loader = dynamic(
@@ -38,27 +38,23 @@ const Loader = dynamic(
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp, isTelegramReady } = useTelegram();
+  const { initData, startParam, webApp, isTelegramReady, user } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isTelegramReady) return;
+    if (!isTelegramReady || !initData || !user) return;
     
-    if (!initData) {
-      setError("Приложение должно быть запущено внутри Telegram");
-      return;
-    }
-
     api.initUser(initData, startParam)
       .then(response => {
         if (response.success && response.data) {
           const userData = response.data;
           const userId = userData.id;
           
-          queryClient.setQueryData(['user', userId], userData);
           prefetchFriends(userId, initData);
           prefetchOctalysisFactors(userId, initData);
+          
+          queryClient.setQueryData(['userData', userId], userData);
         } else {
           setError(response.error || "Ошибка инициализации пользователя");
         }
@@ -68,7 +64,7 @@ function App({ Component, pageProps }: AppProps) {
         setError("Сетевая ошибка при инициализации");
       })
       .finally(() => setUserInitialized(true));
-  }, [initData, startParam, isTelegramReady]);
+  }, [initData, startParam, isTelegramReady, user]);
 
   useEffect(() => {
     if (!isTelegramReady || !initData) return;
