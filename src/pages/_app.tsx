@@ -1,100 +1,83 @@
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
+import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import Router from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
-import { api, transformFriendsData } from '../lib/api'; // Добавлен импорт transformFriendsData
+import { api } from '../lib/api';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
-import { Loader } from '../components/Loader';
 import '../styles/globals.css';
 
 const prefetchShopData = (initData?: string) => {
   queryClient.prefetchQuery({
     queryKey: ['sprites'],
     queryFn: () => api.getSprites(initData),
-  });
+  }).catch(error => console.error("Prefetch sprites failed:", error));
 };
 
 const prefetchFriends = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
-    queryKey: ['friends', userId.toString()],
-    queryFn: async () => {
-      const response = await api.getFriends(userId.toString(), initData);
-      return transformFriendsData(response);
-    },
-  });
+    queryKey: ['friends', userId],
+    queryFn: () => api.getFriends(userId, initData),
+  }).catch(error => console.error("Prefetch friends failed:", error));
 };
 
-// Обновленная версия prefetchOctalysisFactors
 const prefetchOctalysisFactors = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
-    queryFn: async () => {
-      const response = await api.getOctalysisFactors(userId, initData);
-      if (response.success && response.data) {
-        return response.data;
-      }
-      throw new Error(response.error || 'Failed to load octalysis factors');
-    },
+    queryFn: () => api.getOctalysisFactors(userId, initData),
     staleTime: 5 * 60 * 1000,
-  });
+  }).catch(error => console.error("Prefetch octalysis factors failed:", error));
 };
 
+const Loader = dynamic(
+  () => import('../components/Loader').then(mod => mod.Loader),
+  { ssr: false, loading: () => <div>Загрузка...</div> }
+);
+
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, isTelegramReady } = useTelegram();
+  const { initData, startParam, webApp, isTelegramReady } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isTelegramReady) return;
-
-    // Приложение должно работать только внутри Telegram
+    
     if (!initData) {
       setError("Приложение должно быть запущено внутри Telegram");
-      setUserInitialized(true); // Помечаем как инициализированное чтобы показать ошибку
       return;
     }
 
-    // Параллельно выполняем все префетчи
-    const initializeApp = async () => {
-      try {
-        // 1. Независимые префетчи (магазин и маршруты)
-        prefetchShopData(initData);
-        Router.prefetch('/');
-        Router.prefetch('/shop');
-        Router.prefetch('/friends');
-
-        // 2. Инициализация пользователя
-        const response = await api.initUser(initData, startParam);
-        
-        if (!response.success || !response.data) {
-          throw new Error(response.error || "Ошибка инициализации пользователя");
+    api.initUser(initData, startParam)
+      .then(response => {
+        if (response.success && response.data) {
+          const userData = response.data;
+          const userId = userData.id;
+          
+          queryClient.setQueryData(['user', userId], userData);
+          prefetchFriends(userId, initData);
+          prefetchOctalysisFactors(userId, initData);
+        } else {
+          setError(response.error || "Ошибка инициализации пользователя");
         }
-
-        const userData = response.data;
-        const userId = userData.id;
-        
-        // 3. Устанавливаем данные пользователя
-        queryClient.setQueryData(['userData', userId], userData);
-        
-        // 4. Зависимые префетчи (параллельно)
-        await Promise.allSettled([
-          prefetchFriends(userId, initData),
-          prefetchOctalysisFactors(userId, initData)
-        ]);
-        
-      } catch (err) {
-        console.error("Initialization error:", err);
-        setError(err instanceof Error ? err.message : "Неизвестная ошибка инициализации");
-      } finally {
-        setUserInitialized(true);
-      }
-    };
-
-    initializeApp();
+      })
+      .catch(error => {
+        console.error("User initialization failed:", error);
+        setError("Сетевая ошибка при инициализации");
+      })
+      .finally(() => setUserInitialized(true));
   }, [initData, startParam, isTelegramReady]);
+
+  useEffect(() => {
+    if (!isTelegramReady || !initData) return;
+    
+    prefetchShopData(initData);
+    
+    const routes = ['/', '/shop', '/friends'];
+    routes.forEach(route => Router.prefetch(route));
+  }, [initData, isTelegramReady]);
 
   return (
     <QueryClientProvider client={queryClient}>
