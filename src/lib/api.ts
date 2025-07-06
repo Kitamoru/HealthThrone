@@ -81,7 +81,13 @@ export const useOwnedSprites = (telegramId: number, initData?: string) => {
 
 export const useSubmitSurvey = () => {
   return useMutation<UserProfile, Error, SubmitSurveyRequest>({
-    mutationFn: (params) => api.submitSurvey(params),
+    mutationFn: async (params) => {
+      const response = await api.submitSurvey(params);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error(response.error || 'Failed to submit survey');
+    }
   });
 };
 
