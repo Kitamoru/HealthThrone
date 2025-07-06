@@ -72,7 +72,7 @@ export const useTelegram = () => {
     initData: '',
     user: null as TelegramUser | null,
     startParam: '',
-    isReady: false,
+    isReady: false
   });
 
   useEffect(() => {
@@ -91,7 +91,7 @@ export const useTelegram = () => {
         initData: tg.initData,
         user: tg.initDataUnsafe.user || null,
         startParam: tg.initDataUnsafe.start_param || '',
-        isReady: true,
+        isReady: true
       });
     };
 
@@ -112,7 +112,10 @@ export const useTelegram = () => {
   }, []);
 
   return {
-    ...state,
-    isTelegramReady: state.isReady,
+    webApp: state.webApp,
+    initData: state.initData,
+    user: state.user,
+    startParam: state.startParam,
+    isTelegramReady: state.isReady
   };
 };
