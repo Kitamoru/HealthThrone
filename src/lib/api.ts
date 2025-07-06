@@ -1,4 +1,4 @@
-import { ApiResponse, UserProfile, Sprite, Friend } from './types';
+import { ApiResponse, UserProfile, Sprite, Friend, OctalysisFactors } from './types';
 import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
 
 interface SubmitSurveyRequest {
@@ -8,10 +8,31 @@ interface SubmitSurveyRequest {
   initData?: string;
 }
 
+// Унифицированный обработчик данных для друзей
+const transformFriendsData = (response: ApiResponse<Friend[]>) => {
+  if (!response.success || !response.data) {
+    throw new Error(response.error || 'Failed to load friends');
+  }
+  
+  return response.data.map(f => ({
+    id: f.id,
+    friend_id: f.friend.id,
+    friend_username: f.friend.username || 
+                    `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
+    burnout_level: f.friend.burnout_level
+  }));
+};
+
 export const useUserData = (telegramId: number, initData?: string) => {
-  return useQuery({
-    queryKey: ['user', telegramId],
-    queryFn: () => api.getUserData(telegramId, initData),
+  return useQuery<UserProfile>({
+    queryKey: ['userData', telegramId],
+    queryFn: async () => {
+      const response = await api.getUserData(telegramId, initData);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || "Failed to load user data");
+      }
+      return response.data;
+    },
     enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
   });
@@ -20,32 +41,47 @@ export const useUserData = (telegramId: number, initData?: string) => {
 export const useFriendsData = (telegramId: string, initData?: string) => {
   return useQuery({
     queryKey: ['friends', telegramId],
-    queryFn: () => api.getFriends(telegramId, initData),
+    queryFn: async () => {
+      const response = await api.getFriends(telegramId, initData);
+      return transformFriendsData(response);
+    },
     enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
   });
 };
 
 export const useSpritesData = (initData?: string) => {
-  return useQuery({
+  return useQuery<Sprite[]>({
     queryKey: ['sprites'],
-    queryFn: () => api.getSprites(initData),
+    queryFn: async () => {
+      const response = await api.getSprites(initData);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || "Failed to load sprites");
+      }
+      return response.data;
+    },
     staleTime: 10 * 60 * 1000,
   });
 };
 
 export const useOwnedSprites = (telegramId: number, initData?: string) => {
-  return useQuery({
+  return useQuery<number[]>({
     queryKey: ['ownedSprites', telegramId],
-    queryFn: () => api.getOwnedSprites(telegramId, initData),
+    queryFn: async () => {
+      const response = await api.getOwnedSprites(telegramId, initData);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || "Failed to load owned sprites");
+      }
+      return response.data;
+    },
     enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
   });
 };
 
 export const useSubmitSurvey = () => {
-  return useMutation({
-    mutationFn: (params: SubmitSurveyRequest) => api.submitSurvey(params),
+  return useMutation<UserProfile, Error, SubmitSurveyRequest>({
+    mutationFn: (params) => api.submitSurvey(params),
   });
 };
 
@@ -80,7 +116,7 @@ export const useUpdateUserClass = () => {
 };
 
 export const useOctalysisFactors = (userId?: number, initData?: string) => {
-  return useQuery({
+  return useQuery<number[]>({
     queryKey: ['octalysisFactors', userId],
     queryFn: async () => {
       if (!userId) return [0,0,0,0,0,0,0,0];
@@ -92,7 +128,7 @@ export const useOctalysisFactors = (userId?: number, initData?: string) => {
       return [0,0,0,0,0,0,0,0];
     },
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 минут кеширования
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -121,7 +157,8 @@ class Api {
     }
 
     try {
-      return await response.json();
+      const data: ApiResponse<T> = await response.json();
+      return data;
     } catch (parseError) {
       return {
         success: false,
@@ -170,15 +207,6 @@ class Api {
       `/data?telegramId=${telegramId}`, 
       'GET', 
       undefined, 
-      initData
-    );
-  }
-
-  async updateBurnoutLevel(telegramId: number, level: number, initData?: string) {
-    return this.makeRequest(
-      '/update', 
-      'POST', 
-      { telegramId, burnoutLevel: level },
       initData
     );
   }
