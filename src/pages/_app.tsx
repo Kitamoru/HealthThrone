@@ -45,6 +45,15 @@ const prefetchOctalysisFactors = (userId: number, initData: string) => {
   });
 };
 
+// Добавлена функция префетчинга купленных спрайтов
+const prefetchOwnedSprites = (userId: number, initData: string) => {
+  queryClient.prefetchQuery({
+    queryKey: ['ownedSprites', userId],
+    queryFn: () => api.getOwnedSprites(userId, initData),
+    staleTime: 5 * 60 * 1000, // 5 минут кеширования
+  });
+};
+
 const Loader = dynamic(
   () => import('../components/Loader').then(mod => mod.Loader),
   { ssr: false, loading: () => <div>Загрузка...</div> }
@@ -68,6 +77,7 @@ function App({ Component, pageProps }: AppProps) {
           
           prefetchFriends(userId, initData);
           prefetchOctalysisFactors(userId, initData);
+          prefetchOwnedSprites(userId, initData); // Добавлен префетч купленных спрайтов
           
           queryClient.setQueryData(['userData', userId], userData);
         } else {
