@@ -47,6 +47,11 @@ interface TelegramWebApp {
   isExpanded: boolean;
   viewportHeight: number;
   viewportStableHeight: number;
+  
+  // Методы управления событиями
+  onEvent: (eventType: string, handler: Function) => void;
+  offEvent: (eventType: string, handler: Function) => void;
+  
   ready: () => void;
   expand: () => void;
   close: () => void;
