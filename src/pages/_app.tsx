@@ -1,13 +1,13 @@
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
-import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import Router from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
+import { Loader } from '../components/Loader';
 import '../styles/globals.css';
 
 const prefetchShopData = (initData?: string) => {
@@ -40,53 +40,63 @@ const prefetchOctalysisFactors = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
     queryFn: () => api.getOctalysisFactors(userId, initData),
-    staleTime: 5 * 60 * 1000, // 5 минут кеширования
+    staleTime: 5 * 60 * 1000,
   });
 };
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp, isTelegramReady } = useTelegram();
+  const { initData, startParam, isTelegramReady } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isTelegramReady) return;
-    
+
     // Приложение должно работать только внутри Telegram
     if (!initData) {
       setError("Приложение должно быть запущено внутри Telegram");
+      setUserInitialized(true); // Помечаем как инициализированное чтобы показать ошибку
       return;
     }
 
-    api.initUser(initData, startParam)
-      .then(response => {
-        if (response.success && response.data) {
-          const userData = response.data;
-          const userId = userData.id;
-          
-          prefetchFriends(userId, initData);
-          prefetchOctalysisFactors(userId, initData);
-          
-          queryClient.setQueryData(['userData', userId], userData);
-        } else {
-          setError(response.error || "Ошибка инициализации пользователя");
-        }
-      })
-      .catch(error => {
-        console.error("User initialization failed:", error);
-        setError("Сетевая ошибка при инициализации");
-      })
-      .finally(() => setUserInitialized(true));
-  }, [initData, startParam, isTelegramReady]);
+    // Параллельно выполняем все префетчи
+    const initializeApp = async () => {
+      try {
+        // 1. Независимые префетчи (магазин и маршруты)
+        prefetchShopData(initData);
+        Router.prefetch('/');
+        Router.prefetch('/shop');
+        Router.prefetch('/friends');
 
-  useEffect(() => {
-    if (!isTelegramReady || !initData) return;
-    
-    prefetchShopData(initData);
-    
-    const routes = ['/', '/shop', '/friends'];
-    routes.forEach(route => Router.prefetch(route));
-  }, [initData, isTelegramReady]);
+        // 2. Инициализация пользователя
+        const response = await api.initUser(initData, startParam);
+        
+        if (!response.success || !response.data) {
+          throw new Error(response.error || "Ошибка инициализации пользователя");
+        }
+
+        const userData = response.data;
+        const userId = userData.id;
+        
+        // 3. Устанавливаем данные пользователя
+        queryClient.setQueryData(['userData', userId], userData);
+        
+        // 4. Зависимые префетчи (параллельно)
+        await Promise.allSettled([
+          prefetchFriends(userId, initData),
+          prefetchOctalysisFactors(userId, initData)
+        ]);
+        
+      } catch (err) {
+        console.error("Initialization error:", err);
+        setError(err instanceof Error ? err.message : "Неизвестная ошибка инициализации");
+      } finally {
+        setUserInitialized(true);
+      }
+    };
+
+    initializeApp();
+  }, [initData, startParam, isTelegramReady]);
 
   return (
     <QueryClientProvider client={queryClient}>
