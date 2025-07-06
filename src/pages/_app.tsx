@@ -9,55 +9,13 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
-const prefetchShopData = (initData?: string) => {
-  queryClient.prefetchQuery({
-    queryKey: ['sprites'],
-    queryFn: () => api.getSprites(initData),
-  });
-};
-
-const prefetchFriends = (userId: number, initData: string) => {
-  queryClient.prefetchQuery({
-    queryKey: ['friends', userId.toString()],
-    queryFn: async () => {
-      const response = await api.getFriends(userId.toString(), initData);
-      if (response.success && response.data) {
-        return response.data.map(f => ({
-          id: f.id,
-          friend_id: f.friend.id,
-          friend_username: f.friend.username || 
-                          `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
-          burnout_level: f.friend.burnout_level
-        }));
-      }
-      throw new Error(response.error || 'Failed to load friends');
-    },
-  });
-};
-
-const prefetchOctalysisFactors = (userId: number, initData: string) => {
-  queryClient.prefetchQuery({
-    queryKey: ['octalysisFactors', userId],
-    queryFn: () => api.getOctalysisFactors(userId, initData),
-    staleTime: 5 * 60 * 1000,
-  });
-};
-
-const prefetchOwnedSprites = (userId: number, initData: string) => {
-  queryClient.prefetchQuery({
-    queryKey: ['ownedSprites', userId],
-    queryFn: () => api.getOwnedSprites(userId, initData),
-    staleTime: 5 * 60 * 1000,
-  });
-};
-
 const Loader = dynamic(
   () => import('../components/Loader').then(mod => mod.Loader),
   { ssr: false, loading: () => <div>Загрузка...</div> }
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp, isTelegramReady, user } = useTelegram();
+  const { initData, startParam, isTelegramReady, user } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,11 +27,6 @@ function App({ Component, pageProps }: AppProps) {
         if (response.success && response.data) {
           const userData = response.data;
           const userId = userData.id;
-          
-          prefetchFriends(userId, initData);
-          prefetchOctalysisFactors(userId, initData);
-          prefetchOwnedSprites(userId, initData);
-          
           queryClient.setQueryData(['userData', userId], userData);
         } else {
           setError(response.error || "Ошибка инициализации пользователя");
@@ -85,11 +38,6 @@ function App({ Component, pageProps }: AppProps) {
       })
       .finally(() => setUserInitialized(true));
   }, [initData, startParam, isTelegramReady, user]);
-
-  useEffect(() => {
-    if (!isTelegramReady || !initData) return;
-    prefetchShopData(initData);
-  }, [initData, isTelegramReady]);
 
   return (
     <QueryClientProvider client={queryClient}>
