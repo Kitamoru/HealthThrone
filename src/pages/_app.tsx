@@ -22,24 +22,22 @@ const prefetchFriends = (userId: number, initData: string) => {
     queryKey: ['friends', userId.toString()],
     queryFn: async () => {
       const response = await api.getFriends(userId.toString(), initData);
-      if (response.success && response.data) {
-        return response.data.map(f => ({
-          id: f.id,
-          friend_id: f.friend.id,
-          friend_username: f.friend.username || 
-                          `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
-          burnout_level: f.friend.burnout_level
-        }));
-      }
-      throw new Error(response.error || 'Failed to load friends');
+      return transformFriendsData(response);
     },
   });
 };
 
+// Обновленная версия prefetchOctalysisFactors
 const prefetchOctalysisFactors = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
-    queryFn: () => api.getOctalysisFactors(userId, initData),
+    queryFn: async () => {
+      const response = await api.getOctalysisFactors(userId, initData);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error(response.error || 'Failed to load octalysis factors');
+    },
     staleTime: 5 * 60 * 1000,
   });
 };
