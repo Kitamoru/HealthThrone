@@ -50,19 +50,14 @@ const Loader = dynamic(
 );
 
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp, isTelegramReady } = useTelegram();
+  const { initData, startParam, isTelegramReady } = useTelegram(); // Получаем флаг готовности
   const [userInitialized, setUserInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isTelegramReady) return;
+    // Ждем полной инициализации Telegram и получения initData
+    if (!isTelegramReady || !initData) return;
     
-    // Приложение должно работать только внутри Telegram
-    if (!initData) {
-      setError("Приложение должно быть запущено внутри Telegram");
-      return;
-    }
-
     api.initUser(initData, startParam)
       .then(response => {
         if (response.success && response.data) {
@@ -82,7 +77,7 @@ function App({ Component, pageProps }: AppProps) {
         setError("Сетевая ошибка при инициализации");
       })
       .finally(() => setUserInitialized(true));
-  }, [initData, startParam, isTelegramReady]);
+  }, [initData, startParam, isTelegramReady]); // Добавлена зависимость от флага
 
   useEffect(() => {
     if (!isTelegramReady || !initData) return;
@@ -91,7 +86,7 @@ function App({ Component, pageProps }: AppProps) {
     
     const routes = ['/', '/shop', '/friends'];
     routes.forEach(route => Router.prefetch(route));
-  }, [initData, isTelegramReady]);
+  }, [initData, isTelegramReady]); // Добавлена зависимость от флага
 
   return (
     <QueryClientProvider client={queryClient}>
