@@ -17,7 +17,7 @@ export const useUserData = (telegramId: number, initData?: string) => {
   });
 };
 
-export const useFriendsData = (telegramId: number, initData?: string) => {
+export const useFriendsData = (telegramId: string, initData?: string) => {
   return useQuery({
     queryKey: ['friends', telegramId],
     queryFn: () => api.getFriends(telegramId, initData),
