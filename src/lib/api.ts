@@ -138,6 +138,21 @@ export const useOctalysisFactors = (userId?: number, initData?: string) => {
   });
 };
 
+// Добавляем экспорт функции transformFriendsData
+export const transformFriendsData = (response: ApiResponse<Friend[]>) => {
+  if (!response.success || !response.data) {
+    throw new Error(response.error || 'Failed to load friends');
+  }
+  
+  return response.data.map(f => ({
+    id: f.id,
+    friend_id: f.friend.id,
+    friend_username: f.friend.username || 
+                    `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
+    burnout_level: f.friend.burnout_level
+  }));
+};
+
 class Api {
   private baseUrl = '/api';
   private defaultHeaders: Record<string, string> = {
