@@ -18,6 +18,21 @@ interface TelegramContact {
   phone_number?: string;
 }
 
+interface TelegramThemeParams {
+  bg_color?: string;
+  text_color?: string;
+  hint_color?: string;
+  link_color?: string;
+  button_color?: string;
+  button_text_color?: string;
+}
+
+interface TelegramHapticFeedback {
+  impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
+  notificationOccurred: (type: 'error' | 'success' | 'warning') => void;
+  selectionChanged: () => void;
+}
+
 interface TelegramWebApp {
   initData: string;
   initDataUnsafe: {
@@ -26,15 +41,9 @@ interface TelegramWebApp {
     chat_type?: string;
     start_param?: string;
   };
+  version: string;
   colorScheme: 'light' | 'dark';
-  themeParams: {
-    bg_color?: string;
-    text_color?: string;
-    hint_color?: string;
-    link_color?: string;
-    button_color?: string;
-    button_text_color?: string;
-  };
+  themeParams: TelegramThemeParams;
   isExpanded: boolean;
   viewportHeight: number;
   viewportStableHeight: number;
@@ -47,11 +56,7 @@ interface TelegramWebApp {
   showPopup: (params: any, callback?: (buttonId: string) => void) => void;
   openTelegramLink: (url: string) => void;
   openLink: (url: string, options?: { try_instant_view?: boolean }) => void;
-  HapticFeedback: {
-    impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
-    notificationOccurred: (type: 'error' | 'success' | 'warning') => void;
-    selectionChanged: () => void;
-  };
+  HapticFeedback: TelegramHapticFeedback;
   showContactPicker?: (
     options: { title?: string },
     callback: (contact: TelegramContact) => void
@@ -72,7 +77,9 @@ export const useTelegram = () => {
     initData: '',
     user: null as TelegramUser | null,
     startParam: '',
-    isReady: false
+    isReady: false,
+    themeParams: {} as TelegramThemeParams,
+    colorScheme: 'light' as 'light' | 'dark',
   });
 
   useEffect(() => {
@@ -83,16 +90,38 @@ export const useTelegram = () => {
       if (!telegram?.WebApp) return;
 
       const tg = telegram.WebApp;
+      
+      // Инициализация WebApp
       tg.ready();
       tg.expand();
 
+      // Обновление состояния с актуальными данными
       setState({
         webApp: tg,
         initData: tg.initData,
         user: tg.initDataUnsafe.user || null,
         startParam: tg.initDataUnsafe.start_param || '',
-        isReady: true
+        isReady: true,
+        themeParams: tg.themeParams || {},
+        colorScheme: tg.colorScheme || 'light',
       });
+
+      // Обработчик изменения темы
+      const updateTheme = () => {
+        setState(prev => ({
+          ...prev,
+          themeParams: tg.themeParams || {},
+          colorScheme: tg.colorScheme || 'light',
+        }));
+      };
+
+      // Подписываемся на события изменения темы
+      tg.onEvent('themeChanged', updateTheme);
+      
+      // Очистка при размонтировании
+      return () => {
+        tg.offEvent('themeChanged', updateTheme);
+      };
     };
 
     const handleReady = () => {
@@ -112,10 +141,9 @@ export const useTelegram = () => {
   }, []);
 
   return {
-    webApp: state.webApp,
-    initData: state.initData,
-    user: state.user,
-    startParam: state.startParam,
-    isTelegramReady: state.isReady
+    ...state,
+    isTelegramReady: state.isReady,
+    hasContactPicker: !!state.webApp?.showContactPicker,
+    hasHapticFeedback: !!state.webApp?.HapticFeedback,
   };
 };
