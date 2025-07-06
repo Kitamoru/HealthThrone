@@ -1,4 +1,3 @@
-UseTelegram.ts
 import { useEffect, useState } from 'react';
 
 interface TelegramUser {
