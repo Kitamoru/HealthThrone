@@ -4,7 +4,7 @@ import Script from 'next/script';
 import { useEffect, useState } from 'react';
 import Router from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
-import { api } from '../lib/api';
+import { api, transformFriendsData } from '../lib/api'; // Добавлен импорт transformFriendsData
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import { Loader } from '../components/Loader';
