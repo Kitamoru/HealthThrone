@@ -15,6 +15,11 @@ const validateInitData = (initData: string) => {
   return /user=.+&hash=.+/.test(initData);
 };
 
+// Форматирование имени пользователя
+const formatUserName = (user: { first_name: string; last_name?: string; username?: string }) => {
+  return user.username || `${user.first_name} ${user.last_name || ''}`.trim();
+};
+
 const prefetchShopData = (initData: string) => {
   return queryClient.prefetchQuery({
     queryKey: ['sprites'],
