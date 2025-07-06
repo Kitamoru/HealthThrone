@@ -10,27 +10,15 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
 
-// Basic initData validation
-const validateInitData = (initData: string) => {
-  return /user=.+&hash=.+/.test(initData);
-};
-
-// Format username display
-const formatUserName = (user: { first_name: string; last_name?: string; username?: string }) => {
-  return user.username || `${user.first_name} ${user.last_name || ''}`.trim();
-};
-
-const prefetchShopData = (initData: string) => {
-  return queryClient.prefetchQuery({
+const prefetchShopData = (initData?: string) => {
+  queryClient.prefetchQuery({
     queryKey: ['sprites'],
     queryFn: () => api.getSprites(initData),
-    retry: 2,
-    retryDelay: 1000,
   });
 };
 
 const prefetchFriends = (userId: number, initData: string) => {
-  return queryClient.prefetchQuery({
+  queryClient.prefetchQuery({
     queryKey: ['friends', userId.toString()],
     queryFn: async () => {
       const response = await api.getFriends(userId.toString(), initData);
@@ -38,24 +26,21 @@ const prefetchFriends = (userId: number, initData: string) => {
         return response.data.map(f => ({
           id: f.id,
           friend_id: f.friend.id,
-          friend_username: formatUserName(f.friend),
+          friend_username: f.friend.username || 
+                          `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
           burnout_level: f.friend.burnout_level
         }));
       }
       throw new Error(response.error || 'Failed to load friends');
     },
-    retry: 2,
-    retryDelay: 1000,
   });
 };
 
 const prefetchOctalysisFactors = (userId: number, initData: string) => {
-  return queryClient.prefetchQuery({
+  queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
     queryFn: () => api.getOctalysisFactors(userId, initData),
-    staleTime: 5 * 60 * 1000,
-    retry: 2,
-    retryDelay: 1000,
+    staleTime: 5 * 60 * 1000, // 5 минут кеширования
   });
 };
 
@@ -64,99 +49,57 @@ const Loader = dynamic(
   { ssr: false, loading: () => <div>Загрузка...</div> }
 );
 
-// Minimum supported Telegram Web App version
-const MIN_WEBAPP_VERSION = '6.0';
-
 function App({ Component, pageProps }: AppProps) {
-  const { initData, startParam, webApp, isTelegramReady, themeParams } = useTelegram();
+  const { initData, startParam, webApp, isTelegramReady } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Комбинированная проверка готовности Telegram и наличия initData
+  const isAuthReady = isTelegramReady && !!initData;
 
-  // Apply Telegram theme dynamically
+  // Основной эффект инициализации пользователя
   useEffect(() => {
-    if (!themeParams || typeof document === 'undefined') return;
-    
-    const root = document.documentElement;
-    if (themeParams.bg_color) root.style.setProperty('--tg-bg-color', themeParams.bg_color);
-    if (themeParams.text_color) root.style.setProperty('--tg-text-color', themeParams.text_color);
-    if (themeParams.button_color) root.style.setProperty('--tg-button-color', themeParams.button_color);
-    if (themeParams.button_text_color) root.style.setProperty('--tg-button-text-color', themeParams.button_text_color);
-  }, [themeParams]);
+    if (!isAuthReady) return;
 
-  // Main app initialization
+    api.initUser(initData, startParam)
+      .then(response => {
+        if (response.success && response.data) {
+          const userData = response.data;
+          const userId = userData.id;
+          
+          // ПРЕФЕТЧИНГ ПЕРЕМЕЩЁН СЮДА
+          prefetchFriends(userId, initData);
+          prefetchOctalysisFactors(userId, initData);
+          
+          queryClient.setQueryData(['userData', userId], userData);
+        } else {
+          setError(response.error || "Ошибка инициализации пользователя");
+        }
+      })
+      .catch(error => {
+        console.error("User initialization failed:", error);
+        setError("Сетевая ошибка при инициализации");
+      })
+      .finally(() => setUserInitialized(true));
+  }, [isAuthReady, startParam]); // Зависимость от isAuthReady
+
+  // Эффект для префетчинга магазина и страниц
   useEffect(() => {
-    if (!isTelegramReady) return;
+    if (!isAuthReady) return;
     
-    // WebApp version check
-    if (webApp?.version && webApp.version < MIN_WEBAPP_VERSION) {
-      setError(`Please update Telegram. Minimum version: ${MIN_WEBAPP_VERSION}`);
-      return;
-    }
-
-    // Security: initData validation
-    if (!initData || !validateInitData(initData)) {
-      setError("Invalid initialization data. Please open the app through Telegram");
-      return;
-    }
-
-    const initializeApp = async () => {
-      try {
-        // User initialization
-        const userResponse = await api.initUser(initData, startParam);
-        if (!userResponse.success || !userResponse.data) {
-          throw new Error(userResponse.error || "User initialization error");
-        }
-
-        const userData = userResponse.data;
-        const userId = userData.id;
-        queryClient.setQueryData(['userData', userId], userData);
-
-        // PARALLEL DATA PREFETCHING
-        await Promise.all([
-          prefetchShopData(initData),
-          prefetchFriends(userId, initData),
-          prefetchOctalysisFactors(userId, initData)
-        ]);
-
-        // Prefetch main routes
-        Router.prefetch('/');
-        Router.prefetch('/shop');
-        Router.prefetch('/friends');
-
-        setUserInitialized(true);
-      } catch (err) {
-        console.error("Initialization error:", err);
-        setError(err instanceof Error ? err.message : "Unknown error");
-        
-        // Haptic feedback on error
-        try {
-          webApp?.HapticFeedback?.notificationOccurred?.('error');
-        } catch (hapticError) {
-          console.warn('Haptic feedback failed', hapticError);
-        }
-      }
-    };
-
-    initializeApp();
-  }, [initData, startParam, isTelegramReady, webApp]);
-
-  // Show error if app opened outside Telegram
-  if (!isTelegramReady && typeof window !== 'undefined') {
-    return (
-      <div className="error-container">
-        <h2>Telegram Required</h2>
-        <p>Please open the app through Telegram</p>
-      </div>
-    );
-  }
+    prefetchShopData(initData);
+    
+    const routes = ['/', '/shop', '/friends'];
+    routes.forEach(route => Router.prefetch(route));
+  }, [isAuthReady]); // Зависимость от isAuthReady
 
   return (
     <QueryClientProvider client={queryClient}>
       <Head>
-        <title>Burnout Tracker - Burnout Monitoring</title>
-        <meta name="description" content="Telegram Mini App for burnout level tracking" />
+        <title>Burnout Tracker - Отслеживание выгорания</title>
+        <meta name="description" content="Telegram Mini App для отслеживания уровня выгорания" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <meta name="theme-color" content={themeParams?.bg_color || "#18222d"} />
+        <meta name="theme-color" content="#18222d" />
       </Head>
 
       <Script 
@@ -171,9 +114,9 @@ function App({ Component, pageProps }: AppProps) {
 
       {error ? (
         <div className="error-container">
-          <h2>Launch Error</h2>
+          <h2>Ошибка запуска</h2>
           <p>{error}</p>
-          <p>Please restart the application</p>
+          <p>Пожалуйста, откройте приложение через Telegram</p>
         </div>
       ) : userInitialized ? (
         <div className="page-transition">
