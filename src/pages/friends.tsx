@@ -39,46 +39,36 @@ export default function Friends() {
   const userId = user?.id;
 
   const { 
-  data: friends = [], 
-  isInitialLoading,
-  isError,
-  error: queryError
-} = useQuery<Friend[]>({
-  queryKey: ['friends', userId], // <-- убрано toString()
-  queryFn: async () => {
-    if (!userId || !initData) return [];
-    
-    const { 
-  data: friends = [], 
-  isInitialLoading,
-  isError,
-  error: queryError
-} = useQuery<Friend[]>({
-  queryKey: ['friends', userId],
-  queryFn: async () => {
-    if (!userId || !initData) return [];
-    
-    const response = await api.getFriends(Number(userId), initData);
-    
-    if (response.success && response.data) {
-      return response.data.map(f => ({
-        id: f.id,
-        friend_id: f.friend.id,
-        friend_username: f.friend.username || 
-                        `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
-        burnout_level: f.friend.burnout_level
-      }));
-    }
-    throw new Error(response.error || 'Failed to load friends');
-  },
-  enabled: !!userId && !!initData,
-  staleTime: 1000 * 60 * 5,
-  initialData: () => {
-    return queryClient.getQueryData<Friend[]>(['friends', userId]) || [];
-  },
-  refetchOnMount: true,
-  refetchOnWindowFocus: false
-});
+    data: friends = [], 
+    isInitialLoading,
+    isError,
+    error: queryError
+  } = useQuery<Friend[]>({
+    queryKey: ['friends', userId?.toString()],
+    queryFn: async () => {
+      if (!userId || !initData) return [];
+      
+      const response = await api.getFriends(userId.toString(), initData);
+      if (response.success && response.data) {
+        return response.data.map(f => ({
+          id: f.id,
+          friend_id: f.friend.id,
+          friend_username: f.friend.username || 
+                          `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
+          burnout_level: f.friend.burnout_level
+        }));
+      }
+      throw new Error(response.error || 'Failed to load friends');
+    },
+    enabled: !!userId && !!initData,
+    staleTime: 1000 * 60 * 5, // 5 минут кеширования
+    initialData: () => {
+      // Используем префетченные данные из кеша
+      return queryClient.getQueryData<Friend[]>(['friends', userId?.toString()]);
+    },
+    refetchOnMount: true,
+    refetchOnWindowFocus: false
+  });
 
   const deleteFriendMutation = useMutation({
     mutationFn: (friendId: number) => {
