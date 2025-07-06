@@ -17,13 +17,11 @@ export const useUserData = (telegramId: number, initData?: string) => {
   });
 };
 
-export const useFriendsData = (telegramId: number | string, initData?: string) => {
-  const id = typeof telegramId === 'string' ? Number(telegramId) : telegramId;
-  
+export const useFriendsData = (telegramId: string, initData?: string) => {
   return useQuery({
-    queryKey: ['friends', id],
-    queryFn: () => api.getFriends(id, initData),
-    enabled: !!id && !isNaN(id),
+    queryKey: ['friends', telegramId],
+    queryFn: () => api.getFriends(telegramId, initData),
+    enabled: !!telegramId,
     staleTime: 5 * 60 * 1000,
   });
 };
@@ -185,7 +183,7 @@ class Api {
     );
   }
 
-  async getFriends(telegramId: number, initData?: string): Promise<ApiResponse<Friend[]>> {
+  async getFriends(telegramId: string, initData?: string): Promise<ApiResponse<Friend[]>> {
     return this.makeRequest<Friend[]>(
       `/friends?telegramId=${telegramId}`, 
       'GET', 
