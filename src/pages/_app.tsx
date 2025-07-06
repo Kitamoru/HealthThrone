@@ -17,10 +17,23 @@ const prefetchShopData = (initData?: string) => {
   });
 };
 
+// Сохраняем преобразование данных для друзей из второго варианта
 const prefetchFriends = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
     queryKey: ['friends', userId.toString()],
-    queryFn: () => api.getFriends(userId, initData),
+    queryFn: async () => {
+      const response = await api.getFriends(userId.toString(), initData);
+      if (response.success && response.data) {
+        return response.data.map(f => ({
+          id: f.id,
+          friend_id: f.friend.id,
+          friend_username: f.friend.username || 
+                          `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
+          burnout_level: f.friend.burnout_level
+        }));
+      }
+      throw new Error(response.error || 'Failed to load friends');
+    },
   });
 };
 
@@ -38,10 +51,12 @@ const Loader = dynamic(
 );
 
 function App({ Component, pageProps }: AppProps) {
+  // Сохраняем получение user из useTelegram (первый вариант)
   const { initData, startParam, webApp, isTelegramReady, user } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Сохраняем проверку user из первого варианта
   useEffect(() => {
     if (!isTelegramReady || !initData || !user) return;
     
