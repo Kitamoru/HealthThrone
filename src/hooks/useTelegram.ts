@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 
 interface TelegramUser {
   id: string;
@@ -48,7 +48,7 @@ interface TelegramWebApp {
   viewportHeight: number;
   viewportStableHeight: number;
   
-  // Методы управления событиями
+  // Event handling methods
   onEvent: (eventType: string, handler: Function) => void;
   offEvent: (eventType: string, handler: Function) => void;
   
@@ -87,6 +87,26 @@ export const useTelegram = () => {
     colorScheme: 'light' as 'light' | 'dark',
   });
 
+  // Ref to store the actual theme update function
+  const updateThemeRef = useRef<() => void>(() => {});
+
+  // Stable callback for theme updates
+  const updateTheme = useCallback(() => {
+    const telegram = window.Telegram;
+    if (!telegram?.WebApp) return;
+    const tg = telegram.WebApp;
+    setState(prev => ({
+      ...prev,
+      themeParams: tg.themeParams || {},
+      colorScheme: tg.colorScheme || 'light',
+    }));
+  }, []);
+
+  // Update ref when callback changes
+  useEffect(() => {
+    updateThemeRef.current = updateTheme;
+  }, [updateTheme]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
@@ -96,11 +116,11 @@ export const useTelegram = () => {
 
       const tg = telegram.WebApp;
       
-      // Инициализация WebApp
+      // Initialize WebApp
       tg.ready();
       tg.expand();
 
-      // Обновление состояния с актуальными данными
+      // Update state with current data
       setState({
         webApp: tg,
         initData: tg.initData,
@@ -111,21 +131,17 @@ export const useTelegram = () => {
         colorScheme: tg.colorScheme || 'light',
       });
 
-      // Обработчик изменения темы
-      const updateTheme = () => {
-        setState(prev => ({
-          ...prev,
-          themeParams: tg.themeParams || {},
-          colorScheme: tg.colorScheme || 'light',
-        }));
+      // Theme change handler using ref
+      const handleThemeChanged = () => {
+        updateThemeRef.current();
       };
 
-      // Подписываемся на события изменения темы
-      tg.onEvent('themeChanged', updateTheme);
+      // Subscribe to theme changes
+      tg.onEvent('themeChanged', handleThemeChanged);
       
-      // Очистка при размонтировании
+      // Cleanup on unmount
       return () => {
-        tg.offEvent('themeChanged', updateTheme);
+        tg.offEvent('themeChanged', handleThemeChanged);
       };
     };
 
