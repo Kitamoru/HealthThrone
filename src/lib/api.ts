@@ -8,21 +8,6 @@ interface SubmitSurveyRequest {
   initData?: string;
 }
 
-// Унифицированный обработчик данных для друзей
-const transformFriendsData = (response: ApiResponse<Friend[]>) => {
-  if (!response.success || !response.data) {
-    throw new Error(response.error || 'Failed to load friends');
-  }
-  
-  return response.data.map(f => ({
-    id: f.id,
-    friend_id: f.friend.id,
-    friend_username: f.friend.username || 
-                    `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
-    burnout_level: f.friend.burnout_level
-  }));
-};
-
 export const useUserData = (telegramId: number, initData?: string) => {
   return useQuery<UserProfile>({
     queryKey: ['userData', telegramId],
