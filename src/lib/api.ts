@@ -17,7 +17,7 @@ export const useUserData = (telegramId: number, initData?: string) => {
   });
 };
 
-export const useFriendsData = (telegramId: string, initData?: string) => {
+export const useFriendsData = (telegramId: number, initData?: string) => {
   return useQuery({
     queryKey: ['friends', telegramId],
     queryFn: () => api.getFriends(telegramId, initData),
@@ -183,7 +183,7 @@ class Api {
     );
   }
 
-  async getFriends(telegramId: string, initData?: string): Promise<ApiResponse<Friend[]>> {
+  async getFriends(telegramId: number, initData?: string): Promise<ApiResponse<Friend[]>> {
     return this.makeRequest<Friend[]>(
       `/friends?telegramId=${telegramId}`, 
       'GET', 
