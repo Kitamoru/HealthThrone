@@ -1,11 +1,62 @@
 import { useEffect, useState } from 'react';
 
-// Оптимизация: вынесены интерфейсы в отдельный файл
-import type { 
-  TelegramWebApp, 
-  TelegramUser, 
-  TelegramContact 
-} from '../types/telegram';
+interface TelegramUser {
+  id: string;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  language_code?: string;
+  is_premium?: boolean;
+  photo_url?: string;
+}
+
+interface TelegramContact {
+  user_id?: number;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  phone_number?: string;
+}
+
+interface TelegramWebApp {
+  initData: string;
+  initDataUnsafe: {
+    user?: TelegramUser;
+    chat_instance?: string;
+    chat_type?: string;
+    start_param?: string;
+  };
+  colorScheme: 'light' | 'dark';
+  themeParams: {
+    bg_color?: string;
+    text_color?: string;
+    hint_color?: string;
+    link_color?: string;
+    button_color?: string;
+    button_text_color?: string;
+  };
+  isExpanded: boolean;
+  viewportHeight: number;
+  viewportStableHeight: number;
+  ready: () => void;
+  expand: () => void;
+  close: () => void;
+  sendData: (data: string) => void;
+  showAlert: (message: string) => void;
+  showConfirm: (message: string, callback: (confirmed: boolean) => void) => void;
+  showPopup: (params: any, callback?: (buttonId: string) => void) => void;
+  openTelegramLink: (url: string) => void;
+  openLink: (url: string, options?: { try_instant_view?: boolean }) => void;
+  HapticFeedback: {
+    impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
+    notificationOccurred: (type: 'error' | 'success' | 'warning') => void;
+    selectionChanged: () => void;
+  };
+  showContactPicker?: (
+    options: { title?: string },
+    callback: (contact: TelegramContact) => void
+  ) => void;
+}
 
 declare global {
   interface Window {
@@ -15,9 +66,6 @@ declare global {
   }
 }
 
-// Добавлен таймаут и обработка ошибок
-const TELEGRAM_LOAD_TIMEOUT = 3000;
-
 export const useTelegram = () => {
   const [state, setState] = useState({
     webApp: null as TelegramWebApp | null,
@@ -25,59 +73,31 @@ export const useTelegram = () => {
     user: null as TelegramUser | null,
     startParam: '',
     isReady: false,
-    error: null as string | null,
   });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    let timeoutId: NodeJS.Timeout;
-    let isMounted = true;
-
     const initTelegram = () => {
       const telegram = window.Telegram;
-      if (!telegram?.WebApp) {
-        // Таймаут для случаев, когда скрипт не загрузился
-        timeoutId = setTimeout(() => {
-          if (isMounted) {
-            setState(prev => ({
-              ...prev,
-              error: "Не удалось загрузить Telegram WebApp. Проверьте интернет-соединение."
-            }));
-          }
-        }, TELEGRAM_LOAD_TIMEOUT);
-        return;
-      }
+      if (!telegram?.WebApp) return;
 
       const tg = telegram.WebApp;
-      
-      try {
-        tg.ready();
-        tg.expand();
+      tg.ready();
+      tg.expand();
 
-        if (isMounted) {
-          setState({
-            webApp: tg,
-            initData: tg.initData,
-            user: tg.initDataUnsafe.user || null,
-            startParam: tg.initDataUnsafe.start_param || '',
-            isReady: true,
-            error: null,
-          });
-        }
-      } catch (err) {
-        if (isMounted) {
-          setState(prev => ({
-            ...prev,
-            error: `Ошибка инициализации Telegram: ${(err as Error).message}`
-          }));
-        }
-      }
+      setState({
+        webApp: tg,
+        initData: tg.initData,
+        user: tg.initDataUnsafe.user || null,
+        startParam: tg.initDataUnsafe.start_param || '',
+        isReady: true,
+      });
     };
 
     const handleReady = () => {
-      clearTimeout(timeoutId);
       initTelegram();
+      window.removeEventListener('telegram-ready', handleReady);
     };
 
     if (window.Telegram?.WebApp) {
@@ -87,8 +107,6 @@ export const useTelegram = () => {
     }
 
     return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
       window.removeEventListener('telegram-ready', handleReady);
     };
   }, []);
