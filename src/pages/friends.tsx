@@ -48,7 +48,6 @@ export default function Friends() {
   queryFn: async () => {
     if (!userId || !initData) return [];
     
-    // Исправленный вызов:
     const { 
   data: friends = [], 
   isInitialLoading,
@@ -75,7 +74,7 @@ export default function Friends() {
   enabled: !!userId && !!initData,
   staleTime: 1000 * 60 * 5,
   initialData: () => {
-    return queryClient.getQueryData<Friend[]>(['friends', userId]);
+    return queryClient.getQueryData<Friend[]>(['friends', userId]) || [];
   },
   refetchOnMount: true,
   refetchOnWindowFocus: false
