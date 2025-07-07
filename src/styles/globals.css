@@ -303,6 +303,7 @@ body {
 }
 
 /* Menu */
+/* Menu */
 .menu {
   display: flex;
   position: fixed;
@@ -310,12 +311,12 @@ body {
   right: 12px;
   bottom: 50px;
   height: 68px;
-  padding: 12px;
+  padding: 12px 20px;
   justify-content: space-around;
   align-items: center;
   gap: 28px;
   border-radius: 160px;
-  background: transparent;
+  background: rgba(22, 22, 22, 0.01); /* #161616 с 1% прозрачности */
   box-shadow: 
     0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 
     0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 
@@ -325,65 +326,87 @@ body {
   -webkit-backdrop-filter: blur(30px);
   z-index: 1000;
   transform: translateZ(0);
-  background: rgba(33, 33, 33, 0.01);
 }
 
 .menu-btn {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 44px; /* Сохраняем фиксированную высоту */
-  padding: 8px;
-  border-radius: 140px; /* Половина высоты для капсульной формы */
-  background: #161616;
+  height: 44px;
+  padding: 8px 16px;
+  border-radius: 22px;
+  background: #212121; /* Новый цвет кнопки - #212121 без прозрачности */
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;
-  flex: 1; /* Ключевое изменение - кнопки растягиваются по ширине */
+  flex: 1 0 0;
+  min-width: 0;
 }
 
-/* Убираем фиксированную ширину у контейнера иконки */
 .menu-btn-icon {
   display: flex;
+  width: 28px;
+  height: 28px;
   justify-content: center;
   align-items: center;
   position: relative;
-  /* Новые размеры: адаптивные, но ограниченные */
-  width: auto;
-  max-width: 28px;
-  height: 28px;
+  flex-shrink: 0;
 }
 
-/* Иконки SVG */
 .menu-btn-icon svg {
-  width: 28px; /* Фиксированный размер иконки */
-  height: 28px;
+  width: 100%;
+  height: 100%;
   transition: all 0.3s ease;
   fill: #FFFFFF;
 }
 
-/* Адаптируем свечение для новой формы */
+/* Свечение ПОД иконкой */
 .menu-btn.active .menu-btn-icon::after {
-  border-radius: 22px; /* Соответствует радиусу кнопки */
-  width: calc(100% + 16px); /* Увеличиваем область свечения */
-  height: calc(100% + 16px);
-  top: -8px;
-  left: -8px;
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  opacity: 0.5;
+  background: #0FEE9E;
+  filter: blur(26px);
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
 }
 
-/* Активное состояние: меняем цвет иконки и добавляем свечение */
+/* Активное состояние иконки */
 .menu-btn.active .menu-btn-icon svg {
-  fill: #0FEE9E; /* Зелёный цвет для активной иконки */
-  filter: drop-shadow(0 0 8px rgba(15, 238, 158, 0.8));
+  fill: #0FEE9E;
+  filter: drop-shadow(0 0 12px rgba(15, 238, 158, 0.6));
 }
 
 .menu-btn:hover .menu-btn-icon svg {
   opacity: 0.9;
 }
 
-/* Убираем эффекты с активной кнопки */
 .menu-btn.active {
   box-shadow: none;
+}
+
+@media (max-width: 480px) {
+  .menu {
+    gap: 12px;
+    padding: 10px 14px;
+    height: 62px;
+  }
+  
+  .menu-btn {
+    height: 40px;
+    padding: 6px 10px;
+    border-radius: 20px;
+  }
+  
+  .menu-btn-icon {
+    width: 24px;
+    height: 24px;
+  }
 }
 
 /* Friends Page */
