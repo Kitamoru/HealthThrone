@@ -847,7 +847,6 @@ body {
   padding: 16px 20px;
   align-items: center;
   gap: 32px;
-  font-family: Inter, sans-serif;
 }
 
 .scrollable-content {
@@ -856,7 +855,6 @@ body {
   gap: 32px;
   width: 100%;
   overflow-y: auto;
-  font-family: Inter, sans-serif;
 }
 
 /* Блок заголовка "Где я?" */
@@ -873,7 +871,6 @@ body {
 .page-title {
   color: #FFF;
   text-align: center;
-  font-family: Inter;
   font-size: 20px;
   font-style: normal;
   font-weight: 500;
@@ -896,7 +893,6 @@ body {
 
 .page-description {
   color: #FFF;
-  font-family: Inter;
   font-size: 15px;
   font-style: normal;
   font-weight: 400;
@@ -916,13 +912,11 @@ body {
   align-self: stretch;
   border-radius: 16px;
   background: #161616;
-  font-family: Inter, sans-serif;
 }
 
 .section-title {
   align-self: stretch;
   color: #FFF;
-  font-family: Inter;
   font-size: 19px;
   font-style: normal;
   font-weight: 600;
@@ -933,7 +927,6 @@ body {
 .reference-card {
   align-self: stretch;
   color: #FFF;
-  font-family: Inter;
   font-size: 15px;
   font-style: normal;
   font-weight: 400;
@@ -951,7 +944,6 @@ body {
 .feature-list {
   padding-left: 20px;
   margin: 8px 0 0 0;
-  font-family: Inter, sans-serif;
 }
 
 .feature-list li {
