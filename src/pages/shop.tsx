@@ -246,31 +246,7 @@ export default function Shop() {
         )}
       </div>
 
-      <div className="menu">
-  <Link href="/" passHref>
-    <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>
-      <img src="/1.svg" alt="Dashboard" className="menu-btn-icon" />
-    </button>
-  </Link>
-  
-  <Link href="/friends" passHref>
-    <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>
-      <img src="/2.svg" alt="Friends" className="menu-btn-icon" />
-    </button>
-  </Link>
-  
-  <Link href="/shop" passHref>
-    <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>
-      <img src="/3.svg" alt="Shop" className="menu-btn-icon" />
-    </button>
-  </Link>
-  
-  <Link href="/reference" passHref>
-    <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>
-      <img src="/4.svg" alt="Info" className="menu-btn-icon" />
-    </button>
-  </Link>
-</div>
+       <BottomMenu />
     </div>
   );
 }
