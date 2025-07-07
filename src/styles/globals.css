@@ -326,42 +326,90 @@ body {
   z-index: 1000;
 }
 
+/* Menu */
+.menu {
+  display: flex;
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 50px;
+  width: calc(100% - 24px);
+  height: 68px;
+  padding: 12px;
+  justify-content: space-around;
+  align-items: center;
+  border-radius: 160px;
+  background: rgba(33, 33, 33, 0.15);
+  box-shadow: 
+    0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 
+    0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 
+    1px 1px 2px 0px rgba(194, 179, 255, 0.20) inset, 
+    0px 0.15px 0px 0px #C2B3FF inset;
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  z-index: 1000;
+}
+
+/* Menu Buttons */
 .menu-btn {
   display: flex;
-  flex: 0 1 auto; /* Гибкое распределение */
   justify-content: center;
   align-items: center;
-  padding: 8px;
-  width: 44px; /* Фиксированная ширина кнопок */
+  width: 44px;
   height: 44px;
+  padding: 8px;
+  margin: 0 4px;
   border-radius: 140px;
   background: #161616;
   border: none;
   cursor: pointer;
   position: relative;
-  margin: 0 4px; /* Равные отступы между кнопками */
+  transition: all 0.3s ease;
 }
 
-.menu-btn-icon {
-  display: flex;
-  width: 28px; /* Фиксированный размер */
-  height: 28px; /* Фиксированный размер */
-  justify-content: center;
-  align-items: center;
-}
-
-.menu-btn.active {
+/* Active State Glow Effect */
+.menu-btn.active::after {
   content: '';
   position: absolute;
   width: 28px;
   height: 28px;
-  right: 16.5px; /* Позиционирование */
-  top: 8px; /* Позиционирование */
+  right: 16.5px;
+  top: 8px;
   opacity: 0.5;
-  background: #0FEE9E; /* Цвет свечения */
-  filter: blur(26px); /* Размытие */
-  border-radius: 50%; /* Круглая форма */
-  z-index: -1; /* Под основным контентом кнопки */
+  background: #0FEE9E;
+  filter: blur(26px);
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Optional Hover Effect */
+.menu-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Icons Styling */
+.menu-btn-icon {
+  display: flex;
+  width: 28px;
+  height: 28px;
+  justify-content: center;
+  align-items: center;
+  transition: filter 0.2s ease;
+}
+
+/* Active State Additional Effects */
+.menu-btn.active {
+  box-shadow: 
+    0 0 15px rgba(15, 238, 158, 0.3),
+    0 0 5px rgba(15, 238, 158, 0.2) inset;
+}
+
+/* Safari Fallback */
+@supports (-webkit-touch-callout: none) {
+  .menu {
+    background: rgba(33, 33, 33, 0.25);
+  }
 }
 
 /* Friends Page */
