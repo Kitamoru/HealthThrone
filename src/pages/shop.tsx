@@ -13,6 +13,7 @@ import {
 import { Sprite } from '../lib/types';
 import { validateRequiredFields } from '../utils/validation';
 import { queryClient } from '../lib/queryClient';
+import BottomMenu from '../components/BottomMenu'; // Импортируем компонент меню
 
 const SpriteCard = React.memo(({ 
   sprite, 
