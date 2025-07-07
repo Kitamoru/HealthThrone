@@ -46,7 +46,7 @@ const ReferencePage = () => {
           </div>
 
           <div className="reference-section">
-            <h2 className="section-title">📈 Моя команда</h2>
+            <h2 className="section-title">📈 Мои союзники</h2>
             <div className="reference-card">
               <p>Управление командой:</p>
               <ul className="feature-list">
@@ -59,7 +59,7 @@ const ReferencePage = () => {
           </div>
 
           <div className="reference-section">
-            <h2 className="section-title">🛍️ Магазин</h2>
+            <h2 className="section-title">🛍️ Лавка фамильяров</h2>
             <div className="reference-card">
               <p>Персонализация вашего профиля:</p>
               <ul className="feature-list">
@@ -71,10 +71,11 @@ const ReferencePage = () => {
             </div>
           </div>
 
+          {/* Обновленный блок "Скрытые функции" */}
           <div className="reference-section">
             <h2 className="section-title">🎁 Скрытые функции</h2>
-            <div className="reference-card important">
-              <h3>💰 Система монет</h3>
+            <div className="reference-card">
+              <p>Монеты можно получить:</p>
               <ul className="feature-list">
                 <li><strong>+100 монет</strong> - за ежедневное прохождение теста</li>
                 <li><strong>+200 монет</strong> - за каждого приглашенного друга</li>
