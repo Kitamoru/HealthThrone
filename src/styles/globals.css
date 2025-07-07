@@ -303,54 +303,53 @@ body {
 }
 
 /* Menu */
-  /* Menu */
-.menu {
-  display: flex; /* Меняем grid на flex */
-  justify-content: center; /* Центрируем кнопки по горизонтали */
-  align-items: center; /* Центрируем по вертикали */
-  width: min(95%, 353px);
+  .menu {
+  display: flex;
+  position: absolute; /* Меняем fixed на absolute */
+  left: 20px; /* Новая позиция */
+  bottom: 50px; /* Новая позиция */
+  width: 353px; /* Фиксированная ширина */
   height: 68px; /* Фиксированная высота */
   padding: 12px;
-  position: fixed; /* Меняем sticky на fixed */
-  left: 50%;
-  bottom: 37px;
-  transform: translateX(-50%);
+  align-items: center;
+  gap: 28px; /* Фиксированный промежуток между кнопками */
   border-radius: 160px;
-  background: #2121211a;
+  background: rgba(33, 33, 33, 0.01); /* #212121 с 1% прозрачности */
   box-shadow: 
     0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 
     0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 
     1px 1px 2px 0px rgba(194, 179, 255, 0.20) inset, 
     0px 0.15px 0px 0px #C2B3FF inset;
   backdrop-filter: blur(30px);
-  z-index: 1000;
-  gap: 2px; /* Фиксированный промежуток между кнопками */
+  z-index: 1000; /* Максимальный индекс */
 }
 
 .menu-btn {
   display: flex;
-  flex-direction: column; /* Добавляем для gap внутри кнопки */
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  width: 44px; /* Фиксированная ширина */
-  height: 44px; /* Фиксированная высота */
-  padding: 8px; /* Фиксированный внутренний отступ */
+  padding: 8px;
+  gap: 2px; /* Промежуток внутри кнопки */
+  flex: 1 0 0; /* Равномерное распределение */
   border-radius: 140px;
-  background: #161616;
+  background: #161616; /* Цвет фона кнопки */
   border: none;
   cursor: pointer;
-  flex-shrink: 0;
   position: relative;
-  gap: 2px; /* Фиксированный промежуток внутри кнопки */
+  height: 44px; /* Высота кнопки */
 }
 
 .menu-btn-icon {
+  display: flex;
   width: 28px; /* Фиксированный размер */
   height: 28px; /* Фиксированный размер */
+  justify-content: center;
+  align-items: center;
 }
 
 .menu-btn.active {
-  box-shadow: 0 0 0 2px rgba(15, 238, 158, 0.6);
+  box-shadow: none; /* Убираем предыдущий эффект */
 }
 
 .menu-btn.active::after {
@@ -358,15 +357,13 @@ body {
   position: absolute;
   width: 28px;
   height: 28px;
-  border-radius: 50%;
-  background: #0FEE9E;
-  opacity: 0.3;
-  filter: blur(26px);
-  z-index: -1;
-}
-/* Добавляем для контейнера, чтобы избежать наложения на контент */
-body {
-  padding-bottom: 120px !important; /* Оставляем место для меню */
+  right: 16.5px; /* Позиционирование */
+  top: 8px; /* Позиционирование */
+  opacity: 0.5;
+  background: #0FEE9E; /* Цвет свечения */
+  filter: blur(26px); /* Размытие */
+  border-radius: 50%; /* Круглая форма */
+  z-index: -1; /* Под основным контентом кнопки */
 }
 
 /* Friends Page */
