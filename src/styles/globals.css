@@ -847,6 +847,7 @@ body {
   padding: 16px 20px;
   align-items: center;
   gap: 32px;
+  font-family: Inter, sans-serif;
 }
 
 .scrollable-content {
@@ -855,14 +856,15 @@ body {
   gap: 32px;
   width: 100%;
   overflow-y: auto;
+  font-family: Inter, sans-serif;
 }
 
-.reference-section {
+/* Блок заголовка "Где я?" */
+.header-block {
   display: flex;
   padding: 16px;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 16px;
+  justify-content: center; /* Центрирование содержимого */
+  align-items: center;
   align-self: stretch;
   border-radius: 16px;
   background: #161616;
@@ -870,14 +872,26 @@ body {
 
 .page-title {
   color: #FFF;
-  text-align: left;
+  text-align: center;
   font-family: Inter;
   font-size: 20px;
   font-style: normal;
   font-weight: 500;
   line-height: 24px;
   letter-spacing: -0.5px;
+  width: 100%;
+}
+
+/* Блок описания приложения */
+.description-block {
+  display: flex;
+  padding: 16px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 32px;
   align-self: stretch;
+  border-radius: 16px;
+  background: #161616;
 }
 
 .page-description {
@@ -888,15 +902,26 @@ body {
   font-weight: 400;
   line-height: 20px;
   letter-spacing: -0.23px;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  text-align: center;
   width: 100%;
+  text-align: center;
+}
+
+/* Блоки с информацией */
+.reference-section {
+  display: flex;
+  padding: 16px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  align-self: stretch;
+  border-radius: 16px;
+  background: #161616;
+  font-family: Inter, sans-serif;
 }
 
 .section-title {
   align-self: stretch;
-  color: var(--main-text-primary, #FFF);
+  color: #FFF;
   font-family: Inter;
   font-size: 19px;
   font-style: normal;
@@ -926,6 +951,7 @@ body {
 .feature-list {
   padding-left: 20px;
   margin: 8px 0 0 0;
+  font-family: Inter, sans-serif;
 }
 
 .feature-list li {
@@ -934,12 +960,6 @@ body {
 
 .feature-list li:last-child {
   margin-bottom: 0;
-}
-
-.important {
-  background: rgba(255, 204, 0, 0.1);
-  border-radius: 12px;
-  padding: 12px;
 }
  
 
