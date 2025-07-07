@@ -304,13 +304,12 @@ body {
 
 /* Menu */
   .menu {
-  display: flex;
+  display: grid;
   justify-content: space-around;
-  align-items: center;
   width: min(95%, 353px);
   height: min(60px, 12vw);
   padding: 12px;
-  position: fixed;
+  position: sticky;
   left: 50%;
   bottom: 37px; /* Фиксированный отступ 37px снизу */
   transform: translateX(-50%); /* Центрирование по горизонтали */
@@ -337,6 +336,8 @@ body {
   border: none;
   cursor: pointer;
   flex-shrink: 0;
+  position: relative;
+  display: flex; /* Добавлено */
 }
 
 .menu-btn-icon {
