@@ -32,12 +32,12 @@ body {
 
 /* Main Container */
 .container {
-  display: flex;
-  flex-direction: column;
-  height: calc(var(--vh, 1vh) * 100);
-  padding: 15px;
-  gap: 20px;
-  overflow: hidden; /* Отключаем общий скролл */
+display: flex;
+width: 393px;
+height: 852px;
+flex-direction: column;
+align-items: center;
+background-color: #212121;
 }
 
 /* Header Styles */
@@ -840,40 +840,36 @@ body {
 }
 /* Reference Page Styles */
 .page-title {
-  text-align: center;
-  color: var(--tg-text);
-  margin-bottom: 24px;
-  font-size: 1.8rem;
-  padding-top: 10px;
-}
-
-.reference-section {
-  margin-bottom: 25px;
-  animation: fadeIn 0.5s ease;
+  display: flex;
+  padding: 16px;
+  justify-content: space-between;
+  align-items: center;
+  align-self: stretch;
+  border-radius: 16px;
+  background: #2A2A2A; /* Убрана лишняя скобка */
 }
 
 .section-title {
-  color: var(--tg-accent);
-  border-bottom: 2px solid var(--tg-accent);
-  padding-bottom: 8px;
-  margin-bottom: 15px;
-  font-size: 1.4rem;
+  color: #FFF; /* Убрана лишняя скобка */
+  font-family: Inter, sans-serif; /* Добавлен fallback */
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 22px;
+  letter-spacing: -0.23px;
 }
 
 .reference-card {
-  background: var(--tg-secondary);
-  border-radius: 12px;
-  padding: 18px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-  margin-bottom: 15px;
-  border-left: 4px solid var(--tg-accent);
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+  display: flex;
+  padding: 16px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  align-self: stretch;
 }
 
 .reference-card.important {
-  border-left: 4px solid var(--tg-danger);
-  background: rgba(231, 76, 60, 0.1);
+  border-radius: 16px;
+  background: #2A2A2A;
 }
 
 .feature-list {
@@ -882,18 +878,15 @@ body {
 }
 
 .feature-list li {
-  margin-bottom: 10px;
-  line-height: 1.5;
-  color: var(--tg-text);
+  color: #FFF; /* Убрана лишняя скобка */
+  font-family: Inter, sans-serif; /* Добавлен fallback */
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.23px;
 }
 
-/* Улучшенные автоматические переносы */
-.reference-section * {
-  word-break: break-word;
-  hyphens: auto;
-}
-
-/* Отступы для заголовков внутри карточек */
+/* Отступы для заголовков */
 .reference-card h3 {
   margin-top: 15px;
   margin-bottom: 10px;
@@ -911,7 +904,7 @@ strong {
   font-weight: 600;
 }
 
-/* Анимация для плавного появления */
+/* Анимации */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -923,20 +916,41 @@ strong {
   }
   
   .page-title {
-    font-size: 1.5rem;
+    color: #FFF;
+    text-align: center;
+    font-family: Inter, sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 24px;
+    letter-spacing: -0.5px;
   }
   
   .section-title {
-    font-size: 1.2rem;
+    color: #FFF; /* Убрана лишняя скобка */
+    font-family: Inter, sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 20px;
+    letter-spacing: -0.23px;
   }
   
-  .feature-list li {
-    font-size: 14px;
+   .feature-list li {
+color: #FFF;
+font-family: Inter;
+font-size: 15px;
+font-style: normal;
+font-weight: 400;
+line-height: 20px; /* 133.333% */
+letter-spacing: -0.23px;
+}
   }
   
   .reference-card h3 {
     font-size: 1.1rem;
   }
+ 
+
+   /* Классы для управления анимацией покупки */
 
  .button-loader {
   display: inline-block;
