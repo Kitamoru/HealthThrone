@@ -303,18 +303,20 @@ body {
 }
 
 /* Menu */
-  .menu {
-  display: grid;
-  justify-content: space-around;
+  /* Menu */
+.menu {
+  display: flex; /* Меняем grid на flex */
+  justify-content: center; /* Центрируем кнопки по горизонтали */
+  align-items: center; /* Центрируем по вертикали */
   width: min(95%, 353px);
-  height: min(60px, 12vw);
+  height: 68px; /* Фиксированная высота */
   padding: 12px;
-  position: sticky;
+  position: fixed; /* Меняем sticky на fixed */
   left: 50%;
-  bottom: 37px; /* Фиксированный отступ 37px снизу */
-  transform: translateX(-50%); /* Центрирование по горизонтали */
+  bottom: 37px;
+  transform: translateX(-50%);
   border-radius: 160px;
-  background: rgba(33, 33, 33, 0.01);
+  background: #2121211a;
   box-shadow: 
     0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 
     0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 
@@ -322,27 +324,29 @@ body {
     0px 0.15px 0px 0px #C2B3FF inset;
   backdrop-filter: blur(30px);
   z-index: 1000;
-  gap: min(28px, 5vw);
+  gap: 2px; /* Фиксированный промежуток между кнопками */
 }
 
 .menu-btn {
   display: flex;
+  flex-direction: column; /* Добавляем для gap внутри кнопки */
   justify-content: center;
   align-items: center;
-  width: min(44px, 8vw);
-  height: min(44px, 8vw);
+  width: 44px; /* Фиксированная ширина */
+  height: 44px; /* Фиксированная высота */
+  padding: 8px; /* Фиксированный внутренний отступ */
   border-radius: 140px;
   background: #161616;
   border: none;
   cursor: pointer;
   flex-shrink: 0;
   position: relative;
-  display: flex; /* Добавлено */
+  gap: 2px; /* Фиксированный промежуток внутри кнопки */
 }
 
 .menu-btn-icon {
-  width: min(28px, 5vw);
-  height: min(28px, 5vw);
+  width: 28px; /* Фиксированный размер */
+  height: 28px; /* Фиксированный размер */
 }
 
 .menu-btn.active {
@@ -352,13 +356,17 @@ body {
 .menu-btn.active::after {
   content: '';
   position: absolute;
-  width: min(28px, 5vw);
-  height: min(28px, 5vw);
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: #0FEE9E;
   opacity: 0.3;
   filter: blur(26px);
   z-index: -1;
+}
+/* Добавляем для контейнера, чтобы избежать наложения на контент */
+body {
+  padding-bottom: 120px !important; /* Оставляем место для меню */
 }
 
 /* Friends Page */
