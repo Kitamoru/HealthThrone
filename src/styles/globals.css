@@ -303,7 +303,7 @@ body {
 }
 
 /* Menu */
-.menu {
+  .menu {
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -312,8 +312,8 @@ body {
   padding: 12px;
   position: fixed;
   left: 50%;
-  bottom: 30px;
-  transform: translateX(-50%);
+  bottom: 37px; /* Фиксированный отступ 37px снизу */
+  transform: translateX(-50%); /* Центрирование по горизонтали */
   border-radius: 160px;
   background: rgba(33, 33, 33, 0.01);
   box-shadow: 
