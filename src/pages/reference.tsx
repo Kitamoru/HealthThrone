@@ -17,9 +17,13 @@ const ReferencePage = () => {
       
       <div className="container-reference">
         <div className="scrollable-content">
-          {/* Обернули заголовок и описание в reference-section */}
-          <div className="reference-section">
-            <h1 className="page-title">📚 Где я?</h1>
+          {/* Отдельный блок для заголовка "Где я?" */}
+          <div className="header-block">
+            <h1 className="page-title">О Maraleon</h1>
+          </div>
+
+          {/* Блок описания приложения */}
+          <div className="description-block">
             <div className="page-description">
               Moraleon — это ваш персональный трекер мотивации и выгорания, 
               который становится еще мощнее в команде.<br/>
@@ -27,6 +31,7 @@ const ReferencePage = () => {
             </div>
           </div>
 
+          {/* Остальные блоки информации */}
           <div className="reference-section">
             <h2 className="section-title">📊 Главный экран</h2>
             <div className="reference-card">
@@ -79,6 +84,7 @@ const ReferencePage = () => {
           </div>
         </div>
 
+        {/* Меню навигации */}
         <div className="menu">
           <Link href="/" passHref>
             <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>📊</button>
