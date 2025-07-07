@@ -4,7 +4,6 @@ import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { 
-  useUserData, 
   useSpritesData, 
   useOwnedSprites,
   usePurchaseSprite,
@@ -13,6 +12,8 @@ import {
 import { Sprite } from '../lib/types';
 import { validateRequiredFields } from '../utils/validation';
 import { queryClient } from '../lib/queryClient';
+import { useQuery } from '@tanstack/react-query'; // Добавлен
+import { api } from '../lib/api'; // Добавлен
 
 const SpriteCard = React.memo(({ 
   sprite, 
@@ -88,14 +89,34 @@ const SpriteCard = React.memo(({
 
 export default function Shop() {
   const router = useRouter();
-  const { user, initData } = useTelegram();
-  const telegramId = Number(user?.id);
+  const { user, initData, isTelegramReady } = useTelegram();
+  const telegramId = user?.id ? Number(user.id) : undefined;
   
+  // Проверка готовности Telegram
+  if (!isTelegramReady) {
+    return <Loader />;
+  }
+
+  // Проверка авторизации
+  if (!telegramId) {
+    return (
+      <div className="error">
+        Пользователь не авторизован. Перезагрузите страницу.
+      </div>
+    );
+  }
+
+  // Используем единый ключ с _app.tsx
   const { 
     data: userResponse, 
     isLoading: userLoading, 
     error: userError 
-  } = useUserData(telegramId, initData);
+  } = useQuery({
+    queryKey: ['userData', telegramId],
+    queryFn: () => api.getUserData(telegramId, initData),
+    enabled: !!telegramId && !!initData,
+    staleTime: 5 * 60 * 1000,
+  });
   
   const { 
     data: spritesResponse, 
@@ -134,35 +155,35 @@ export default function Shop() {
     (ownedResponse && !ownedResponse.success ? ownedResponse.error : null);
 
   const handlePurchase = useCallback(async (spriteId: number) => {
-  if (!user?.id) {
-    setError('User not defined');
-    return;
-  }
-
-  try {
-    setProcessing(spriteId);
-    setError(null);
-    
-    const purchaseResult = await purchaseMutation.mutateAsync({
-      telegramId: Number(user.id),
-      spriteId,
-      initData
-    });
-    
-    if (purchaseResult.success) {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
-        queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] })
-      ]);
+    if (!user?.id) {
+      setError('User not defined');
+      return;
     }
-  } catch (err) {
-    // Ошибки теперь обрабатываются на бэкенде
-    const error = err as { message?: string };
-    setError(error.message || 'Purchase failed');
-  } finally {
-    setProcessing(null);
-  }
-}, [user, initData, purchaseMutation]);
+
+    try {
+      setProcessing(spriteId);
+      setError(null);
+      
+      const purchaseResult = await purchaseMutation.mutateAsync({
+        telegramId: Number(user.id),
+        spriteId,
+        initData
+      });
+      
+      if (purchaseResult.success) {
+        await Promise.all([
+          // Используем единый ключ с _app.tsx
+          queryClient.invalidateQueries({ queryKey: ['userData', user.id] }),
+          queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] })
+        ]);
+      }
+    } catch (err) {
+      const error = err as { message?: string };
+      setError(error.message || 'Purchase failed');
+    } finally {
+      setProcessing(null);
+    }
+  }, [user, initData, purchaseMutation]);
 
   const handleEquip = useCallback(async (spriteId: number) => {
     const validationError = validateRequiredFields(
@@ -191,18 +212,14 @@ export default function Shop() {
       });
       
       if (equipResult.success) {
-        // Ожидаем завершения операций обновления
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
-          queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
-        ]);
+        // Используем единый ключ с _app.tsx
+        await queryClient.invalidateQueries({ queryKey: ['userData', user.id] });
       } else {
         setError(equipResult.error || 'Ошибка при применении спрайта.');
       }
     } catch (err) {
       setError('Проблема с сетью при попытке применить спрайт.');
     } finally {
-      // Снимаем блокировку только после ВСЕХ операций
       setProcessing(null);
     }
   }, [user, initData, equipMutation]);
@@ -221,11 +238,7 @@ export default function Shop() {
 
         {errorMessage && <div className="error">{errorMessage}</div>}
 
-        {!user?.id ? (
-          <div className="error">
-            Пользователь не авторизован. Перезагрузите страницу.
-          </div>
-        ) : sprites.length === 0 ? (
+        {sprites.length === 0 ? (
           <div className="info">Нет доступных спрайтов.</div>
         ) : (
           <div className="sprites-grid">
