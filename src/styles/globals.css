@@ -304,66 +304,60 @@ body {
 
 /* Menu */
 .menu {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  padding: 10px 0;
-  border-top: 2px solid var(--tg-border);
-  background: var(--tg-bg);
-  position: sticky;
-  bottom: 0;
-}
-
-.menu > * {
   display: flex;
+  justify-content: space-around;
+  align-items: center;
+  width: min(95%, 353px);
+  height: min(60px, 12vw);
+  padding: 12px;
+  position: fixed;
+  left: 50%;
+  bottom: 30px;
+  transform: translateX(-50%);
+  border-radius: 160px;
+  background: rgba(33, 33, 33, 0.01);
+  box-shadow: 
+    0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 
+    0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 
+    1px 1px 2px 0px rgba(194, 179, 255, 0.20) inset, 
+    0px 0.15px 0px 0px #C2B3FF inset;
+  backdrop-filter: blur(30px);
+  z-index: 1000;
+  gap: min(28px, 5vw);
 }
 
 .menu-btn {
-  background: var(--tg-secondary);
-  border: 1px solid var(--tg-border);
-  padding: 14px;
-  font-size: 24px;
-  color: var(--tg-text);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: min(44px, 8vw);
+  height: min(44px, 8vw);
+  border-radius: 140px;
+  background: #161616;
+  border: none;
   cursor: pointer;
-  transition: all 0.3s ease;
-  border-radius: 12px;
-  position: relative;
-  overflow: hidden;
-  width: 100%; /* Добавлено */
-  text-align: center; /* Добавлено */
-  display: flex; /* Добавлено */
-  justify-content: center; /* Добавлено */
-  align-items: center; /* Добавлено */
+  flex-shrink: 0;
 }
 
-.menu-btn::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  background: var(--tg-accent);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  transition: width 0.4s, height 0.4s;
-  opacity: 0.2;
-}
-
-.menu-btn:active::before {
-  width: 100px;
-  height: 100px;
-}
-
-.menu-btn:hover {
-  background: var(--tg-accent);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(91, 140, 255, 0.3);
+.menu-btn-icon {
+  width: min(28px, 5vw);
+  height: min(28px, 5vw);
 }
 
 .menu-btn.active {
-  background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
+  box-shadow: 0 0 0 2px rgba(15, 238, 158, 0.6);
+}
+
+.menu-btn.active::after {
+  content: '';
+  position: absolute;
+  width: min(28px, 5vw);
+  height: min(28px, 5vw);
+  border-radius: 50%;
+  background: #0FEE9E;
+  opacity: 0.3;
+  filter: blur(26px);
+  z-index: -1;
 }
 
 /* Friends Page */
