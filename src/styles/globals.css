@@ -378,7 +378,6 @@ body {
   z-index: -1;
   pointer-events: none;
 }
-}
 
 /* Safari Fallback */
 @supports (-webkit-touch-callout: none) {
