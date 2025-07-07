@@ -32,12 +32,13 @@ body {
 
 /* Main Container */
 .container {
-display: flex;
-width: 393px;
-height: 852px;
-flex-direction: column;
-align-items: center;
-background-color: #212121;
+  display: flex;
+  flex-direction: column;
+  height: calc(var(--vh, 1vh) * 100);
+  padding: 15px;
+  gap: 20px;
+  overflow: hidden; /* Отключаем общий скролл */
+  background-color: #212121;
 }
 
 /* Header Styles */
