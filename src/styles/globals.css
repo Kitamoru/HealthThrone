@@ -328,74 +328,75 @@ body {
 
 /* Menu */
 .menu {
-  display: flex;
-  position: fixed;
-  left: 12px;
-  right: 12px;
-  bottom: 50px;
-  width: calc(100% - 24px);
-  height: 68px;
-  padding: 12px;
-  justify-content: space-around;
-  align-items: center;
-  border-radius: 160px;
-  background: rgba(33, 33, 33, 0.15);
-  box-shadow: 
-    0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 
-    0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 
-    1px 1px 2px 0px rgba(194, 179, 255, 0.20) inset, 
-    0px 0.15px 0px 0px #C2B3FF inset;
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  z-index: 1000;
+ display: flex;
+ position: fixed;
+ left: 12px;
+ right: 12px;
+ bottom: 50px;
+ width: calc(100% - 24px);
+ height: 68px;
+ padding: 12px;
+ justify-content: center;
+ align-items: center;
+ gap: 28px;
+ border-radius: 160px;
+ background: transparent; /* Сделаем фон меню прозрачным */
+ box-shadow: 
+ 0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 
+ 0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 
+ 1px 1px 2px 0px rgba(194, 179, 255, 0.20) inset, 
+ 0px 0.15px 0px 0px #C2B3FF inset;
+ backdrop-filter: blur(30px);
+ -webkit-backdrop-filter: blur(30px);
+ z-index: 1000;
 }
 
-/* Menu Buttons */
 .menu-btn {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 44px;
-  height: 44px;
-  padding: 8px;
-  margin: 0 4px;
-  border-radius: 140px;
-  background: #161616;
-  border: none;
-  cursor: pointer;
-  position: relative;
-  transition: all 0.3s ease;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ width: 44px;
+ height: 44px;
+ padding: 8px;
+ border-radius: 140px;
+ background: #161616; /* Вернули чёрный фон кнопкам */
+ border: none;
+ cursor: pointer;
+ position: relative;
+ transition: all 0.3s ease;
+ flex-shrink: 0;
 }
 
-/* Active State Glow Effect */
-.menu-btn.active::after {
-  content: '';
-  position: absolute;
-  width: 28px;
-  height: 28px;
-  right: 16.5px;
-  top: 8px;
-  opacity: 0.5;
-  background: #0FEE9E;
-  filter: blur(26px);
-  border-radius: 50%;
-  z-index: -1;
-  pointer-events: none;
-}
-
-/* Optional Hover Effect */
-.menu-btn:hover {
-  transform: scale(1.05);
-}
-
-/* Icons Styling */
+/* Icon Container */
 .menu-btn-icon {
   display: flex;
   width: 28px;
   height: 28px;
   justify-content: center;
   align-items: center;
-  transition: filter 0.2s ease;
+  position: relative; /* Добавляем для позиционирования свечения */
+  z-index: 1; /* Поднимаем иконку над свечением */
+}
+
+/* Active State Glow UNDER ICON */
+.menu-btn.active .menu-btn-icon::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  opacity: 0.5;
+  background: #0FEE9E;
+  filter: blur(26px);
+  border-radius: 50%;
+  z-index: -1; /* Размещаем свечение ПОД иконкой */
+  pointer-events: none;
+}
+
+/* Hover Effects */
+.menu-btn:hover {
+  transform: scale(1.05);
 }
 
 /* Active State Additional Effects */
