@@ -13,6 +13,7 @@ import Onboarding from '../components/Onboarding';
 import Octagram from '../components/Octagram';
 import { SurveyModal } from '../components/SurveyModal';
 import { createPortal } from 'react-dom';
+import BottomMenu from '../components/BottomMenu'; // Импортируем компонент меню
 
 interface Question {
   id: number;
