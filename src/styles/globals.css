@@ -38,7 +38,7 @@ body {
   padding: 15px;
   gap: 20px;
   overflow: hidden; /* Отключаем общий скролл */
-  background-color: #212121;
+  background: bg_color;
 }
 
 /* Header Styles */
@@ -840,6 +840,17 @@ body {
   color: white;
 }
 /* Reference Page Styles */
+
+.container-reference {
+display: flex;
+flex-direction: column;
+height: calc(var(--vh, 1vh) * 100);
+padding: 16px 20px;
+align-items: center;
+gap: 32px;
+flex: 1 0 0;
+}
+  
 .page-title {
   display: flex;
   padding: 16px;
