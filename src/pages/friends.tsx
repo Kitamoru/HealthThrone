@@ -5,6 +5,7 @@ import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import BottomMenu from '../components/BottomMenu'; // Импортируем компонент меню
 
 interface Friend {
   id: number;
