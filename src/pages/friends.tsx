@@ -1,53 +1,27 @@
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
+import type { AppProps } from 'next/app';
+import Head from 'next/head';
+import Script from 'next/script';
+import dynamic from 'next/dynamic';
+import { useEffect, useState } from 'react';
+import Router from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
-import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '../lib/queryClient';
+import '../styles/globals.css';
 
-interface Friend {
-  id: number;
-  friend_id: number;
-  friend_username: string;
-  burnout_level: number;
-}
+const prefetchShopData = (initData?: string) => {
+  queryClient.prefetchQuery({
+    queryKey: ['sprites'],
+    queryFn: () => api.getSprites(initData),
+  });
+};
 
-interface BurnoutProgressProps {
-  level: number;
-}
-
-const BurnoutProgress = React.memo(({ level }: BurnoutProgressProps) => {
-  return (
-    <div className="progress-container">
-      <div 
-        className="progress-bar"
-        style={{ width: `${level}%` }}
-      />
-      <span className="progress-text">{level}%</span>
-    </div>
-  );
-});
-
-export default function Friends() {
-  const router = useRouter();
-  const { user, initData, webApp } = useTelegram();
-  const [showModal, setShowModal] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [deletingFriends, setDeletingFriends] = useState<number[]>([]);
-  const queryClient = useQueryClient();
-  const userId = user?.id;
-
-  const { 
-    data: friends = [], 
-    isInitialLoading,
-    isError,
-    error: queryError
-  } = useQuery<Friend[]>({
-    queryKey: ['friends', userId?.toString()],
+// Сохраняем преобразование данных для друзей из второго варианта
+const prefetchFriends = (userId: number, initData: string) => {
+  queryClient.prefetchQuery({
+    queryKey: ['friends', userId.toString()],
     queryFn: async () => {
-      if (!userId || !initData) return [];
-      
       const response = await api.getFriends(userId.toString(), initData);
       if (response.success && response.data) {
         return response.data.map(f => ({
@@ -60,172 +34,106 @@ export default function Friends() {
       }
       throw new Error(response.error || 'Failed to load friends');
     },
-    enabled: !!userId && !!initData,
-    staleTime: 1000 * 60 * 5, // 5 минут кеширования
-    initialData: () => {
-      // Используем префетченные данные из кеша
-      return queryClient.getQueryData<Friend[]>(['friends', userId?.toString()]);
-    },
-    refetchOnMount: true,
-    refetchOnWindowFocus: false
   });
+};
 
-  const deleteFriendMutation = useMutation({
-    mutationFn: (friendId: number) => {
-      if (!initData) throw new Error('Init data missing');
-      return api.deleteFriend(friendId, initData);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['friends', userId?.toString()] 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: ['user', userId] 
-      });
-    },
+const prefetchOctalysisFactors = (userId: number, initData: string) => {
+  queryClient.prefetchQuery({
+    queryKey: ['octalysisFactors', userId],
+    queryFn: () => api.getOctalysisFactors(userId, initData),
+    staleTime: 5 * 60 * 1000, // 5 минут кеширования
   });
+};
 
-  const handleDelete = (friendId: number) => {
-    setDeletingFriends(prev => [...prev, friendId]);
-    deleteFriendMutation.mutate(friendId, {
-      onSettled: () => {
-        setDeletingFriends(prev => prev.filter(id => id !== friendId));
-      }
-    });
-  };
+// Добавлена функция префетчинга купленных спрайтов
+const prefetchOwnedSprites = (userId: number, initData: string) => {
+  queryClient.prefetchQuery({
+    queryKey: ['ownedSprites', userId],
+    queryFn: () => api.getOwnedSprites(userId, initData),
+    staleTime: 5 * 60 * 1000, // 5 минут кеширования
+  });
+};
 
-  const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
-  const referralCode = `ref_${userId || 'default'}`;
-  const referralLink = `https://t.me/${botUsername}/Moraleon?startapp=${referralCode}`;
+const Loader = dynamic(
+  () => import('../components/Loader').then(mod => mod.Loader),
+  { ssr: false, loading: () => <div>Загрузка...</div> }
+);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(referralLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+function App({ Component, pageProps }: AppProps) {
+  // Сохраняем получение user из useTelegram (первый вариант)
+  const { initData, startParam, webApp, isTelegramReady, user } = useTelegram();
+  const [userInitialized, setUserInitialized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleShare = () => {
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('✨ Твоя мотивация — искра. Вместе мы — пламя!🔥\nПрисоединяйся к команде в MORALEON!⚔️')}`;
-    if (webApp?.openTelegramLink) {
-      webApp.openTelegramLink(shareUrl);
-    } else if (webApp?.openLink) {
-      webApp.openLink(shareUrl);
-    } else {
-      window.open(shareUrl, '_blank');
-    }
-  };
+  // Сохраняем проверку user из первого варианта
+  useEffect(() => {
+    if (!isTelegramReady || !initData || !user) return;
+    
+    api.initUser(initData, startParam)
+      .then(response => {
+        if (response.success && response.data) {
+          const userData = response.data;
+          const userId = userData.id;
+          
+          prefetchFriends(userId, initData);
+          prefetchOctalysisFactors(userId, initData);
+          prefetchOwnedSprites(userId, initData); // Добавлен префетч купленных спрайтов
+          
+          queryClient.setQueryData(['userData', userId], userData);
+        } else {
+          setError(response.error || "Ошибка инициализации пользователя");
+        }
+      })
+      .catch(error => {
+        console.error("User initialization failed:", error);
+        setError("Сетевая ошибка при инициализации");
+      })
+      .finally(() => setUserInitialized(true));
+  }, [initData, startParam, isTelegramReady, user]);
 
-  // Показываем лоадер только при первой загрузке
-  if (isInitialLoading) {
-    return <Loader />;
-  }
+  useEffect(() => {
+    if (!isTelegramReady || !initData) return;
+    
+    prefetchShopData(initData);
+    
+    const routes = ['/', '/shop', '/friends'];
+    routes.forEach(route => Router.prefetch(route));
+  }, [initData, isTelegramReady]);
 
   return (
-    <div className="container">
-      <div className="scrollable-content">
-        <div className="header">
-          <h2>Мои союзники</h2>
-          <button 
-            className="answer-btn positive"
-            onClick={() => setShowModal(true)}
-          >
-            Призвать
-          </button>
-        </div>
-        
-        {isError && (
-          <div className="error">
-            {queryError?.message || 'Ошибка загрузки друзей'}
-          </div>
-        )}
-        
-        <div className="friends-list">
-          {friends.length === 0 ? (
-            <div className="empty">У вас не призваны союзники</div>
-          ) : (
-            <div className="friends-grid">
-              {friends.map((friend) => (
-                <div key={friend.id} className="friend-card">
-                  <div className="friend-name">{friend.friend_username}</div>
-                  <BurnoutProgress level={friend.burnout_level} />
-                  <button 
-                    className="delete-btn"
-                    onClick={() => handleDelete(friend.id)}
-                    disabled={deletingFriends.includes(friend.id)}
-                  >
-                    {deletingFriends.includes(friend.id) 
-                      ? 'Удаление...' 
-                      : 'Удалить'}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+    <QueryClientProvider client={queryClient}>
+      <Head>
+        <title>Burnout Tracker - Отслеживание выгорания</title>
+        <meta name="description" content="Telegram Mini App для отслеживания уровня выгорания" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta name="theme-color" content="#18222d" />
+      </Head>
 
-        {showModal && (
-          <div className="modal-overlay">
-            <div className="modal-card">
-              <div className="custom-modal-header">
-                <h3>Активировать свиток призыва</h3>
-                <button 
-                  className="close-btn" 
-                  onClick={() => setShowModal(false)}
-                >
-                  &times;
-                </button>
-              </div>
-              <div className="custom-modal-body">
-                <p>Призови союзников</p>
-                <div className="referral-link-container">
-                  <input 
-                    type="text" 
-                    value={referralLink} 
-                    readOnly 
-                    className="custom-input"
-                  />
-                  <button 
-                    className={`answer-btn ${copied ? 'positive' : ''}`} 
-                    onClick={handleCopy}
-                  >
-                    {copied ? 'Скопировано!' : 'Копировать'}
-                  </button>
-                </div>
-                <button 
-                  className="answer-btn positive"
-                  onClick={handleShare}
-                  style={{ marginTop: '15px' }}
-                >
-                  Призвать
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      <Script 
+        src="https://telegram.org/js/telegram-web-app.js" 
+        strategy="beforeInteractive" 
+        onLoad={() => {
+          if (window.Telegram?.WebApp) {
+            window.dispatchEvent(new Event('telegram-ready'));
+          }
+        }}
+      />
 
-      <div className="menu">
-        <Link href="/" passHref>
-          <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>
-            📊
-          </button>
-        </Link>
-        <Link href="/friends" passHref>
-          <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>
-            📈
-          </button>
-        </Link>
-        <Link href="/shop" passHref>
-          <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>
-            🛍️
-          </button>
-        </Link>
-        <Link href="/reference" passHref>
-          <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>
-            ℹ️
-          </button>
-        </Link>
-      </div>
-    </div>
+      {error ? (
+        <div className="error-container">
+          <h2>Ошибка запуска</h2>
+          <p>{error}</p>
+          <p>Пожалуйста, откройте приложение через Telegram</p>
+        </div>
+      ) : userInitialized ? (
+        <div className="page-transition">
+          <Component {...pageProps} />
+        </div>
+      ) : (
+        <Loader />
+      )}
+    </QueryClientProvider>
   );
 }
+
+export default App;
