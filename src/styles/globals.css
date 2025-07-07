@@ -893,13 +893,13 @@ body {
 
 .page-description {
   color: #FFF;
-  font-size: 15px;
+  font-size: 16px;
   font-style: normal;
   font-weight: 400;
   line-height: 20px;
   letter-spacing: -0.23px;
   width: 100%;
-  text-align: center;
+  text-align: justify;
 }
 
 /* Блоки с информацией */
