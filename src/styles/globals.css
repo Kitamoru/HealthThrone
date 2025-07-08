@@ -811,9 +811,8 @@ body {
 .sprites-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); /* Исправлено */
-  gap: 16px; /* Исправлено */
+  gap: 12px; /* Исправлено */
   width: calc(100% - 40px);
-  padding: 0 20px;
   margin: 0 auto;
   max-width: 800px; /* Добавлено */
   box-sizing: border-box;
