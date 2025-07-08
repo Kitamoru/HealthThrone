@@ -214,7 +214,7 @@ export default function Shop() {
   return (
     <div className="container">
       <div className="scrollable-content">
-        <div className="header">
+        <div className="shop-header">
           <h2 className="shop-title">Лавка спрайтов</h2>
           <div className="coins-display">
             <span className="coins-text">Монеты: {coins}</span>
