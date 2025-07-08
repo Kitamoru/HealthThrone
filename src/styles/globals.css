@@ -302,7 +302,7 @@ body {
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
-/* styles/global.css */
+/* меню */
 .bottom-menu {
   display: flex;
   width: calc(100% - 40px); /* Адаптивная ширина с отступами */
@@ -354,13 +354,32 @@ body {
   transform: scale(1.2);
 }
 
-/* Адаптивность для маленьких экранов */
+.menu-btn.active {
+  position: relative; /* Для позиционирования псевдоэлемента */
+}
+
+.menu-btn.active::after {
+  content: '';
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background: #0FEE9E;
+  border-radius: 50%;
+  opacity: 0.5;
+  filter: blur(26px);
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Адаптация для мобильных устройств */
 @media (max-width: 480px) {
-  .bottom-menu {
-    gap: 16px; /* Уменьшаем расстояние между кнопками */
-    padding: 10px;
-    height: 60px;
+  .menu-btn.active::after {
+    width: 34px;
+    height: 34px;
   }
+}
   
   .menu-icon {
     width: 24px;
