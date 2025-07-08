@@ -339,25 +339,23 @@ body {
   padding: 0;
   transition: all 0.3s ease;
   overflow: hidden;
-  position: relative; /* Добавлено для всех кнопок */
+  position: relative;
 }
 
 .menu-icon {
   width: 28px;
   height: 28px;
-  fill: #FFFFFF;
+  color: #FFFFFF; /* Управление цветом через color */
   transition: all 0.3s ease;
-  position: relative; /* Для управления z-index */
-  z-index: 2; /* Поднимаем иконку над свечением */
+  position: relative;
+  z-index: 2;
 }
 
 .menu-btn.active .menu-icon {
-  fill: #0FEE9E;
-  filter: blur(13px);
-  transform: scale(1.2);
+  color: #0FEE9E; /* Активный цвет через color */
 }
 
-/* Исправленное свечение */
+/* Свечение для активной кнопки */
 .menu-btn.active::after {
   content: '';
   position: absolute;
@@ -367,7 +365,7 @@ body {
   border-radius: 50%;
   opacity: 0.5;
   filter: blur(26px);
-  z-index: 1; /* Изменено с -1 на 1 */
+  z-index: 1;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -387,8 +385,8 @@ body {
   }
   
   .menu-btn.active::after {
-    width: 34px;
-    height: 34px;
+    width: 24px;
+    height: 24px;
   }
 }
 
