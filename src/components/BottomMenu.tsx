@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 
 const BottomMenu = () => {
   const router = useRouter();
-
+  
   return (
     <div className="bottom-menu">
       <Link href="/" passHref legacyBehavior>
