@@ -305,16 +305,16 @@ body {
 /* меню */
 .bottom-menu {
   display: flex;
-  width: calc(100% - 40px); /* Адаптивная ширина с отступами */
-  max-width: 500px; /* Максимальная ширина больше исходной */
+  width: calc(100% - 40px);
+  max-width: 500px;
   height: 68px;
   padding: 12px;
   align-items: center;
   gap: 28px;
   position: absolute;
-  left: 50%; /* Центрирование по горизонтали */
+  left: 50%;
   bottom: 50px;
-  transform: translateX(-50%); /* Точное центрирование */
+  transform: translateX(-50%);
   border-radius: 160px;
   box-shadow:
     0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset,
@@ -327,7 +327,7 @@ body {
 }
 
 .menu-btn {
-  flex: 1 1 auto; /* Гибкое растягивание кнопок */
+  flex: 1 1 auto;
   min-height: 44px;
   display: flex;
   align-items: center;
@@ -339,6 +339,7 @@ body {
   padding: 0;
   transition: all 0.3s ease;
   overflow: hidden;
+  position: relative; /* Добавлено для всех кнопок */
 }
 
 .menu-icon {
@@ -346,6 +347,8 @@ body {
   height: 28px;
   fill: #FFFFFF;
   transition: all 0.3s ease;
+  position: relative; /* Для управления z-index */
+  z-index: 2; /* Поднимаем иконку над свечением */
 }
 
 .menu-btn.active .menu-icon {
@@ -354,20 +357,17 @@ body {
   transform: scale(1.2);
 }
 
-.menu-btn.active {
-  position: relative; /* Для позиционирования псевдоэлемента */
-}
-
+/* Исправленное свечение */
 .menu-btn.active::after {
   content: '';
   position: absolute;
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   background: #0FEE9E;
   border-radius: 50%;
   opacity: 0.5;
   filter: blur(26px);
-  z-index: -1;
+  z-index: 1; /* Изменено с -1 на 1 */
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -375,16 +375,22 @@ body {
 
 /* Адаптация для мобильных устройств */
 @media (max-width: 480px) {
-  .menu-btn.active::after {
-    width: 34px;
-    height: 34px;
+  .bottom-menu {
+    gap: 16px;
+    padding: 10px;
+    height: 60px;
   }
-}
   
   .menu-icon {
     width: 24px;
     height: 24px;
   }
+  
+  .menu-btn.active::after {
+    width: 34px;
+    height: 34px;
+  }
+}
 
 /* Friends Page */
 .back-btn {
