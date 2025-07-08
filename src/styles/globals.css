@@ -371,25 +371,6 @@ body {
   transform: translate(-50%, -50%);
 }
 
-/* Адаптация для мобильных устройств */
-@media (max-width: 480px) {
-  .bottom-menu {
-    gap: 16px;
-    padding: 10px;
-    height: 60px;
-  }
-  
-  .menu-icon {
-    width: 24px;
-    height: 24px;
-  }
-  
-  .menu-btn.active::after {
-    width: 24px;
-    height: 24px;
-  }
-}
-
 /* Friends Page */
 .back-btn {
   position: absolute;
