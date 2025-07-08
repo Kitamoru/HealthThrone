@@ -345,14 +345,14 @@ body {
 .menu-icon {
   width: 28px;
   height: 28px;
-  color: #FFFFFF; /* Управление цветом через color */
+  color: #FFFFFF; /* Базовый цвет */
   transition: all 0.3s ease;
   position: relative;
   z-index: 2;
 }
 
 .menu-btn.active .menu-icon {
-  color: #0FEE9E; /* Активный цвет через color */
+  color: #0FEE9E; /* Активный цвет */
 }
 
 /* Свечение для активной кнопки */
