@@ -15,18 +15,19 @@ const BottomMenu = () => {
             width="28"
             height="28"
             viewBox="0 0 24 24"
-            stroke="none"
-            strokeWidth="2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
             className="menu-icon"
           >
             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-            <path d="M20 11a8.1 8.1 0 0 0 -6.986 -6.918a8.095 8.095 0 0 0 -8.019 3.918" fill="currentColor" />
-            <path d="M4 13a8.1 8.1 0 0 0 15 3" fill="currentColor" />
-            <path d="M19 16m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" fill="currentColor" />
-            <path d="M5 8m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" fill="currentColor" />
-            <path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" fill="currentColor" />
+            <path d="M20 11a8.1 8.1 0 0 0 -6.986 -6.918a8.095 8.095 0 0 0 -8.019 3.918" />
+            <path d="M4 13a8.1 8.1 0 0 0 15 3" />
+            <circle cx="19" cy="16" r="1" />
+            <circle cx="5" cy="8" r="1" />
+            <circle cx="12" cy="12" r="3" />
           </svg>
         </div>
       </Link>
@@ -38,14 +39,15 @@ const BottomMenu = () => {
             width="28"
             height="28"
             viewBox="0 0 24 24"
-            stroke="none"
-            strokeWidth="2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
             className="menu-icon"
           >
             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-            <path d="M9 20h-5a1 1 0 0 1 -1 -1c0 -2 3.378 -4.907 4 -6c-1 0 -4 -.5 -4 -2c0 -2 4 -3.5 6 -4c0 -1.5 .5 -4 3 -4s3 2.5 3 4c2 .5 6 2 6 4c0 1.5 -3 2 -4 2c.622 1.093 4 4 4 6a1 1 0 0 1 -1 1h-5c-1 0 -2 -4 -3 -4s-2 4 -3 4z" fill="currentColor" />
+            <path d="M9 20h-5a1 1 0 0 1 -1 -1c0 -2 3.378 -4.907 4 -6c-1 0 -4 -.5 -4 -2c0 -2 4 -3.5 6 -4c0 -1.5 .5 -4 3 -4s3 2.5 3 4c2 .5 6 2 6 4c0 1.5 -3 2 -4 2c.622 1.093 4 4 4 6a1 1 0 0 1 -1 1h-5c-1 0 -2 -4 -3 -4s-2 4 -3 4z" />
           </svg>
         </div>
       </Link>
@@ -57,17 +59,18 @@ const BottomMenu = () => {
             width="28"
             height="28"
             viewBox="0 0 24 24"
-            stroke="none"
-            strokeWidth="2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
             className="menu-icon"
           >
             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-            <path d="M5 11a7 7 0 0 1 14 0v7a1.78 1.78 0 0 1 -3.1 1.4a1.65 1.65 0 0 0 -2.6 0a1.65 1.65 0 0 1 -2.6 0a1.65 1.65 0 0 0 -2.6 0a1.78 1.78 0 0 1 -3.1 -1.4v-7" fill="currentColor" />
-            <path d="M10 10l.01 0" fill="currentColor" />
-            <path d="M14 10l.01 0" fill="currentColor" />
-            <path d="M10 14a3.5 3.5 0 0 0 4 0" fill="currentColor" />
+            <path d="M5 11a7 7 0 0 1 14 0v7a1.78 1.78 0 0 1 -3.1 1.4a1.65 1.65 0 0 0 -2.6 0a1.65 1.65 0 0 1 -2.6 0a1.65 1.65 0 0 0 -2.6 0a1.78 1.78 0 0 1 -3.1 -1.4v-7" />
+            <line x1="10" y1="10" x2="10.01" y2="10" />
+            <line x1="14" y1="10" x2="14.01" y2="10" />
+            <path d="M10 14a3.5 3.5 0 0 0 4 0" />
           </svg>
         </div>
       </Link>
@@ -79,16 +82,17 @@ const BottomMenu = () => {
             width="28"
             height="28"
             viewBox="0 0 24 24"
-            stroke="none"
-            strokeWidth="2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
             className="menu-icon"
           >
             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-            <path d="M12 9h.01" fill="currentColor" />
-            <path d="M11 12h1v4h1" fill="currentColor" />
-            <path d="M12 3c7.2 0 9 1.8 9 9s-1.8 9 -9 9s-9 -1.8 -9 -9s1.8 -9 9 -9z" fill="currentColor" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+            <rect x="4" y="4" width="16" height="16" rx="2" />
+            <path d="M9 12l2 2l4 -4" />
           </svg>
         </div>
       </Link>
