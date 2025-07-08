@@ -46,8 +46,8 @@ const SpriteCard = React.memo(({
       <h3>{sprite.name}</h3>
       <div className="sprite-price">
         <span className="price-text">
-          Цена:{' '}
-          {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'}
+          {' '}
+          {sprite.price > 0 ? `${sprite.price}` : 'Бесплатно'}
         </span>
       </div>
       <div className="sprite-actions">
