@@ -686,8 +686,11 @@ body {
 }
 
 .scrollable-content {
-  flex: 1; /* Занимает все доступное пространство */
-  overflow-y: auto; /* Включаем прокрутку при необходимости */
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+  overflow-y: auto;
   padding-bottom: 20px; /* Отступ для меню */
 }
 
