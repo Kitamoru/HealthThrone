@@ -17,7 +17,7 @@ const BottomMenu = () => {
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.5"
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
             className="menu-icon"
@@ -41,7 +41,7 @@ const BottomMenu = () => {
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.5"
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
             className="menu-icon"
@@ -61,7 +61,7 @@ const BottomMenu = () => {
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.5"
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
             className="menu-icon"
@@ -84,15 +84,15 @@ const BottomMenu = () => {
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.5"
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
             className="menu-icon"
           >
             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-            <line x1="12" y1="8" x2="12.01" y2="8" />
-            <rect x="4" y="4" width="16" height="16" rx="2" />
-            <path d="M9 12l2 2l4 -4" />
+            <path d="M12 9h.01" />
+            <path d="M11 12h1v4h1" />
+            <path d="M12 3c7.2 0 9 1.8 9 9s-1.8 9 -9 9s-9 -1.8 -9 -9s1.8 -9 9 -9z" />
           </svg>
         </div>
       </Link>
