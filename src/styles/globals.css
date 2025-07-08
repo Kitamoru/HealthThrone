@@ -820,6 +820,7 @@ body {
   justify-content: center;
   align-items: center;
   aspect-ratio: 1/1;
+  filter: brightness(0) invert(1);
 }
 
 .sprites-grid {
