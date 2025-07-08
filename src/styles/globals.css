@@ -952,14 +952,6 @@ body {
   gap: 32px;
 }
 
-.scrollable-content {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  width: 100%;
-  overflow-y: auto;
-}
-
 /* Блок заголовка "Где я?" */
 .header-block {
   display: flex;
