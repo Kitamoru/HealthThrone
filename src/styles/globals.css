@@ -945,7 +945,7 @@ body {
 }
 
 /* Reference Page Styles */
-.container-reference {
+.container {
   display: flex;
   flex-direction: column;
   height: calc(var(--vh, 1vh) * 100);
@@ -1005,7 +1005,7 @@ body {
   padding: 16px;
   flex-direction: column;
   align-items: flex-start;
-  gap: 16px;
+  gap: 12px;
   align-self: stretch;
   border-radius: 16px;
   background: #161616;
