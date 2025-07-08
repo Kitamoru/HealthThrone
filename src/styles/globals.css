@@ -775,8 +775,7 @@ body {
   border-radius: 16px;
   background: #161616;
   max-height: 68px;
-  width: calc(100% - 32px);
-  margin: 16px auto;
+  width: 100%;
   box-sizing: border-box;
 }
 
@@ -815,7 +814,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); /* Исправлено */
   gap: 12px; /* Исправлено */
-  width: calc(100% - 40px);
+  width: calc 100%;
   margin: 0 auto;
   max-width: 800px; /* Добавлено */
   box-sizing: border-box;
