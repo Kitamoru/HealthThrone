@@ -13,7 +13,7 @@ import {
 import { Sprite } from '../lib/types';
 import { validateRequiredFields } from '../utils/validation';
 import { queryClient } from '../lib/queryClient';
-import BottomMenu from '../components/BottomMenu'; // Импортируем компонент меню
+import BottomMenu from '../components/BottomMenu';
 
 const SpriteCard = React.memo(({ 
   sprite, 
@@ -45,8 +45,10 @@ const SpriteCard = React.memo(({
     <div className="sprite-info">
       <h3>{sprite.name}</h3>
       <div className="sprite-price">
-        Цена:{' '}
-        {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'}
+        <span className="price-text">
+          Цена:{' '}
+          {sprite.price > 0 ? `${sprite.price} монет` : 'Бесплатно'}
+        </span>
       </div>
       <div className="sprite-actions">
         {!isOwned ? (
@@ -135,35 +137,34 @@ export default function Shop() {
     (ownedResponse && !ownedResponse.success ? ownedResponse.error : null);
 
   const handlePurchase = useCallback(async (spriteId: number) => {
-  if (!user?.id) {
-    setError('User not defined');
-    return;
-  }
-
-  try {
-    setProcessing(spriteId);
-    setError(null);
-    
-    const purchaseResult = await purchaseMutation.mutateAsync({
-      telegramId: Number(user.id),
-      spriteId,
-      initData
-    });
-    
-    if (purchaseResult.success) {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
-        queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] })
-      ]);
+    if (!user?.id) {
+      setError('User not defined');
+      return;
     }
-  } catch (err) {
-    // Ошибки теперь обрабатываются на бэкенде
-    const error = err as { message?: string };
-    setError(error.message || 'Purchase failed');
-  } finally {
-    setProcessing(null);
-  }
-}, [user, initData, purchaseMutation]);
+
+    try {
+      setProcessing(spriteId);
+      setError(null);
+      
+      const purchaseResult = await purchaseMutation.mutateAsync({
+        telegramId: Number(user.id),
+        spriteId,
+        initData
+      });
+      
+      if (purchaseResult.success) {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
+          queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] })
+        ]);
+      }
+    } catch (err) {
+      const error = err as { message?: string };
+      setError(error.message || 'Purchase failed');
+    } finally {
+      setProcessing(null);
+    }
+  }, [user, initData, purchaseMutation]);
 
   const handleEquip = useCallback(async (spriteId: number) => {
     const validationError = validateRequiredFields(
@@ -192,7 +193,6 @@ export default function Shop() {
       });
       
       if (equipResult.success) {
-        // Ожидаем завершения операций обновления
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
           queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
@@ -203,7 +203,6 @@ export default function Shop() {
     } catch (err) {
       setError('Проблема с сетью при попытке применить спрайт.');
     } finally {
-      // Снимаем блокировку только после ВСЕХ операций
       setProcessing(null);
     }
   }, [user, initData, equipMutation]);
@@ -216,8 +215,10 @@ export default function Shop() {
     <div className="container">
       <div className="scrollable-content">
         <div className="header">
-          <h2>Лавка спрайтов</h2>
-          <div className="coins-display">Монеты: {coins}</div>
+          <h2 className="shop-title">Лавка спрайтов</h2>
+          <div className="coins-display">
+            <span className="coins-text">Монеты: {coins}</span>
+          </div>
         </div>
 
         {errorMessage && <div className="error">{errorMessage}</div>}
@@ -246,7 +247,7 @@ export default function Shop() {
         )}
       </div>
 
-       <BottomMenu />
+      <BottomMenu />
     </div>
   );
 }
