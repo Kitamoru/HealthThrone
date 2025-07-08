@@ -305,7 +305,8 @@ body {
 /* Menu */
 .menu {
   display: flex;
-  width: 353px;
+  width: 100%;
+  max-width: 353px;
   height: 68px;
   padding: 12px;
   align-items: center;
@@ -314,106 +315,40 @@ body {
   left: 20px;
   bottom: 50px;
   border-radius: 160px;
-  /* Glassmorphism effect */
-  background: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset,
+    0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset,
+    1px 1px 2px 0px rgba(194, 179, 255, 0.20) inset,
+    0px 0.15px 0px 0px #C2B3FF inset;
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-
-  /* Адаптивность */
-  @media (max-width: 768px) {
-    width: 280px; /* Уменьшенная ширина для планшетов */
-    height: 56px;
-    padding: 8px;
-    gap: 20px;
-    left: 10px;
-    bottom: 30px;
-    border-radius: 80px;
-  }
-
-  @media (max-width: 480px) {
-    width: 90%; /* Процентная ширина для мобильных */
-    max-width: 300px;
-    height: 48px;
-    padding: 6px;
-    gap: 16px;
-    left: 50%;
-    transform: translateX(-50%); /* Центрирование по горизонтали */
-    bottom: 20px;
-    border-radius: 40px;
-  }
+  background: rgba(22, 22, 22, 0.2);
+  z-index: 100;
 }
 
-.menuButton {
+.menu-btn {
+  flex: 1;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 61.25px;
-  min-height: 44px;
-  background: #161616; /* Фиксированный цвет кнопки */
   border-radius: 140px;
+  background-color: #161616;
+  border: none;
   cursor: pointer;
+  padding: 0;
   transition: all 0.3s ease;
-
-  /* Адаптивность для кнопок */
-  @media (max-width: 768px) {
-    min-width: 50px;
-    min-height: 36px;
-  }
-
-  @media (max-width: 480px) {
-    min-width: 45px;
-    min-height: 32px;
-  }
 }
 
-.menuButton svg {
+.menu-icon {
   width: 28px;
   height: 28px;
-  fill: #ffffff; /* Цвет иконки в обычном состоянии */
-
-  /* Адаптивность для иконок */
-  @media (max-width: 768px) {
-    width: 24px;
-    height: 24px;
-  }
-
-  @media (max-width: 480px) {
-    width: 20px;
-    height: 20px;
-  }
+  fill: #FFFFFF;
 }
 
-.menuButton.active {
-  position: relative;
-  background: #161616; /* Фиксированный цвет кнопки */
-}
-
-.menuButton.active::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: #0FEE9E; /* Зеленый фон для активной кнопки */
-  opacity: 0.5;
-  filter: blur(26px);
-  z-index: -1;
-
-  /* Адаптивность для эффекта размытия */
-  @media (max-width: 768px) {
-    filter: blur(20px);
-  }
-
-  @media (max-width: 480px) {
-    filter: blur(16px);
-  }
-}
-
-.menuButton.active svg {
-  fill: #0FEE9E; /* Цвет иконки в активном состоянии */
+.menu-btn.active .menu-icon {
+  fill: #0FEE9E;
+  filter: blur(13px);
+  opacity: 0.8;
 }
 
 /* Friends Page */
