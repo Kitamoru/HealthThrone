@@ -54,14 +54,6 @@ const SpriteCard = React.memo(({
             src="/coins.svg" 
             className="coin-icon" 
             alt="монеты" 
-            style={{
-              display: 'flex',
-              width: '16px',
-              height: '16px',
-              justifyContent: 'center',
-              alignItems: 'center',
-              aspectRatio: '1/1'
-            }}
           />
         )}
       </div>
@@ -237,14 +229,6 @@ export default function Shop() {
               src="/coins.svg" 
               className="coin-icon" 
               alt="монеты" 
-              style={{
-                display: 'flex',
-                width: '16px',
-                height: '16px',
-                justifyContent: 'center',
-                alignItems: 'center',
-                aspectRatio: '1/1'
-              }}
             />
           </div>
         </div>
