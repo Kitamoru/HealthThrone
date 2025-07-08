@@ -812,6 +812,16 @@ body {
   letter-spacing: -0.5px;
 }
 
+/* Стили для иконки монет */
+.coin-icon {
+  display: flex;
+  width: 16px;
+  height: 16px;
+  justify-content: center;
+  align-items: center;
+  aspect-ratio: 1/1;
+}
+
 .sprites-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
