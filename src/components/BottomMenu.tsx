@@ -2,58 +2,43 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import styles from './BottomMenu.module.css';
 
 const BottomMenu = () => {
   const router = useRouter();
 
   return (
-    <div className="menu">
-      <Link href="/" passHref>
-        <button className={`menu-btn ${router.pathname === '/' ? 'active' : ''}`}>
-          <div className="menu-btn-icon">
-            <img 
-              src="/1.svg" 
-              alt="Home" 
-              className="menu-icon"
-            />
-          </div>
-        </button>
+    <div className={styles.menu}>
+      <Link href="/" passHref legacyBehavior>
+        <div className={`${styles['menu-btn']} ${router.pathname === '/' ? styles.active : ''}`}>
+          <svg className={styles['menu-icon']} width="28" height="28" viewBox="0 0 24 24">
+            <use xlinkHref="/1.svg#icon" />
+          </svg>
+        </div>
       </Link>
       
-      <Link href="/friends" passHref>
-        <button className={`menu-btn ${router.pathname === '/friends' ? 'active' : ''}`}>
-          <div className="menu-btn-icon">
-            <img 
-              src="/2.svg" 
-              alt="Friends" 
-              className="menu-icon"
-            />
-          </div>
-        </button>
+      <Link href="/friends" passHref legacyBehavior>
+        <div className={`${styles['menu-btn']} ${router.pathname === '/friends' ? styles.active : ''}`}>
+          <svg className={styles['menu-icon']} width="28" height="28" viewBox="0 0 24 24">
+            <use xlinkHref="/2.svg#icon" />
+          </svg>
+        </div>
       </Link>
       
-      <Link href="/shop" passHref>
-        <button className={`menu-btn ${router.pathname === '/shop' ? 'active' : ''}`}>
-          <div className="menu-btn-icon">
-            <img 
-              src="/3.svg" 
-              alt="Shop" 
-              className="menu-icon"
-            />
-          </div>
-        </button>
+      <Link href="/shop" passHref legacyBehavior>
+        <div className={`${styles['menu-btn']} ${router.pathname === '/shop' ? styles.active : ''}`}>
+          <svg className={styles['menu-icon']} width="28" height="28" viewBox="0 0 24 24">
+            <use xlinkHref="/3.svg#icon" />
+          </svg>
+        </div>
       </Link>
       
-      <Link href="/reference" passHref>
-        <button className={`menu-btn ${router.pathname === '/reference' ? 'active' : ''}`}>
-          <div className="menu-btn-icon">
-            <img 
-              src="/4.svg" 
-              alt="Reference" 
-              className="menu-icon"
-            />
-          </div>
-        </button>
+      <Link href="/reference" passHref legacyBehavior>
+        <div className={`${styles['menu-btn']} ${router.pathname === '/reference' ? styles.active : ''}`}>
+          <svg className={styles['menu-icon']} width="28" height="28" viewBox="0 0 24 24">
+            <use xlinkHref="/4.svg#icon" />
+          </svg>
+        </div>
       </Link>
     </div>
   );
