@@ -16,7 +16,7 @@ const ReferencePage = () => {
         <meta name="description" content="О приложении" />
       </Head>
       
-      <div className="container-reference">
+      <div className="container">
         <div className="scrollable-content">
           {/* Отдельный блок для заголовка "Где я?" */}
           <div className="header-block">
