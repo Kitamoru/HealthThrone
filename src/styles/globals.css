@@ -302,18 +302,19 @@ body {
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
-/* Menu */
+/* styles/global.css */
 .bottom-menu {
   display: flex;
-  width: 100%;
-  max-width: 353px;
+  width: calc(100% - 40px); /* Адаптивная ширина с отступами */
+  max-width: 500px; /* Максимальная ширина больше исходной */
   height: 68px;
   padding: 12px;
   align-items: center;
   gap: 28px;
   position: absolute;
-  left: 20px;
+  left: 50%; /* Центрирование по горизонтали */
   bottom: 50px;
+  transform: translateX(-50%); /* Точное центрирование */
   border-radius: 160px;
   box-shadow:
     0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset,
@@ -326,7 +327,7 @@ body {
 }
 
 .menu-btn {
-  flex: 1;
+  flex: 1 1 auto; /* Гибкое растягивание кнопок */
   min-height: 44px;
   display: flex;
   align-items: center;
@@ -351,6 +352,20 @@ body {
   fill: #0FEE9E;
   filter: blur(13px);
   transform: scale(1.2);
+}
+
+/* Адаптивность для маленьких экранов */
+@media (max-width: 480px) {
+  .bottom-menu {
+    gap: 16px; /* Уменьшаем расстояние между кнопками */
+    padding: 10px;
+    height: 60px;
+  }
+  
+  .menu-icon {
+    width: 24px;
+    height: 24px;
+  }
 }
 
 /* Friends Page */
