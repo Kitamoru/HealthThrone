@@ -46,9 +46,24 @@ const SpriteCard = React.memo(({
       <h3>{sprite.name}</h3>
       <div className="sprite-price">
         <span className="price-text">
-          {' '}
+          Цена:{' '}
           {sprite.price > 0 ? `${sprite.price}` : 'Бесплатно'}
         </span>
+        {sprite.price > 0 && (
+          <img 
+            src="/coins.svg" 
+            className="coin-icon" 
+            alt="монеты" 
+            style={{
+              display: 'flex',
+              width: '16px',
+              height: '16px',
+              justifyContent: 'center',
+              alignItems: 'center',
+              aspectRatio: '1/1'
+            }}
+          />
+        )}
       </div>
       <div className="sprite-actions">
         {!isOwned ? (
@@ -218,6 +233,19 @@ export default function Shop() {
           <h2 className="shop-title">Лавка фамильяров</h2>
           <div className="coins-display">
             <span className="coins-text">{coins}</span>
+            <img 
+              src="/coins.svg" 
+              className="coin-icon" 
+              alt="монеты" 
+              style={{
+                display: 'flex',
+                width: '16px',
+                height: '16px',
+                justifyContent: 'center',
+                alignItems: 'center',
+                aspectRatio: '1/1'
+              }}
+            />
           </div>
         </div>
 
@@ -228,7 +256,7 @@ export default function Shop() {
             Пользователь не авторизован. Перезагрузите страницу.
           </div>
         ) : sprites.length === 0 ? (
-          <div className="info">Нет доступных спрайтов.</div>
+          <div className="info">Нет доступных фамильяров.</div>
         ) : (
           <div className="sprites-grid">
             {sprites.map((sprite) => (
