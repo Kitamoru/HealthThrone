@@ -66,7 +66,7 @@ const SpriteCard = React.memo(({
             </button>
           ) : (
             <button className="buy-btn disabled" disabled>
-              Недостаточно
+              Недоступен
             </button>
           )
         ) : (
@@ -78,9 +78,9 @@ const SpriteCard = React.memo(({
             {isProcessing ? (
               <span className="button-loader">⏳</span>
             ) : isEquipped ? (
-              'Применён'
+              'Вызван'
             ) : (
-              'Применить'
+              'Вызвать'
             )}
           </button>
         )}
@@ -215,9 +215,9 @@ export default function Shop() {
     <div className="container">
       <div className="scrollable-content">
         <div className="shop-header">
-          <h2 className="shop-title">Лавка спрайтов</h2>
+          <h2 className="shop-title">Лавка фамильяров</h2>
           <div className="coins-display">
-            <span className="coins-text">Монеты: {coins}</span>
+            <span className="coins-text">{coins}</span>
           </div>
         </div>
 
