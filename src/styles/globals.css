@@ -821,7 +821,6 @@ body {
 .sprite-card {
   display: flex;
   padding: 12px;
-  width: 100%;
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
