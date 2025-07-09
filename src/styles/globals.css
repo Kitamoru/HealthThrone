@@ -129,7 +129,7 @@ body {
 
 .burnout-progress {
   height: 100%;
-  background: linear-gradient(90deg, var(--tg-success), var(--tg-accent), var(--tg-danger));
+  background: linear-gradient(270deg, rgba(6, 96, 64, 0.16) 0%, #066040 100%), #0FEE9E;
   transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   position: relative;
 }
