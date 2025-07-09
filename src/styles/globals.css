@@ -408,7 +408,6 @@ body {
   border-radius: 16px;
   background: #161616;
   margin-bottom: 12px;
-  position: relative;
   overflow: hidden;
   transition: all 0.3s ease;
   
@@ -510,9 +509,9 @@ body {
   cursor: pointer;
   padding: 8px;
   display: flex;
-  margin-left: auto;
   align-items: center;
   justify-content: center;
+}
   
   &.expanded {
     transform: rotate(90deg);
