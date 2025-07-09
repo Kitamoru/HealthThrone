@@ -38,6 +38,7 @@ body {
   padding: 16px 20px;
   align-items: center;
   gap: 32px; /* Первый отступ */
+  overflow: hidden;
 }
 
 .container > *:not(:first-child) {
