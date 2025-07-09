@@ -461,7 +461,7 @@ body {
 
 .friend-progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #0FEE9E, #4A7BC8);
+  background: linear-gradient(270deg, rgba(6, 96, 64, 0.16) 0%, #066040 100%), #0FEE9E;
   border-radius: 4.5px;
   transition: width 0.3s ease;
 }
