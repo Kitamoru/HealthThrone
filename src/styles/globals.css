@@ -358,204 +358,6 @@ body {
   color: #0FEE9E; /* Активный цвет */
 }
 
-/* Свечение для активной кнопки */
-.menu-btn.active::after {
-  content: '';
-  position: absolute;
-  width: 28px;
-  height: 28px;
-  background: #0FEE9E;
-  border-radius: 50%;
-  opacity: 0.5;
-  filter: blur(26px);
-  z-index: 1;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* Friends Page */
-.back-btn {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  z-index: 10;
-  color: var(--tg-text);
-}
-
-.friends-list {
-  margin-top: 20px;
-  width: 100%;
-}
-
-.friend-card {
-  background: var(--tg-secondary);
-  border-radius: 15px;
-  padding: 15px;
-  margin-bottom: 15px;
-  border: 1px solid var(--tg-border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.friend-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  width: 100%;
-}
-
-.friend-username {
-  font-weight: bold;
-  font-size: 16px;
-  color: var(--tg-text);
-}
-
-.burnout-level {
-  text-align: center;
-  margin-top: 5px;
-  font-size: 14px;
-  color: var(--tg-hint);
-}
-
-.add-friend-section {
-  margin-top: 30px;
-  text-align: center;
-}
-
-.add-friend-btn {
-  background: linear-gradient(135deg, var(--tg-accent), #4a7bc8);
-  color: white;
-  border: none;
-  border-radius: 25px;
-  padding: 12px 25px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  width: 100%;
-  max-width: 250px;
-  font-weight: 600;
-}
-
-.add-friend-btn:hover {
-  opacity: 0.9;
-  transform: translateY(-2px);
-}
-
-.add-friend-hint {
-  margin-top: 10px;
-  font-size: 14px;
-  color: var(--tg-hint);
-}
-
-.error-message {
-  color: var(--tg-danger);
-  text-align: center;
-  margin: 15px 0;
-  padding: 10px;
-  border-radius: 8px;
-  background-color: rgba(231, 76, 60, 0.1);
-}
-
-.remove-btn, .delete-btn {
-  background: var(--tg-danger);
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  font-weight: 500;
-}
-
-.remove-btn:hover, .delete-btn:hover {
-  background: #c0392b;
-}
-
-/* Animations */
-@keyframes pulse {
-  0% { transform: scale(0.8); opacity: 0.7; }
-  50% { transform: scale(1.2); opacity: 1; }
-  100% { transform: scale(0.8); opacity: 0.7; }
-}
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-@keyframes fade {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Responsive */
-@media (max-width: 480px) {
-  .sprite-container,
-  .pentagon {
-    width: 65px;
-    height: 65px;
-  }
-
-  .pentagon {
-    font-size: 24px;
-  }
-
-  .question-text {
-    font-size: 15px;
-  }
-
-  .answer-btn {
-    font-size: 13px;
-    padding: 10px 16px;
-  }
-
-  .container {
-    padding: 12px;
-  }
-  
-  .menu-btn {
-    padding: 12px;
-    font-size: 20px;
-  }
-}
-
-/* Alternative Loader */
-.loader {
-  width: 50px;
-  height: 50px;
-  margin: 20px auto;
-}
-
-.loader-inner {
-  width: 100%;
-  height: 100%;
-  border: 3px solid var(--tg-hint);
-  border-top: 3px solid var(--tg-accent);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
 /* Friends page */
 .friends-header {
   display: flex;
@@ -701,20 +503,28 @@ body {
   margin-top: 30px;
   text-align: center;
   padding: 0 16px;
+  width: 100%;
 }
 
 .add-friend-btn {
-display: flex;
-height: 42px;
-Width: 100%;
-padding: 0px 14px;
-justifyContent: center;
-alignItems: center;
-gap: 8px;
-alignSelf: stretch;
-borderRadius: 12px;
-background: linear-gradient(180deg, rgba(6, 96, 64, 0.20) 0%, rgba(6, 96, 64, 0.80) 100%), #0FEE9E;
-boxShadow: 0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.1) inset, 0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 1px 1px 2px 0px rgba(194, 179, 255, 0.2) inset, 0px 0.15px 0px 0px #C2B3FF inset;
+  display: flex;
+  height: 42px;
+  width: 100%;
+  padding: 0px 14px;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(6, 96, 64, 0.20) 0%, rgba(6, 96, 64, 0.80) 100%), #0FEE9E;
+  box-shadow: 0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.1) inset, 
+              0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 
+              1px 1px 2px 0px rgba(194, 179, 255, 0.2) inset, 
+              0px 0.15px 0px 0px #C2B3FF inset;
+  color: #000;
+  font-weight: 500;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
 }
 
 .add-friend-btn:hover {
@@ -770,6 +580,12 @@ boxShadow: 0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.1) inset, 0px 0.5px 10px 0p
   margin-bottom: 15px;
 }
 
+.custom-modal-body p {
+  margin: 0 0 15px 0;
+  text-align: center;
+  color: #fff;
+}
+
 .referral-link-container {
   display: flex;
   gap: 10px;
@@ -805,20 +621,35 @@ boxShadow: 0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.1) inset, 0px 0.5px 10px 0p
   opacity: 1;
 }
 
-.answer-btn {
-  background: var(--tg-button-secondary);
-  color: var(--tg-text);
+.copy-btn {
+  background: #161616;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 15px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.3s;
+  min-width: 100px;
+  font-size: 14px;
+}
+
+.copy-btn.copied {
+  background: #0FEE9E;
+  color: #000;
+}
+
+.share-btn {
+  background: linear-gradient(180deg, rgba(6, 96, 64, 0.20) 0%, rgba(6, 96, 64, 0.80) 100%), #0FEE9E;
+  color: white;
   border: none;
   border-radius: 12px;
   padding: 12px 20px;
   cursor: pointer;
   font-weight: 500;
-  transition: background 0.3s;
-}
-
-.answer-btn.positive {
-  background: linear-gradient(180deg, rgba(6, 96, 64, 0.20) 0%, rgba(6, 96, 64, 0.80) 100%), #0FEE9E;
-  color: white;
+  width: 100%;
+  font-size: 16px;
+  outline: none;
 }
 
 .delete-btn {
