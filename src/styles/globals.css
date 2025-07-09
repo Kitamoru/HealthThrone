@@ -559,10 +559,13 @@ body {
 /* Friends page */
 .header {
   display: flex;
-  justify-content: space-between;
+  padding: 16px;
   align-items: center;
-  height: 56px;
-  padding: 10px;
+  border-radius: 16px;
+  background: #161616;
+  max-height: 56px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .add-friends-btn {
