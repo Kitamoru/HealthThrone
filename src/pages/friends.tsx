@@ -21,7 +21,7 @@ export default function Friends() {
   const [copied, setCopied] = useState(false);
   const [deletingFriends, setDeletingFriends] = useState<number[]>([]);
   const [expandedFriendId, setExpandedFriendId] = useState<number | null>(null);
-  const contentRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  const contentRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const queryClient = useQueryClient();
   const userId = user?.id;
 
@@ -167,7 +167,9 @@ export default function Friends() {
                       }}
                     >
                       <div 
-                        ref={el => contentRefs.current[friend.id] = el}
+                        ref={el => { 
+                          contentRefs.current[friend.id] = el; 
+                        }}
                         className="expandable-content-inner"
                       >
                         {/* Здесь будет контент */}
