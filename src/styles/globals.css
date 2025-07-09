@@ -408,7 +408,15 @@ body {
   border-radius: 16px;
   background: #161616;
   margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  
+  &.expanded {
+    z-index: 10;
+  }
 }
+
 
 .friend-content {
   display: flex;
@@ -496,14 +504,35 @@ body {
 }
 
 .expand-btn {
+  transition: transform 0.3s ease;
   background: none;
   border: none;
   cursor: pointer;
   padding: 8px;
   display: flex;
+  margin-left: auto;
   align-items: center;
   justify-content: center;
+  
+  &.expanded {
+    transform: rotate(90deg);
+  }
 }
+
+.expandable-content {
+  transition: height 0.3s ease;
+  overflow: hidden;
+}
+
+.expandable-content-inner {
+  min-height: 353px;
+  width: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+  background: #161616;
+  border-radius: 0 0 10px 10px;
+}
+
 
 .empty {
   text-align: center;
