@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
@@ -20,6 +20,8 @@ export default function Friends() {
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [deletingFriends, setDeletingFriends] = useState<number[]>([]);
+  const [expandedFriendId, setExpandedFriendId] = useState<number | null>(null);
+  const contentRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const queryClient = useQueryClient();
   const userId = user?.id;
 
@@ -99,6 +101,10 @@ export default function Friends() {
     }
   };
 
+  const toggleExpand = (friendId: number) => {
+    setExpandedFriendId(prev => prev === friendId ? null : friendId);
+  };
+
   if (isInitialLoading) {
     return <Loader />;
   }
@@ -121,41 +127,68 @@ export default function Friends() {
             <div className="empty">У вас не призваны союзники</div>
           ) : (
             <div className="friends-grid">
-              {friends.map((friend) => (
-                <div key={friend.id} className="friend-card">
-                  <div className="friend-content">
-                    <div className="friend-sprite">
-                      <img src="/sprite.gif" alt="Character" />
+              {friends.map((friend) => {
+                const isExpanded = expandedFriendId === friend.id;
+                const contentHeight = contentRefs.current[friend.id]?.scrollHeight;
+                
+                return (
+                  <div 
+                    key={friend.id} 
+                    className={`friend-card ${isExpanded ? 'expanded' : ''}`}
+                  >
+                    <div className="friend-content">
+                      <div className="friend-sprite">
+                        <img src="/sprite.gif" alt="Character" />
+                      </div>
+                      <div className="friend-details">
+                        <div className="friend-name">{friend.friend_username}</div>
+                        <div className="friend-progress-container">
+                          <div 
+                            className="friend-progress-bar"
+                            style={{ width: `${friend.burnout_level}%` }}
+                          />
+                        </div>
+                      </div>
+                      <button 
+                        className={`expand-btn ${isExpanded ? 'expanded' : ''}`}
+                        onClick={() => toggleExpand(friend.id)}
+                      >
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9 6L15 12L9 18" stroke="#0FEE9E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
                     </div>
-                    <div className="friend-details">
-                      <div className="friend-name">{friend.friend_username}</div>
-                      <div className="friend-progress-container">
-                        <div 
-                          className="friend-progress-bar"
-                          style={{ width: `${friend.burnout_level}%` }}
-                        />
+                    
+                    {/* Раскрывающаяся область */}
+                    <div 
+                      className="expandable-content"
+                      style={{ 
+                        height: isExpanded ? (contentHeight ? `${contentHeight}px` : 'auto') : '0'
+                      }}
+                    >
+                      <div 
+                        ref={el => contentRefs.current[friend.id] = el}
+                        className="expandable-content-inner"
+                      >
+                        {/* Здесь будет контент */}
                       </div>
                     </div>
-                    <button className="expand-btn">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 6L15 12L9 18" stroke="#0FEE9E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </button>
+                    
+                    {/* Временно скрытая кнопка удаления */}
+                    {false && (
+                      <button 
+                        className="delete-btn"
+                        onClick={() => handleDelete(friend.id)}
+                        disabled={deletingFriends.includes(friend.id)}
+                      >
+                        {deletingFriends.includes(friend.id) 
+                          ? 'Удаление...' 
+                          : 'Удалить'}
+                      </button>
+                    )}
                   </div>
-                  {/* Временно скрытая кнопка удаления */}
-                  {false && (
-                    <button 
-                      className="delete-btn"
-                      onClick={() => handleDelete(friend.id)}
-                      disabled={deletingFriends.includes(friend.id)}
-                    >
-                      {deletingFriends.includes(friend.id) 
-                        ? 'Удаление...' 
-                        : 'Удалить'}
-                    </button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
