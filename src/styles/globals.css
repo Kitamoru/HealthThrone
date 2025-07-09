@@ -516,7 +516,6 @@ body {
   &.expanded {
     transform: rotate(90deg);
   }
-}
 
 .expandable-content {
   transition: height 0.3s ease;
