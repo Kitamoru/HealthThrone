@@ -332,7 +332,7 @@ body {
 
 .menu-btn {
   flex: 1 1 auto;
-  max-height: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -342,20 +342,36 @@ body {
   cursor: pointer;
   padding: 0;
   transition: all 0.3s ease;
+  overflow: hidden;
   position: relative;
 }
 
 .menu-icon {
   width: 28px;
   height: 28px;
-  color: #FFFFFF; /* Базовый цвет */
+  color: #FFFFFF;
   transition: all 0.3s ease;
   position: relative;
   z-index: 2;
 }
 
 .menu-btn.active .menu-icon {
-  color: #0FEE9E; /* Активный цвет */
+  color: #0FEE9E;
+}
+
+.menu-btn.active::after {
+  content: '';
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  background: #0FEE9E;
+  border-radius: 50%;
+  opacity: 0.5;
+  filter: blur(26px);
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 /* Friends page */
