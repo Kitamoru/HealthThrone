@@ -451,19 +451,48 @@ body {
   max-width: 180px;
 }
 
+/* Контейнер прогресс-бара */
 .friend-progress-container {
-  width: 198px;
-  height: 9px;
-  border-radius: 4.5px;
-  background: rgba(255, 255, 255, 0.1);
+  position: relative;
   overflow: hidden;
+  height: 8px;
+  width: 197px;
+  background: #000;
+  border-radius: 4.5px;
+  box-shadow: 0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 1px 1px 2px 0px rgba(194, 179, 255, 0.20) inset, 0px 0.15px 0px 0px #C2B3FF inset;
 }
 
+/* Основной прогресс-бар */
 .friend-progress-bar {
   height: 100%;
   background: linear-gradient(270deg, rgba(6, 96, 64, 0.16) 0%, #066040 100%), #0FEE9E;
   border-radius: 4.5px;
   transition: width 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Эффект сияния поверх прогресс-бара */
+.friend-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 4.5px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  box-shadow: 
+    0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset,
+    0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset,
+    1px 1px 2px 0px rgba(194, 179, 255, 0.20) inset,
+    0px 0.15px 0px 0px #C2B3FF inset;
+  animation: shimmer 2s infinite;
 }
 
 .expand-btn {
