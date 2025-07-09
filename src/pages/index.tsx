@@ -65,12 +65,12 @@ const QUESTIONS: Question[] = [
   {
     id: 9,
     text: "Преподнесло ли вам подземелье сегодня неожиданную встречу, загадку или событие, что пробудило интерес?",
-    weight: 1
+    weight: -1
   },
   {
     id: 10,
     text: "Ощущали ли вы сегодня, что промедление может стоить вам важного шанса или артефакта?",
-    weight: 1
+    weight: -1
   }
 ];
 
@@ -337,8 +337,8 @@ const Home = () => {
   }
 
   return (
-    <div className="container">
-      <div className="scrollable-content">
+    <div className="container" style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <div className="scrollable-content" style={{ flex: 1, overflowY: 'auto' }}>
         {isError || !user ? (
           <div className="error-message">
             {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
