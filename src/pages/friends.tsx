@@ -5,7 +5,7 @@ import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import BottomMenu from '../components/BottomMenu'; // Импортируем компонент меню
+import BottomMenu from '../components/BottomMenu';
 
 interface Friend {
   id: number;
@@ -13,22 +13,6 @@ interface Friend {
   friend_username: string;
   burnout_level: number;
 }
-
-interface BurnoutProgressProps {
-  level: number;
-}
-
-const BurnoutProgress = React.memo(({ level }: BurnoutProgressProps) => {
-  return (
-    <div className="progress-container">
-      <div 
-        className="progress-bar"
-        style={{ width: `${level}%` }}
-      />
-      <span className="progress-text">{level}%</span>
-    </div>
-  );
-});
 
 export default function Friends() {
   const router = useRouter();
@@ -62,9 +46,8 @@ export default function Friends() {
       throw new Error(response.error || 'Failed to load friends');
     },
     enabled: !!userId && !!initData,
-    staleTime: 1000 * 60 * 5, // 5 минут кеширования
+    staleTime: 1000 * 60 * 5,
     initialData: () => {
-      // Используем префетченные данные из кеша
       return queryClient.getQueryData<Friend[]>(['friends', userId?.toString()]);
     },
     refetchOnMount: true,
@@ -116,24 +99,17 @@ export default function Friends() {
     }
   };
 
-  // Показываем лоадер только при первой загрузке
   if (isInitialLoading) {
     return <Loader />;
   }
 
   return (
     <div className="container">
+      <div className="friends-header">
+        <h2>Мои союзники</h2>
+      </div>
+      
       <div className="scrollable-content">
-        <div className="header">
-          <h2>Мои союзники</h2>
-          <button 
-            className="answer-btn positive"
-            onClick={() => setShowModal(true)}
-          >
-            Призвать
-          </button>
-        </div>
-        
         {isError && (
           <div className="error">
             {queryError?.message || 'Ошибка загрузки друзей'}
@@ -147,8 +123,25 @@ export default function Friends() {
             <div className="friends-grid">
               {friends.map((friend) => (
                 <div key={friend.id} className="friend-card">
-                  <div className="friend-name">{friend.friend_username}</div>
-                  <BurnoutProgress level={friend.burnout_level} />
+                  <div className="friend-content">
+                    <div className="friend-sprite">
+                      <img src="/sprite.gif" alt="Character" />
+                    </div>
+                    <div className="friend-details">
+                      <div className="friend-name">{friend.friend_username}</div>
+                      <div className="friend-progress-container">
+                        <div 
+                          className="friend-progress-bar"
+                          style={{ width: `${friend.burnout_level}%` }}
+                        />
+                      </div>
+                    </div>
+                    <button className="expand-btn">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 6L15 12L9 18" stroke="#0FEE9E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
                   <button 
                     className="delete-btn"
                     onClick={() => handleDelete(friend.id)}
@@ -162,6 +155,18 @@ export default function Friends() {
               ))}
             </div>
           )}
+        </div>
+
+        <div className="add-friend-section">
+          <button 
+            className="add-friend-btn"
+            onClick={() => setShowModal(true)}
+          >
+            Призвать союзника
+          </button>
+          <div className="add-friend-hint">
+            Призови друга и получи бонусы к мотивации
+          </div>
         </div>
 
         {showModal && (
@@ -205,7 +210,7 @@ export default function Friends() {
         )}
       </div>
 
-       <BottomMenu />
+      <BottomMenu />
     </div>
   );
-} 
+}
