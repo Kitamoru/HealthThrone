@@ -142,15 +142,18 @@ export default function Friends() {
                       </svg>
                     </button>
                   </div>
-                  <button 
-                    className="delete-btn"
-                    onClick={() => handleDelete(friend.id)}
-                    disabled={deletingFriends.includes(friend.id)}
-                  >
-                    {deletingFriends.includes(friend.id) 
-                      ? 'Удаление...' 
-                      : 'Удалить'}
-                  </button>
+                  {/* Временно скрытая кнопка удаления */}
+                  {false && (
+                    <button 
+                      className="delete-btn"
+                      onClick={() => handleDelete(friend.id)}
+                      disabled={deletingFriends.includes(friend.id)}
+                    >
+                      {deletingFriends.includes(friend.id) 
+                        ? 'Удаление...' 
+                        : 'Удалить'}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -165,7 +168,7 @@ export default function Friends() {
             Призвать союзника
           </button>
           <div className="add-friend-hint">
-            Призови друга и получи бонусы к мотивации
+            Призови союзника и продолжи приключение вместе
           </div>
         </div>
 
