@@ -37,7 +37,11 @@ body {
   height: calc(var(--vh, 1vh) * 100);
   padding: 16px 20px;
   align-items: center;
-  gap: 32px;
+  gap: 32px; /* Первый отступ */
+}
+
+.container > *:not(:first-child) {
+  margin-top: -20px; /* Уменьшаем gap до 12px (32px - 20px = 12px) */
 }
 
 /* Header Styles */
@@ -676,14 +680,6 @@ body {
   opacity: 1;
 }
 /* Existing styles... */
-
-.container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh; /* Занимаем всю высоту экрана */
-  padding: 15px;
-  gap: 20px;
-}
 
 .scrollable-content {
   display: flex;
