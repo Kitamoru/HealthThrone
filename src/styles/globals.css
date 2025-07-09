@@ -681,23 +681,6 @@ body {
   justify-content: center;
 }
 
-.delete-btn {
-  align-self: flex-end;
-  background: var(--tg-danger);
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  font-weight: 500;
-  margin-top: 10px;
-}
-
-.delete-btn:hover {
-  background: #c0392b;
-}
-
 .empty {
   text-align: center;
   padding: 20px;
