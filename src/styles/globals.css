@@ -818,8 +818,17 @@ body {
 }
 
 .answer-btn.positive {
-  background: var(--tg-accent);
-  color: white;
+display: flex;
+height: 42px;
+Width: 100%;
+padding: 0px 14px;
+justifyContent: center;
+alignItems: center;
+gap: 8px;
+alignSelf: stretch;
+borderRadius: 12px;
+background: linear-gradient(180deg, rgba(6, 96, 64, 0.20) 0%, rgba(6, 96, 64, 0.80) 100%), #0FEE9E;
+boxShadow: 0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.1) inset, 0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 1px 1px 2px 0px rgba(194, 179, 255, 0.2) inset, 0px 0.15px 0px 0px #C2B3FF inset;
 }
 
 .delete-btn {
