@@ -561,6 +561,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  height: 56px;
   padding: 10px;
 }
 
@@ -772,7 +773,7 @@ body {
   align-items: center;
   border-radius: 16px;
   background: #161616;
-  max-height: 68px;
+  max-height: 56px;
   width: 100%;
   box-sizing: border-box;
 }
