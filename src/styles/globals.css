@@ -410,18 +410,20 @@ body {
   margin-bottom: 12px;
   overflow: hidden;
   transition: all 0.3s ease;
+  position: relative;
+}
   
-  &.expanded {
-    z-index: 10;
-  }
+ .friend-card.expanded {
+  z-index: 10;
+  box-shadow: 0 8px 24px rgba(15, 238, 158, 0.2);
 }
 
 
 .friend-content {
   display: flex;
-  width: 100%;
   align-items: center;
-  gap: 16px;
+  padding: 16px;
+  position: relative;
 }
 
 .friend-sprite {
@@ -507,19 +509,21 @@ body {
   background: none;
   border: none;
   cursor: pointer;
+  margin-left: auto;
   padding: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-  
-  &.expanded {
-    transform: rotate(90deg);
-  }
+
+.expand-btn.expanded {
+  transform: rotate(90deg);
+}
 
 .expandable-content {
-  transition: height 0.3s ease;
+  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  will-change: height;
 }
 
 .expandable-content-inner {
@@ -527,8 +531,8 @@ body {
   width: 100%;
   padding: 16px;
   box-sizing: border-box;
-  background: #161616;
-  border-radius: 0 0 10px 10px;
+  background: #1A1A1A;
+  border-top: 1px solid #2A2A2A;
 }
 
 
