@@ -194,14 +194,14 @@ export default function Friends() {
                     className="custom-input"
                   />
                   <button 
-                    className={`answer-btn ${copied ? 'positive' : ''}`} 
+                    className={`copy-btn ${copied ? 'copied' : ''}`} 
                     onClick={handleCopy}
                   >
                     {copied ? 'Скопировано!' : 'Копировать'}
                   </button>
                 </div>
                 <button 
-                  className="answer-btn positive"
+                  className="share-btn"
                   onClick={handleShare}
                   style={{ marginTop: '15px' }}
                 >
