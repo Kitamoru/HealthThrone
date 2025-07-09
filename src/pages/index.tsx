@@ -13,7 +13,7 @@ import Onboarding from '../components/Onboarding';
 import Octagram from '../components/Octagram';
 import { SurveyModal } from '../components/SurveyModal';
 import { createPortal } from 'react-dom';
-import BottomMenu from '../components/BottomMenu'; // Импортируем компонент меню
+import BottomMenu from '../components/BottomMenu';
 
 interface Question {
   id: number;
@@ -65,12 +65,12 @@ const QUESTIONS: Question[] = [
   {
     id: 9,
     text: "Преподнесло ли вам подземелье сегодня неожиданную встречу, загадку или событие, что пробудило интерес?",
-    weight: -1
+    weight: 1
   },
   {
     id: 10,
     text: "Ощущали ли вы сегодня, что промедление может стоить вам важного шанса или артефакта?",
-    weight: -1
+    weight: 1
   }
 ];
 
@@ -338,13 +338,13 @@ const Home = () => {
 
   return (
     <div className="container">
-      {isError || !user ? (
-        <div className="error-message">
-          {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
-        </div>
-      ) : (
-        <>
-          <div className="scrollable-content">
+      <div className="scrollable-content">
+        {isError || !user ? (
+          <div className="error-message">
+            {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
+          </div>
+        ) : (
+          <>
             <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
             
             <div className="content">
@@ -366,15 +366,15 @@ const Home = () => {
                 </div>
               ) : (
                 <div className="flex justify-center mt-6">
-                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}    
-                  className="accept-button"
-                  onClick={handleOpenSurveyModal}        
-                >
-              Пройти ежедневное испытание
-            </motion.button>
-          </div>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}    
+                    className="accept-button"
+                    onClick={handleOpenSurveyModal}        
+                  >
+                    Пройти ежедневное испытание
+                  </motion.button>
+                </div>
               )}
 
               <AnimatePresence>
@@ -388,12 +388,11 @@ const Home = () => {
                 </motion.div>
               </AnimatePresence>
             </div>
-          </div>
+          </>
+        )}
+      </div>
 
-           <BottomMenu />
-
-        </>
-      )}
+      {!needsOnboarding && <BottomMenu />}
 
       {modalPortalRef.current && isSurveyModalOpen && createPortal(
         <SurveyModal
