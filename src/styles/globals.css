@@ -569,6 +569,80 @@ body {
   margin-bottom: 16px;
 }
 
+.friends-header h2 {
+  color: #FFFFFF;
+  text-align: center;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.5px;
+  margin: 0 auto;
+}
+
+.scrollable-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+  overflow-y: auto;
+  padding-bottom: 120px;
+}
+
+.friends-list {
+  width: 100%;
+}
+
+.friends-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.friend-card {
+  width: 100%;
+  height: auto;
+  max-height: 78px;
+  display: flex;
+  padding: 16px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 24px;
+  align-self: stretch;
+  border-radius: 16px;
+  background: #161616;
+  margin-bottom: 12px;
+}
+
+.friend-content {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 16px;
+}
+
+.friend-sprite {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.friend-sprite img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.friend-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .friend-name {
   color: var(--main-text-primary, #FFF);
   font-size: 18px;
@@ -590,6 +664,13 @@ body {
   overflow: hidden;
 }
 
+.friend-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #0FEE9E, #4A7BC8);
+  border-radius: 4.5px;
+  transition: width 0.3s ease;
+}
+
 .expand-btn {
   background: none;
   border: none;
@@ -598,61 +679,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.friend-progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #0FEE9E, #4A7BC8);
-  border-radius: 4.5px;
-  transition: width 0.3s ease;
-}
-
-.friend-details {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.friends-header h2 {
-  color: #FFFFFF;
-  text-align: center;
-  font-size: 20px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 24px;
-  letter-spacing: -0.5px;
-  margin: 0 auto;
-}
-
-.add-friends-btn {
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.friends-list ul {
-  list-style: none;
-  padding: 0;
-}
-
-.friend-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
-}
-
-.friend-name {
-  font-weight: bold;
-}
-
-.burnout-level {
-  color: #666;
 }
 
 .delete-btn {
@@ -668,7 +694,59 @@ body {
   margin-top: 10px;
 }
 
-/* Modal styles */
+.delete-btn:hover {
+  background: #c0392b;
+}
+
+.empty {
+  text-align: center;
+  padding: 20px;
+  color: var(--tg-hint);
+  font-size: 16px;
+}
+
+.error {
+  color: var(--tg-danger);
+  text-align: center;
+  padding: 15px;
+  background: rgba(192, 57, 43, 0.1);
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+.add-friend-section {
+  margin-top: 30px;
+  text-align: center;
+  padding: 0 16px;
+}
+
+.add-friend-btn {
+  background: linear-gradient(135deg, var(--tg-accent), #4a7bc8);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 12px 25px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  width: 100%;
+  max-width: 300px;
+  font-weight: 600;
+  margin: 0 auto;
+}
+
+.add-friend-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.add-friend-hint {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--tg-hint);
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -744,153 +822,22 @@ body {
 .close-btn:hover {
   opacity: 1;
 }
-/* Existing styles... */
 
-.scrollable-content {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  width: 100%;
-  overflow-y: auto;
-  padding-bottom: 120px; /* Отступ для меню */
-}
-
-/* Новые стили для кнопки удаления */
-.delete-btn {
-  background: var(--tg-danger);
-  color: white;
+.answer-btn {
+  background: var(--tg-button-secondary);
+  color: var(--tg-text);
   border: none;
-  padding: 8px 15px;
-  border-radius: 8px;
+  border-radius: 12px;
+  padding: 12px 20px;
   cursor: pointer;
-  transition: background-color 0.3s;
   font-weight: 500;
-  margin-top: 10px;
+  transition: background 0.3s;
 }
 
-.delete-btn:hover {
-  background: #c0392b;
-}
-
-/* Стили для пустого состояния */
-.empty {
-  text-align: center;
-  padding: 20px;
-  color: var(--tg-hint);
-  font-size: 16px;
-}
-
-/* Улучшаем адаптивность */
-@media (max-width: 480px) {
-  .container {
-    padding: 12px;
-  }
-  
-  .menu-btn {
-    padding: 12px;
-    font-size: 20px;
-  }
-  
-  .friend-card {
-  width: 100%;
-  height: auto;
-  max-height: 78px;
-  display: flex;
-  padding: 16px;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 24px;
-  align-self: stretch;
-  border-radius: 16px;
-  background: #161616;
-  margin-bottom: 12px;
-}
-  
-.friend-content {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 16px;
-}
-
-  .friend-sprite {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  overflow: hidden;
-}
-  .delete-btn {
-    align-self: flex-end;
-  }
-
-  
-.add-friend-section {
-  margin-top: 30px;
-  text-align: center;
-  padding: 0 16px;
-}
-
-.add-friend-btn {
-  background: linear-gradient(135deg, var(--tg-accent), #4a7bc8);
+.answer-btn.positive {
+  background: var(--tg-accent);
   color: white;
-  border: none;
-  border-radius: 25px;
-  padding: 12px 25px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.3s;
-  width: 100%;
-  max-width: 300px;
-  font-weight: 600;
-  margin: 0 auto;
 }
-
-.add-friend-btn:hover {
-  opacity: 0.9;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.add-friend-hint {
-  margin-top: 10px;
-  font-size: 14px;
-  color: var(--tg-hint);
-}
-
-/* Адаптивность */
-@media (max-width: 480px) {
-  .friend-name {
-    font-size: 16px;
-    max-width: 140px;
-  }
-  
-  .friend-progress-container {
-    width: 160px;
-  }
-  
-  .add-friend-btn {
-    padding: 10px 20px;
-    font-size: 15px;
-  }
-}
-  
- /* Плавная анимация появления */
-.page-transition {
-  animation: fadeIn 0.3s ease forwards;
-  opacity: 0;
-}
-
-@keyframes fadeIn {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-}  
-
-/* Стили для магазина */
 
 /* Стили для магазина */
 .shop-header {
