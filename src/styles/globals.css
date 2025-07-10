@@ -793,7 +793,7 @@ body {
   align-items: flex-start;
   gap: 16px;
   background: #161616;
-  border-radius: 12px;
+  border-radius: 16px;
   height: 100%;
   box-sizing: border-box;
 }
