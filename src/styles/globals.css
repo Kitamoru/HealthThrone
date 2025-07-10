@@ -397,23 +397,19 @@ body {
 .friend-card {
   width: 100%;
   height: auto;
-  max-height: 78px;
   display: flex;
-  padding: 16px;
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  gap: 24px;
-  align-self: stretch;
   border-radius: 16px;
   background: #161616;
-  margin-bottom: 12px;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  min-height: 78px; /* Минимальная высота свернутой карточки */
 }
   
- .friend-card.expanded {
+.friend-card.expanded {
   z-index: 10;
   box-shadow: 0 8px 24px rgba(15, 238, 158, 0.2);
 }
@@ -423,7 +419,8 @@ body {
   display: flex;
   align-items: center;
   padding: 16px;
-  position: relative;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .friend-sprite {
@@ -432,6 +429,7 @@ body {
   flex-shrink: 0;
   border-radius: 8px;
   overflow: hidden;
+  margin-right: 12px;
 }
 
 .friend-sprite img {
@@ -445,6 +443,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 }
 
 .friend-name {
@@ -457,7 +456,6 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 180px;
 }
 
 /* Контейнер прогресс-бара */
@@ -465,10 +463,14 @@ body {
   position: relative;
   overflow: hidden;
   height: 8px;
-  width: 197px;
+  width: 100%;
   background: #000;
   border-radius: 4.5px;
-  box-shadow: 0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 1px 1px 2px 0px rgba(194, 179, 255, 0.20) inset, 0px 0.15px 0px 0px #C2B3FF inset;
+  box-shadow: 
+    0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 
+    0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 
+    1px 1px 2px 0px rgba(194, 179, 255, 0.20) inset, 
+    0px 0.15px 0px 0px #C2B3FF inset;
 }
 
 /* Основной прогресс-бар */
@@ -504,16 +506,22 @@ body {
   animation: shimmer 2s infinite;
 }
 
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 .expand-btn {
   transition: transform 0.3s ease;
   background: none;
   border: none;
   cursor: pointer;
-  margin-left: auto;
-  padding: 8px;
+  margin-left: 12px;
+  padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .expand-btn.expanded {
@@ -524,15 +532,16 @@ body {
   transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   will-change: height;
+  height: 0;
 }
 
 .expandable-content-inner {
-  min-height: 353px;
   width: 100%;
   padding: 16px;
   box-sizing: border-box;
   background: #1A1A1A;
   border-top: 1px solid #2A2A2A;
+  min-height: 100px; /* Минимальная высота контента */
 }
 
 
@@ -569,10 +578,11 @@ body {
   gap: 8px;
   border-radius: 12px;
   background: linear-gradient(180deg, rgba(6, 96, 64, 0.20) 0%, rgba(6, 96, 64, 0.80) 100%), #0FEE9E;
-  box-shadow: 0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.1) inset, 
-              0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 
-              1px 1px 2px 0px rgba(194, 179, 255, 0.2) inset, 
-              0px 0.15px 0px 0px #C2B3FF inset;
+  box-shadow: 
+    0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.1) inset, 
+    0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 
+    1px 1px 2px 0px rgba(194, 179, 255, 0.2) inset, 
+    0px 0.15px 0px 0px #C2B3FF inset;
   color: #FFFFFF;
   font-weight: 500;
   font-size: 16px;
