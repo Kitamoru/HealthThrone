@@ -105,9 +105,9 @@ body {
   left: -15px;
   right: -15px;
   bottom: -15px;
-  border-radius: 999px;
+  border-radius: 50%; /* Гарантирует идеальный круг */
   background: radial-gradient(
-    ellipse at center,
+    circle, /* Явно указываем круговую форму */
     transparent 40%,
     rgba(15, 238, 158, 0.15) 60%,
     transparent 80%
