@@ -53,10 +53,9 @@ body {
 }
 
 .new-header {
-  display: flex; 
-  justify-content: space-between; 
-  align-items: flex-start; 
-  position: relative; 
+  width: 100%;
+  display: flex;
+  justify-content: center; 
   width: 100%; 
   padding: 8px 0;
 }
