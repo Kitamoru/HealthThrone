@@ -89,14 +89,18 @@ body {
   width: 251px;
   height: 251px;
   border-radius: 999px;
-  background: #161616;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-shrink: 0;
   position: relative;
-  overflow: hidden;
+  overflow: hidden; /* Ключевое свойство для обрезки тумана */
   box-shadow: 0 8px 24px rgba(15, 238, 158, 0.1);
+  cursor: pointer;
+}
+
+.circle-background {
+  background: #161616;
 }
 
 .sprite {
