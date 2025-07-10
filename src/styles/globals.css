@@ -732,7 +732,7 @@ body {
   border-radius: 16px;
   background: #161616;
   max-height: 56px;
-  width: 100%;
+  width: auto;
   box-sizing: border-box;
 }
 
@@ -783,7 +783,7 @@ body {
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin: 0 auto;
-  width: 100%;
+  width: auto;
   box-sizing: border-box;
 }
 
@@ -797,6 +797,7 @@ body {
   background: #161616;
   border-radius: 16px;
   height: 100%;
+  width: auto;
   box-sizing: border-box;
 }
 
