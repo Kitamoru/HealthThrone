@@ -5,7 +5,6 @@ interface CharacterSpriteProps {
   spriteUrl?: string;
 }
 
-// Варианты анимации для тумана
 const fogVariants: Variants = {
   hidden: { opacity: 0 },
   visible: (i: number) => ({
@@ -19,7 +18,7 @@ const fogVariants: Variants = {
     }
   }),
   tap: {
-    opacity: [0.4, 0.8, 0.4],
+    opacity: [0.3, 0.6, 0.3],
     scale: [1.05, 1.15, 1.05],
     transition: {
       duration: 0.8,
@@ -36,7 +35,6 @@ const CharacterSprite = React.memo(({
   const firstRender = useRef(true);
   const prevSpriteRef = useRef(spriteUrl);
   
-  // Создаем несколько слоев тумана с разными характеристиками
   const fogLayers = [
     { size: 1.0, color: "rgba(15, 238, 158, 0.15)", delay: 0 },
     { size: 1.2, color: "rgba(15, 238, 158, 0.1)", delay: 1 },
@@ -77,11 +75,30 @@ const CharacterSprite = React.memo(({
       <motion.div 
         className="sprite-background"
         whileTap={{ scale: 0.98 }}
+        style={{
+          position: 'relative',
+          overflow: 'hidden' // Гарантируем, что туман не выйдет за границы
+        }}
       >
-        {/* Слои тумана с разными анимациями */}
+        {/* Темный фон круга */}
+        <div 
+          className="circle-background"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            borderRadius: '999px',
+            background: '#161616',
+            zIndex: 1
+          }}
+        />
+        
+        {/* Слои тумана над фоном, но под спрайтом */}
         {fogLayers.map((layer, i) => (
           <motion.div
-            key={i}
+            key={`fog-${i}`}
             className="fog-layer"
             custom={i}
             initial="hidden"
@@ -96,16 +113,22 @@ const CharacterSprite = React.memo(({
               height: '100%',
               borderRadius: '999px',
               background: `radial-gradient(circle at center, ${layer.color} 0%, transparent 70%)`,
-              zIndex: 1,
+              zIndex: 2, // Над фоном, но под спрайтом
             }}
           />
         ))}
 
+        {/* Спрайт персонажа - самый верхний слой */}
         <img 
           src={displaySprite} 
           alt="Character" 
           className={`sprite ${isAnimating ? 'sprite-fade-in' : ''}`}
-          style={{ position: 'relative', zIndex: 2 }}
+          style={{ 
+            position: 'relative', 
+            zIndex: 3, // Выше всех слоев
+            maxWidth: '90%',
+            maxHeight: '90%'
+          }}
           onError={(e) => {
             e.currentTarget.src = '/sprite.gif';
           }}
