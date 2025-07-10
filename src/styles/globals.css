@@ -72,12 +72,10 @@ body {
   backdrop-filter: blur(30px);
   display: flex;
   height: 36px;
-  width: auto;
-  padding: 0px 16px;
+  width: auto; /* Фиксированная ширина вместо 100% */
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 28px;
 }
 
 .sprite-container {
