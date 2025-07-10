@@ -785,7 +785,7 @@ body {
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin: 0 auto;
-  width: auto;
+  width: 100%;
   box-sizing: border-box;
 }
 
