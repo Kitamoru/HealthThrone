@@ -14,16 +14,13 @@ const CharacterSprite = React.memo(({
   const prevSpriteRef = useRef(spriteUrl);
 
   useEffect(() => {
-    // Пропускаем анимацию при первом рендере
     if (firstRender.current) {
       firstRender.current = false;
       prevSpriteRef.current = spriteUrl;
       return;
     }
 
-    // Если спрайт изменился
     if (spriteUrl !== prevSpriteRef.current) {
-      // Если нет активной анимации - сразу обновляем
       if (!isAnimating) {
         prevSpriteRef.current = spriteUrl;
         setDisplaySprite(spriteUrl);
@@ -34,9 +31,7 @@ const CharacterSprite = React.memo(({
         }, 500);
         
         return () => clearTimeout(timer);
-      } 
-      // Если анимация активна - ставим в очередь обновление
-      else {
+      } else {
         const timer = setTimeout(() => {
           prevSpriteRef.current = spriteUrl;
           setDisplaySprite(spriteUrl);
@@ -50,22 +45,6 @@ const CharacterSprite = React.memo(({
   return (
     <div className="sprite-container">
       <div className="sprite-background">
-        {/* Анимированное свечение с безопасной анимацией */}
-        <motion.div
-          className="sprite-glow"
-          initial={{ opacity: 0.4, scale: 1 }}
-          animate={{
-            opacity: [0.4, 0.8, 0.4],
-            scale: [1, 1.05, 1]
-          }}
-          transition={{
-            duration: 3,
-            ease: "easeInOut",
-            repeat: Infinity,
-            repeatType: "loop"
-          }}
-        />
-        
         <img 
           src={displaySprite} 
           alt="Character" 
@@ -75,6 +54,22 @@ const CharacterSprite = React.memo(({
           }}
         />
       </div>
+      
+      {/* Внешнее свечение вокруг контейнера */}
+      <motion.div
+        className="outer-glow"
+        initial={{ opacity: 0.3, scale: 1 }}
+        animate={{
+          opacity: [0.3, 0.6, 0.3],
+          scale: [1, 1.08, 1]
+        }}
+        transition={{
+          duration: 3,
+          ease: "easeInOut",
+          repeat: Infinity,
+          repeatType: "loop"
+        }}
+      />
     </div>
   );
 });
