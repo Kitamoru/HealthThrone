@@ -55,16 +55,25 @@ const CharacterSprite = React.memo(({
         />
       </div>
       
-      {/* Внешнее свечение вокруг контейнера */}
+      {/* Асимметричное свечение */}
       <motion.div
-        className="outer-glow"
-        initial={{ opacity: 0.3, scale: 1 }}
+        className="asymmetric-glow"
+        initial={{ 
+          opacity: 0.3,
+          scale: 1,
+          clipPath: "circle(50% at 50% 50%)"
+        }}
         animate={{
-          opacity: [0.3, 0.6, 0.3],
-          scale: [1, 1.08, 1]
+          opacity: [0.3, 0.7, 0.3],
+          scale: [1, 1.15, 1],
+          clipPath: [
+            "circle(50% at 50% 50%)",
+            "circle(60% at 60% 40%)",
+            "circle(50% at 50% 50%)"
+          ]
         }}
         transition={{
-          duration: 3,
+          duration: 4,
           ease: "easeInOut",
           repeat: Infinity,
           repeatType: "loop"
