@@ -1495,24 +1495,6 @@ box-shadow: 0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 0px 0.5px 10px 
   text-align: center;
 }
 
-.accept-button {
-  width: 100%;
-  padding: 16px;
-  background: var(--tg-accent);
-  border: none;
-  border-radius: 12px;
-  color: white;
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-top: auto;
-  margin-bottom: 30px;
-  transition: all 0.2s ease;
-}
-
-.accept-button:hover {
-  background: #4a7bc8;
-  transform: translateY(-2px);
-}
   /* Стили для контейнера октаграммы */
 .octagram-container {
   position: relative;
