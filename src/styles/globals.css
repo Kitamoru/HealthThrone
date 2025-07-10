@@ -412,6 +412,7 @@ body {
 .friend-card.expanded {
   z-index: 10;
   box-shadow: 0 8px 24px rgba(15, 238, 158, 0.2);
+  border-radius: 16px;
 }
 
 
