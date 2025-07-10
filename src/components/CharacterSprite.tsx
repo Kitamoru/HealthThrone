@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, useAnimation } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface CharacterSpriteProps {
   spriteUrl?: string;
@@ -12,25 +12,8 @@ const CharacterSprite = React.memo(({
   const [isAnimating, setIsAnimating] = useState(false);
   const firstRender = useRef(true);
   const prevSpriteRef = useRef(spriteUrl);
-  const glowControls = useAnimation();
 
   useEffect(() => {
-    // Запускаем анимацию свечения при монтировании
-    const animateGlow = async () => {
-      while (true) {
-        await glowControls.start({
-          opacity: [0.4, 0.8, 0.4],
-          scale: [1, 1.05, 1],
-          transition: {
-            duration: 3,
-            ease: "easeInOut",
-            times: [0, 0.5, 1]
-          }
-        });
-      }
-    };
-    animateGlow();
-    
     // Пропускаем анимацию при первом рендере
     if (firstRender.current) {
       firstRender.current = false;
@@ -62,16 +45,25 @@ const CharacterSprite = React.memo(({
         return () => clearTimeout(timer);
       }
     }
-  }, [spriteUrl, isAnimating, glowControls]);
+  }, [spriteUrl, isAnimating]);
 
   return (
     <div className="sprite-container">
       <div className="sprite-background">
-        {/* Анимированное свечение */}
+        {/* Анимированное свечение с безопасной анимацией */}
         <motion.div
           className="sprite-glow"
-          animate={glowControls}
           initial={{ opacity: 0.4, scale: 1 }}
+          animate={{
+            opacity: [0.4, 0.8, 0.4],
+            scale: [1, 1.05, 1]
+          }}
+          transition={{
+            duration: 3,
+            ease: "easeInOut",
+            repeat: Infinity,
+            repeatType: "loop"
+          }}
         />
         
         <img 
