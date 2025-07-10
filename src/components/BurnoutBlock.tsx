@@ -8,7 +8,7 @@ const BurnoutBlock = React.memo(({
   level
 }: BurnoutBlockProps) => {
   return (
-    <div className="burnout-section">
+    <div className="burnout-block">
       <div className="level-display">
         <span className="level-label">Уровень здоровья</span>
         <span className="level-value">{level}%</span>
