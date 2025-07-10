@@ -37,8 +37,7 @@ body {
   height: calc(var(--vh, 1vh) * 100);
   padding: 16px 20px;
   align-items: center;
-  gap: 32px; /* Первый отступ */
-  overflow: hidden;
+  gap: 24px; /* Первый отступ */
 }
 
 .container > *:not(:first-child) {
@@ -377,7 +376,7 @@ body {
 .scrollable-content {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 16px;
   width: 100%;
   overflow-y: auto;
   padding-bottom: 120px;
