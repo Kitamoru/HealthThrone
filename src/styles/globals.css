@@ -40,7 +40,7 @@ body {
   width: 100%;
   align-items: center;
   gap: 24px; /* Первый отступ */
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .container > *:not(:first-child) {
