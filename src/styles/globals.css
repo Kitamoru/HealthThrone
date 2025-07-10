@@ -96,24 +96,26 @@ body {
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
-  z-index: 1;
+  z-index: 2;
 }
 
-.sprite-glow {
+.outer-glow {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: -15px;
+  left: -15px;
+  right: -15px;
+  bottom: -15px;
   border-radius: 999px;
   background: radial-gradient(
     ellipse at center,
-    rgba(15, 238, 158, 0.3) 0%,
-    rgba(15, 238, 158, 0.15) 50%,
-    transparent 70%
+    transparent 40%,
+    rgba(15, 238, 158, 0.15) 60%,
+    transparent 80%
   );
-  box-shadow: 0 8px 24px rgba(15, 238, 158, 0.2);
-  z-index: -1;
+  box-shadow: 
+    0 0 20px rgba(15, 238, 158, 0.1),
+    0 0 40px rgba(15, 238, 158, 0.05);
+  z-index: 1;
 }
 
 .sprite {
@@ -121,7 +123,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  z-index: 2;
+  z-index: 3;
   transition: opacity 0.5s ease-in-out;
 }
 
