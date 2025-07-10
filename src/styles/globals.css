@@ -96,29 +96,7 @@ body {
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
-  z-index: 2;
-}
-
-.asymmetric-glow {
-  position: absolute;
-  top: -20px;
-  left: -20px;
-  right: -20px;
-  bottom: -20px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at center,
-    transparent 30%,
-    rgba(15, 238, 158, 0.25) 50%,
-    transparent 70%
-  );
-  box-shadow: 
-    0 0 30px rgba(15, 238, 158, 0.15),
-    0 0 60px rgba(15, 238, 158, 0.08);
-  filter: blur(10px);
-  mix-blend-mode: screen;
-  pointer-events: none;
-  z-index: 1;
+  box-shadow: 0 8px 24px rgba(15, 238, 158, 0.1);
 }
 
 .sprite {
