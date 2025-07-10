@@ -338,12 +338,12 @@ const Home = () => {
   }
 
   return (
-    <div className="container" style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <div className="container">
       <div className="new-header">
         <div className="header-content"></div>
       </div>
 
-      <div className="scrollable-content" style={{ flex: 1, overflowY: 'auto' }}>
+      <div className="scrollable-content">
         {isError || !user ? (
           <div className="error-message">
             {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
@@ -352,54 +352,57 @@ const Home = () => {
           <>
             <CharacterSprite spriteUrl={spriteUrl} />
             
-            <BurnoutBlock level={burnoutLevel} />
-            
-            <div className="content">
-              {apiError && !alreadyAttemptedToday && (
-                <div className="error-message">{apiError}</div>
-              )}
+            {/* Общий контейнер для выгорания и кнопки */}
+            <div className="burnout-and-button-container">
+              <BurnoutBlock level={burnoutLevel} />
+              
+              <div className="content">
+                {apiError && !alreadyAttemptedToday && (
+                  <div className="error-message">{apiError}</div>
+                )}
 
-              {alreadyAttemptedToday ? (
-                <div className="time-message">
-                  <div className="info-message">
-                    Вы уже прошли испытание сегодня. Ваш текущий уровень здоровья: {burnoutLevel}%
+                {alreadyAttemptedToday ? (
+                  <div className="time-message">
+                    <div className="info-message">
+                      Вы уже прошли испытание сегодня. Ваш текущий уровень здоровья: {burnoutLevel}%
+                    </div>
                   </div>
-                </div>
-              ) : surveyCompleted ? (
-                <div className="time-message">
-                  <div className="info-message">
-                    🎯 Испытание завершено! Ваш уровень здоровья: {burnoutLevel}%
+                ) : surveyCompleted ? (
+                  <div className="time-message">
+                    <div className="info-message">
+                      🎯 Испытание завершено! Ваш уровень здоровья: {burnoutLevel}%
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex justify-center mt-6">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}    
-                    className="accept-button"
-                    onClick={handleOpenSurveyModal}        
-                  >
-                    Пройти ежедневное испытание
-                  </motion.button>
-                </div>
-              )}
-
-              <div className="octagram-container">
-                <AnimatePresence>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8 }}
-                    className="octagram-wrapper"
-                  >
-                    <Octagram values={octagramValues} size={280} />
-                  </motion.div>
-                </AnimatePresence>
-                
-                <button className="octalysis-info-button">
-                  Как работает октализ
-                </button>
+                ) : (
+                  <div className="flex justify-center">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}    
+                      className="accept-button"
+                      onClick={handleOpenSurveyModal}        
+                    >
+                      Пройти ежедневное испытание
+                    </motion.button>
+                  </div>
+                )}
               </div>
+            </div>
+
+            <div className="octagram-container">
+              <AnimatePresence>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8 }}
+                  className="octagram-wrapper"
+                >
+                  <Octagram values={octagramValues} size={280} />
+                </motion.div>
+              </AnimatePresence>
+              
+              <button className="octalysis-info-button">
+                Как работает октализ
+              </button>
             </div>
           </>
         )}
