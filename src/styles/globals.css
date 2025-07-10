@@ -26,7 +26,7 @@ body {
   color: var(--tg-text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   width: 100%;
-  height: calc(var(--vh, 1vh) * 100);
+  height: 100%
   overflow: hidden;
   overscroll-behavior: none;
 }
@@ -35,8 +35,9 @@ body {
 .container {
   display: flex;
   flex-direction: column;
-  height: calc(var(--vh, 1vh) * 100);
+  height: 100%
   padding: 16px 20px;
+  width: 100%;
   align-items: center;
   gap: 24px; /* Первый отступ */
   overflow-x: hidden;
