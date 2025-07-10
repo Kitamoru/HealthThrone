@@ -142,7 +142,6 @@ body {
   right: 0;
   bottom: 0;
   background: linear-gradient(90deg, transparent 70%, rgba(255,255,255,0.3));
-  animation: shimmer 2s infinite;
 }
 
 /* Content Area */
@@ -503,12 +502,6 @@ body {
     0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset,
     1px 1px 2px 0px rgba(194, 179, 255, 0.20) inset,
     0px 0.15px 0px 0px #C2B3FF inset;
-  animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
 }
 
 .expand-btn {
@@ -539,11 +532,9 @@ body {
   width: 100%;
   padding: 16px;
   box-sizing: border-box;
-  background: #1A1A1A;
-  border-top: 1px solid #2A2A2A;
+  background: #161616;
   min-height: 100px; /* Минимальная высота контента */
 }
-
 
 .empty {
   text-align: center;
