@@ -99,22 +99,25 @@ body {
   z-index: 2;
 }
 
-.outer-glow {
+.asymmetric-glow {
   position: absolute;
-  top: -15px;
-  left: -15px;
-  right: -15px;
-  bottom: -15px;
-  border-radius: 50%; /* Гарантирует идеальный круг */
+  top: -20px;
+  left: -20px;
+  right: -20px;
+  bottom: -20px;
+  border-radius: 50%;
   background: radial-gradient(
-    circle, /* Явно указываем круговую форму */
-    transparent 40%,
-    rgba(15, 238, 158, 0.15) 60%,
-    transparent 80%
+    circle at center,
+    transparent 30%,
+    rgba(15, 238, 158, 0.25) 50%,
+    transparent 70%
   );
   box-shadow: 
-    0 0 20px rgba(15, 238, 158, 0.1),
-    0 0 40px rgba(15, 238, 158, 0.05);
+    0 0 30px rgba(15, 238, 158, 0.15),
+    0 0 60px rgba(15, 238, 158, 0.08);
+  filter: blur(10px);
+  mix-blend-mode: screen;
+  pointer-events: none;
   z-index: 1;
 }
 
