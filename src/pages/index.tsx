@@ -8,12 +8,13 @@ import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../lib/api';
 import { Loader } from '../components/Loader';
 import { UserProfile } from '../lib/types';
-import { BurnoutProgress } from '../components/BurnoutProgress';
 import Onboarding from '../components/Onboarding';
 import Octagram from '../components/Octagram';
 import { SurveyModal } from '../components/SurveyModal';
 import { createPortal } from 'react-dom';
 import BottomMenu from '../components/BottomMenu';
+import CharacterSprite from '../components/CharacterSprite';
+import BurnoutBlock from '../components/BurnoutBlock';
 
 interface Question {
   id: number;
@@ -338,6 +339,10 @@ const Home = () => {
 
   return (
     <div className="container" style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <div className="new-header">
+        <div className="header-content"></div>
+      </div>
+
       <div className="scrollable-content" style={{ flex: 1, overflowY: 'auto' }}>
         {isError || !user ? (
           <div className="error-message">
@@ -345,7 +350,9 @@ const Home = () => {
           </div>
         ) : (
           <>
-            <BurnoutProgress level={burnoutLevel} spriteUrl={spriteUrl} />
+            <CharacterSprite spriteUrl={spriteUrl} />
+            
+            <BurnoutBlock level={burnoutLevel} />
             
             <div className="content">
               {apiError && !alreadyAttemptedToday && (
@@ -377,16 +384,22 @@ const Home = () => {
                 </div>
               )}
 
-              <AnimatePresence>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8 }}
-                  className="mt-4 mb-4 flex flex-col items-center octagram-container"
-                >
-                  <Octagram values={octagramValues} size={280} />
-                </motion.div>
-              </AnimatePresence>
+              <div className="octagram-container">
+                <AnimatePresence>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
+                    className="octagram-wrapper"
+                  >
+                    <Octagram values={octagramValues} size={280} />
+                  </motion.div>
+                </AnimatePresence>
+                
+                <button className="octalysis-info-button">
+                  Как работает октализ
+                </button>
+              </div>
             </div>
           </>
         )}
