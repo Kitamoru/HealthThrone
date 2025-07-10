@@ -339,11 +339,12 @@ const Home = () => {
 
   return (
     <div className="container">
-      <div className="new-header">
-        <div className="header-content"></div>
-      </div>
-
       <div className="scrollable-content">
+        {/* Хедер перемещен внутрь скроллируемой области */}
+        <div className="new-header">
+          <div className="header-content"></div>
+        </div>
+
         {isError || !user ? (
           <div className="error-message">
             {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
