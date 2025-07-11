@@ -60,7 +60,8 @@ body {
   width: 100%;
   display: flex;
   justify-content: center;
-  padding: 8px 0;
+  box-sizing: border-box;
+  padding: 8px;
 }
 
 .header-content {
@@ -257,7 +258,7 @@ opacity: 0.5;
   font-weight: 400;
   line-height: 20px; /* 142.857% */
   letter-spacing: -0.5px;
-  border-radius: 8px;
+  border-radius: 12px;
   box-shadow: 0px -0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 0px -0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 1px 1px 2px 0px rgba(194, 179, 255, 0.20) inset, 0px 0.15px 0px 0px #C2B3FF; 
   display: flex;
   justify-content: center;
