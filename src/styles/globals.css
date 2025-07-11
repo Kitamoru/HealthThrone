@@ -516,7 +516,6 @@ outline: none; /* Убираем контур при фокусе */
   max-height: 56px;
   width: 100%;
   box-sizing: border-box;
-  margin-bottom: 16px;
 }
 
 .friends-header h2 {
