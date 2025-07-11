@@ -90,6 +90,7 @@ body {
   display: flex;
   justify-content: center;
   position: relative;
+  margin-top: 8px;
 }
 
 .sprite-background {
@@ -892,6 +893,7 @@ outline: none; /* Убираем контур при фокусе */
   max-height: 56px;
   width: 100%;
   box-sizing: border-box;
+  margin-bottom: 8px;
 }
 
 .shop-title {
@@ -1107,6 +1109,7 @@ outline: none; /* Убираем контур при фокусе */
   align-self: stretch;
   border-radius: 16px;
   background: #161616;
+  margin-bottom: 8px;
 }
 
 .page-title {
