@@ -88,8 +88,26 @@ const Home = () => {
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
   const [octalysisFactors, setOctalysisFactors] = useState<number[] | null>(null);
+  const [octagramSize, setOctagramSize] = useState(280); // Начальный размер октаграммы
   
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
+
+  // Адаптивный размер октаграммы
+  useEffect(() => {
+    const updateSize = () => {
+      if (window.innerWidth < 400) {
+        setOctagramSize(220);
+      } else if (window.innerWidth < 768) {
+        setOctagramSize(250);
+      } else {
+        setOctagramSize(280);
+      }
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
 
   const handleOpenSurveyModal = useCallback(() => {
     if (!modalPortalRef.current) {
@@ -100,6 +118,10 @@ const Home = () => {
       modalPortalRef.current = portalContainer;
     }
     setIsSurveyModalOpen(true);
+  }, []);
+
+  const handleOctalysisInfo = useCallback(() => {
+    alert("Октализ — это модель геймификации, которая оценивает 8 ключевых факторов мотивации. Каждый луч октаграммы представляет один из факторов, помогая понять вашу мотивацию.");
   }, []);
 
   useEffect(() => {
@@ -399,12 +421,15 @@ const Home = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8 }}
                   >
-                    <Octagram values={octagramValues} size={280} />
+                    <Octagram values={octagramValues} size={octagramSize} />
                   </motion.div>
                 </AnimatePresence>
               </div>
               
-              <button className="octalysis-info-button">
+              <button 
+                className="octalysis-info-button"
+                onClick={handleOctalysisInfo}
+              >
                 Как работает октализ
               </button>
             </div>
