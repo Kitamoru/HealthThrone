@@ -212,13 +212,13 @@ const Octagram = memo(({ values, size = 300 }: OctagramProps) => {
     });
   }, [values, radius, getPoint]);
 
-  // Рассчет позиций для иконок (8px от вершины наружу)
+  // Рассчет позиций для иконок (24px от вершины наружу)
   const iconPositions = useMemo(() => {
     return octagonPoints.map(point => {
       const dx = point.x - center;
       const dy = point.y - center;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      const scale = (distance + 8) / distance;
+      const scale = (distance + 24) / distance; // Изменено с 8 на 24
       
       return {
         x: center + dx * scale,
