@@ -231,6 +231,7 @@ opacity: 0.5;
   margin-top: 24px;
   box-sizing: border-box;
   height: 100%;
+  width: 100%;
 }
 
 .octagram-wrapper {
