@@ -220,6 +220,7 @@ opacity: 0.5;
   align-items: center;
   gap: 32px; /* Уменьшаем отступ */
   border-radius: 24px 24px 34px 34px;
+  box-shadow: 0px -0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 0px -0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 1px 1px 2px 0px rgba(194, 179, 255, 0.20) inset, 0px 0.15px 0px 0px #C2B3FF; 
   background: #161616;
   box-sizing: border-box;
   width: 100%;
@@ -227,6 +228,7 @@ opacity: 0.5;
   margin-top: 24px; /* Добавляем отступ сверху */
   border: none; /* Сброс границы */
   outline: none; /* Убираем контур при фокусе */
+  
 }
 
 /* Растягиваем контейнер по высоте */
