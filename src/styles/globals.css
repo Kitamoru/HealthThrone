@@ -71,7 +71,7 @@ body {
   backdrop-filter: blur(30px);
   display: flex;
   height: 36px;
-  width: auto; 
+  width: 70%; 
   flex-direction: column;
   justify-content: center;
   align-items: center;
