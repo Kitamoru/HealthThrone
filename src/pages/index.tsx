@@ -392,16 +392,18 @@ const Home = () => {
             </div>
 
             <div className="octagram-container">
-              <AnimatePresence>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8 }}
-                  className="octagram-wrapper"
-                >
-                  <Octagram values={octagramValues} size={280} />
-                </motion.div>
-              </AnimatePresence>
+              <div className="octagram-content">
+                <AnimatePresence>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
+                    className="octagram-wrapper"
+                  >
+                    <Octagram values={octagramValues} size={280} />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
               
               <button className="octalysis-info-button">
                 Как работает октализ
