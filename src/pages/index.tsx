@@ -343,11 +343,7 @@ const Home = () => {
         {/* Хедер с классом персонажа */}
         <div className="new-header">
           <div className="header-content">
-            {userData?.character_class && (
-              <div className="character-class-badge">
-                {userData.character_class}
-              </div>
-            )}
+            {userData?.character_class || 'Ваш класс'}
           </div>
         </div>
 
