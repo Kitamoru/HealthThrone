@@ -389,6 +389,13 @@ opacity: 0.5;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
+.content {
+  flex-grow: 1;
+  scroll-behavior: smooth;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .accept-button {
 color: #FFF;
 text-align: center;
