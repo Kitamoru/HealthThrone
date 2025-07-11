@@ -338,12 +338,12 @@ const Home = () => {
   }
 
   return (
-    <div className="container">
-      <div className="scrollable-content">
-        {/* Хедер перемещен внутрь скроллируемой области */}
-        <div className="new-header">
-          <div className="header-content"></div>
-        </div>
+   <div className="new-header">
+     <div className="header-content">
+        {userData?.character_class && (
+        <div className="character-class-badge"> 
+        {userData.character_class}
+      </div>
 
         {isError || !user ? (
           <div className="error-message">
