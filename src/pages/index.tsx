@@ -88,8 +88,26 @@ const Home = () => {
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
   const [octalysisFactors, setOctalysisFactors] = useState<number[] | null>(null);
+  const [octagramSize, setOctagramSize] = useState(280); // Начальный размер октаграммы
   
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
+
+  // Адаптивный размер октаграммы
+  useEffect(() => {
+    const updateSize = () => {
+      if (window.innerWidth < 400) {
+        setOctagramSize(220);
+      } else if (window.innerWidth < 768) {
+        setOctagramSize(250);
+      } else {
+        setOctagramSize(280);
+      }
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
 
   const handleOpenSurveyModal = useCallback(() => {
     if (!modalPortalRef.current) {
@@ -100,6 +118,10 @@ const Home = () => {
       modalPortalRef.current = portalContainer;
     }
     setIsSurveyModalOpen(true);
+  }, []);
+
+  const handleOctalysisInfo = useCallback(() => {
+    alert("Октализ — это модель геймификации, которая оценивает 8 ключевых факторов мотивации. Каждый луч октаграммы представляет один из факторов, помогая понять вашу мотивацию.");
   }, []);
 
   useEffect(() => {
@@ -333,7 +355,7 @@ const Home = () => {
   }
 
   // Показываем лоадер, пока не загружены данные пользователя, спрайт или факторы
-  if (isLoading || !spriteLoaded === null) {
+  if (isLoading || !spriteLoaded) {
     return <Loader />;
   }
 
@@ -377,7 +399,7 @@ const Home = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex justify-center">
+                  <div className="flex justify-center w-full">
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}    
@@ -392,18 +414,22 @@ const Home = () => {
             </div>
 
             <div className="octagram-container">
-              <AnimatePresence>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8 }}
-                  className="octagram-wrapper"
-                >
-                  <Octagram values={octagramValues} size={280} />
-                </motion.div>
-              </AnimatePresence>
+              <div className="octagram-wrapper">
+                <AnimatePresence>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
+                  >
+                    <Octagram values={octagramValues} size={octagramSize} />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
               
-              <button className="octalysis-info-button">
+              <button 
+                className="octalysis-info-button"
+                onClick={handleOctalysisInfo}
+              >
                 Как работает октализ
               </button>
             </div>
