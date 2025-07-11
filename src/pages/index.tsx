@@ -344,7 +344,7 @@ const Home = () => {
         <div className="character-class-badge"> 
         {userData.character_class}
       </div>
-
+          )}
         {isError || !user ? (
           <div className="error-message">
             {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
