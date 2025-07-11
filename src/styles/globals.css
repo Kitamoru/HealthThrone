@@ -229,7 +229,8 @@ opacity: 0.5;
   display: flex;
   justify-content: center;
   align-items: center;
-  flex: 1;
+  aspect-ratio: 1/1; /* Сохраняем квадратную форму */
+  margin: 0 auto; /* Центрирование */
 }
 
 
