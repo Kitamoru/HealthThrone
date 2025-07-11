@@ -413,18 +413,19 @@ const Home = () => {
               </div>
             </div>
 
-            <div className="octagram-container">
-              <div className="octagram-wrapper">
-                <AnimatePresence>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8 }}
-                  >
-                    <Octagram values={octagramValues} size={octagramSize} />
-                  </motion.div>
-                </AnimatePresence>
-              </div>
+        <div className="octagram-container">
+          <div className="octagram-wrapper">
+            <AnimatePresence>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="w-full h-full flex justify-center items-center"
+              >
+                <Octagram values={octagramValues} />
+              </motion.div>
+            </AnimatePresence>
+          </div>
               
               <button 
                 className="octalysis-info-button"
