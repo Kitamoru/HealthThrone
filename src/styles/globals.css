@@ -69,9 +69,9 @@ body {
     1px 1px 2px 0px rgba(194, 179, 255, 0.20) inset, 
     0px 0.15px 0px 0px #C2B3FF inset;
   backdrop-filter: blur(30px);
-  display: flex;
+  display: inline-block;
+  padding: 0 10px; / +10px к ширине /
   height: 36px;
-  width: calc(max-content + 50px);
   flex-direction: column;
   justify-content: center;
   align-items: center;
