@@ -228,11 +228,9 @@ opacity: 0.5;
 
 .octagram-content {
   display: flex;
-  padding: 32px;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 26px;
   align-self: stretch;
   width: 100%;
 }
