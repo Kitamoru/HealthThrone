@@ -24,7 +24,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
   const viewBoxSize = 340;
   const center = viewBoxSize / 2;
   const radius = viewBoxSize * 0.35; // Немного уменьшаем радиус
-  const iconOffset = 42; // Увеличиваем отступ для иконок
+  const iconOffset = 24; // Увеличиваем отступ для иконок
 
   const getPoint = useCallback((angle: number, r: number) => {
     const rad = (angle * Math.PI) / 180;
