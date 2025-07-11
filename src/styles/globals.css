@@ -55,8 +55,7 @@ body {
 .new-header {
   width: 100%;
   display: flex;
-  justify-content: center; 
-  width: 100%; 
+  justify-content: center;
   padding: 8px 0;
 }
 
@@ -69,21 +68,17 @@ body {
     1px 1px 2px 0px rgba(194, 179, 255, 0.20) inset, 
     0px 0.15px 0px 0px #C2B3FF inset;
   backdrop-filter: blur(30px);
-  display: inline-block;
-  width: auto;
-  padding: 0 5px; 
+  display: inline-block; /* Лучше для подстраивания под ширину содержимого */
+  width: auto; /* Ширина подстраивается под содержимое */
+  padding: 0 5px; /* Отступы 5px слева и справа */
   height: 36px;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  line-height: 36px; /* Центрирование текста по вертикали */
   color: #0FEE9E;
   text-align: center;
-  /* MRLN/body_xs-regular */
   font-size: 14px;
   font-style: normal;
   font-weight: 400;
-  line-height: 20px; /* 142.857% */
-  letter-spacing: -0.5px; 
+  letter-spacing: -0.5px;
 }
 
 .sprite-container {
