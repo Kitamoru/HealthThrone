@@ -1082,6 +1082,12 @@ outline: none; /* Убираем контур при фокусе */
   cursor: not-allowed;
 }
 
+@media (max-width: 380px) {
+  .sprites-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Reference Page Styles */
 /* Блок заголовка "Где я?" */
 .header-block {
