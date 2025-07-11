@@ -71,10 +71,21 @@ body {
   backdrop-filter: blur(30px);
   display: flex;
   height: 36px;
-  width: 50%; /* Фиксированная ширина вместо 100% */
+  width: auto; 
   flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+
+.character-class-badge {
+ color: #0FEE9E;
+ text-align: center;
+ /* MRLN/body_xs-regular */
+ font-size: 14px;
+ font-style: normal;
+ font-weight: 400;
+ line-height: 20px; /* 142.857% */
+ letter-spacing: -0.5px;
 }
 
 .sprite-container {
