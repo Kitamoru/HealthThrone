@@ -241,7 +241,7 @@ opacity: 0.5;
 }
 
 .octalysis-info-button {
-  width: 100%;
+  width: calc(100% - 48px);
   height: 42px;
   background-color: #ffffff;
   color: #2A2A2A;
@@ -255,7 +255,7 @@ opacity: 0.5;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 0 24px 24px 24px;
+  margin: 0 24px 24px 24px; 
 }
 
 .questions {
