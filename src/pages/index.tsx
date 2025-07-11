@@ -338,13 +338,19 @@ const Home = () => {
   }
 
   return (
-   <div className="new-header">
-     <div className="header-content">
-        {userData?.character_class && (
-        <div className="character-class-badge"> 
-        {userData.character_class}
-      </div>
-          )}
+    <div className="container">
+      <div className="scrollable-content">
+        {/* Хедер с классом персонажа */}
+        <div className="new-header">
+          <div className="header-content">
+            {userData?.character_class && (
+              <div className="character-class-badge">
+                {userData.character_class}
+              </div>
+            )}
+          </div>
+        </div>
+
         {isError || !user ? (
           <div className="error-message">
             {apiError || "Не удалось загрузить данные пользователя. Пожалуйста, перезапустите приложение."}
