@@ -223,6 +223,7 @@ opacity: 0.5;
   margin-top: 24px;
   box-sizing: border-box;
   width: 100%;
+  height: 100%;
 }
 
 .octagram-wrapper {
@@ -230,6 +231,7 @@ opacity: 0.5;
   display: flex;
   justify-content: center;
   align-items: center;
+  flex: 1;
 }
 
 
