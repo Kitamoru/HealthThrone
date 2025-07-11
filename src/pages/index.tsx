@@ -333,7 +333,7 @@ const Home = () => {
   }
 
   // Показываем лоадер, пока не загружены данные пользователя, спрайт или факторы
-  if (isLoading || !spriteLoaded === null) {
+  if (isLoading || !spriteLoaded) {
     return <Loader />;
   }
 
@@ -377,7 +377,7 @@ const Home = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex justify-center">
+                  <div className="flex justify-center w-full">
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}    
@@ -392,13 +392,12 @@ const Home = () => {
             </div>
 
             <div className="octagram-container">
-              <div className="octagram-content">
+              <div className="octagram-wrapper">
                 <AnimatePresence>
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8 }}
-                    className="octagram-wrapper"
                   >
                     <Octagram values={octagramValues} size={280} />
                   </motion.div>
