@@ -20,13 +20,11 @@ const Octagram = memo(({ values }: OctagramProps) => {
   const crystalControls = useAnimation();
   const pulseControls = useAnimation();
 
-  // Фиксированные размеры для viewBox
-  const viewBoxSize = 300;
+  // Увеличиваем viewBox для предотвращения обрезания иконок
+  const viewBoxSize = 340;
   const center = viewBoxSize / 2;
-  const radius = viewBoxSize * 0.4;
-  
-  // Отступ для иконок (с учетом их размера)
-  const iconOffset = 24;
+  const radius = viewBoxSize * 0.35; // Немного уменьшаем радиус
+  const iconOffset = 42; // Увеличиваем отступ для иконок
 
   const getPoint = useCallback((angle: number, r: number) => {
     const rad = (angle * Math.PI) / 180;
@@ -216,7 +214,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
     });
   }, [values, radius, getPoint]);
 
-  // Рассчет позиций для иконок (с учетом отступа)
+  // Рассчет позиций для иконок с увеличенным отступом
   const iconPositions = useMemo(() => {
     return octagonPoints.map(point => {
       const dx = point.x - center;
