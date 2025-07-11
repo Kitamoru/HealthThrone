@@ -91,6 +91,7 @@ body {
   justify-content: center;
   position: relative;
   margin-top: 8px;
+  margin-bottom: 8px;
 }
 
 .sprite-background {
@@ -223,6 +224,8 @@ opacity: 0.5;
   width: 100%;
   padding: 24px; /* Уменьшаем боковые отступы */
   margin-top: 24px; /* Добавляем отступ сверху */
+  border: none; /* Сброс границы */
+  outline: none; /* Убираем контур при фокусе */
 }
 
 /* Растягиваем контейнер по высоте */
