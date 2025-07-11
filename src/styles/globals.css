@@ -955,6 +955,12 @@ outline: none; /* Убираем контур при фокусе */
   box-sizing: border-box;
 }
 
+@media (max-width: 380px) {
+  .sprites-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .sprite-image {
   width: 100%;
   height: 170.5px;
