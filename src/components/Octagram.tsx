@@ -12,17 +12,21 @@ const RAY_GLOW_FILTER = "url(#ray-glow)";
 
 interface OctagramProps {
   values: number[];
-  size?: number;
 }
 
-const Octagram = memo(({ values, size = 300 }: OctagramProps) => {
+const Octagram = memo(({ values }: OctagramProps) => {
   const [phase, setPhase] = useState<'vertices' | 'octagon' | 'rays' | 'pulse'>('vertices');
   const octagonControls = useAnimation();
   const crystalControls = useAnimation();
   const pulseControls = useAnimation();
 
-  const center = useMemo(() => size / 2, [size]);
-  const radius = useMemo(() => size * 0.4, [size]);
+  // Фиксированные размеры для viewBox
+  const viewBoxSize = 300;
+  const center = viewBoxSize / 2;
+  const radius = viewBoxSize * 0.4;
+  
+  // Отступ для иконок (с учетом их размера)
+  const iconOffset = 24;
 
   const getPoint = useCallback((angle: number, r: number) => {
     const rad = (angle * Math.PI) / 180;
@@ -212,160 +216,163 @@ const Octagram = memo(({ values, size = 300 }: OctagramProps) => {
     });
   }, [values, radius, getPoint]);
 
-  // Рассчет позиций для иконок (24px от вершины наружу)
+  // Рассчет позиций для иконок (с учетом отступа)
   const iconPositions = useMemo(() => {
     return octagonPoints.map(point => {
       const dx = point.x - center;
       const dy = point.y - center;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      const scale = (distance + 24) / distance; // Изменено с 8 на 24
+      const scale = (distance + iconOffset) / distance;
       
       return {
         x: center + dx * scale,
         y: center + dy * scale
       };
     });
-  }, [octagonPoints, center]);
+  }, [octagonPoints, center, iconOffset]);
 
   return (
-    <div style={{ width: size, height: size }}>
-      <svg width={size} height={size}>
-        <defs>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
-          
-          <filter id="ray-glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="1" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
+    <svg 
+      width="100%" 
+      height="100%" 
+      viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <defs>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+        
+        <filter id="ray-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
 
-          <linearGradient id="crystalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#0FEE9E" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#0FEE9E" stopOpacity="0.2" />
-          </linearGradient>
-        </defs>
+        <linearGradient id="crystalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#0FEE9E" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#0FEE9E" stopOpacity="0.2" />
+        </linearGradient>
+      </defs>
 
-        {/* Статичные иконки (без анимации) */}
-        {iconPositions.map((position, index) => (
-          <g
-            key={`icon-${index}`}
-            transform={`translate(${position.x - 12}, ${position.y - 12})`}
-          >
-            {icons[index]}
-          </g>
+      {/* Статичные иконки (без анимации) */}
+      {iconPositions.map((position, index) => (
+        <g
+          key={`icon-${index}`}
+          transform={`translate(${position.x - 12}, ${position.y - 12})`}
+        >
+          {icons[index]}
+        </g>
+      ))}
+
+      <motion.g animate={pulseControls}>
+        {radialLevelsData.map(({ path, index }) => (
+          <motion.path
+            key={`level-${index}`}
+            d={path}
+            fill="none"
+            stroke={STROKE_COLOR}
+            strokeWidth={STROKE_WIDTH}
+            strokeOpacity={STROKE_OPACITY}
+            initial={{ pathLength: 0 }}
+            animate={phase !== 'vertices' ? { pathLength: 1 } : {}}
+            transition={{ 
+              delay: index * 0.06, 
+              duration: 0.5,
+              ease: 'easeOut'
+            }}
+          />
         ))}
 
-        <motion.g animate={pulseControls}>
-          {radialLevelsData.map(({ path, index }) => (
-            <motion.path
-              key={`level-${index}`}
-              d={path}
-              fill="none"
-              stroke={STROKE_COLOR}
-              strokeWidth={STROKE_WIDTH}
-              strokeOpacity={STROKE_OPACITY}
-              initial={{ pathLength: 0 }}
-              animate={phase !== 'vertices' ? { pathLength: 1 } : {}}
-              transition={{ 
-                delay: index * 0.06, 
-                duration: 0.5,
-                ease: 'easeOut'
-              }}
-            />
-          ))}
-
-          {octagonPoints.map((point, index) => (
-            <motion.circle
-              key={`vertex-${index}`}
-              cx={point.x}
-              cy={point.y}
-              r="6"
-              fill={STROKE_COLOR}
-              initial={{ scale: 0, opacity: 0, y: 20 }}
-              animate={
-                phase !== 'vertices'
-                  ? { 
-                      scale: [1, 1.1, 1],
-                      opacity: 1, 
-                      y: 0 
-                    }
-                  : {
-                      scale: [0, 1.3, 1],
-                      opacity: 1,
-                      y: 0,
-                    }
-              }
-              transition={
-                phase === 'vertices'
-                  ? { delay: index * 0.06, duration: 0.4 }
-                  : { 
-                      scale: { 
-                        duration: 2, 
-                        repeat: Infinity, 
-                        ease: "easeInOut" 
-                      } 
-                    }
-              }
-              filter={GLOW_FILTER}
-            />
-          ))}
-
-          {(phase === 'octagon' || phase === 'rays' || phase === 'pulse') && (
-            <motion.path
-              d={octagonPath}
-              fill="none"
-              stroke={STROKE_COLOR}
-              strokeWidth={1}
-              strokeOpacity={0.8}
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={octagonControls}
-              filter={GLOW_FILTER}
-            />
-          )}
-
-          {phase === 'pulse' && renderSectors()}
-
-          {(phase === 'rays' || phase === 'pulse') && midPoints.map((point, index) => (
-            <motion.line
-              key={`ray-${index}`}
-              x1={center}
-              y1={center}
-              x2={point.x}
-              y2={point.y}
-              stroke={STROKE_COLOR}
-              strokeWidth={0.7}
-              strokeOpacity={0.15}
-              strokeLinecap="round"
-              initial={{ opacity: 0, x2: center, y2: center }}
-              animate={{
-                opacity: 1,
-                x2: point.x,
-                y2: point.y,
-              }}
-              transition={{
-                delay: phase === 'rays' ? index * 0.06 : 0,
-                duration: 0.5,
-                ease: 'easeOut',
-              }}
-              filter={RAY_GLOW_FILTER}
-            />
-          ))}
-
+        {octagonPoints.map((point, index) => (
           <motion.circle
-            cx={center}
-            cy={center}
-            r={CENTRAL_RADIUS}
-            fill="url(#crystalGradient)"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={crystalControls}
+            key={`vertex-${index}`}
+            cx={point.x}
+            cy={point.y}
+            r="6"
+            fill={STROKE_COLOR}
+            initial={{ scale: 0, opacity: 0, y: 20 }}
+            animate={
+              phase !== 'vertices'
+                ? { 
+                    scale: [1, 1.1, 1],
+                    opacity: 1, 
+                    y: 0 
+                  }
+                : {
+                    scale: [0, 1.3, 1],
+                    opacity: 1,
+                    y: 0,
+                  }
+            }
+            transition={
+              phase === 'vertices'
+                ? { delay: index * 0.06, duration: 0.4 }
+                : { 
+                    scale: { 
+                      duration: 2, 
+                      repeat: Infinity, 
+                      ease: "easeInOut" 
+                    } 
+                  }
+            }
             filter={GLOW_FILTER}
-            style={{ stroke: STROKE_COLOR, strokeWidth: 0.5 }}
           />
-        </motion.g>
-      </svg>
-    </div>
+        ))}
+
+        {(phase === 'octagon' || phase === 'rays' || phase === 'pulse') && (
+          <motion.path
+            d={octagonPath}
+            fill="none"
+            stroke={STROKE_COLOR}
+            strokeWidth={1}
+            strokeOpacity={0.8}
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={octagonControls}
+            filter={GLOW_FILTER}
+          />
+        )}
+
+        {phase === 'pulse' && renderSectors()}
+
+        {(phase === 'rays' || phase === 'pulse') && midPoints.map((point, index) => (
+          <motion.line
+            key={`ray-${index}`}
+            x1={center}
+            y1={center}
+            x2={point.x}
+            y2={point.y}
+            stroke={STROKE_COLOR}
+            strokeWidth={0.7}
+            strokeOpacity={0.15}
+            strokeLinecap="round"
+            initial={{ opacity: 0, x2: center, y2: center }}
+            animate={{
+              opacity: 1,
+              x2: point.x,
+              y2: point.y,
+            }}
+            transition={{
+              delay: phase === 'rays' ? index * 0.06 : 0,
+              duration: 0.5,
+              ease: 'easeOut',
+            }}
+            filter={RAY_GLOW_FILTER}
+          />
+        ))}
+
+        <motion.circle
+          cx={center}
+          cy={center}
+          r={CENTRAL_RADIUS}
+          fill="url(#crystalGradient)"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={crystalControls}
+          filter={GLOW_FILTER}
+          style={{ stroke: STROKE_COLOR, strokeWidth: 0.5 }}
+        />
+      </motion.g>
+    </svg>
   );
 });
 
