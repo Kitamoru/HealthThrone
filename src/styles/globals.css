@@ -36,8 +36,10 @@ body {
   background: var(--tg-bg);
   color: var(--tg-text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  width: 100%;
   height: calc(var(--vh, 1vh) * 100);
-  overflow: hidden;
+  overflow-x: hidden;
+  position: relative;
   overscroll-behavior: none;
 }
 
@@ -50,6 +52,7 @@ body {
   align-items: center;
   gap: 24px;
   overflow: hidden;
+  max-width: 100vw;
 }
 
 .new-header {
