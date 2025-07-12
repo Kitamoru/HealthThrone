@@ -20,13 +20,13 @@ const Octagram = memo(({ values }: OctagramProps) => {
   const octagonControls = useAnimation();
   const crystalControls = useAnimation();
   const pulseControls = useAnimation();
-  const starPulseControls = useAnimation(); // Новый контрол для анимации звезды
+  const starPulseControls = useAnimation();
 
   // Увеличиваем viewBox для предотвращения обрезания иконок
   const viewBoxSize = 340;
   const center = viewBoxSize / 2;
-  const radius = viewBoxSize * 0.35; // Немного уменьшаем радиус
-  const iconOffset = 24; // Увеличиваем отступ для иконок
+  const radius = viewBoxSize * 0.35;
+  const iconOffset = 24;
 
   const getPoint = useCallback((angle: number, r: number) => {
     const rad = (angle * Math.PI) / 180;
@@ -86,24 +86,28 @@ const Octagram = memo(({ values }: OctagramProps) => {
   // Массив иконок для вершин октограммы
   const icons = useMemo(() => [
     // 1. Звезда (12 часов) - с анимацией пульсации
-    <motion.svg 
+    <motion.div 
       key="star" 
-      xmlns="http://www.w3.org/2000/svg" 
-      width="24" 
-      height="24" 
-      viewBox="0 0 24 24" 
-      fill="none"
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-      style={{ overflow: 'visible' }}
       animate={shouldPulseStar ? starPulseControls : undefined}
+      style={{ display: 'flex' }}
     >
-      <path 
-        stroke="#FFFFFF"
-        strokeWidth="1" 
-        d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"
-      />
-    </motion.svg>,
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        width="24" 
+        height="24" 
+        viewBox="0 0 24 24" 
+        fill="none"
+        strokeLinecap="round" 
+        strokeLinejoin="round"
+        style={{ overflow: 'visible' }}
+      >
+        <path 
+          stroke="#FFFFFF"
+          strokeWidth="1" 
+          d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"
+        />
+      </svg>
+    </motion.div>,
     
     // 2. Палитра (1:30)
     <svg key="palette" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
@@ -201,7 +205,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
       timer3 = setTimeout(() => {
         setShouldPulseStar(true);
         starPulseControls.start({
-          scale: [1, 1.1, 1],
+          scale: [1, 1.15, 1],
           transition: {
             duration: 2.5,
             repeat: Infinity,
