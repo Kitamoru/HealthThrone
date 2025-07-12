@@ -16,7 +16,6 @@ interface OctagramProps {
 
 const Octagram = memo(({ values }: OctagramProps) => {
   const [phase, setPhase] = useState<'vertices' | 'octagon' | 'rays' | 'pulse'>('vertices');
-  const [shouldPulseStar, setShouldPulseStar] = useState(false);
   const octagonControls = useAnimation();
   const crystalControls = useAnimation();
   const pulseControls = useAnimation();
@@ -86,29 +85,26 @@ const Octagram = memo(({ values }: OctagramProps) => {
   // Массив иконок для вершин октограммы
   const icons = useMemo(() => [
     // 1. Звезда (12 часов) - с анимацией пульсации
-    <motion.div 
+    <svg 
       key="star" 
-      animate={shouldPulseStar ? starPulseControls : undefined}
-      style={{ display: 'flex' }}
+      xmlns="http://www.w3.org/2000/svg" 
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24" 
+      fill="none"
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+      style={{ overflow: 'visible' }}
     >
-      <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        width="24" 
-        height="24" 
-        viewBox="0 0 24 24" 
-        fill="none"
-        strokeLinecap="round" 
-        strokeLinejoin="round"
-        style={{ overflow: 'visible' }}
-      >
-        <path 
-          stroke="#FFFFFF"
-          strokeWidth="1" 
-          d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"
-        />
-      </svg>
-    </motion.div>,
+      <motion.path 
+        stroke="#FFFFFF"
+        strokeWidth="1" 
+        d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"
+        animate={starPulseControls}
+      />
+    </svg>,
     
+    // Остальные иконки без изменений...
     // 2. Палитра (1:30)
     <svg key="palette" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -167,7 +163,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
       <path d="M12 15l3.4 5.89l1.598 -3.233l3.598 .232l-3.4 -5.889" />
       <path d="M6.802 12l-3.4 5.89l3.598 -.233l1.598 3.232l3.4 -5.889" />
     </svg>
-  ], [shouldPulseStar, starPulseControls]);
+  ], [starPulseControls]);
 
   useEffect(() => {
     let timer1: NodeJS.Timeout, timer2: NodeJS.Timeout, timer3: NodeJS.Timeout;
@@ -201,11 +197,11 @@ const Octagram = memo(({ values }: OctagramProps) => {
         }
       });
       
-      // Запускаем плавную пульсацию звезды после задержки
+      // Запускаем анимацию звезды
       timer3 = setTimeout(() => {
-        setShouldPulseStar(true);
         starPulseControls.start({
           scale: [1, 1.15, 1],
+          stroke: ["#FFFFFF", "#0FEE9E", "#FFFFFF"],
           transition: {
             duration: 2.5,
             repeat: Infinity,
@@ -223,6 +219,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
     };
   }, [phase, octagonControls, crystalControls, pulseControls, starPulseControls]);
 
+  // Остальной код без изменений...
   const renderSectors = useCallback(() => {
     return values.map((value, index) => {
       if (value <= 0) return null;
