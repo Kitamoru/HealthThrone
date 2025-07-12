@@ -20,7 +20,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
   const octagonControls = useAnimation();
   const crystalControls = useAnimation();
   const pulseControls = useAnimation();
-  const starControls = useAnimation();
+  const starPulseControls = useAnimation(); // Новый контрол для анимации звезды
 
   // Увеличиваем viewBox для предотвращения обрезания иконок
   const viewBoxSize = 340;
@@ -86,7 +86,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
   // Массив иконок для вершин октограммы
   const icons = useMemo(() => [
     // 1. Звезда (12 часов) - с анимацией пульсации
-    <svg 
+    <motion.svg 
       key="star" 
       xmlns="http://www.w3.org/2000/svg" 
       width="24" 
@@ -96,14 +96,14 @@ const Octagram = memo(({ values }: OctagramProps) => {
       strokeLinecap="round" 
       strokeLinejoin="round"
       style={{ overflow: 'visible' }}
+      animate={shouldPulseStar ? starPulseControls : undefined}
     >
-      <motion.path 
+      <path 
         stroke="#FFFFFF"
         strokeWidth="1" 
         d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"
-        animate={shouldPulseStar ? starControls : undefined}
       />
-    </svg>,
+    </motion.svg>,
     
     // 2. Палитра (1:30)
     <svg key="palette" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
@@ -163,7 +163,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
       <path d="M12 15l3.4 5.89l1.598 -3.233l3.598 .232l-3.4 -5.889" />
       <path d="M6.802 12l-3.4 5.89l3.598 -.233l1.598 3.232l3.4 -5.889" />
     </svg>
-  ], [shouldPulseStar]);
+  ], [shouldPulseStar, starPulseControls]);
 
   useEffect(() => {
     let timer1: NodeJS.Timeout, timer2: NodeJS.Timeout, timer3: NodeJS.Timeout;
@@ -197,15 +197,16 @@ const Octagram = memo(({ values }: OctagramProps) => {
         }
       });
       
-      // Запускаем пульсацию звезды после задержки
+      // Запускаем плавную пульсацию звезды после задержки
       timer3 = setTimeout(() => {
         setShouldPulseStar(true);
-        starControls.start({
-          stroke: ["#FFFFFF", "#0FEE9E", "#FFFFFF"],
+        starPulseControls.start({
+          scale: [1, 1.1, 1],
           transition: {
-            duration: 2,
+            duration: 2.5,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: "easeInOut",
+            repeatType: "reverse"
           }
         });
       }, 1000);
@@ -216,7 +217,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
       timer2 && clearTimeout(timer2);
       timer3 && clearTimeout(timer3);
     };
-  }, [phase, octagonControls, crystalControls, pulseControls, starControls]);
+  }, [phase, octagonControls, crystalControls, pulseControls, starPulseControls]);
 
   const renderSectors = useCallback(() => {
     return values.map((value, index) => {
