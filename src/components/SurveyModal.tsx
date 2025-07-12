@@ -172,7 +172,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
             onClick={() => handleAnswer('no')}
             className="survey-button"
             aria-label="Нет"
-            style={{ ...buttonCommonStyle, width: 72, height: 72 }}
+            style={{ ...buttonCommonStyle, width: 96, height: 96 }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" style={{ width: '100%', height: '100%' }}>
               <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -184,7 +184,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
             onClick={handleSkip}
             className="survey-button"
             aria-label="Пропустить"
-            style={{ ...buttonCommonStyle, width: 36, height: 36 }}
+            style={{ ...buttonCommonStyle, width: 48, height: 48 }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" style={{ width: '100%', height: '100%' }}>
               <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -196,7 +196,7 @@ export const SurveyModal: React.FC<SurveyModalProps> = ({
             onClick={() => handleAnswer('yes')}
             className="survey-button"
             aria-label="Да"
-            style={{ ...buttonCommonStyle, width: 72, height: 72 }}
+            style={{ ...buttonCommonStyle, width: 96, height: 96 }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" style={{ width: '100%', height: '100%' }}>
               <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
