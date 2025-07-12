@@ -226,9 +226,7 @@ opacity: 0.5;
   width: 100%;
   padding: 24px; /* Уменьшаем боковые отступы */
   margin-top: 24px; /* Добавляем отступ сверху */
-  border: none; /* Сброс границы */
-  outline: none; /* Убираем контур при фокусе */
-  
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
 }
 
 /* Растягиваем контейнер по высоте */
@@ -1523,18 +1521,6 @@ outline: none; /* Убираем контур при фокусе */
 }
 
   /* Стили для контейнера октаграммы */
-.octagram-container {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  margin: 2rem 0;
-  padding: 1rem;
-  background: var(--tg-secondary);
-  border-radius: 16px;
-  border: 1px solid var(--tg-border);
-  box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
-}
-
 /* Адаптивность */
 @media (max-width: 768px) {
   .octagram-container {
