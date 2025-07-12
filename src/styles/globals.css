@@ -1659,7 +1659,6 @@ outline: none; /* Убираем контур при фокусе */
   width: 70px; /* Оригинальный размер */
   height: 70px; /* Оригинальный размер */
   border-radius: 50%;
-  box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
   cursor: pointer;
   border: 2px solid rgba(255, 255, 255, 0.3); /* Оригинальная граница */
   transition: all 0.2s ease;
