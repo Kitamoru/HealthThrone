@@ -85,22 +85,23 @@ const Octagram = memo(({ values }: OctagramProps) => {
 
   // Массив иконок для вершин октограммы
   const icons = useMemo(() => [
-    // 1. Звезда (12 часов)
+    // 1. Звезда (12 часов) - с анимацией пульсации
     <motion.svg 
       key="star" 
       xmlns="http://www.w3.org/2000/svg" 
       width="24" 
       height="24" 
       viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="#FFFFFF" 
-      strokeWidth="1" 
+      fill="none"
       strokeLinecap="round" 
       strokeLinejoin="round"
+      style={{ 
+        stroke: shouldPulseStar ? undefined : "#FFFFFF",
+        overflow: 'visible'
+      }}
       animate={shouldPulseStar ? starControls : undefined}
     >
-      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-      <path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z" />
+      <path stroke="currentColor" strokeWidth="1" d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z" />
     </motion.svg>,
     
     // 2. Палитра (1:30)
@@ -199,7 +200,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
       timer3 = setTimeout(() => {
         setShouldPulseStar(true);
         starControls.start({
-          stroke: ["#FFFFFF", "#0FEE9E", "#FFFFFF"],
+          color: ["#FFFFFF", "#0FEE9E", "#FFFFFF"],
           transition: {
             duration: 2,
             repeat: Infinity,
@@ -300,7 +301,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
         </linearGradient>
       </defs>
 
-      {/* Кликабельные иконки */}
+      {/* Кликабельные иконки с увеличенной областью клика */}
       {iconPositions.map((position, index) => (
         <g
           key={`icon-${index}`}
@@ -308,6 +309,14 @@ const Octagram = memo(({ values }: OctagramProps) => {
           onClick={() => alert(alertTexts[index])}
           style={{ cursor: 'pointer' }}
         >
+          {/* Прозрачный прямоугольник для увеличения области клика */}
+          <rect 
+            x="0" 
+            y="0" 
+            width="24" 
+            height="24" 
+            fill="transparent" 
+          />
           {icons[index]}
         </g>
       ))}
