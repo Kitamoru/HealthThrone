@@ -16,11 +16,10 @@ interface OctagramProps {
 
 const Octagram = memo(({ values }: OctagramProps) => {
   const [phase, setPhase] = useState<'vertices' | 'octagon' | 'rays' | 'pulse'>('vertices');
-  const [shouldPulseStar, setShouldPulseStar] = useState(false);
   const octagonControls = useAnimation();
   const crystalControls = useAnimation();
   const pulseControls = useAnimation();
-  const starControls = useAnimation();
+  const rippleControls = useAnimation(); // Контрол для ripple-анимации
 
   // Увеличиваем viewBox для предотвращения обрезания иконок
   const viewBoxSize = 340;
@@ -85,7 +84,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
 
   // Массив иконок для вершин октограммы
   const icons = useMemo(() => [
-    // 1. Звезда (12 часов) - с анимацией пульсации
+    // 1. Звезда (12 часов)
     <svg 
       key="star" 
       xmlns="http://www.w3.org/2000/svg" 
@@ -97,11 +96,10 @@ const Octagram = memo(({ values }: OctagramProps) => {
       strokeLinejoin="round"
       style={{ overflow: 'visible' }}
     >
-      <motion.path 
+      <path 
         stroke="#FFFFFF"
         strokeWidth="1" 
         d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"
-        animate={shouldPulseStar ? starControls : undefined}
       />
     </svg>,
     
@@ -163,7 +161,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
       <path d="M12 15l3.4 5.89l1.598 -3.233l3.598 .232l-3.4 -5.889" />
       <path d="M6.802 12l-3.4 5.89l3.598 -.233l1.598 3.232l3.4 -5.889" />
     </svg>
-  ], [shouldPulseStar]);
+  ], []);
 
   useEffect(() => {
     let timer1: NodeJS.Timeout, timer2: NodeJS.Timeout, timer3: NodeJS.Timeout;
@@ -197,15 +195,16 @@ const Octagram = memo(({ values }: OctagramProps) => {
         }
       });
       
-      // Запускаем пульсацию звезды после задержки
+      // Запускаем ripple-анимацию после задержки
       timer3 = setTimeout(() => {
-        setShouldPulseStar(true);
-        starControls.start({
-          stroke: ["#FFFFFF", "#0FEE9E", "#FFFFFF"],
+        rippleControls.start({
+          scale: [0, 1.3],
+          opacity: [0.7, 0],
           transition: {
             duration: 2,
             repeat: Infinity,
-            ease: "easeInOut"
+            repeatDelay: 2, // Задержка между циклами 2 секунды
+            ease: "easeOut"
           }
         });
       }, 1000);
@@ -216,7 +215,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
       timer2 && clearTimeout(timer2);
       timer3 && clearTimeout(timer3);
     };
-  }, [phase, octagonControls, crystalControls, pulseControls, starControls]);
+  }, [phase, octagonControls, crystalControls, pulseControls, rippleControls]);
 
   const renderSectors = useCallback(() => {
     return values.map((value, index) => {
@@ -310,6 +309,20 @@ const Octagram = memo(({ values }: OctagramProps) => {
           onClick={() => alert(alertTexts[index])}
           style={{ cursor: 'pointer' }}
         >
+          {/* Ripple-эффект только для звезды (первой иконки) */}
+          {index === 0 && (
+            <motion.circle
+              cx="12"
+              cy="12"
+              r="12"
+              fill="none"
+              stroke="#0FEE9E"
+              strokeWidth="1"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={rippleControls}
+            />
+          )}
+          
           {/* Прозрачный прямоугольник для увеличения области клика */}
           <rect 
             x="0" 
