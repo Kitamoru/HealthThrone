@@ -16,9 +16,11 @@ interface OctagramProps {
 
 const Octagram = memo(({ values }: OctagramProps) => {
   const [phase, setPhase] = useState<'vertices' | 'octagon' | 'rays' | 'pulse'>('vertices');
+  const [shouldPulseStar, setShouldPulseStar] = useState(false);
   const octagonControls = useAnimation();
   const crystalControls = useAnimation();
   const pulseControls = useAnimation();
+  const starControls = useAnimation();
 
   // Увеличиваем viewBox для предотвращения обрезания иконок
   const viewBoxSize = 340;
@@ -69,13 +71,38 @@ const Octagram = memo(({ values }: OctagramProps) => {
     });
   }, [radius, getOctagonPointsByRadius]);
 
+  // Тексты для алертов
+  const alertTexts = useMemo(() => [
+    "Эпическое предназначение\n\nТы — часть легенды, что творится ради великой цели! Твои деяния вплетаются в ткань мира.\n\nЕсли звезда меркнет: Ищи смысл в каждом квесте, спроси у лидеров, как твои подвиги влияют на других, и запроси награду за свои подвиги.",
+    "Путь триумфа\n\nС каждым шагом ты становишься сильнее! Следи за трофеями и отмечай, как растёт твоя слава.\n\nЕсли звезда меркнет: Раздели квесты на малые подвиги, веди летопись свершений и награждай себя за каждый пройденный этап.",
+    "Искры гениальности\n\nСоздавай новые заклинания и прислушивайся к гласу соратников.\n\nЕсли звезда меркнет: Пробуй неизведанные пути, делись своими чарами с другими и взывай к их мудрости за советом.",
+    "Власть над судьбой\n\nТы — кузнец своей истории, держи поводья своих квестов!\n\nЕсли звезда меркнет: Проси у старейшин больше свободы в заданиях, придай своим делам уникальный отпечаток.",
+    "Братство героев\n\nСражайся плечом к плечу с товарищами, делись славой и укрепи узы.\n\nЕсли звезда меркнет: Вступай в обсуждения с соратниками, участвуй в общем совете или собирайся у костра для бесед.",
+    "Пламя срочности\n\nКаждый квест имеет час испытания! Пусть огонь дедлайнов подстёгивает тебя.\n\nЕсли звезда меркнет: Устанавливай собственные сроки, напоминай себе, как важна быстрота, чтобы не упустить добычу.",
+    "Тайна и загадка\n\nПусть каждый день скрывает сюрприз, достойный древних легенд!\n\nЕсли звезда меркнет: Исследуй новые тропы в рутине, ввязывайся в неожиданные квесты, чтобы пробудить свое любопытство.",
+    "Тень неудачи\n\nПомни, что бездействие может привести к потере сокровищ и славы.\n\nЕсли звезда меркнет: Чётко представь, какие трофеи ты можешь утратить, и используй этот страх как факел, ведущий к победе."
+  ], []);
+
   // Массив иконок для вершин октограммы
   const icons = useMemo(() => [
     // 1. Звезда (12 часов)
-    <svg key="star" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+    <motion.svg 
+      key="star" 
+      xmlns="http://www.w3.org/2000/svg" 
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="#FFFFFF" 
+      strokeWidth="1" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+      animate={shouldPulseStar ? starControls : undefined}
+    >
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z" />
-    </svg>,
+    </motion.svg>,
+    
     // 2. Палитра (1:30)
     <svg key="palette" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -84,6 +111,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
       <path d="M12.5 7.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
       <path d="M16.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
     </svg>,
+    
     // 3. Группа пользователей (3 часа)
     <svg key="users-group" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -94,12 +122,14 @@ const Octagram = memo(({ values }: OctagramProps) => {
       <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
       <path d="M3 13v-1a2 2 0 0 1 2 -2h2" />
     </svg>,
+    
     // 4. Лупа (4:30)
     <svg key="zoom" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
       <path d="M21 21l-6 -6" />
     </svg>,
+    
     // 5. Череп (6 часов)
     <svg key="skull" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -109,18 +139,21 @@ const Octagram = memo(({ values }: OctagramProps) => {
       <path d="M9 11m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
       <path d="M15 11m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
     </svg>,
+    
     // 6. Тренд вниз (7:30)
     <svg key="trending-down" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <path d="M3 7l6 6l4 -4l8 8" />
       <path d="M21 10l0 7l-7 0" />
     </svg>,
+    
     // 7. Тренд вверх (9 часов)
     <svg key="trending-up" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <path d="M3 17l6 -6l4 4l8 -8" />
       <path d="M14 7l7 0l0 7" />
     </svg>,
+    
     // 8. Награда (10:30)
     <svg key="award" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -128,10 +161,10 @@ const Octagram = memo(({ values }: OctagramProps) => {
       <path d="M12 15l3.4 5.89l1.598 -3.233l3.598 .232l-3.4 -5.889" />
       <path d="M6.802 12l-3.4 5.89l3.598 -.233l1.598 3.232l3.4 -5.889" />
     </svg>
-  ], []);
+  ], [shouldPulseStar]);
 
   useEffect(() => {
-    let timer1: NodeJS.Timeout, timer2: NodeJS.Timeout;
+    let timer1: NodeJS.Timeout, timer2: NodeJS.Timeout, timer3: NodeJS.Timeout;
 
     if (phase === 'vertices') {
       crystalControls.start({
@@ -161,13 +194,27 @@ const Octagram = memo(({ values }: OctagramProps) => {
           ease: "easeInOut"
         }
       });
+      
+      // Запускаем пульсацию звезды после задержки
+      timer3 = setTimeout(() => {
+        setShouldPulseStar(true);
+        starControls.start({
+          stroke: ["#FFFFFF", "#0FEE9E", "#FFFFFF"],
+          transition: {
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }
+        });
+      }, 1000);
     }
 
     return () => {
       timer1 && clearTimeout(timer1);
       timer2 && clearTimeout(timer2);
+      timer3 && clearTimeout(timer3);
     };
-  }, [phase, octagonControls, crystalControls, pulseControls]);
+  }, [phase, octagonControls, crystalControls, pulseControls, starControls]);
 
   const renderSectors = useCallback(() => {
     return values.map((value, index) => {
@@ -253,11 +300,13 @@ const Octagram = memo(({ values }: OctagramProps) => {
         </linearGradient>
       </defs>
 
-      {/* Статичные иконки (без анимации) */}
+      {/* Кликабельные иконки */}
       {iconPositions.map((position, index) => (
         <g
           key={`icon-${index}`}
           transform={`translate(${position.x - 12}, ${position.y - 12})`}
+          onClick={() => alert(alertTexts[index])}
+          style={{ cursor: 'pointer' }}
         >
           {icons[index]}
         </g>
