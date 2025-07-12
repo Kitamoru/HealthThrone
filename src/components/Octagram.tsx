@@ -86,7 +86,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
   // Массив иконок для вершин октограммы
   const icons = useMemo(() => [
     // 1. Звезда (12 часов) - с анимацией пульсации
-    <motion.svg 
+    <svg 
       key="star" 
       xmlns="http://www.w3.org/2000/svg" 
       width="24" 
@@ -95,14 +95,15 @@ const Octagram = memo(({ values }: OctagramProps) => {
       fill="none"
       strokeLinecap="round" 
       strokeLinejoin="round"
-      style={{ 
-        stroke: shouldPulseStar ? undefined : "#FFFFFF",
-        overflow: 'visible'
-      }}
-      animate={shouldPulseStar ? starControls : undefined}
+      style={{ overflow: 'visible' }}
     >
-      <path stroke="currentColor" strokeWidth="1" d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z" />
-    </motion.svg>,
+      <motion.path 
+        stroke="#FFFFFF"
+        strokeWidth="1" 
+        d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"
+        animate={shouldPulseStar ? starControls : undefined}
+      />
+    </svg>,
     
     // 2. Палитра (1:30)
     <svg key="palette" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
@@ -200,7 +201,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
       timer3 = setTimeout(() => {
         setShouldPulseStar(true);
         starControls.start({
-          color: ["#FFFFFF", "#0FEE9E", "#FFFFFF"],
+          stroke: ["#FFFFFF", "#0FEE9E", "#FFFFFF"],
           transition: {
             duration: 2,
             repeat: Infinity,
