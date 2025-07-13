@@ -12,7 +12,7 @@ const STROKE_COLOR = "#0FEE9E";
 const STROKE_OPACITY = 0.15;
 const STROKE_WIDTH = 0.5;
 
-const OctagramFriend: React.FC<OctagramProps> = ({ 
+const OctagramStatic: React.FC<OctagramProps> = ({ 
   values, 
   size = 280 
 }) => {
@@ -329,4 +329,4 @@ const OctagramFriend: React.FC<OctagramProps> = ({
   );
 };
 
-export default OctagramFriend;
+export default OctagramStatic;
