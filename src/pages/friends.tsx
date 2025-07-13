@@ -230,7 +230,7 @@ export default function Friends() {
                 </button>
               </div>
               <div className="custom-modal-body">
-                <p style="text-align: left;">Призови союзника</p>
+                <p>Призови союзника</p>
                 <div className="referral-link-container">
                   <input 
                     type="text" 
