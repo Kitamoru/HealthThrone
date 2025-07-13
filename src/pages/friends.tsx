@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
@@ -28,6 +28,26 @@ export default function Friends() {
   const contentRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const queryClient = useQueryClient();
   const userId = user?.id;
+  
+  // Состояние для размера октаграммы
+  const [octagramSize, setOctagramSize] = useState(280);
+
+  // Адаптивный размер октаграммы
+  useEffect(() => {
+    const updateSize = () => {
+      if (window.innerWidth < 400) {
+        setOctagramSize(220);
+      } else if (window.innerWidth < 768) {
+        setOctagramSize(250);
+      } else {
+        setOctagramSize(280);
+      }
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
 
   const { 
     data: friends = [], 
@@ -124,7 +144,7 @@ export default function Friends() {
   
   return (
     <div className="friend-octagram-container">
-      <OctagramStatic values={octagramValues} size={140} />
+      <OctagramStatic values={octagramValues} size={octagramSize} />
     </div>
   );
 };
