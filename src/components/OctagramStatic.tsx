@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 interface OctagramProps {
   values: number[];
@@ -15,11 +16,11 @@ const OctagramFriend: React.FC<OctagramProps> = ({
   values, 
   size = 280 
 }) => {
-  // Увеличиваем размеры для лучшей видимости
-  const viewBoxSize = 400;
+  // Размеры из Octagram.tsx
+  const viewBoxSize = 340;
   const center = viewBoxSize / 2;
-  const radius = viewBoxSize * 0.4;
-  const iconOffset = 30; // Отступ для иконок
+  const radius = viewBoxSize * 0.35;
+  const iconOffset = 24;
 
   // Тексты для алертов
   const alertTexts = [
@@ -210,6 +211,12 @@ const OctagramFriend: React.FC<OctagramProps> = ({
           <stop offset="0%" stopColor="#0FEE9E" stopOpacity="0.8" />
           <stop offset="100%" stopColor="#0FEE9E" stopOpacity="0.2" />
         </linearGradient>
+        
+        {/* Фильтр для свечения */}
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
       </defs>
 
       {/* Радиальные уровни */}
@@ -231,6 +238,7 @@ const OctagramFriend: React.FC<OctagramProps> = ({
         stroke={STROKE_COLOR}
         strokeWidth={1}
         strokeOpacity={0.8}
+        filter="url(#glow)"
       />
 
       {/* Сектора */}
@@ -259,6 +267,7 @@ const OctagramFriend: React.FC<OctagramProps> = ({
           cy={point.y}
           r="6"
           fill={STROKE_COLOR}
+          filter="url(#glow)"
         />
       ))}
 
@@ -270,6 +279,7 @@ const OctagramFriend: React.FC<OctagramProps> = ({
         fill="url(#crystalGradient)"
         stroke={STROKE_COLOR}
         strokeWidth={0.5}
+        filter="url(#glow)"
       />
 
       {/* Иконки с алертами */}
@@ -288,6 +298,30 @@ const OctagramFriend: React.FC<OctagramProps> = ({
             height="24" 
             fill="transparent" 
           />
+          
+          {/* Ripple-анимация для звезды (первой иконки) */}
+          {index === 0 && (
+            <motion.circle
+              cx={12}
+              cy={12}
+              r={8}
+              fill="#0FEE9E"
+              initial={{ 
+                scale: 0.5,
+                opacity: 0.4 
+              }}
+              animate={{
+                scale: 1.8,
+                opacity: 0,
+              }}
+              transition={{
+                duration: 2.5,
+                repeat: Infinity,
+                ease: "easeOut",
+              }}
+            />
+          )}
+          
           {icons[index]}
         </g>
       ))}
