@@ -694,6 +694,23 @@ outline: none; /* Убираем контур при фокусе */
   min-height: 100px; /* Минимальная высота контента */
 }
 
+/* Стили для октаграммы друга */
+.friend-octagram-container {
+  width: 100%;
+  padding: 15px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 160px;
+}
+
+.octagram-loader, 
+.octagram-error {
+  text-align: center;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
 .empty {
   text-align: center;
   padding: 20px;
