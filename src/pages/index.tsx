@@ -1,264 +1,456 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useTelegram } from '../hooks/useTelegram';
-import { Loader } from '../components/Loader';
-import { api } from '../lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useTelegram } from '../hooks/useTelegram';
+import { api } from '../lib/api';
+import { Loader } from '../components/Loader';
+import { UserProfile } from '../lib/types';
+import Onboarding from '../components/Onboarding';
+import Octagram from '../components/Octagram';
+import { SurveyModal } from '../components/SurveyModal';
+import { createPortal } from 'react-dom';
 import BottomMenu from '../components/BottomMenu';
+import CharacterSprite from '../components/CharacterSprite';
+import BurnoutBlock from '../components/BurnoutBlock';
 
-interface Friend {
+interface Question {
   id: number;
-  friend_id: number;
-  friend_username: string;
-  burnout_level: number;
-  friend_sprite_url: string; // Добавлено новое поле для URL спрайта друга
+  text: string;
+  weight: number;
 }
 
-export default function Friends() {
+const QUESTIONS: Question[] = [
+  {
+    id: 1,
+    text: "Сумели ли вы сегодня удержаться на ногах под натиском тьмы подземелья?",
+    weight: 2
+  },
+  {
+    id: 2,
+    text: "Хватило ли вашей выносливости в сегодняшнем штурме подземелья?",
+    weight: 2
+  },
+  {
+    id: 3,
+    text: "Ощущали ли вы сегодня, что служите великой цели гильдии, а не просто выполняете команды гильдмастера?",
+    weight: 1
+  },
+  {
+    id: 4,
+    text: "Смогли ли вы сегодня продвинуться в мастерстве или заслужить знак признания от других героев?",
+    weight: 1
+  },
+  {
+    id: 5,
+    text: "Получилось ли сегодня проявить инициативу или получить полезный совет от союзников?",
+    weight: 1
+  },
+  {
+    id: 6,
+    text: "Чувствовали ли вы сегодня, что сами держите штурвал своего корабля, а не ведомы чужой волей?",
+    weight: 1
+  },
+  {
+    id: 7,
+    text: "Поддерживали ли союзники ваш дух сегодня в этом походе?",
+    weight: 1
+  },
+  {
+    id: 8,
+    text: "Придавали ли вам энергии сегодня редкие ресурсы или срочные вызовы?",
+    weight: 1
+  },
+  {
+    id: 9,
+    text: "Преподнесло ли вам подземелье сегодня неожиданную встречу, загадку или событие, что пробудило интерес?",
+    weight: -1
+  },
+  {
+    id: 10,
+    text: "Ощущали ли вы сегодня, что промедление может стоить вам важного шанса или артефакта?",
+    weight: -1
+  }
+];
+
+const Home = () => {
   const router = useRouter();
-  const { user, initData, webApp } = useTelegram();
-  const [showModal, setShowModal] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [deletingFriends, setDeletingFriends] = useState<number[]>([]);
-  const [expandedFriendId, setExpandedFriendId] = useState<number | null>(null);
-  const contentRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const { user, initData } = useTelegram();
   const queryClient = useQueryClient();
-  const userId = user?.id;
+
+  const [questions] = useState<Question[]>(QUESTIONS);
+  const [answers, setAnswers] = useState<Record<number, boolean>>({});
+  const [surveyCompleted, setSurveyCompleted] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [spriteLoaded, setSpriteLoaded] = useState(false);
+  const [isGlobalLoading, setIsGlobalLoading] = useState(false);
+  const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
+  const [octalysisFactors, setOctalysisFactors] = useState<number[] | null>(null);
+  const [octagramSize, setOctagramSize] = useState(280); // Начальный размер октаграммы
+  
+  const modalPortalRef = useRef<HTMLDivElement | null>(null);
+
+  // Адаптивный размер октаграммы
+  useEffect(() => {
+    const updateSize = () => {
+      if (window.innerWidth < 400) {
+        setOctagramSize(220);
+      } else if (window.innerWidth < 768) {
+        setOctagramSize(250);
+      } else {
+        setOctagramSize(280);
+      }
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  const handleOpenSurveyModal = useCallback(() => {
+    if (!modalPortalRef.current) {
+      const portalContainer = document.createElement('div');
+      portalContainer.id = 'modal-portal';
+      portalContainer.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4';
+      document.body.appendChild(portalContainer);
+      modalPortalRef.current = portalContainer;
+    }
+    setIsSurveyModalOpen(true);
+  }, []);
+
+  const handleOctalysisInfo = useCallback(() => {
+    alert("Добро пожаловать, герой!\n\nТы вступаешь в мир, где каждая задача — это квест, а твоя воля и страсть определят судьбу великих свершений.\nВосемь путеводных звёзд вдохновят тебя на подвиги. Если звезда тускнеет, следуй их советам, чтобы вновь зажечь пламя!\n\nИди вперёд, герой, и пусть звёзды карты октализа освещают твой путь к величию!");
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (modalPortalRef.current) {
+        document.body.removeChild(modalPortalRef.current);
+        modalPortalRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isSurveyModalOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [isSurveyModalOpen]);
+
+  const isTodayUTC = useCallback((dateStr: string) => {
+    if (!dateStr) return false;
+    
+    try {
+      const date = new Date(dateStr);
+      const now = new Date();
+      
+      return (
+        date.getUTCFullYear() === now.getUTCFullYear() &&
+        date.getUTCMonth() === now.getUTCMonth() &&
+        date.getUTCDate() === now.getUTCDate()
+      );
+    } catch (e) {
+      console.error('Date parsing error:', e);
+      return false;
+    }
+  }, []);
 
   const { 
-    data: friends = [], 
-    isInitialLoading,
+    data: userData, 
+    isLoading, 
     isError,
-    error: queryError
-  } = useQuery<Friend[]>({
-    queryKey: ['friends', userId?.toString()],
-    queryFn: async () => {
-      if (!userId || !initData) return [];
+    error: queryError,
+    refetch: refetchUserData
+  } = useQuery<UserProfile | null>({
+    queryKey: ['userData', user?.id],
+    queryFn: async (): Promise<UserProfile | null> => {
+      if (!user?.id) return null;
       
-      const response = await api.getFriends(userId.toString(), initData);
-      if (response.success && response.data) {
-        return response.data.map(f => ({
-          id: f.id,
-          friend_id: f.friend.id,
-          friend_username: f.friend.username || 
-                          `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
-          burnout_level: f.friend.burnout_level,
-          friend_sprite_url: f.friend.current_sprite_url // Добавлено получение URL спрайта
-        }));
+      const response = await api.getUserData(Number(user.id), initData);
+      
+      if (!response.success) {
+        throw new Error(response.error || "Ошибка загрузки данных");
       }
-      throw new Error(response.error || 'Failed to load friends');
+      
+      return response.data as UserProfile;
     },
-    enabled: !!userId && !!initData,
-    staleTime: 1000 * 60 * 5,
-    initialData: () => {
-      return queryClient.getQueryData<Friend[]>(['friends', userId?.toString()]);
-    },
-    refetchOnMount: true,
-    refetchOnWindowFocus: false
+    enabled: !!user?.id,
+    refetchOnWindowFocus: true,
   });
 
-  const deleteFriendMutation = useMutation({
-    mutationFn: (friendId: number) => {
-      if (!initData) throw new Error('Init data missing');
-      return api.deleteFriend(friendId, initData);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['friends', userId?.toString()] 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: ['user', userId] 
-      });
-    },
-  });
+  const needsOnboarding = userData?.character_class === null;
 
-  const handleDelete = (friendId: number) => {
-    setDeletingFriends(prev => [...prev, friendId]);
-    deleteFriendMutation.mutate(friendId, {
-      onSettled: () => {
-        setDeletingFriends(prev => prev.filter(id => id !== friendId));
-      }
-    });
-  };
-
-  const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
-  const referralCode = `ref_${userId || 'default'}`;
-  const referralLink = `https://t.me/${botUsername}/Moraleon?startapp=${referralCode}`;
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(referralLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleShare = () => {
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('✨ Твоя мотивация — искра. Вместе мы — пламя!🔥\nПрисоединяйся к команде в MORALEON!⚔️')}`;
-    if (webApp?.openTelegramLink) {
-      webApp.openTelegramLink(shareUrl);
-    } else if (webApp?.openLink) {
-      webApp.openLink(shareUrl);
-    } else {
-      window.open(shareUrl, '_blank');
+  useEffect(() => {
+    if (queryError) {
+      setApiError((queryError as Error).message);
     }
-  };
+  }, [queryError]);
 
-  const toggleExpand = (friendId: number) => {
-    setExpandedFriendId(prev => prev === friendId ? null : friendId);
-  };
+  useEffect(() => {
+    if (user?.id) {
+      refetchUserData();
+    }
+  }, [user?.id, refetchUserData]);
 
-  if (isInitialLoading) {
+  useEffect(() => {
+    if (userData?.current_sprite_url) {
+      const img = new Image();
+      img.src = userData.current_sprite_url;
+      img.onload = () => setSpriteLoaded(true);
+      img.onerror = () => {
+        console.error('Failed to preload sprite');
+        setSpriteLoaded(true);
+      };
+    } else {
+      setSpriteLoaded(true);
+    }
+  }, [userData?.current_sprite_url]);
+
+  // Загрузка факторов для октаграммы
+  useEffect(() => {
+    if (userData?.id) {
+      const fetchFactors = async () => {
+        const response = await api.getOctalysisFactors(userData.id, initData);
+        if (response.success && response.data) {
+          setOctalysisFactors(response.data);
+        } else {
+          console.error('Failed to load factors:', response.error);
+          setOctalysisFactors([0, 0, 0, 0, 0, 0, 0, 0]);
+        }
+      };
+      fetchFactors();
+    }
+  }, [userData?.id, initData]);
+
+  const submitSurveyMutation = useMutation({
+    mutationFn: async (data: { burnoutDelta: number; factors: number[] }) => {
+      if (!user?.id) throw new Error("Пользователь не определен");
+      
+      const response = await api.submitSurvey({
+        telegramId: Number(user.id),
+        burnoutDelta: data.burnoutDelta,
+        factors: data.factors,
+        initData
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || 'Ошибка сохранения результатов');
+      }
+      
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(['userData', user?.id], (oldData: any) => {
+        if (!oldData) return data;
+        
+        return {
+          ...oldData,
+          ...data,
+          current_sprite_url: oldData.current_sprite_url
+        };
+      });
+      
+      setSurveyCompleted(true);
+      setAnswers({});
+      
+      // Обновляем факторы после успешного прохождения опроса
+      if (userData?.id) {
+        const fetchFactors = async () => {
+          const response = await api.getOctalysisFactors(userData.id, initData);
+          if (response.success && response.data) {
+            setOctalysisFactors(response.data);
+          }
+        };
+        fetchFactors();
+      }
+    },
+    onError: (error: Error) => {
+      setApiError(error.message);
+    }
+  });
+
+  const initialBurnoutLevel = userData?.burnout_level ?? 100; // Начинаем с 100%
+  const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
+  const alreadyAttemptedToday = userData?.last_attempt_date 
+    ? isTodayUTC(userData.last_attempt_date) 
+    : false;
+
+  const burnoutLevel = useMemo(() => {
+    if (surveyCompleted && userData) {
+      return userData.burnout_level;
+    }
+
+    // Рассчитываем только по вопросам 1 и 2
+    const answeredDelta = [1, 2].reduce((sum, id) => {
+      const answer = answers[id];
+      if (answer === true) return sum + 2;
+      if (answer === false) return sum - 2;
+      return sum;
+    }, 0);
+
+    return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
+  }, [answers, initialBurnoutLevel, surveyCompleted, userData]);
+
+  const octagramValues = useMemo(() => {
+    if (!octalysisFactors) {
+      return [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
+    }
+    return octalysisFactors.map(factor => {
+      const normalized = factor / 30;
+      return Math.max(0, Math.min(1, normalized)); // Ограничиваем 0-1
+    });
+  }, [octalysisFactors]);
+
+  const handleSurveyComplete = useCallback((answers: Record<number, 'yes' | 'no' | 'skip'>) => {
+    // Рассчитываем burnoutDelta только по первым двум вопросам
+    const burnoutDelta = [1, 2].reduce((sum, id) => {
+      const answer = answers[id];
+      if (answer === 'yes') return sum + 2;
+      if (answer === 'no') return sum - 2;
+      return sum;
+    }, 0);
+
+    // Формируем массив факторов для вопросов 3-10
+    const factors = [3, 4, 5, 6, 7, 8, 9, 10].map(id => {
+      const answer = answers[id];
+      if (answer === 'yes') return 1;
+      if (answer === 'no') return -1;
+      return 0; // Для 'skip'
+    });
+
+    submitSurveyMutation.mutate({ burnoutDelta, factors });
+  }, [submitSurveyMutation]);
+
+  const handleOnboardingComplete = useCallback(() => {
+    setIsGlobalLoading(true);
+    refetchUserData().finally(() => {
+      setIsGlobalLoading(false);
+    });
+  }, [refetchUserData]);
+
+  const handleCloseModal = useCallback(() => {
+    setIsSurveyModalOpen(false);
+  }, []);
+
+  if (isGlobalLoading) {
+    return <Loader />;
+  }
+
+  if (needsOnboarding) {
+    return (
+      <Onboarding 
+        onComplete={handleOnboardingComplete} 
+        userId={user?.id ? parseInt(user.id) : undefined}
+        initData={initData}
+      />
+    );
+  }
+
+  // Показываем лоадер, пока не загружены данные пользователя, спрайт или факторы
+  if (isLoading || !spriteLoaded) {
     return <Loader />;
   }
 
   return (
     <div className="container">
-      <div className="friends-header">
-        <h2>Мои союзники</h2>
-      </div>
-      
       <div className="scrollable-content">
-        {isError && (
-          <div className="error">
-            {queryError?.message || 'Ошибка загрузки друзей'}
+        {/* Хедер с классом персонажа */}
+        <div className="new-header">
+          <div className="header-content">
+            {userData?.character_class || 'Ваш класс'}
           </div>
-        )}
-        
-        <div className="friends-list">
-          {friends.length === 0 ? (
-            <div className="empty">У вас не призваны союзники</div>
-          ) : (
-            <div className="friends-grid">
-              {friends.map((friend) => {
-                const isExpanded = expandedFriendId === friend.id;
-                const contentHeight = contentRefs.current[friend.id]?.scrollHeight;
-                
-                return (
-                  <div 
-                    key={friend.id} 
-                    className={`friend-card ${isExpanded ? 'expanded' : ''}`}
-                  >
-                    <div className="friend-content">
-                      <div className="friend-sprite">
-                        {/* Используем динамический URL спрайта друга */}
-                        <img 
-                          src={friend.friend_sprite_url || "/sprite.gif"} 
-                          alt="Character" 
-                          onError={(e) => {
-                            // Fallback при ошибке загрузки
-                            e.currentTarget.src = "/sprite.gif";
-                          }}
-                        />
-                      </div>
-                      <div className="friend-details">
-                        <div className="friend-name">{friend.friend_username}</div>
-                        <div className="friend-progress-container">
-                          <div 
-                            className="friend-progress-bar"
-                            style={{ width: `${friend.burnout_level}%` }}
-                          />
-                        </div>
-                      </div>
-                      <button 
-                        className={`expand-btn ${isExpanded ? 'expanded' : ''}`}
-                        onClick={() => toggleExpand(friend.id)}
-                      >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M9 6L15 12L9 18" stroke="#0FEE9E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </button>
+        </div>
+
+        {isError || !user ? (
+          <div className="error-message">
+            {apiError || "Не удалось загрузить данные пользователя.\n\nПожалуйста, перезапустите приложение."}
+          </div>
+        ) : (
+          <>
+            <CharacterSprite spriteUrl={spriteUrl} />
+            
+            {/* Общий контейнер для выгорания и кнопки */}
+            <div className="burnout-and-button-container">
+              <BurnoutBlock level={burnoutLevel} />
+              
+              <div className="content">
+                {apiError && !alreadyAttemptedToday && (
+                  <div className="error-message">{apiError}</div>
+                )}
+
+                {alreadyAttemptedToday ? (
+                  <div className="time-message">
+                    <div className="info-message">
+                      Вы уже прошли испытание сегодня. Ваш текущий уровень здоровья: {burnoutLevel}%
                     </div>
-                    
-                    {/* Раскрывающаяся область */}
-                    <div 
-                      className="expandable-content"
-                      style={{ 
-                        height: isExpanded ? (contentHeight ? `${contentHeight}px` : 'auto') : '0'
-                      }}
-                    >
-                      <div 
-                        ref={el => { 
-                          contentRefs.current[friend.id] = el; 
-                        }}
-                        className="expandable-content-inner"
-                      >
-                        {/* Здесь будет контент */}
-                      </div>
-                    </div>
-                    
-                    {/* Временно скрытая кнопка удаления */}
-                    {false && (
-                      <button 
-                        className="delete-btn"
-                        onClick={() => handleDelete(friend.id)}
-                        disabled={deletingFriends.includes(friend.id)}
-                      >
-                        {deletingFriends.includes(friend.id) 
-                          ? 'Удаление...' 
-                          : 'Удалить'}
-                      </button>
-                    )}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="add-friend-section">
-          <button 
-            className="add-friend-btn"
-            onClick={() => setShowModal(true)}
-          >
-            Призвать союзника
-          </button>
-          <div className="add-friend-hint">
-            Призови союзника и продолжи приключение вместе
-          </div>
-        </div>
-
-        {showModal && (
-          <div className="modal-overlay">
-            <div className="modal-card">
-              <div className="custom-modal-header">
-                <h3>Активировать свиток призыва</h3>
-                <button 
-                  className="close-btn" 
-                  onClick={() => setShowModal(false)}
-                >
-                  &times;
-                </button>
-              </div>
-              <div className="custom-modal-body">
-                <p>Призови союзников</p>
-                <div className="referral-link-container">
-                  <input 
-                    type="text" 
-                    value={referralLink} 
-                    readOnly 
-                    className="custom-input"
-                  />
-                  <button 
-                    className={`copy-btn ${copied ? 'copied' : ''}`} 
-                    onClick={handleCopy}
-                  >
-                    {copied ? 'Скопировано!' : 'Копировать'}
-                  </button>
-                </div>
-                <button 
-                  className="share-btn"
-                  onClick={handleShare}
-                  style={{ marginTop: '15px' }}
-                >
-                  Призвать
-                </button>
+                ) : surveyCompleted ? (
+                  <div className="time-message">
+                    <div className="info-message">
+                      🎯 Испытание завершено! Ваш уровень здоровья: {burnoutLevel}%
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-center w-full">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}    
+                      className="accept-button"
+                      onClick={handleOpenSurveyModal}        
+                    >
+                      Пройти ежедневное испытание
+                    </motion.button>
+                  </div>
+                )}
               </div>
             </div>
+
+        <div className="octagram-container">
+          <div className="octagram-wrapper">
+            <AnimatePresence>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="w-full h-full flex justify-center items-center"
+              >
+                <Octagram values={octagramValues} />
+              </motion.div>
+            </AnimatePresence>
           </div>
+              
+              <button 
+                className="octalysis-info-button"
+                onClick={handleOctalysisInfo}
+              >
+                Как работает карта октализа?
+              </button>
+            </div>
+          </>
         )}
       </div>
 
-      <BottomMenu />
+      {!needsOnboarding && <BottomMenu />}
+
+      {modalPortalRef.current && isSurveyModalOpen && createPortal(
+        <SurveyModal
+          isOpen={isSurveyModalOpen}
+          onClose={handleCloseModal}
+          onComplete={handleSurveyComplete}
+          questions={QUESTIONS}
+        />,
+        modalPortalRef.current
+      )}
     </div>
   );
-}
+};
+
+export default Home;
