@@ -389,7 +389,7 @@ const Home = () => {
                 {alreadyAttemptedToday ? (
                   <div className="time-message">
                     <div className="info-message">
-                      Герой, ты справился с сегодняшним испытанием!<br>Возвращайся завтра за новыми подвигами!
+                      Герой, сегодня ты прошел испытание. Возвращайся завтра.
                     </div>
                   </div>
                 ) : surveyCompleted ? (
