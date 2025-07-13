@@ -697,11 +697,11 @@ outline: none; /* Убираем контур при фокусе */
 /* Стили для октаграммы друга */
 .friend-octagram-container {
   width: 100%;
-  padding: 15px 0;
+  min-height: 280px; /* Минимальная высота */
+  aspect-ratio: 1/1;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 160px;
 }
 
 .octagram-loader, 
