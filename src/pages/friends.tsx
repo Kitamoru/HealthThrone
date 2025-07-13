@@ -6,6 +6,8 @@ import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import BottomMenu from '../components/BottomMenu';
+import Octogram from '../components/Octograma'; // Импорт компонента октаграммы
+import { useOctalysisFactors } from '../lib/api'; // Импорт хука для данных октаграммы
 
 interface Friend {
   id: number;
@@ -131,6 +133,15 @@ export default function Friends() {
                 const isExpanded = expandedFriendId === friend.id;
                 const contentHeight = contentRefs.current[friend.id]?.scrollHeight;
                 
+                // Запрос данных октаграммы для друга
+                const { 
+                  data: octalysisFactors = [0,0,0,0,0,0,0,0], 
+                  isLoading: isOctalysisLoading 
+                } = useOctalysisFactors(
+                  isExpanded ? friend.friend_id : undefined,
+                  initData
+                );
+                
                 return (
                   <div 
                     key={friend.id} 
@@ -159,7 +170,7 @@ export default function Friends() {
                       </button>
                     </div>
                     
-                    {/* Раскрывающаяся область */}
+                    {/* Раскрывающаяся область с октаграммой */}
                     <div 
                       className="expandable-content"
                       style={{ 
@@ -172,7 +183,15 @@ export default function Friends() {
                         }}
                         className="expandable-content-inner"
                       >
-                        {/* Здесь будет контент */}
+                        <div className="octogram-container">
+                          {isOctalysisLoading ? (
+                            <div className="octogram-loading">
+                              <div className="loader-small"></div>
+                            </div>
+                          ) : (
+                            <Octogram values={octalysisFactors} />
+                          )}
+                        </div>
                       </div>
                     </div>
                     
@@ -249,6 +268,58 @@ export default function Friends() {
       </div>
 
       <BottomMenu />
+      
+      <style jsx>{`
+        .octogram-container {
+          height: 250px;
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 10px;
+          box-sizing: border-box;
+          background: rgba(15, 238, 158, 0.05);
+          border-radius: 12px;
+          margin-top: 10px;
+        }
+        
+        .octogram-loading {
+          height: 100%;
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        
+        .loader-small {
+          border: 3px solid rgba(15, 238, 158, 0.2);
+          border-top: 3px solid #0FEE9E;
+          border-radius: 50%;
+          width: 30px;
+          height: 30px;
+          animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 480px) {
+          .octogram-container {
+            height: 200px;
+          }
+        }
+        
+        .expandable-content-inner {
+          overflow: hidden;
+          transition: height 0.3s ease;
+        }
+        
+        .friend-card.expanded {
+          border: 1px solid #0FEE9E;
+        }
+      `}</style>
     </div>
   );
 }
