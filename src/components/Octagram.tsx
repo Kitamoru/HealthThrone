@@ -289,21 +289,6 @@ const Octagram = memo(({ values }: OctagramProps) => {
         </linearGradient>
       </defs>
 
-      {/* Ripple effect for the star icon (index 0) */}
-      {phase === 'pulse' && (
-        <motion.circle
-          cx={iconPositions[0].x}
-          cy={iconPositions[0].y}
-          r="15"
-          fill="none"
-          stroke="#0FEE9E"
-          strokeWidth="1.5"
-          strokeOpacity="0.7"
-          animate={rippleControls}
-          style={{ pointerEvents: 'none' }}
-        />
-      )}
-
       {/* Icons */}
       {iconPositions.map((position, index) => (
         <g
@@ -430,6 +415,27 @@ const Octagram = memo(({ values }: OctagramProps) => {
           style={{ stroke: STROKE_COLOR, strokeWidth: 0.5 }}
         />
       </motion.g>
+
+      {/* Ripple effect for the star icon (index 0) */}
+      {phase === 'pulse' && (
+        <motion.circle
+          cx={iconPositions[0].x}
+          cy={iconPositions[0].y}
+          r="20"
+          fill="none"
+          stroke="#0FEE9E"
+          strokeWidth="1.5"
+          initial={{ 
+            opacity: 0,
+            scale: 0.5
+          }}
+          animate={rippleControls}
+          style={{ 
+            pointerEvents: 'none',
+            filter: "url(#glow)"
+          }}
+        />
+      )}
     </svg>
   );
 });
