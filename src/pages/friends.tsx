@@ -6,7 +6,7 @@ import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import BottomMenu from '../components/BottomMenu';
-import Octogram from '../components/Octograma'; // Импорт компонента октаграммы
+import Octogram from '../components/Octogram'; // Импорт компонента октаграммы
 import { useOctalysisFactors } from '../lib/api'; // Импорт хука для данных октаграммы
 
 interface Friend {
