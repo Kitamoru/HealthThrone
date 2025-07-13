@@ -220,7 +220,6 @@ opacity: 0.5;
   align-items: center;
   gap: 32px; /* Уменьшаем отступ */
   border-radius: 24px 24px 34px 34px;
-  box-shadow: 0px -0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 0px 0.5px 0.5px 0px rgba(255, 255, 255, 0.10) inset, 0px -0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 0px 0.5px 10px 0px rgba(255, 255, 255, 0.05) inset, 1px 1px 2px 0px rgba(194, 179, 255, 0.20) inset, 0px 0.15px 0px 0px #C2B3FF; 
   background: #161616;
   box-sizing: border-box;
   width: 100%;
@@ -383,13 +382,12 @@ opacity: 0.5;
 }
 
 .info-message {
-  background: linear-gradient(135deg, rgba(91, 140, 255, 0.2), rgba(46, 204, 113, 0.2));
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.2));
   padding: 16px 20px;
   border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
   color: var(--tg-text);
-  border: 1px solid var(--tg-accent);
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
