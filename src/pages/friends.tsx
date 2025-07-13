@@ -7,7 +7,7 @@ import { api } from '../lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import BottomMenu from '../components/BottomMenu';
 import { motion, AnimatePresence } from 'framer-motion';
-import Octagram from '../components/Octagram';
+import Octagram from '../components/OctagramFriend';
 import { useOctalysisFactors } from '../lib/api';
 
 interface Friend {
