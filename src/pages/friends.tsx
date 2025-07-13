@@ -6,13 +6,16 @@ import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import BottomMenu from '../components/BottomMenu';
+import { motion, AnimatePresence } from 'framer-motion';
+import Octagram from '../components/Octagram';
+import { useOctalysisFactors } from '../lib/api';
 
 interface Friend {
   id: number;
   friend_id: number;
   friend_username: string;
   burnout_level: number;
-  sprite_url: string | null; // Добавлено поле для URL спрайта
+  sprite_url: string | null;
 }
 
 export default function Friends() {
@@ -44,7 +47,6 @@ export default function Friends() {
           friend_username: f.friend.username || 
                           `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
           burnout_level: f.friend.burnout_level,
-          // Добавлено получение URL спрайта
           sprite_url: f.friend.sprites?.image_url || null
         }));
       }
@@ -108,6 +110,34 @@ export default function Friends() {
     setExpandedFriendId(prev => prev === friendId ? null : friendId);
   };
 
+  // Компонент для отображения октаграммы друга
+  const FriendOctagram = ({ friendId }: { friendId: number }) => {
+    const { data: factors, isLoading, isError } = useOctalysisFactors(friendId, initData);
+    
+    if (isLoading) return <div className="octagram-loader">Загрузка мотивации...</div>;
+    if (isError) return <div className="octagram-error">Ошибка загрузки</div>;
+    
+    const octagramValues = factors?.map(factor => {
+      const normalized = factor / 30;
+      return Math.max(0, Math.min(1, normalized));
+    }) || [-1, -1, -1, -1, -1, -1, -1, -1];
+    
+    return (
+      <div className="friend-octagram-container">
+        <AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="w-full flex justify-center items-center"
+          >
+            <Octagram values={octagramValues} size={140} />
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    );
+  };
+
   if (isInitialLoading) {
     return <Loader />;
   }
@@ -141,7 +171,6 @@ export default function Friends() {
                   >
                     <div className="friend-content">
                       <div className="friend-sprite">
-                        {/* Используем sprite_url друга */}
                         <img
                           src={friend.sprite_url || "/sprite.gif"}
                           alt="Character" 
@@ -169,7 +198,6 @@ export default function Friends() {
                       </button>
                     </div>
                     
-                    {/* Раскрывающаяся область */}
                     <div 
                       className="expandable-content"
                       style={{ 
@@ -182,11 +210,10 @@ export default function Friends() {
                         }}
                         className="expandable-content-inner"
                       >
-                        {/* Здесь будет контент */}
+                        <FriendOctagram friendId={friend.friend_id} />
                       </div>
                     </div>
                     
-                    {/* Временно скрытая кнопка удаления */}
                     {false && (
                       <button 
                         className="delete-btn"
