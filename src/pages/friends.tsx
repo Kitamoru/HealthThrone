@@ -29,25 +29,21 @@ export default function Friends() {
   const queryClient = useQueryClient();
   const userId = user?.id;
   
-  // Состояние для размера октаграммы
-  const [octagramSize, setOctagramSize] = useState(280);
+  // Адаптивный размер для контейнера октаграммы
+  const [octagramContainerSize, setOctagramContainerSize] = useState(0);
 
-  // Адаптивный размер октаграммы
+  // Обновляем размер контейнера при изменении ширины
   useEffect(() => {
     const updateSize = () => {
-      if (window.innerWidth < 400) {
-        setOctagramSize(220);
-      } else if (window.innerWidth < 768) {
-        setOctagramSize(250);
-      } else {
-        setOctagramSize(280);
-      }
+      const containerWidth = document.querySelector('.friend-card.expanded')?.clientWidth || 0;
+      setOctagramContainerSize(Math.min(containerWidth, window.innerWidth - 32));
     };
 
-    updateSize();
     window.addEventListener('resize', updateSize);
+    updateSize();
+    
     return () => window.removeEventListener('resize', updateSize);
-  }, []);
+  }, [expandedFriendId]);
 
   const { 
     data: friends = [], 
@@ -132,22 +128,22 @@ export default function Friends() {
 
   // Компонент для отображения октаграммы друга
   const FriendOctagram = ({ friendId }: { friendId: number }) => {
-  const { data: factors, isLoading, isError } = useOctalysisFactors(friendId, initData);
-  
-  if (isLoading) return <div className="octagram-loader">Загрузка мотивации...</div>;
-  if (isError) return <div className="octagram-error">Ошибка загрузки</div>;
-  
-  const octagramValues = factors?.map(factor => {
-    const normalized = factor / 30;
-    return Math.max(0, Math.min(1, normalized));
-  }) || [-1, -1, -1, -1, -1, -1, -1, -1];
-  
-  return (
-    <div className="friend-octagram-container">
-      <OctagramStatic values={octagramValues} size={octagramSize} />
-    </div>
-  );
-};
+    const { data: factors, isLoading, isError } = useOctalysisFactors(friendId, initData);
+    
+    if (isLoading) return <div className="octagram-loader">Загрузка мотивации...</div>;
+    if (isError) return <div className="octagram-error">Ошибка загрузки</div>;
+    
+    const octagramValues = factors?.map(factor => {
+      const normalized = factor / 30;
+      return Math.max(0, Math.min(1, normalized));
+    }) || [-1, -1, -1, -1, -1, -1, -1, -1];
+    
+    return (
+      <div className="friend-octagram-container">
+        <OctagramStatic values={octagramValues} />
+      </div>
+    );
+  };
 
   if (isInitialLoading) {
     return <Loader />;
@@ -220,6 +216,9 @@ export default function Friends() {
                           contentRefs.current[friend.id] = el; 
                         }}
                         className="expandable-content-inner"
+                        style={{
+                          minHeight: octagramContainerSize
+                        }}
                       >
                         <FriendOctagram friendId={friend.friend_id} />
                       </div>
