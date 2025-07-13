@@ -384,12 +384,9 @@ opacity: 0.5;
 .info-message {
   border-radius: 24px;
   background: #161616;
-  padding: 16px 20px;
-  border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
   color: var(--tg-text);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
 .content {
