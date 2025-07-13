@@ -141,8 +141,11 @@ export default function Friends() {
                   >
                     <div className="friend-content">
                       <div className="friend-sprite">
-                        {/* Заменяем статичное изображение на компонент CharacterSprite */}
-                        <CharacterSprite spriteUrl={friend.current_sprite_url} />
+                        {/* Используем CharacterSprite для отображения спрайта друга */}
+                        <CharacterSprite 
+                          spriteUrl={friend.current_sprite_url} 
+                          compactMode={true} 
+                        />
                       </div>
                       <div className="friend-details">
                         <div className="friend-name">{friend.friend_username}</div>
