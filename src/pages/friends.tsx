@@ -221,20 +221,19 @@ export default function Friends() {
                         }}
                       >
                         <FriendOctagram friendId={friend.friend_id} />
+                        
+                        {/* Кнопка удаления теперь внутри раскрывающегося блока */}
+                        <button 
+                          className="delete-btn"
+                          onClick={() => handleDelete(friend.id)}
+                          disabled={deletingFriends.includes(friend.id)}
+                        >
+                          {deletingFriends.includes(friend.id) 
+                            ? 'Удаление...' 
+                            : 'Удалить'}
+                        </button>
                       </div>
                     </div>
-                    
-                    {false && (
-                      <button 
-                        className="delete-btn"
-                        onClick={() => handleDelete(friend.id)}
-                        disabled={deletingFriends.includes(friend.id)}
-                      >
-                        {deletingFriends.includes(friend.id) 
-                          ? 'Удаление...' 
-                          : 'Удалить'}
-                      </button>
-                    )}
                   </div>
                 );
               })}
@@ -267,7 +266,8 @@ export default function Friends() {
                 </button>
               </div>
               <div className="custom-modal-body">
-                <p>Призови союзника</p>
+                {/* Текст выровнен по левому краю */}
+                <p style={{ textAlign: 'left' }}>Призови союзника</p>
                 <div className="referral-link-container">
                   <input 
                     type="text" 
