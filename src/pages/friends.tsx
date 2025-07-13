@@ -12,7 +12,7 @@ interface Friend {
   friend_id: number;
   friend_username: string;
   burnout_level: number;
-  friend_sprite_url: string; // Добавлено новое поле для URL спрайта друга
+  sprite_url: string | null; // Добавлено поле для URL спрайта
 }
 
 export default function Friends() {
@@ -44,7 +44,8 @@ export default function Friends() {
           friend_username: f.friend.username || 
                           `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
           burnout_level: f.friend.burnout_level,
-          friend_sprite_url: f.friend.current_sprite_url // Добавлено получение URL спрайта
+          // Добавлено получение URL спрайта
+          sprite_url: f.friend.sprites?.image_url || null
         }));
       }
       throw new Error(response.error || 'Failed to load friends');
@@ -140,12 +141,11 @@ export default function Friends() {
                   >
                     <div className="friend-content">
                       <div className="friend-sprite">
-                        {/* Используем динамический URL спрайта друга */}
-                        <img 
-                          src={friend.friend_sprite_url || "/sprite.gif"} 
+                        {/* Используем sprite_url друга */}
+                        <img
+                          src={friend.sprite_url || "/sprite.gif"}
                           alt="Character" 
                           onError={(e) => {
-                            // Fallback при ошибке загрузки
                             e.currentTarget.src = "/sprite.gif";
                           }}
                         />
@@ -230,7 +230,7 @@ export default function Friends() {
                 </button>
               </div>
               <div className="custom-modal-body">
-                <p>Призови союзников</p>
+                <p style="text-align: left;">Призови союзника</p>
                 <div className="referral-link-container">
                   <input 
                     type="text" 
