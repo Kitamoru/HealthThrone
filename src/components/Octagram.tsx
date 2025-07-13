@@ -19,7 +19,6 @@ const Octagram = memo(({ values }: OctagramProps) => {
   const octagonControls = useAnimation();
   const crystalControls = useAnimation();
   const pulseControls = useAnimation();
-  const rippleControls = useAnimation();
 
   // Увеличиваем viewBox для предотвращения обрезания иконок
   const viewBoxSize = 340;
@@ -84,7 +83,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
 
   // Массив иконок для вершин октограммы
   const icons = useMemo(() => [
-    // 1. Звезда (12 часов) - теперь статичная
+    // 1. Звезда (12 часов) - статичная
     <svg 
       key="star" 
       xmlns="http://www.w3.org/2000/svg" 
@@ -165,7 +164,7 @@ const Octagram = memo(({ values }: OctagramProps) => {
   ], []);
 
   useEffect(() => {
-    let timer1: NodeJS.Timeout, timer2: NodeJS.Timeout, timer3: NodeJS.Timeout;
+    let timer1: NodeJS.Timeout, timer2: NodeJS.Timeout;
 
     if (phase === 'vertices') {
       crystalControls.start({
@@ -195,27 +194,13 @@ const Octagram = memo(({ values }: OctagramProps) => {
           ease: "easeInOut"
         }
       });
-      
-      // Запускаем ripple-анимацию для звезды
-      timer3 = setTimeout(() => {
-        rippleControls.start({
-          scale: [1, 1.8],
-          opacity: [0.7, 0],
-          transition: {
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeOut"
-          }
-        });
-      }, 1000);
     }
 
     return () => {
       timer1 && clearTimeout(timer1);
       timer2 && clearTimeout(timer2);
-      timer3 && clearTimeout(timer3);
     };
-  }, [phase, octagonControls, crystalControls, pulseControls, rippleControls]);
+  }, [phase, octagonControls, crystalControls, pulseControls]);
 
   const renderSectors = useCallback(() => {
     return values.map((value, index) => {
@@ -318,16 +303,26 @@ const Octagram = memo(({ values }: OctagramProps) => {
             fill="transparent" 
           />
           
-          {/* Ripple-эффект только для звезды (index 0) */}
-          {index === 0 && (
+          {/* Ripple-эффект только для звезды (index 0) в фазе pulse */}
+          {index === 0 && phase === 'pulse' && (
             <motion.circle
-              cx="12"
-              cy="12"
-              r="8"
+              cx={12}
+              cy={12}
+              r={8}
               fill="#0FEE9E"
-              initial={{ opacity: 0, scale: 0.7 }}
-              animate={rippleControls}
-              style={{ pointerEvents: 'none' }}
+              initial={{ 
+                scale: 0.5,
+                opacity: 0.4 
+              }}
+              animate={{
+                scale: 1.8,
+                opacity: 0,
+              }}
+              transition={{
+                duration: 2.5,
+                repeat: Infinity,
+                ease: "easeOut",
+              }}
             />
           )}
           
