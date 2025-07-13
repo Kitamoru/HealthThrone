@@ -61,7 +61,8 @@ export interface Friend {
     burnout_level: number;
     coins: number;
     updated_at: string;
-    current_sprite_url: string; 
+    current_sprite_url: string;
+    sprite_url: string | null;
   };
 }
 
