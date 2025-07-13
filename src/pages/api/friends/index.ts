@@ -28,13 +28,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'GET') {
     try {
-      // Получаем друзей с актуальными данными из users
+      // Получаем друзей с актуальными данными из users и их спрайтами
       const { data: friends, error } = await supabase
         .from('friends')
         .select(`
           id, 
           created_at,
-          friend:friend_id (id, first_name, last_name, username, burnout_level)
+          friend:friend_id (
+            id, 
+            first_name, 
+            last_name, 
+            username, 
+            burnout_level,
+            current_sprite_id,
+            sprites:current_sprite_id (image_url)
+          )
         `)
         .eq('user_id', userId);
 
