@@ -1,0 +1,85 @@
+import React from 'react';
+
+interface OctagramProps {
+  values: number[];
+  size?: number;
+}
+
+const Octagram: React.FC<OctagramProps> = ({ 
+  values, 
+  size = 280
+}) => {
+  const points = [];
+  const center = 150;
+  const radius = 120;
+  
+  for (let i = 0; i < 8; i++) {
+    const angle = (Math.PI / 4) * i - Math.PI / 2;
+    const value = values[i] || 0;
+    const valueRadius = radius * value;
+    
+    const x = center + valueRadius * Math.cos(angle);
+    const y = center + valueRadius * Math.sin(angle);
+    points.push({ x, y });
+  }
+  
+  const pathData = points.map((point, i) => {
+    return `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`;
+  }).join(' ') + ' Z';
+
+  return (
+    <div className="octagram-wrapper" style={{ width: size, height: size }}>
+      <svg 
+        viewBox="0 0 300 300" 
+        preserveAspectRatio="xMidYMid meet"
+      >
+        {/* Внешний круг */}
+        <circle 
+          cx={center} 
+          cy={center} 
+          r={radius} 
+          fill="none" 
+          stroke="#2A2A2A" 
+          strokeWidth="2" 
+        />
+        
+        {/* Линии к вершинам */}
+        {points.map((point, i) => (
+          <line
+            key={`line-${i}`}
+            x1={center}
+            y1={center}
+            x2={point.x}
+            y2={point.y}
+            stroke="#2A2A2A"
+            strokeWidth="1"
+          />
+        ))}
+        
+        {/* Заполненный многоугольник */}
+        <path 
+          d={pathData} 
+          fill="#0FEE9E" 
+          fillOpacity="0.3" 
+          stroke="#0FEE9E"
+          strokeWidth="2"
+        />
+        
+        {/* Вершины */}
+        {points.map((point, i) => (
+          <circle
+            key={`point-${i}`}
+            cx={point.x}
+            cy={point.y}
+            r={values[i] > 0 ? 6 : 0}
+            fill="#0FEE9E"
+            stroke="#161616"
+            strokeWidth="2"
+          />
+        ))}
+      </svg>
+    </div>
+  );
+};
+
+export default Octagram;
