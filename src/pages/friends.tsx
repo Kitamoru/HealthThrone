@@ -6,14 +6,13 @@ import { Loader } from '../components/Loader';
 import { api } from '../lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import BottomMenu from '../components/BottomMenu';
-import CharacterSprite from '../components/CharacterSprite'; // Импортируем компонент спрайта
 
 interface Friend {
   id: number;
   friend_id: number;
   friend_username: string;
   burnout_level: number;
-  current_sprite_url: string; // Добавляем поле для URL спрайта
+  friend_sprite_url: string; // Добавлено новое поле для URL спрайта друга
 }
 
 export default function Friends() {
@@ -45,7 +44,7 @@ export default function Friends() {
           friend_username: f.friend.username || 
                           `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
           burnout_level: f.friend.burnout_level,
-          current_sprite_url: f.friend.current_sprite_url // Добавляем URL спрайта
+          friend_sprite_url: f.friend.current_sprite_url // Добавлено получение URL спрайта
         }));
       }
       throw new Error(response.error || 'Failed to load friends');
@@ -141,10 +140,14 @@ export default function Friends() {
                   >
                     <div className="friend-content">
                       <div className="friend-sprite">
-                        {/* Используем CharacterSprite для отображения спрайта друга */}
-                        <CharacterSprite 
-                          spriteUrl={friend.current_sprite_url} 
-                          compactMode={true} 
+                        {/* Используем динамический URL спрайта друга */}
+                        <img 
+                          src={friend.friend_sprite_url || "/sprite.gif"} 
+                          alt="Character" 
+                          onError={(e) => {
+                            // Fallback при ошибке загрузки
+                            e.currentTarget.src = "/sprite.gif";
+                          }}
                         />
                       </div>
                       <div className="friend-details">
