@@ -382,7 +382,8 @@ opacity: 0.5;
 }
 
 .info-message {
-  background: linear-gradient(180deg, rgba(6, 96, 64, 0.20) 0%, rgba(6, 96, 64, 0.80) 100%), #0FEE9E;
+  border-radius: 24px;
+  background: #161616;
   padding: 16px 20px;
   border-radius: 12px;
   font-size: 16px;
