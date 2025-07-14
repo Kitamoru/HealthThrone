@@ -134,12 +134,11 @@ export default function Friends() {
   }
 
   return (
-    <div className="container">
-      <div className="friends-header">
+    <div className="container"> 
+      <div className="scrollable-content">
+         <div className="friends-header">
         <h2>Мои союзники</h2>
       </div>
-      
-      <div className="scrollable-content">
         {isError && (
           <div className="error">
             {queryError?.message || 'Ошибка загрузки друзей'}
