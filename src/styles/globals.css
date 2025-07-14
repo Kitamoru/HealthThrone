@@ -695,6 +695,7 @@ outline: none; /* Убираем контур при фокусе */
   box-sizing: border-box;
   border-radius: 16px;
   background: #161616;
+  margin: 0 auto
 }
 
 /* Стили для октаграммы друга */
