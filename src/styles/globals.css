@@ -690,6 +690,8 @@ outline: none; /* Убираем контур при фокусе */
   display: flex;
   flex-direction: column;
   align-items: center; /* Центрирование по горизонтали */
+  justify-content: center; /* Добавляем центрирование по вертикали */
+  align-items: center; /* Центрирование по горизонтали */
   width: 100%;
   padding: 16px;
   box-sizing: border-box;
