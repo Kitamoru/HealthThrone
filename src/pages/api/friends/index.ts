@@ -8,7 +8,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!initData || !validateTelegramInitData(initData)) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
-
+  
   const user = extractUserFromInitData(initData);
   if (!user?.id) {
     return res.status(400).json({ success: false, error: 'Invalid user data' });
