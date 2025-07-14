@@ -9,6 +9,7 @@ import BottomMenu from '../components/BottomMenu';
 import { motion, AnimatePresence } from 'framer-motion';
 import OctagramStatic from '../components/OctagramStatic'; 
 import { useOctalysisFactors } from '../lib/api';
+import { getClassDescription } from '../lib/characterHelper'; // Добавленный импорт
 
 interface Friend {
   id: number;
@@ -16,7 +17,7 @@ interface Friend {
   friend_username: string;
   burnout_level: number;
   sprite_url: string | null;
-  character_class: string | null; // Добавлено поле для класса
+  character_class: string | null;
 }
 
 export default function Friends() {
@@ -29,6 +30,13 @@ export default function Friends() {
   const contentRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const queryClient = useQueryClient();
   const userId = user?.id;
+
+  // Обработчик клика по классу друга
+  const handleFriendClassClick = (characterClass: string | null) => {
+    const className = characterClass || 'Странник';
+    const description = getClassDescription(className);
+    alert(description);
+  };
 
   const { 
     data: friends = [], 
@@ -49,7 +57,7 @@ export default function Friends() {
                           `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
           burnout_level: f.friend.burnout_level,
           sprite_url: f.friend.sprites?.image_url || null,
-          character_class: f.friend.character_class // Добавлено получение класса
+          character_class: f.friend.character_class
         }));
       }
       throw new Error(response.error || 'Failed to load friends');
@@ -200,8 +208,15 @@ export default function Friends() {
                         }}
                         className="expandable-content-inner"
                       >
-                        {/* Добавленный блок с классом персонажа */}
-                        <div className="friend-class-container">
+                        {/* Измененный блок с классом персонажа - добавлен обработчик */}
+                        <div 
+                          className="friend-class-container"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleFriendClassClick(friend.character_class);
+                          }}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <div className="friend-class-badge">
                             {friend.character_class || 'Странник'}
                           </div>
