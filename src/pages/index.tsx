@@ -15,7 +15,7 @@ import { createPortal } from 'react-dom';
 import BottomMenu from '../components/BottomMenu';
 import CharacterSprite from '../components/CharacterSprite';
 import BurnoutBlock from '../components/BurnoutBlock';
-import { getClassDescription } from '../lib/characterHelper'; // Добавленный импорт
+import { getClassDescription } from '../lib/characterHelper';
 
 interface Question {
   id: number;
@@ -89,17 +89,9 @@ const Home = () => {
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
   const [octalysisFactors, setOctalysisFactors] = useState<number[] | null>(null);
-  const [octagramSize, setOctagramSize] = useState(280); // Начальный размер октаграммы
+  const [octagramSize, setOctagramSize] = useState(280);
   
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
-
-  // ОБРАБОТЧИК КЛИКА ПО КЛАССУ ПЕРСОНАЖА
-  const handleClassClick = useCallback(() => {
-    if (userData?.character_class) {
-      const description = getClassDescription(userData.character_class);
-      alert(description);
-    }
-  }, [userData?.character_class]);
 
   // Адаптивный размер октаграммы
   useEffect(() => {
@@ -195,6 +187,14 @@ const Home = () => {
     refetchOnWindowFocus: true,
   });
 
+  // ОБРАБОТЧИК КЛИКА ПО КЛАССУ ПЕРСОНАЖА (ПЕРЕМЕЩЕН ПОСЛЕ useQuery)
+  const handleClassClick = useCallback(() => {
+    if (userData?.character_class) {
+      const description = getClassDescription(userData.character_class);
+      alert(description);
+    }
+  }, [userData?.character_class]);
+
   const needsOnboarding = userData?.character_class === null;
 
   useEffect(() => {
@@ -286,7 +286,7 @@ const Home = () => {
     }
   });
 
-  const initialBurnoutLevel = userData?.burnout_level ?? 100; // Начинаем с 100%
+  const initialBurnoutLevel = userData?.burnout_level ?? 100;
   const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
   const alreadyAttemptedToday = userData?.last_attempt_date 
     ? isTodayUTC(userData.last_attempt_date) 
@@ -314,12 +314,11 @@ const Home = () => {
     }
     return octalysisFactors.map(factor => {
       const normalized = factor / 30;
-      return Math.max(0, Math.min(1, normalized)); // Ограничиваем 0-1
+      return Math.max(0, Math.min(1, normalized));
     });
   }, [octalysisFactors]);
 
   const handleSurveyComplete = useCallback((answers: Record<number, 'yes' | 'no' | 'skip'>) => {
-    // Рассчитываем burnoutDelta только по первым двум вопросам
     const burnoutDelta = [1, 2].reduce((sum, id) => {
       const answer = answers[id];
       if (answer === 'yes') return sum + 2;
@@ -327,12 +326,11 @@ const Home = () => {
       return sum;
     }, 0);
 
-    // Формируем массив факторов для вопросов 3-10
     const factors = [3, 4, 5, 6, 7, 8, 9, 10].map(id => {
       const answer = answers[id];
       if (answer === 'yes') return 1;
       if (answer === 'no') return -1;
-      return 0; // Для 'skip'
+      return 0;
     });
 
     submitSurveyMutation.mutate({ burnoutDelta, factors });
@@ -363,7 +361,6 @@ const Home = () => {
     );
   }
 
-  // Показываем лоадер, пока не загружены данные пользователя, спрайт или факторы
   if (isLoading || !spriteLoaded) {
     return <Loader />;
   }
@@ -371,7 +368,6 @@ const Home = () => {
   return (
     <div className="container">
       <div className="scrollable-content">
-        {/* Хедер с классом персонажа - с обработчиком клика */}
         <div className="new-header">
           <div 
             className="header-content"
@@ -390,7 +386,6 @@ const Home = () => {
           <>
             <CharacterSprite spriteUrl={spriteUrl} />
             
-            {/* Общий контейнер для выгорания и кнопки */}
             <div className="burnout-and-button-container">
               <BurnoutBlock level={burnoutLevel} />
               
