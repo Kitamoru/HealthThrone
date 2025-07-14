@@ -15,7 +15,6 @@ import { createPortal } from 'react-dom';
 import BottomMenu from '../components/BottomMenu';
 import CharacterSprite from '../components/CharacterSprite';
 import BurnoutBlock from '../components/BurnoutBlock';
-import { getClassDescription } from '../lib/characterHelper'; // Импорт хелпера для описаний классов
 
 interface Question {
   id: number;
@@ -89,10 +88,11 @@ const Home = () => {
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
   const [octalysisFactors, setOctalysisFactors] = useState<number[] | null>(null);
-  const [octagramSize, setOctagramSize] = useState(280);
+  const [octagramSize, setOctagramSize] = useState(280); // Начальный размер октаграммы
   
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
 
+  // Адаптивный размер октаграммы
   useEffect(() => {
     const updateSize = () => {
       if (window.innerWidth < 400) {
@@ -186,14 +186,6 @@ const Home = () => {
     refetchOnWindowFocus: true,
   });
 
-  // ОБРАБОТЧИК ПЕРЕМЕЩЕН СЮДА
-  const handleClassClick = useCallback(() => {
-    if (userData?.character_class) {
-      const description = getClassDescription(userData.character_class);
-      alert(description);
-    }
-  }, [userData?.character_class]);
-
   const needsOnboarding = userData?.character_class === null;
 
   useEffect(() => {
@@ -222,6 +214,7 @@ const Home = () => {
     }
   }, [userData?.current_sprite_url]);
 
+  // Загрузка факторов для октаграммы
   useEffect(() => {
     if (userData?.id) {
       const fetchFactors = async () => {
@@ -268,6 +261,7 @@ const Home = () => {
       setSurveyCompleted(true);
       setAnswers({});
       
+      // Обновляем факторы после успешного прохождения опроса
       if (userData?.id) {
         const fetchFactors = async () => {
           const response = await api.getOctalysisFactors(userData.id, initData);
@@ -283,7 +277,7 @@ const Home = () => {
     }
   });
 
-  const initialBurnoutLevel = userData?.burnout_level ?? 100;
+  const initialBurnoutLevel = userData?.burnout_level ?? 100; // Начинаем с 100%
   const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
   const alreadyAttemptedToday = userData?.last_attempt_date 
     ? isTodayUTC(userData.last_attempt_date) 
@@ -294,6 +288,7 @@ const Home = () => {
       return userData.burnout_level;
     }
 
+    // Рассчитываем только по вопросам 1 и 2
     const answeredDelta = [1, 2].reduce((sum, id) => {
       const answer = answers[id];
       if (answer === true) return sum + 2;
@@ -310,11 +305,12 @@ const Home = () => {
     }
     return octalysisFactors.map(factor => {
       const normalized = factor / 30;
-      return Math.max(0, Math.min(1, normalized));
+      return Math.max(0, Math.min(1, normalized)); // Ограничиваем 0-1
     });
   }, [octalysisFactors]);
 
   const handleSurveyComplete = useCallback((answers: Record<number, 'yes' | 'no' | 'skip'>) => {
+    // Рассчитываем burnoutDelta только по первым двум вопросам
     const burnoutDelta = [1, 2].reduce((sum, id) => {
       const answer = answers[id];
       if (answer === 'yes') return sum + 2;
@@ -322,11 +318,12 @@ const Home = () => {
       return sum;
     }, 0);
 
+    // Формируем массив факторов для вопросов 3-10
     const factors = [3, 4, 5, 6, 7, 8, 9, 10].map(id => {
       const answer = answers[id];
       if (answer === 'yes') return 1;
       if (answer === 'no') return -1;
-      return 0;
+      return 0; // Для 'skip'
     });
 
     submitSurveyMutation.mutate({ burnoutDelta, factors });
@@ -357,6 +354,7 @@ const Home = () => {
     );
   }
 
+  // Показываем лоадер, пока не загружены данные пользователя, спрайт или факторы
   if (isLoading || !spriteLoaded) {
     return <Loader />;
   }
@@ -364,12 +362,9 @@ const Home = () => {
   return (
     <div className="container">
       <div className="scrollable-content">
+        {/* Хедер с классом персонажа */}
         <div className="new-header">
-          <div 
-            className="header-content"
-            onClick={handleClassClick}
-            style={{ cursor: 'pointer' }}
-          >
+          <div className="header-content">
             {userData?.character_class || 'Ваш класс'}
           </div>
         </div>
@@ -382,6 +377,7 @@ const Home = () => {
           <>
             <CharacterSprite spriteUrl={spriteUrl} />
             
+            {/* Общий контейнер для выгорания и кнопки */}
             <div className="burnout-and-button-container">
               <BurnoutBlock level={burnoutLevel} />
               
@@ -417,19 +413,19 @@ const Home = () => {
               </div>
             </div>
 
-            <div className="octagram-container">
-              <div className="octagram-wrapper">
-                <AnimatePresence>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8 }}
-                    className="w-full h-full flex justify-center items-center"
-                  >
-                    <Octagram values={octagramValues} size={octagramSize} />
-                  </motion.div>
-                </AnimatePresence>
-              </div>
+        <div className="octagram-container">
+          <div className="octagram-wrapper">
+            <AnimatePresence>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="w-full h-full flex justify-center items-center"
+              >
+                <Octagram values={octagramValues} />
+              </motion.div>
+            </AnimatePresence>
+          </div>
               
               <button 
                 className="octalysis-info-button"
