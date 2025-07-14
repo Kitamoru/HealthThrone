@@ -41,6 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             username, 
             burnout_level,
             current_sprite_id,
+            character_class,
             sprites:current_sprite_id (image_url)
           )
         `)
