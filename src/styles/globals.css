@@ -566,7 +566,6 @@ outline: none; /* Убираем контур при фокусе */
 }
   
 .friend-card.expanded {
-  z-index: 10;
   border-radius: 16px;
   width: 100%;
   box-sizing: border-box;
