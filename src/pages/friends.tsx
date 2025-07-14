@@ -16,6 +16,7 @@ interface Friend {
   friend_username: string;
   burnout_level: number;
   sprite_url: string | null;
+  character_class: string | null; // Добавлено поле для класса
 }
 
 export default function Friends() {
@@ -47,7 +48,8 @@ export default function Friends() {
           friend_username: f.friend.username || 
                           `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
           burnout_level: f.friend.burnout_level,
-          sprite_url: f.friend.sprites?.image_url || null
+          sprite_url: f.friend.sprites?.image_url || null,
+          character_class: f.friend.character_class // Добавлено получение класса
         }));
       }
       throw new Error(response.error || 'Failed to load friends');
@@ -199,6 +201,13 @@ export default function Friends() {
                         }}
                         className="expandable-content-inner"
                       >
+                        {/* Добавленный блок с классом персонажа */}
+                        <div className="friend-class-container">
+                          <div className="friend-class-badge">
+                            {friend.character_class || 'Странник'}
+                          </div>
+                        </div>
+                        
                         <div className="friend-octagram-container">
                           <FriendOctagram friendId={friend.friend_id} />
                         </div>
