@@ -28,22 +28,6 @@ export default function Friends() {
   const contentRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const queryClient = useQueryClient();
   const userId = user?.id;
-  
-  // Адаптивный размер для контейнера октаграммы
-  const [octagramContainerSize, setOctagramContainerSize] = useState(0);
-
-  // Обновляем размер контейнера при изменении ширины
-  useEffect(() => {
-    const updateSize = () => {
-      const containerWidth = document.querySelector('.friend-card.expanded')?.clientWidth || 0;
-      setOctagramContainerSize(Math.min(containerWidth, window.innerWidth - 32));
-    };
-
-    window.addEventListener('resize', updateSize);
-    updateSize();
-    
-    return () => window.removeEventListener('resize', updateSize);
-  }, [expandedFriendId]);
 
   const { 
     data: friends = [], 
@@ -139,9 +123,7 @@ export default function Friends() {
     }) || [-1, -1, -1, -1, -1, -1, -1, -1];
     
     return (
-      <div className="friend-octagram-container">
-        <OctagramStatic values={octagramValues} />
-      </div>
+      <OctagramStatic values={octagramValues} />
     );
   };
 
@@ -216,21 +198,19 @@ export default function Friends() {
                           contentRefs.current[friend.id] = el; 
                         }}
                         className="expandable-content-inner"
-                        style={{
-                          minHeight: octagramContainerSize
-                        }}
                       >
-                        <FriendOctagram friendId={friend.friend_id} />
+                        <div className="friend-octagram-container">
+                          <FriendOctagram friendId={friend.friend_id} />
+                        </div>
                         
-                        {/* Кнопка удаления теперь внутри раскрывающегося блока */}
                         <button 
                           className="delete-btn"
                           onClick={() => handleDelete(friend.id)}
                           disabled={deletingFriends.includes(friend.id)}
                         >
                           {deletingFriends.includes(friend.id) 
-                            ? 'Удаление...' 
-                            : 'Удалить'}
+                            ? 'Изгнание...' 
+                            : 'Изгнать'}
                         </button>
                       </div>
                     </div>
@@ -266,7 +246,6 @@ export default function Friends() {
                 </button>
               </div>
               <div className="custom-modal-body">
-                {/* Текст выровнен по левому краю */}
                 <p style={{ textAlign: 'left' }}>Призови союзника</p>
                 <div className="referral-link-container">
                   <input 
