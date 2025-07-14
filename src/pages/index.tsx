@@ -15,6 +15,7 @@ import { createPortal } from 'react-dom';
 import BottomMenu from '../components/BottomMenu';
 import CharacterSprite from '../components/CharacterSprite';
 import BurnoutBlock from '../components/BurnoutBlock';
+import { getClassDescription } from '../lib/characterHelper'; // Добавленный импорт
 
 interface Question {
   id: number;
@@ -91,6 +92,14 @@ const Home = () => {
   const [octagramSize, setOctagramSize] = useState(280); // Начальный размер октаграммы
   
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
+
+  // ОБРАБОТЧИК КЛИКА ПО КЛАССУ ПЕРСОНАЖА
+  const handleClassClick = useCallback(() => {
+    if (userData?.character_class) {
+      const description = getClassDescription(userData.character_class);
+      alert(description);
+    }
+  }, [userData?.character_class]);
 
   // Адаптивный размер октаграммы
   useEffect(() => {
@@ -362,9 +371,13 @@ const Home = () => {
   return (
     <div className="container">
       <div className="scrollable-content">
-        {/* Хедер с классом персонажа */}
+        {/* Хедер с классом персонажа - с обработчиком клика */}
         <div className="new-header">
-          <div className="header-content">
+          <div 
+            className="header-content"
+            onClick={handleClassClick}
+            style={{ cursor: userData?.character_class ? 'pointer' : 'default' }}
+          >
             {userData?.character_class || 'Ваш класс'}
           </div>
         </div>
