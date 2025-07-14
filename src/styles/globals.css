@@ -918,7 +918,7 @@ outline: none; /* Убираем контур при фокусе */
 
 .delete-btn {
   display: flex;
-  height: 42px;
+  height: 32px;
   width: 100%;
   padding: 0 16px;
   justify-content: center;
