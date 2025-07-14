@@ -15,6 +15,7 @@ import { createPortal } from 'react-dom';
 import BottomMenu from '../components/BottomMenu';
 import CharacterSprite from '../components/CharacterSprite';
 import BurnoutBlock from '../components/BurnoutBlock';
+import { getClassDescription } from '../lib/characterHelper'; // Импорт хелпера для описаний классов
 
 interface Question {
   id: number;
@@ -162,6 +163,14 @@ const Home = () => {
       return false;
     }
   }, []);
+
+  // Обработчик клика по классу для показа описания
+  const handleClassClick = useCallback(() => {
+    if (userData?.character_class) {
+      const description = getClassDescription(userData.character_class);
+      alert(description);
+    }
+  }, [userData?.character_class]);
 
   const { 
     data: userData, 
@@ -364,7 +373,11 @@ const Home = () => {
       <div className="scrollable-content">
         {/* Хедер с классом персонажа */}
         <div className="new-header">
-          <div className="header-content">
+          <div 
+            className="header-content"
+            onClick={handleClassClick}
+            style={{ cursor: 'pointer' }}
+          >
             {userData?.character_class || 'Ваш класс'}
           </div>
         </div>
@@ -413,19 +426,19 @@ const Home = () => {
               </div>
             </div>
 
-        <div className="octagram-container">
-          <div className="octagram-wrapper">
-            <AnimatePresence>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-                className="w-full h-full flex justify-center items-center"
-              >
-                <Octagram values={octagramValues} />
-              </motion.div>
-            </AnimatePresence>
-          </div>
+            <div className="octagram-container">
+              <div className="octagram-wrapper">
+                <AnimatePresence>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
+                    className="w-full h-full flex justify-center items-center"
+                  >
+                    <Octagram values={octagramValues} size={octagramSize} />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
               
               <button 
                 className="octalysis-info-button"
