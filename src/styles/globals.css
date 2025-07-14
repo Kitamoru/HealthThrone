@@ -577,7 +577,6 @@ outline: none; /* Убираем контур при фокусе */
   width: 100%;
   display: flex;
   justify-content: center;
-  margin-bottom: 15px;
 }
 
 .friend-class-badge {
