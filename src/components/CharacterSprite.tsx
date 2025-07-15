@@ -17,7 +17,8 @@ const fogVariants: Variants = {
       ease: "easeInOut"
     }
   }),
-  tap: {
+  // Изменено название с 'tap' на 'tapped'
+  tapped: {
     opacity: [0.3, 0.6, 0.3],
     scale: [1.05, 1.15, 1.05],
     transition: {
@@ -32,6 +33,7 @@ const CharacterSprite = React.memo(({
 }: CharacterSpriteProps) => {
   const [displaySprite, setDisplaySprite] = useState(spriteUrl);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isTapped, setIsTapped] = useState(false); // Новое состояние для отслеживания нажатия
   const firstRender = useRef(true);
   const prevSpriteRef = useRef(spriteUrl);
   
@@ -75,12 +77,15 @@ const CharacterSprite = React.memo(({
       <motion.div 
         className="sprite-background"
         whileTap={{ scale: 0.98 }}
+        // Обработчики для управления состоянием нажатия
+        onTapStart={() => setIsTapped(true)}
+        onTap={() => setIsTapped(false)}
+        onTapCancel={() => setIsTapped(false)}
         style={{
           position: 'relative',
-          overflow: 'hidden' // Гарантируем, что туман не выйдет за границы
+          overflow: 'hidden'
         }}
       >
-        {/* Темный фон круга */}
         <div 
           className="circle-background"
           style={{
@@ -95,15 +100,14 @@ const CharacterSprite = React.memo(({
           }}
         />
         
-        {/* Слои тумана над фоном, но под спрайтом */}
         {fogLayers.map((layer, i) => (
           <motion.div
             key={`fog-${i}`}
             className="fog-layer"
             custom={i}
             initial="hidden"
-            animate="visible"
-            whileTap="tap"
+            // Управление анимацией через состояние
+            animate={isTapped ? "tapped" : "visible"}
             variants={fogVariants}
             style={{
               position: 'absolute',
@@ -113,21 +117,22 @@ const CharacterSprite = React.memo(({
               height: '100%',
               borderRadius: '999px',
               background: `radial-gradient(circle at center, ${layer.color} 0%, transparent 70%)`,
-              zIndex: 2, // Над фоном, но под спрайтом
+              zIndex: 2,
             }}
           />
         ))}
 
-        {/* Спрайт персонажа - самый верхний слой */}
         <img 
           src={displaySprite} 
           alt="Character" 
           className={`sprite ${isAnimating ? 'sprite-fade-in' : ''}`}
           style={{ 
             position: 'relative', 
-            zIndex: 3, // Выше всех слоев
+            zIndex: 3,
             maxWidth: '90%',
-            maxHeight: '90%'
+            maxHeight: '90%',
+            // Разрешаем событиям мыши проходить сквозь спрайт
+            pointerEvents: 'none'
           }}
           onError={(e) => {
             e.currentTarget.src = '/sprite.gif';
