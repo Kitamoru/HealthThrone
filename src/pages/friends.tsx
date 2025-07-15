@@ -317,7 +317,7 @@ export default function Friends() {
               </div>
               <div className="custom-modal-body">
                 <p style={{ textAlign: 'left' }}>
-                  Вы уверены, что хотите изгнать союзника?/nОн перестанет быть частью вашей команды.
+                  Вы уверены, что хотите изгнать союзника? Он перестанет быть частью вашей команды.
                 </p>
                 <div className="confirmation-buttons">
                   <button 
