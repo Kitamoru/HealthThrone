@@ -916,20 +916,57 @@ outline: none; /* Убираем контур при фокусе */
   outline: none;
 }
 
-.delete-btn {
+.confirmation-buttons {
   display: flex;
-  height: 32px;
-  width: 100%;
-  padding: 0 16px;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.keep-btn {
+  display: flex;
+  height: 42px;
+  padding: 0px 14px;
   justify-content: center;
   align-items: center;
+  gap: 8px;
   border-radius: 12px;
-  background: linear-gradient(180deg, rgba(211, 52, 54, 0.20) 0%, rgba(211, 52, 54, 0.80) 100%), #F07072;
+  background: #2D2D2D;
   color: #FFFFFF;
-  font-size: 16px;
   font-weight: 500;
+  font-size: 16px;
   border: none;
-  box-sizing: border-box;
+  cursor: pointer;
+  flex: 1;
+}
+
+.keep-btn:hover {
+  background: #3D3D3D;
+}
+
+.delete-btn-modal {
+  display: flex;
+  height: 42px;
+  padding: 0px 14px;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  background: linear-gradient(
+    180deg, 
+    rgba(211, 52, 54, 0.20) 0%, 
+    rgba(211, 52, 54, 0.80) 100%
+  ), #F07072;
+  color: #FFFFFF;
+  font-weight: 500;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  flex: 1;
+}
+
+.delete-btn-modal:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 /* Стили для магазина */
