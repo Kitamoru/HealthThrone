@@ -273,7 +273,6 @@ export default function Friends() {
                 </button>
               </div>
               <div className="custom-modal-body">
-                <p style={{ textAlign: 'left' }}>Призови союзника</p>
                 <div className="referral-link-container">
                   <input 
                     type="text" 
@@ -318,8 +317,7 @@ export default function Friends() {
               </div>
               <div className="custom-modal-body">
                 <p style={{ textAlign: 'left' }}>
-                  Ты уверен, что хочешь изгнать этого союзника? 
-                  Он перестанет быть частью твоей команды.
+                  Вы уверены, что хотите изгнать союзника?/nОн перестанет быть частью вашей команды.
                 </p>
                 <div className="confirmation-buttons">
                   <button 
