@@ -8,24 +8,14 @@ interface CharacterSpriteProps {
 const fogVariants: Variants = {
   hidden: { opacity: 0 },
   visible: (i: number) => ({
-    opacity: [0.2, 0.4, 0.2],
-    scale: [1, 1.1, 1],
+    opacity: [0.2, 0.6, 0.2],  // Плавная пульсация прозрачности
+    scale: [1, 1.15, 1],       // Легкое увеличение/уменьшение
     transition: {
-      duration: 3 + i,
-      repeat: Infinity,
-      delay: i * 0.8,
-      ease: "easeInOut"
+      duration: 3.5 + i * 0.5, // Разная длительность для слоев
+      repeat: Infinity,         // Бесконечное повторение
+      ease: "easeInOut"         // Плавное ускорение/замедление
     }
-  }),
-  // Изменено название с 'tap' на 'tapped'
-  tapped: {
-    opacity: [0.3, 0.6, 0.3],
-    scale: [1.05, 1.15, 1.05],
-    transition: {
-      duration: 0.8,
-      ease: "easeOut"
-    }
-  }
+  })
 };
 
 const CharacterSprite = React.memo(({ 
@@ -33,14 +23,13 @@ const CharacterSprite = React.memo(({
 }: CharacterSpriteProps) => {
   const [displaySprite, setDisplaySprite] = useState(spriteUrl);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [isTapped, setIsTapped] = useState(false); // Новое состояние для отслеживания нажатия
   const firstRender = useRef(true);
   const prevSpriteRef = useRef(spriteUrl);
   
   const fogLayers = [
-    { size: 1.0, color: "rgba(15, 238, 158, 0.15)", delay: 0 },
-    { size: 1.2, color: "rgba(15, 238, 158, 0.1)", delay: 1 },
-    { size: 0.8, color: "rgba(15, 238, 158, 0.2)", delay: 2 }
+    { color: "rgba(15, 238, 158, 0.15)" },
+    { color: "rgba(15, 238, 158, 0.1)" },
+    { color: "rgba(15, 238, 158, 0.2)" }
   ];
 
   useEffect(() => {
@@ -74,18 +63,16 @@ const CharacterSprite = React.memo(({
 
   return (
     <div className="sprite-container">
-      <motion.div 
+      <div 
         className="sprite-background"
-        whileTap={{ scale: 0.98 }}
-        // Обработчики для управления состоянием нажатия
-        onTapStart={() => setIsTapped(true)}
-        onTap={() => setIsTapped(false)}
-        onTapCancel={() => setIsTapped(false)}
         style={{
           position: 'relative',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          width: '100%',
+          height: '100%'
         }}
       >
+        {/* Темный фон круга */}
         <div 
           className="circle-background"
           style={{
@@ -100,14 +87,14 @@ const CharacterSprite = React.memo(({
           }}
         />
         
+        {/* Слои тумана с плавной пульсацией */}
         {fogLayers.map((layer, i) => (
           <motion.div
             key={`fog-${i}`}
             className="fog-layer"
             custom={i}
             initial="hidden"
-            // Управление анимацией через состояние
-            animate={isTapped ? "tapped" : "visible"}
+            animate="visible"
             variants={fogVariants}
             style={{
               position: 'absolute',
@@ -122,6 +109,7 @@ const CharacterSprite = React.memo(({
           />
         ))}
 
+        {/* Спрайт персонажа */}
         <img 
           src={displaySprite} 
           alt="Character" 
@@ -131,14 +119,13 @@ const CharacterSprite = React.memo(({
             zIndex: 3,
             maxWidth: '90%',
             maxHeight: '90%',
-            // Разрешаем событиям мыши проходить сквозь спрайт
             pointerEvents: 'none'
           }}
           onError={(e) => {
             e.currentTarget.src = '/sprite.gif';
           }}
         />
-      </motion.div>
+      </div>
     </div>
   );
 });
