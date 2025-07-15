@@ -236,7 +236,7 @@ export default function Friends() {
                           }}
                           disabled={deletingFriends.includes(friend.id)}
                         >
-                          Изгнать
+                          Изгнать союзника
                         </button>
                       </div>
                     </div>
@@ -305,7 +305,7 @@ export default function Friends() {
           <div className="modal-overlay">
             <div className="modal-card">
               <div className="custom-modal-header">
-                <h3>Изгнать союзника?</h3>
+                <h3>Активировать свиток изгнания</h3>
                 <button 
                   className="close-btn" 
                   onClick={() => {
@@ -317,7 +317,7 @@ export default function Friends() {
                 </button>
               </div>
               <div className="custom-modal-body">
-                <p style={{ textAlign: 'center' }}>
+                <p style={{ textAlign: 'left' }}>
                   Ты уверен, что хочешь изгнать этого союзника? 
                   Он перестанет быть частью твоей команды.
                 </p>
