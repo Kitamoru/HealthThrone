@@ -5,14 +5,16 @@ interface CharacterSpriteProps {
   spriteUrl?: string;
 }
 
+// Обновленная анимация тумана
 const fogVariants: Variants = {
   hidden: { opacity: 0 },
   visible: (i: number) => ({
-    opacity: [0.2, 0.6, 0.2],
-    scale: [1, 1.15, 1],
+    opacity: [0.2, 0.6, 0.2], // Плавный переход между состояниями
+    scale: [1, 1.1, 1],
     transition: {
-      duration: 3.5 + i * 0.5,
+      duration: 4 + i, // Увеличим длительность для плавности
       repeat: Infinity,
+      delay: i * 0.8,
       ease: "easeInOut"
     }
   })
@@ -26,10 +28,11 @@ const CharacterSprite = React.memo(({
   const firstRender = useRef(true);
   const prevSpriteRef = useRef(spriteUrl);
   
+  // Обновленные параметры тумана с более плавными цветами
   const fogLayers = [
-    { color: "rgba(15, 238, 158, 0.15)" },
-    { color: "rgba(15, 238, 158, 0.1)" },
-    { color: "rgba(15, 238, 158, 0.2)" }
+    { size: 1.0, color: "rgba(15, 238, 158, 0.2)", delay: 0 },
+    { size: 1.2, color: "rgba(15, 238, 158, 0.15)", delay: 1 },
+    { size: 0.8, color: "rgba(15, 238, 158, 0.25)", delay: 2 }
   ];
 
   useEffect(() => {
@@ -62,64 +65,67 @@ const CharacterSprite = React.memo(({
   }, [spriteUrl, isAnimating]);
 
   return (
-    <div className="sprite-container" style={{
-      width: '251px',
-      height: '251px',
-      position: 'relative',
-      borderRadius: '50%',
-      overflow: 'hidden'
-    }}>
-      {/* Темный фон круга */}
-      <div 
+    <div className="sprite-container">
+      <motion.div 
+        className="sprite-background"
         style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          background: '#161616',
-          zIndex: 1
+          position: 'relative',
+          overflow: 'hidden'
         }}
-      />
-      
-      {/* Слои тумана с плавной пульсацией */}
-      {fogLayers.map((layer, i) => (
-        <motion.div
-          key={`fog-${i}`}
-          custom={i}
-          initial="hidden"
-          animate="visible"
-          variants={fogVariants}
+      >
+        {/* Темный фон круга */}
+        <div 
+          className="circle-background"
           style={{
             position: 'absolute',
             top: 0,
             left: 0,
             width: '100%',
             height: '100%',
-            background: `radial-gradient(circle at center, ${layer.color} 0%, transparent 70%)`,
-            zIndex: 2,
+            borderRadius: '999px',
+            background: '#161616',
+            zIndex: 1
           }}
         />
-      ))}
+        
+        {/* Слои тумана */}
+        {fogLayers.map((layer, i) => (
+          <motion.div
+            key={`fog-${i}`}
+            className="fog-layer"
+            custom={i}
+            initial="hidden"
+            animate="visible"
+            variants={fogVariants}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              borderRadius: '999px',
+              background: `radial-gradient(circle at center, ${layer.color} 0%, transparent 70%)`,
+              zIndex: 2,
+            }}
+          />
+        ))}
 
-      {/* Спрайт персонажа */}
-      <img 
-        src={displaySprite} 
-        alt="Character" 
-        style={{ 
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          zIndex: 3,
-          maxWidth: '90%',
-          maxHeight: '90%',
-          pointerEvents: 'none'
-        }}
-        onError={(e) => {
-          e.currentTarget.src = '/sprite.gif';
-        }}
-      />
+        {/* Спрайт персонажа */}
+        <img 
+          src={displaySprite} 
+          alt="Character" 
+          className={`sprite ${isAnimating ? 'sprite-fade-in' : ''}`}
+          style={{ 
+            position: 'relative', 
+            zIndex: 3,
+            maxWidth: '90%',
+            maxHeight: '90%'
+          }}
+          onError={(e) => {
+            e.currentTarget.src = '/sprite.gif';
+          }}
+        />
+      </motion.div>
     </div>
   );
 });
