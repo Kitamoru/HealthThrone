@@ -63,74 +63,63 @@ const CharacterSprite = React.memo(({
 
   return (
     <div className="sprite-container" style={{
-      width: '100%',
-      height: '100%',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center'
+      width: '251px',
+      height: '251px',
+      position: 'relative',
+      borderRadius: '50%',
+      overflow: 'hidden'
     }}>
-      <div style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        maxWidth: '100%',
-        maxHeight: '100%',
-        aspectRatio: '1/1', // Гарантируем квадратную форму
-        borderRadius: '50%', // Делаем круг
-        overflow: 'hidden'
-      }}>
-        {/* Темный фон круга */}
-        <div 
+      {/* Темный фон круга */}
+      <div 
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: '#161616',
+          zIndex: 1
+        }}
+      />
+      
+      {/* Слои тумана с плавной пульсацией */}
+      {fogLayers.map((layer, i) => (
+        <motion.div
+          key={`fog-${i}`}
+          custom={i}
+          initial="hidden"
+          animate="visible"
+          variants={fogVariants}
           style={{
             position: 'absolute',
             top: 0,
             left: 0,
             width: '100%',
             height: '100%',
-            background: '#161616',
-            zIndex: 1
+            background: `radial-gradient(circle at center, ${layer.color} 0%, transparent 70%)`,
+            zIndex: 2,
           }}
         />
-        
-        {/* Слои тумана с плавной пульсацией */}
-        {fogLayers.map((layer, i) => (
-          <motion.div
-            key={`fog-${i}`}
-            custom={i}
-            initial="hidden"
-            animate="visible"
-            variants={fogVariants}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              background: `radial-gradient(circle at center, ${layer.color} 0%, transparent 70%)`,
-              zIndex: 2,
-            }}
-          />
-        ))}
+      ))}
 
-        {/* Спрайт персонажа */}
-        <img 
-          src={displaySprite} 
-          alt="Character" 
-          style={{ 
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 3,
-            maxWidth: '90%',
-            maxHeight: '90%',
-            pointerEvents: 'none'
-          }}
-          onError={(e) => {
-            e.currentTarget.src = '/sprite.gif';
-          }}
-        />
-      </div>
+      {/* Спрайт персонажа */}
+      <img 
+        src={displaySprite} 
+        alt="Character" 
+        style={{ 
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 3,
+          maxWidth: '90%',
+          maxHeight: '90%',
+          pointerEvents: 'none'
+        }}
+        onError={(e) => {
+          e.currentTarget.src = '/sprite.gif';
+        }}
+      />
     </div>
   );
 });
