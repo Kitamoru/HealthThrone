@@ -8,12 +8,12 @@ interface CharacterSpriteProps {
 const fogVariants: Variants = {
   hidden: { opacity: 0 },
   visible: (i: number) => ({
-    opacity: [0.2, 0.6, 0.2],  // Плавная пульсация прозрачности
-    scale: [1, 1.15, 1],       // Легкое увеличение/уменьшение
+    opacity: [0.2, 0.6, 0.2],
+    scale: [1, 1.15, 1],
     transition: {
-      duration: 3.5 + i * 0.5, // Разная длительность для слоев
-      repeat: Infinity,         // Бесконечное повторение
-      ease: "easeInOut"         // Плавное ускорение/замедление
+      duration: 3.5 + i * 0.5,
+      repeat: Infinity,
+      ease: "easeInOut"
     }
   })
 };
@@ -62,26 +62,31 @@ const CharacterSprite = React.memo(({
   }, [spriteUrl, isAnimating]);
 
   return (
-    <div className="sprite-container">
-      <div 
-        className="sprite-background"
-        style={{
-          position: 'relative',
-          overflow: 'hidden',
-          width: '100%',
-          height: '100%'
-        }}
-      >
+    <div className="sprite-container" style={{
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center'
+    }}>
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        maxWidth: '100%',
+        maxHeight: '100%',
+        aspectRatio: '1/1', // Гарантируем квадратную форму
+        borderRadius: '50%', // Делаем круг
+        overflow: 'hidden'
+      }}>
         {/* Темный фон круга */}
         <div 
-          className="circle-background"
           style={{
             position: 'absolute',
             top: 0,
             left: 0,
             width: '100%',
             height: '100%',
-            borderRadius: '999px',
             background: '#161616',
             zIndex: 1
           }}
@@ -91,7 +96,6 @@ const CharacterSprite = React.memo(({
         {fogLayers.map((layer, i) => (
           <motion.div
             key={`fog-${i}`}
-            className="fog-layer"
             custom={i}
             initial="hidden"
             animate="visible"
@@ -102,7 +106,6 @@ const CharacterSprite = React.memo(({
               left: 0,
               width: '100%',
               height: '100%',
-              borderRadius: '999px',
               background: `radial-gradient(circle at center, ${layer.color} 0%, transparent 70%)`,
               zIndex: 2,
             }}
@@ -113,9 +116,11 @@ const CharacterSprite = React.memo(({
         <img 
           src={displaySprite} 
           alt="Character" 
-          className={`sprite ${isAnimating ? 'sprite-fade-in' : ''}`}
           style={{ 
-            position: 'relative', 
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
             zIndex: 3,
             maxWidth: '90%',
             maxHeight: '90%',
