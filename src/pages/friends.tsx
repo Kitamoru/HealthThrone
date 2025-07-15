@@ -9,7 +9,7 @@ import BottomMenu from '../components/BottomMenu';
 import { motion, AnimatePresence } from 'framer-motion';
 import OctagramStatic from '../components/OctagramStatic'; 
 import { useOctalysisFactors } from '../lib/api';
-import { getClassDescription } from '../lib/characterHelper'; // Добавленный импорт
+import { getClassDescription } from '../lib/characterHelper';
 
 interface Friend {
   id: number;
@@ -24,14 +24,15 @@ export default function Friends() {
   const router = useRouter();
   const { user, initData, webApp } = useTelegram();
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [deletingFriends, setDeletingFriends] = useState<number[]>([]);
   const [expandedFriendId, setExpandedFriendId] = useState<number | null>(null);
+  const [friendToDelete, setFriendToDelete] = useState<number | null>(null);
   const contentRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const queryClient = useQueryClient();
   const userId = user?.id;
 
-  // Обработчик клика по классу друга
   const handleFriendClassClick = (characterClass: string | null) => {
     const className = characterClass || 'Странник';
     const description = getClassDescription(className);
@@ -91,6 +92,8 @@ export default function Friends() {
     deleteFriendMutation.mutate(friendId, {
       onSettled: () => {
         setDeletingFriends(prev => prev.filter(id => id !== friendId));
+        setShowDeleteModal(false);
+        setFriendToDelete(null);
       }
     });
   };
@@ -120,7 +123,6 @@ export default function Friends() {
     setExpandedFriendId(prev => prev === friendId ? null : friendId);
   };
 
-  // Компонент для отображения октаграммы друга
   const FriendOctagram = ({ friendId }: { friendId: number }) => {
     const { data: factors, isLoading, isError } = useOctalysisFactors(friendId, initData);
     
@@ -144,9 +146,10 @@ export default function Friends() {
   return (
     <div className="container"> 
       <div className="scrollable-content">
-         <div className="friends-header">
-        <h2>Мои союзники</h2>
-      </div>
+        <div className="friends-header">
+          <h2>Мои союзники</h2>
+        </div>
+        
         {isError && (
           <div className="error">
             {queryError?.message || 'Ошибка загрузки друзей'}
@@ -208,7 +211,6 @@ export default function Friends() {
                         }}
                         className="expandable-content-inner"
                       >
-                        {/* Измененный блок с классом персонажа - добавлен обработчик */}
                         <div 
                           className="friend-class-container"
                           onClick={(e) => {
@@ -228,12 +230,13 @@ export default function Friends() {
                         
                         <button 
                           className="delete-btn"
-                          onClick={() => handleDelete(friend.id)}
+                          onClick={() => {
+                            setFriendToDelete(friend.id);
+                            setShowDeleteModal(true);
+                          }}
                           disabled={deletingFriends.includes(friend.id)}
                         >
-                          {deletingFriends.includes(friend.id) 
-                            ? 'Изгнание...' 
-                            : 'Изгнать'}
+                          Изгнать
                         </button>
                       </div>
                     </div>
@@ -256,6 +259,7 @@ export default function Friends() {
           </div>
         </div>
 
+        {/* Модальное окно для добавления друга */}
         {showModal && (
           <div className="modal-overlay">
             <div className="modal-card">
@@ -291,6 +295,52 @@ export default function Friends() {
                 >
                   Призвать
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Универсальное модальное окно для подтверждения действий */}
+        {showDeleteModal && (
+          <div className="modal-overlay">
+            <div className="modal-card">
+              <div className="custom-modal-header">
+                <h3>Изгнать союзника?</h3>
+                <button 
+                  className="close-btn" 
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setFriendToDelete(null);
+                  }}
+                >
+                  &times;
+                </button>
+              </div>
+              <div className="custom-modal-body">
+                <p style={{ textAlign: 'center' }}>
+                  Ты уверен, что хочешь изгнать этого союзника? 
+                  Он перестанет быть частью твоей команды.
+                </p>
+                <div className="confirmation-buttons">
+                  <button 
+                    className="keep-btn"
+                    onClick={() => {
+                      setShowDeleteModal(false);
+                      setFriendToDelete(null);
+                    }}
+                  >
+                    Оставить
+                  </button>
+                  <button 
+                    className="delete-btn-modal"
+                    onClick={() => friendToDelete && handleDelete(friendToDelete)}
+                    disabled={friendToDelete !== null && deletingFriends.includes(friendToDelete)}
+                  >
+                    {friendToDelete && deletingFriends.includes(friendToDelete) 
+                      ? 'Изгнание...' 
+                      : 'Изгнать'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
