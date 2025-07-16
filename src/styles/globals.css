@@ -1268,6 +1268,7 @@ outline: none; /* Убираем контур при фокусе */
 
 .section-title {
   display: flex;
+  gap: 8px;
   align-items: center;
   align-self: stretch;
   color: #FFF;
