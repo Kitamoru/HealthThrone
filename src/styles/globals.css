@@ -1260,7 +1260,7 @@ outline: none; /* Убираем контур при фокусе */
   padding: 16px;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
+  gap: 16px;
   align-self: stretch;
   border-radius: 16px;
   background: #161616;
@@ -1269,7 +1269,6 @@ outline: none; /* Убираем контур при фокусе */
 .section-title {
   display: flex;
   align-items: center;
-  gap: 8px;
   align-self: stretch;
   color: #FFF;
   font-size: 19px;
