@@ -538,6 +538,7 @@ outline: none; /* Убираем контур при фокусе */
   width: 100%;
   overflow-y: auto;
   padding-bottom: 120px;
+  scrollbar-width: none;
 }
 
 .friends-list {
