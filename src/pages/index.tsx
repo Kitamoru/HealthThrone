@@ -401,6 +401,11 @@ const Home = () => {
                     </div>
                   </div>
              ) : surveyCompleted ? (
+                 <div className="time-message">
+                    <div className="info-message">
+                      Испытание завершено! Ваш уровень здоровья: {burnoutLevel}%
+                    </div>
+                  </div>
                 ) : (
                   <div className="flex justify-center w-full">
                     <motion.button
