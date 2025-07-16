@@ -1279,6 +1279,24 @@ outline: none; /* Убираем контур при фокусе */
   letter-spacing: -0.23px;
 }
 
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+/* Исправление вертикального выравнивания для SVG */
+.icon-wrapper svg {
+  vertical-align: middle;
+}
+
+/* Гарантируем одинаковую высоту строки */
+.section-title > span:last-child {
+  line-height: 24px;
+}
+
 .reference-card {
   align-self: stretch;
   color: #FFF;
