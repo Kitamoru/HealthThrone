@@ -400,6 +400,7 @@ const Home = () => {
                       Герой, сегодня ты прошел испытание. Возвращайся завтра.
                     </div>
                   </div>
+             ) : surveyCompleted ? (
                 ) : (
                   <div className="flex justify-center w-full">
                     <motion.button
