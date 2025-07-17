@@ -1585,11 +1585,12 @@ outline: none; /* Убираем контур при фокусе */
   margin-top: 20px;
   padding-bottom: 30px;
   margin-bottom: 100px;
+  align-items: center;
+  justify-content: center;
 }
 
 .answer-button {
   width: 100%;
-  height: 80px; 
   padding: 8px;
   background: var(--tg-secondary);
   border-radius: 12px;
