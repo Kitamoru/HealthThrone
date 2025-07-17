@@ -1582,20 +1582,13 @@ outline: none; /* Убираем контур при фокусе */
 }
 
 .answers-container {
-  position: absolute;
-  bottom: 20px;
-  left: 0;
-  right: 0;
-  padding: 0 16px;
-  height: calc(60vh - 100px); /* Оставшееся пространство */
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
+  margin-top: auto;
+  padding-bottom: 30px;
+  margin-bottom: 150px;
 }
 
 .answer-button {
   width: 100%;
-  min-height: 40px; /* Фиксированная минимальная высота */
   padding: 16px;
   background: var(--tg-secondary);
   border-radius: 12px;
@@ -1603,10 +1596,7 @@ outline: none; /* Убираем контур при фокусе */
   font-size: 1rem;
   text-align: left;
   margin-bottom: 12px;
-  display: flex;
-  align-items: center;
   transition: all 0.2s ease;
-  box-sizing: border-box;
 }
 
 /* Стили для шага результата */
