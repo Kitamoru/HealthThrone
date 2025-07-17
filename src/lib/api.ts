@@ -8,39 +8,74 @@ interface SubmitSurveyRequest {
   initData?: string;
 }
 
-export const useUserData = (telegramId: number, initData?: string) => {
+// Унифицированная фабрика для создания query хуков
+const createQuery = <T,>(
+  key: any[],
+  queryFn: () => Promise<ApiResponse<T>>,
+  options = {}
+) => {
   return useQuery({
-    queryKey: ['user', telegramId],
-    queryFn: () => api.getUserData(telegramId, initData),
-    enabled: !!telegramId,
-    staleTime: 5 * 60 * 1000,
+    queryKey: key,
+    queryFn,
+    ...options
   });
 };
 
-export const useFriendsData = (telegramId: string, initData?: string) => {
-  return useQuery({
-    queryKey: ['friends', telegramId],
-    queryFn: () => api.getFriends(telegramId, initData),
-    enabled: !!telegramId,
-    staleTime: 5 * 60 * 1000,
-  });
+export const useUserData = (telegramId: number, initData?: string) => {
+  return createQuery<UserProfile>(
+    ['user', telegramId],
+    () => api.getUserData(telegramId, initData),
+    {
+      enabled: !!telegramId,
+      staleTime: 5 * 60 * 1000,
+      retry: 2,
+      retryDelay: 1000
+    }
+  );
+};
+
+export const useFriendsData = (telegramId: number, initData?: string) => {
+  return createQuery<Friend[]>(
+    ['friends', telegramId],
+    () => api.getFriends(telegramId.toString(), initData),
+    {
+      enabled: !!telegramId,
+      staleTime: 5 * 60 * 1000,
+      select: (data) => {
+        if (!data.success) return [];
+        return data.data?.map(f => ({
+          id: f.id,
+          friend_id: f.friend.id,
+          friend_username: f.friend.username || 
+                         `${f.friend.first_name} ${f.friend.last_name || ''}`.trim(),
+          burnout_level: f.friend.burnout_level
+        })) || [];
+      }
+    }
+  );
 };
 
 export const useSpritesData = (initData?: string) => {
-  return useQuery({
-    queryKey: ['sprites'],
-    queryFn: () => api.getSprites(initData),
-    staleTime: 10 * 60 * 1000,
-  });
+  return createQuery<Sprite[]>(
+    ['sprites'],
+    () => api.getSprites(initData),
+    {
+      staleTime: 10 * 60 * 1000,
+      retry: 2
+    }
+  );
 };
 
 export const useOwnedSprites = (telegramId: number, initData?: string) => {
-  return useQuery({
-    queryKey: ['ownedSprites', telegramId],
-    queryFn: () => api.getOwnedSprites(telegramId, initData),
-    enabled: !!telegramId,
-    staleTime: 5 * 60 * 1000,
-  });
+  return createQuery<number[]>(
+    ['ownedSprites', telegramId],
+    () => api.getOwnedSprites(telegramId, initData),
+    {
+      enabled: !!telegramId,
+      staleTime: 5 * 60 * 1000,
+      select: (data) => data.success ? data.data || [] : []
+    }
+  );
 };
 
 export const useSubmitSurvey = () => {
@@ -75,14 +110,18 @@ export const useUpdateUserClass = () => {
       telegramId: number;
       characterClass: string;
       initData?: string;
-    }) => api.updateUserClass(params.telegramId, params.characterClass, params.initData),
+    }) => api.updateUserClass(
+      params.telegramId, 
+      params.characterClass, 
+      params.initData
+    ),
   });
 };
 
 export const useOctalysisFactors = (userId?: number, initData?: string) => {
-  return useQuery({
-    queryKey: ['octalysisFactors', userId],
-    queryFn: async () => {
+  return createQuery<number[]>(
+    ['octalysisFactors', userId],
+    async () => {
       if (!userId) return [0,0,0,0,0,0,0,0];
       
       const response = await api.getOctalysisFactors(userId, initData);
@@ -91,9 +130,12 @@ export const useOctalysisFactors = (userId?: number, initData?: string) => {
       }
       return [0,0,0,0,0,0,0,0];
     },
-    enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
-  });
+    {
+      enabled: !!userId,
+      staleTime: 5 * 60 * 1000,
+      retry: 1
+    }
+  );
 };
 
 class Api {
