@@ -21,7 +21,7 @@ const fogVariants: Variants = {
 };
 
 const CharacterSprite = React.memo(({ 
-  spriteUrl = '/sprite.gif'
+  spriteUrl = '/Sprite.png'
 }: CharacterSpriteProps) => {
   const [displaySprite, setDisplaySprite] = useState(spriteUrl);
   const [isAnimating, setIsAnimating] = useState(false);
