@@ -1,5 +1,5 @@
 import { ApiResponse, UserProfile, Sprite, Friend } from './types';
-import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 
 interface SubmitSurveyRequest {
   telegramId: number;
