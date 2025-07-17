@@ -1564,7 +1564,7 @@ outline: none; /* Убираем контур при фокусе */
 }
 
 .test-container {
-  height: 30vh; /* Фиксированная высота 30% экрана */
+  height: 250px; 
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1582,9 +1582,9 @@ outline: none; /* Убираем контур при фокусе */
 }
 
 .answers-container {
-  margin-top: auto;
+  margin-top: 20px;
   padding-bottom: 30px;
-  margin-bottom: 150px;
+  margin-bottom: 100px;
 }
 
 .answer-button {
@@ -1597,6 +1597,7 @@ outline: none; /* Убираем контур при фокусе */
   text-align: left;
   margin-bottom: 12px;
   transition: all 0.2s ease;
+  border: none;
 }
 
 /* Стили для шага результата */
