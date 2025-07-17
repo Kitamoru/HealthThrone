@@ -17,7 +17,6 @@ const prefetchShopData = (initData?: string) => {
   });
 };
 
-// Сохраняем преобразование данных для друзей из второго варианта
 const prefetchFriends = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
     queryKey: ['friends', userId.toString()],
@@ -41,16 +40,15 @@ const prefetchOctalysisFactors = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
     queryKey: ['octalysisFactors', userId],
     queryFn: () => api.getOctalysisFactors(userId, initData),
-    staleTime: 5 * 60 * 1000, // 5 минут кеширования
+    staleTime: 5 * 60 * 1000,
   });
 };
 
-// Добавлена функция префетчинга купленных спрайтов
 const prefetchOwnedSprites = (userId: number, initData: string) => {
   queryClient.prefetchQuery({
     queryKey: ['ownedSprites', userId],
     queryFn: () => api.getOwnedSprites(userId, initData),
-    staleTime: 5 * 60 * 1000, // 5 минут кеширования
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -60,12 +58,10 @@ const Loader = dynamic(
 );
 
 function App({ Component, pageProps }: AppProps) {
-  // Сохраняем получение user из useTelegram (первый вариант)
   const { initData, startParam, webApp, isTelegramReady, user } = useTelegram();
   const [userInitialized, setUserInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Сохраняем проверку user из первого варианта
   useEffect(() => {
     if (!isTelegramReady || !initData || !user) return;
     
@@ -77,9 +73,9 @@ function App({ Component, pageProps }: AppProps) {
           
           prefetchFriends(userId, initData);
           prefetchOctalysisFactors(userId, initData);
-          prefetchOwnedSprites(userId, initData); // Добавлен префетч купленных спрайтов
+          prefetchOwnedSprites(userId, initData);
           
-          queryClient.setQueryData(['userData', userId], userData);
+          queryClient.setQueryData(['user', userId], userData);
         } else {
           setError(response.error || "Ошибка инициализации пользователя");
         }
