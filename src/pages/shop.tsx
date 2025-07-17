@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
@@ -93,7 +93,14 @@ const SpriteCard = React.memo(({
       </div>
     </div>
   </div>
-));
+), 
+(prevProps, nextProps) => 
+  prevProps.sprite.id === nextProps.sprite.id &&
+  prevProps.coins === nextProps.coins &&
+  prevProps.isOwned === nextProps.isOwned &&
+  prevProps.isEquipped === nextProps.isEquipped &&
+  prevProps.isProcessing === nextProps.isProcessing
+);
 
 export default function Shop() {
   const router = useRouter();
@@ -122,35 +129,54 @@ export default function Shop() {
   const equipMutation = useEquipSprite();
   
   const [processing, setProcessing] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState({
+    purchase: '',
+    equip: '',
+    general: ''
+  });
 
+  // Извлекаем данные с дефолтными значениями
   const coins = userResponse?.success ? userResponse.data?.coins || 0 : 0;
   const currentSprite = userResponse?.success 
     ? userResponse.data?.current_sprite_id || null 
     : null;
+  
   const ownedSprites = ownedResponse?.success 
     ? ownedResponse.data || [] 
     : [];
+  
   const sprites = spritesResponse?.success 
     ? spritesResponse.data || [] 
     : [];
 
   const isLoading = userLoading || spritesLoading || ownedLoading;
-  const errorMessage = error || userError?.message || 
-    spritesError?.message || ownedError?.message ||
-    (userResponse && !userResponse.success ? userResponse.error : null) ||
-    (spritesResponse && !spritesResponse.success ? spritesResponse.error : null) ||
-    (ownedResponse && !ownedResponse.success ? ownedResponse.error : null);
+  
+  // Объединяем все возможные ошибки
+  const errorMessage = useMemo(() => {
+    return errors.purchase || errors.equip || errors.general ||
+      userError?.message || spritesError?.message || ownedError?.message ||
+      (userResponse && !userResponse.success ? userResponse.error : null) ||
+      (spritesResponse && !spritesResponse.success ? spritesResponse.error : null) ||
+      (ownedResponse && !ownedResponse.success ? ownedResponse.error : null);
+  }, [
+    errors, 
+    userError, 
+    spritesError, 
+    ownedError, 
+    userResponse, 
+    spritesResponse, 
+    ownedResponse
+  ]);
 
   const handlePurchase = useCallback(async (spriteId: number) => {
     if (!user?.id) {
-      setError('User not defined');
+      setErrors(prev => ({ ...prev, purchase: 'User not defined' }));
       return;
     }
 
     try {
       setProcessing(spriteId);
-      setError(null);
+      setErrors({ purchase: '', equip: '', general: '' });
       
       const purchaseResult = await purchaseMutation.mutateAsync({
         telegramId: Number(user.id),
@@ -159,39 +185,46 @@ export default function Shop() {
       });
       
       if (purchaseResult.success) {
-        // Исправление: добавлена инвалидация ключа 'user'
+        const currentTelegramId = Number(user.id);
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['user', telegramId] }),
-          queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] })
+          queryClient.invalidateQueries({ 
+            queryKey: ['user', currentTelegramId] 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: ['ownedSprites', currentTelegramId] 
+          })
         ]);
       }
-    } catch (err) {
-      const error = err as { message?: string };
-      setError(error.message || 'Purchase failed');
+    } catch (err: any) {
+      setErrors(prev => ({ 
+        ...prev, 
+        purchase: err.message || 'Purchase failed' 
+      }));
     } finally {
       setProcessing(null);
     }
   }, [user, initData, purchaseMutation]);
 
   const handleEquip = useCallback(async (spriteId: number) => {
+    if (!user?.id) {
+      setErrors(prev => ({ ...prev, equip: 'User not defined' }));
+      return;
+    }
+
     const validationError = validateRequiredFields(
       { user, initData },
       ['user', 'initData'],
       'Необходимые данные отсутствуют.'
     );
+    
     if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    if (!user?.id) {
-      setError('Пользователь не определен');
+      setErrors(prev => ({ ...prev, equip: validationError }));
       return;
     }
 
     try {
       setProcessing(spriteId);
-      setError(null);
+      setErrors({ purchase: '', equip: '', general: '' });
       
       const equipResult = await equipMutation.mutateAsync({
         telegramId: Number(user.id),
@@ -200,14 +233,34 @@ export default function Shop() {
       });
       
       if (equipResult.success) {
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
-        ]);
+        const currentTelegramId = Number(user.id);
+        
+        // Точечное обновление вместо полной инвалидации
+        queryClient.setQueryData<typeof userResponse>(
+          ['user', currentTelegramId], 
+          (old) => {
+            if (!old || !old.success || !old.data) return old;
+            
+            return {
+              ...old,
+              data: {
+                ...old.data,
+                current_sprite_id: spriteId
+              }
+            };
+          }
+        );
       } else {
-        setError(equipResult.error || 'Ошибка при применении спрайта.');
+        setErrors(prev => ({ 
+          ...prev, 
+          equip: equipResult.error || 'Ошибка при применении спрайта.' 
+        }));
       }
-    } catch (err) {
-      setError('Проблема с сетью при попытке применить спрайт.');
+    } catch (err: any) {
+      setErrors(prev => ({ 
+        ...prev, 
+        equip: 'Проблема с сетью при попытке применить спрайт.' 
+      }));
     } finally {
       setProcessing(null);
     }
@@ -232,7 +285,11 @@ export default function Shop() {
           </div>
         </div>
 
-        {errorMessage && <div className="error">{errorMessage}</div>}
+        {errorMessage && (
+          <div className="error">
+            {errorMessage}
+          </div>
+        )}
 
         {!user?.id ? (
           <div className="error">
