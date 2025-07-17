@@ -145,9 +145,19 @@ export default function Shop() {
     ? ownedResponse.data || [] 
     : [];
   
-  const sprites = spritesResponse?.success 
-    ? spritesResponse.data || [] 
-    : [];
+  // Сортируем спрайты: сначала по цене (возрастание), затем по имени (алфавит)
+  const sprites = useMemo(() => {
+    if (!spritesResponse?.success) return [];
+
+    return [...(spritesResponse.data || [])].sort((a, b) => {
+      // Сначала сравниваем по цене
+      if (a.price !== b.price) {
+        return a.price - b.price;
+      }
+      // Если цены равны - сортируем по названию
+      return a.name.localeCompare(b.name);
+    });
+  }, [spritesResponse]);
 
   const isLoading = userLoading || spritesLoading || ownedLoading;
   
