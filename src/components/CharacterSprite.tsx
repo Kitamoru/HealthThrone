@@ -122,7 +122,7 @@ const CharacterSprite = React.memo(({
             maxHeight: '90%'
           }}
           onError={(e) => {
-            e.currentTarget.src = '/sprite.gif';
+            e.currentTarget.src = '/IMG_0476.png';
           }}
         />
       </motion.div>
