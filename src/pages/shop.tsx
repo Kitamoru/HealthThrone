@@ -1,5 +1,4 @@
 import React, { useState, useCallback } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
 import { Loader } from '../components/Loader';
@@ -160,8 +159,9 @@ export default function Shop() {
       });
       
       if (purchaseResult.success) {
+        // Исправление: добавлена инвалидация ключа 'user'
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
+          queryClient.invalidateQueries({ queryKey: ['user', telegramId] }),
           queryClient.invalidateQueries({ queryKey: ['ownedSprites', telegramId] })
         ]);
       }
@@ -201,7 +201,6 @@ export default function Shop() {
       
       if (equipResult.success) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['userData', String(user.id)] }),
           queryClient.invalidateQueries({ queryKey: ['user', telegramId] })
         ]);
       } else {
