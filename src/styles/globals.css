@@ -1584,7 +1584,7 @@ outline: none; /* Убираем контур при фокусе */
 .answers-container {
   margin-top: 20px;
   padding-bottom: 30px;
-  margin-bottom: 100px;
+  margin-bottom: 70px;
   align-items: center;
   justify-content: center;
 }
