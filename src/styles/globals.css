@@ -1599,7 +1599,6 @@ outline: none; /* Убираем контур при фокусе */
   text-align: left;
   margin-bottom: 12px;
   transition: all 0.2s ease;
-  border: none;
 }
 
 /* Стили для шага результата */
