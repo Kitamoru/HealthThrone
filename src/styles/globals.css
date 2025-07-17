@@ -1571,6 +1571,7 @@ outline: none; /* Убираем контур при фокусе */
   align-items: center;
   justify-content: center;
   padding: 20px 0;
+  height: 300px;
 }
 
 .test-text {
