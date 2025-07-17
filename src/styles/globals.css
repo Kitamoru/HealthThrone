@@ -1589,7 +1589,8 @@ outline: none; /* Убираем контур при фокусе */
 
 .answer-button {
   width: 100%;
-  padding: 16px;
+  height: 50px; 
+  padding: 8px;
   background: var(--tg-secondary);
   border-radius: 12px;
   color: var(--tg-text);
