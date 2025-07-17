@@ -287,7 +287,7 @@ const Home = () => {
   });
 
   const initialBurnoutLevel = userData?.burnout_level ?? 100;
-  const spriteUrl = userData?.current_sprite_url || '/sprite.gif';
+  const spriteUrl = userData?.current_sprite_url || '/Sprite.png';
   const alreadyAttemptedToday = userData?.last_attempt_date 
     ? isTodayUTC(userData.last_attempt_date) 
     : false;
