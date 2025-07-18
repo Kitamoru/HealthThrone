@@ -15,7 +15,7 @@ export default async function handler(
   }
 
   try {
-    const TARGET_USER_ID = 425693173; // ID целевого пользователя
+    const TARGET_USER_ID = 425693173, 338837354; // ID целевых пользователей
     
     // Получаем только целевого пользователя
     const { data: activeUsers, error } = await supabase
@@ -97,14 +97,27 @@ async function sendTelegramPhoto(
     const blob = new Blob([Buffer.from(imageBase64, 'base64')], { type: 'image/png' });
     formData.append('photo', blob, 'daily-challenge.png');
     
-    // Добавляем кнопку, если нужно
-   if (process.env.WEBAPPURL) {
-     formData.append('reply_markup', JSON.stringify({
-       inline_keyboard: [[{
-       text: '⚔️Принять вызов',
-      web_app: { url: process.env.WEBAPPURL } // 👈 Ключевое изменение здесь
-        }]]
-     }));
+    // Добавляем кнопки
+    if (process.env.WEBAPPURL) {
+      formData.append('reply_markup', JSON.stringify({
+        inline_keyboard: [
+          // Строка 1: Основная кнопка
+          [{
+            text: '⚔️Принять вызов',
+            web_app: { url: process.env.WEBAPPURL }
+          }],
+          // Строка 2: Кнопка "Вести подземелья"
+          [{
+            text: 'Вести подземелья',
+            url: 'https://t.me/+CiYNPjJNjHswZDBi'
+          }],
+          // Строка 3: Кнопка "Таверна"
+          [{
+            text: 'Таверна',
+            url: 'https://t.me/+EG2q5ZUORJY3NjYy'
+          }]
+        ]
+      }));
     }
 
     console.log(`[${telegramId}] Sending photo with caption: ${caption.substring(0, 30)}...`);
@@ -113,7 +126,6 @@ async function sendTelegramPhoto(
       method: 'POST',
       body: formData,
       signal: controller.signal
-      // Заголовки не нужны, FormData установит multipart/form-data автоматически
     });
 
     const responseData = await response.json();
