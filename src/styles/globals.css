@@ -1630,7 +1630,7 @@ outline: none; /* Убираем контур при фокусе */
 .class-title {
   font-size: 1.3rem;
   font-weight: 700;
-  color: var(--tg-accent);
+  color: #0FEE9E;
   text-align: center;
   margin-bottom: 16px;
 }
@@ -1703,14 +1703,14 @@ outline: none; /* Убираем контур при фокусе */
 .survey-progress-track {
   width: 100%;
   height: 6px;
-  background: linear-gradient(270deg, rgba(6, 96, 64, 0.16) 0%, #066040 100%), #0FEE9E; /* Темно-серый для контраста */
+  background: var(--tg-secondary);
   border-radius: 10px;
   overflow: hidden;
 }
 
 .survey-progress-bar {
   height: 100%;
-  background: var(--tg-secondary);
+  background: linear-gradient(270deg, rgba(6, 96, 64, 0.16) 0%, #066040 100%), #0FEE9E;
   transition: width 0.3s ease;
 }
 
