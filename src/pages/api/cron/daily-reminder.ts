@@ -15,7 +15,7 @@ export default async function handler(
   }
 
   try {
-    const TARGET_USER_ID = [425693173, 338837354]; // ID целевого пользователя
+    const TARGET_USER_ID = 425693173; // ID целевого пользователя
     
     // Получаем только целевого пользователя
     const { data: activeUsers, error } = await supabase
