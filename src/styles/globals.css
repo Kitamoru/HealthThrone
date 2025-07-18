@@ -1703,7 +1703,7 @@ outline: none; /* Убираем контур при фокусе */
 .survey-progress-track {
   width: 100%;
   height: 6px;
-  background-color: #222; /* Темно-серый для контраста */
+  background: linear-gradient(270deg, rgba(6, 96, 64, 0.16) 0%, #066040 100%), #0FEE9E; /* Темно-серый для контраста */
   border-radius: 10px;
   overflow: hidden;
 }
