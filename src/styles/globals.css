@@ -1551,7 +1551,7 @@ outline: none; /* Убираем контур при фокусе */
 .progress-bar {
   width: 100%;
   height: 6px;
-  background: var(--tg-secondary);
+  background-color: #0FEE9E;
   border-radius: 3px;
   overflow: hidden;
 }
@@ -1710,7 +1710,7 @@ outline: none; /* Убираем контур при фокусе */
 
 .survey-progress-bar {
   height: 100%;
-  background-color: #3b82f6;
+  background-color: #0FEE9E;
   transition: width 0.3s ease;
 }
 
