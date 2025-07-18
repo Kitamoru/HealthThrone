@@ -111,7 +111,7 @@ async function sendTelegramPhoto(
           }],
           [{
             text: '🍻 Таверна',
-            url: 'https://t.me/+EG2q5ZUORJY3NjYy'
+            url: 'https://t.me/+DFZ5TfMOhfFhMzdi'
           }]
         ]
       }));
