@@ -1551,14 +1551,14 @@ outline: none; /* Убираем контур при фокусе */
 .progress-bar {
   width: 100%;
   height: 6px;
-  background-color: #0FEE9E;
+  background: var(--tg-secondary);
   border-radius: 3px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: var(--tg-accent);
+  background: linear-gradient(270deg, rgba(6, 96, 64, 0.16) 0%, #066040 100%), #0FEE9E;
   border-radius: 3px;
   transition: width 0.3s ease;
 }
@@ -1710,7 +1710,7 @@ outline: none; /* Убираем контур при фокусе */
 
 .survey-progress-bar {
   height: 100%;
-  background-color: #0FEE9E;
+  background: var(--tg-secondary);
   transition: width 0.3s ease;
 }
 
