@@ -15,18 +15,18 @@ export default async function handler(
   }
 
   try {
-    const today = new Date().toISOString().split('T')[0]; // Сегодняшняя дата в формате YYYY-MM-DD
+    const today = new Date().toISOString().split('T')[0];
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
     const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split('T')[0];
     
-    // Получаем всех активных пользователей
+    // Исправленный запрос: включаем NULL и значения не равные сегодня
     const { data: activeUsers, error: userError } = await supabase
       .from('users')
       .select('telegram_id, first_name')
-      .not('last_attempt_date', 'eq', today)
       .not('telegram_id', 'is', null)
-      .gt('last_login_date', sixtyDaysAgoStr);
+      .gt('last_login_date', sixtyDaysAgoStr)
+      .or(`last_attempt_date.is.null,last_attempt_date.neq.${today}`);
 
     if (userError) {
       console.error('Supabase query error:', userError);
@@ -61,7 +61,6 @@ export default async function handler(
         results.push({ status: 'error', user, error: error.message });
         console.error(`[${user.telegram_id}] Failed to send:`, error.message);
       }
-      // Добавляем задержку между отправками
       await new Promise(resolve => setTimeout(resolve, 50));
     }
 
