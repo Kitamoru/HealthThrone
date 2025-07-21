@@ -15,39 +15,40 @@ export default async function handler(
   }
 
   try {
-    const TARGET_USER_ID = 425693173; // ID целевого пользователя
+    const today = new Date().toISOString().split('T')[0]; // Сегодняшняя дата в формате YYYY-MM-DD
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split('T')[0];
     
-    // Получаем только целевого пользователя
-    const { data: activeUsers, error } = await supabase
+    // Получаем всех активных пользователей
+    const { data: activeUsers, error: userError } = await supabase
       .from('users')
       .select('telegram_id, first_name')
-      .eq('telegram_id', TARGET_USER_ID)
-      .limit(1);
+      .not('last_attempt_date', 'eq', today)
+      .not('telegram_id', 'is', null)
+      .gt('last_login_date', sixtyDaysAgoStr);
 
-    if (error) {
-      console.error('Supabase query error:', error);
-      throw error;
+    if (userError) {
+      console.error('Supabase query error:', userError);
+      throw userError;
     }
     
-    console.log(`Found ${activeUsers?.length || 0} target users`);
+    console.log(`Found ${activeUsers?.length || 0} users to notify`);
     
     if (!activeUsers?.length) {
-      console.log('Target user not found');
-      return res.status(200).json({ success: true, message: 'Target user not found' });
+      console.log('No users found for notification');
+      return res.status(200).json({ success: true, message: 'No users to notify' });
     }
 
     const botToken = process.env.TOKEN!;
-    
-    // Загружаем изображение из public-директории
     const imagePath = join(process.cwd(), 'public', 'IMG_5389.png');
     const imageBuffer = readFileSync(imagePath);
     const imageBase64 = imageBuffer.toString('base64');
     
-    // Отправляем сообщение с изображением целевому пользователю
     const results = [];
     for (const user of activeUsers) {
       try {
-        console.log(`Sending to target user ${user.telegram_id} (${user.first_name})`);
+        console.log(`Sending to user ${user.telegram_id} (${user.first_name})`);
         const result = await sendTelegramPhoto(
           user.telegram_id, 
           user.first_name, 
@@ -60,11 +61,13 @@ export default async function handler(
         results.push({ status: 'error', user, error: error.message });
         console.error(`[${user.telegram_id}] Failed to send:`, error.message);
       }
+      // Добавляем задержку между отправками
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
 
     return res.status(200).json({
       success: true,
-      message: `Processed target user with photo`,
+      message: `Processed ${activeUsers.length} users with photos`,
       details: results
     });
 
@@ -81,23 +84,20 @@ async function sendTelegramPhoto(
   imageBase64: string
 ) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20000); // Увеличено до 20 секунд для загрузки фото
+  const timeout = setTimeout(() => controller.abort(), 20000);
   const endpoint = `https://api.telegram.org/bot${botToken}/sendPhoto`;
 
   try {
     const caption = `Испытание дня: Опрос Мудреца!\nНаграда: +1 к точности Октаграммы🔮`;
     
-    // Создаем FormData для загрузки изображения
     const formData = new FormData();
     formData.append('chat_id', telegramId.toString());
     formData.append('caption', caption);
     formData.append('parse_mode', 'Markdown');
     
-    // Создаем Blob из base64
     const blob = new Blob([Buffer.from(imageBase64, 'base64')], { type: 'image/png' });
     formData.append('photo', blob, 'daily-challenge.png');
     
-    // Добавляем кнопку, если нужно
     if (process.env.WEBAPPURL) {
       formData.append('reply_markup', JSON.stringify({
         inline_keyboard: [
@@ -117,21 +117,16 @@ async function sendTelegramPhoto(
       }));
     }
 
-    console.log(`[${telegramId}] Sending photo with caption: ${caption.substring(0, 30)}...`);
-
     const response = await fetch(endpoint, {
       method: 'POST',
       body: formData,
       signal: controller.signal
-      // Заголовки не нужны, FormData установит multipart/form-data автоматически
     });
 
     const responseData = await response.json();
-    console.log(`[${telegramId}] Telegram API response:`, JSON.stringify(responseData));
 
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${responseData.description || 'Unknown error'}`;
-      console.error(`[${telegramId}] Telegram API error:`, errorMessage);
       
       if (responseData.description?.includes('bot was blocked')) {
         console.log(`[${telegramId}] User blocked bot, updating database`);
@@ -155,7 +150,6 @@ async function sendTelegramPhoto(
     return responseData;
 
   } catch (error: any) {
-    console.error(`[${telegramId}] Send photo failed:`, error.message);
     throw error;
   } finally {
     clearTimeout(timeout);
