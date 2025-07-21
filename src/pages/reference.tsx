@@ -186,7 +186,7 @@ const ReferencePage = () => {
             <div className="reference-card">
               <p>Система вознаграждений:</p>
               <ul className="feature-list">
-                <li><strong>+100 монет</strong> - за ежедневное прохождение опроса</li>
+                <li><strong>+100 монет</strong> - за ежедневный вход</li>
                 <li><strong>+200 монет</strong> - за каждого приглашенного друга</li>
               </ul>
             </div>
