@@ -41,7 +41,7 @@ export default async function handler(
     }
 
     const botToken = process.env.TOKEN!;
-    const imagePath = join(process.cwd(), 'public', 'IMG_5389.png');
+    const imagePath = join(process.cwd(), 'public', 'IMG_5501.jpeg');
     const imageBuffer = readFileSync(imagePath);
     const imageBase64 = imageBuffer.toString('base64');
     
