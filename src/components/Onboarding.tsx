@@ -2,12 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '../lib/api';
 import { Loader } from './Loader';
 
-// Типы данных
 type Role = 'Разработчик' | 'Инженер по безопасности' | 'Тестер' | 'Аналитик' | 'Дизайнер' | 'Продакт менеджер' | 'Менеджер проектов' | 'Скрам мастер' | 'Тимлид' | 'Техлид' | 'Саппорт' | 'Девопс' | 'Архитектор' | 'Аккаунт менеджер' | 'Менеджер по продажам' | 'C-level' | 'HR';
 type BaseType = 'Достигатор' | 'Исследователь' | 'Социализатор' | 'Убийца';
 type Answer = 'a' | 'b' | 'c' | 'd';
 
-// Данные для теста
 const QUESTIONS = [
   "Что сильнее всего зажигает искру в твоем сердце во время странствий?",
   "Что дает тебе силы двигаться дальше, даже в самом сложном приключении?",
@@ -77,7 +75,6 @@ const OPTIONS = [
   ]
 ];
 
-// Соответствие ответов базовым типам
 const ANSWER_TO_TYPE: Record<Answer, BaseType> = {
   'a': 'Достигатор',
   'b': 'Исследователь',
@@ -85,7 +82,6 @@ const ANSWER_TO_TYPE: Record<Answer, BaseType> = {
   'd': 'Убийца'
 };
 
-// Маппинг: Роль + Базовый тип = Класс персонажа
 const ROLE_TYPE_TO_CLASS: Record<Role, Record<BaseType, string>> = {
   'Разработчик': {
     'Достигатор': 'Мастер алгоритмов',
@@ -191,7 +187,6 @@ const ROLE_TYPE_TO_CLASS: Record<Role, Record<BaseType, string>> = {
   }
 };
 
-// Описания классов для разных ролей
 const CLASS_DESCRIPTIONS: Record<Role, Record<string, string>> = {
   'Разработчик': {
     'Мастер алгоритмов': `Ваш код – неприступная крепость логики. Вы возводите идеальные структуры, превращая сложнейшие задачи в элегантные решения, и гордитесь каждым безупречным коммитом как завоеванной цитаделью. Ваша мотивация – видеть алгоритмы, работающие с безупречной точностью.`,
@@ -297,7 +292,6 @@ const CLASS_DESCRIPTIONS: Record<Role, Record<string, string>> = {
   }
 };
 
-// Добавляем пропсы для компонента Onboarding
 interface OnboardingProps {
   onComplete: () => void;
   userId?: number;
@@ -313,9 +307,9 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
   const [characterClass, setCharacterClass] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [shuffledOptions, setShuffledOptions] = useState<string[][]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Роли для выпадающего списка
   const roles: Role[] = [
     'Разработчик', 'Инженер по безопасности', 'Тестер', 'Аналитик', 
     'Дизайнер', 'Продакт менеджер', 'Менеджер проектов', 'Скрам мастер',
@@ -323,14 +317,30 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
     'Аккаунт менеджер', 'Менеджер по продажам', 'C-level', 'HR'
   ];
 
-  // Обработчик выбора роли
+  // Функция для перемешивания массива
+  const shuffleArray = (array: any[]) => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+  };
+
+  // Инициализация перемешанных вариантов при переходе к тесту
+  useEffect(() => {
+    if (step === 'test') {
+      const shuffled = OPTIONS.map(options => shuffleArray(options));
+      setShuffledOptions(shuffled);
+    }
+  }, [step]);
+
   const handleRoleSelect = (role: Role) => {
     setSelectedRole(role);
     setIsDropdownOpen(false);
     setStep('test');
   };
 
-  // Обработчик ответа на вопрос
   const handleAnswer = (answer: Answer) => {
     const newAnswers = [...answers, answer];
     setAnswers(newAnswers);
@@ -342,7 +352,6 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
     }
   };
 
-  // Расчет базового типа персонажа
   const calculateBaseType = (answers: Answer[]) => {
     const scores = {
       'Достигатор': 0,
@@ -365,7 +374,6 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
     setStep('result');
   };
 
-  // Определение класса персонажа на основе роли и базового типа
   useEffect(() => {
     if (step === 'result' && selectedRole && baseType) {
       const classForRole = ROLE_TYPE_TO_CLASS[selectedRole][baseType];
@@ -373,7 +381,6 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
     }
   }, [step, selectedRole, baseType]);
 
-  // Сохранение результата
   const saveResult = async () => {
     if (!characterClass || !userId || !initData) return;
     
@@ -390,7 +397,6 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
     }
   };
 
-  // Обработчик клика вне выпадающего списка
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -464,15 +470,21 @@ const Onboarding = ({ onComplete, userId, initData }: OnboardingProps) => {
           </div>
           
           <div className="answers-container">
-            {OPTIONS[currentQuestion].map((option, index) => (
-              <button
-                key={index}
-                onClick={() => handleAnswer(String.fromCharCode(97 + index) as Answer)}
-                className="answer-button"
-              >
-                {option}
-              </button>
-            ))}
+            {shuffledOptions.length > 0 && shuffledOptions[currentQuestion].map((option, index) => {
+              // Определяем букву ответа по оригинальному индексу
+              const originalIndex = OPTIONS[currentQuestion].indexOf(option);
+              const answerLetter = String.fromCharCode(97 + originalIndex) as Answer;
+              
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleAnswer(answerLetter)}
+                  className="answer-button"
+                >
+                  {option}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
