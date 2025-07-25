@@ -82,6 +82,7 @@ const Home = () => {
   const queryClient = useQueryClient();
 
   const [questions] = useState<Question[]>(QUESTIONS);
+  const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>(QUESTIONS);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -111,6 +112,12 @@ const Home = () => {
   }, []);
 
   const handleOpenSurveyModal = useCallback(() => {
+    // Генерируем новый порядок вопросов при каждом открытии
+    const firstTwo = QUESTIONS.slice(0, 2); // Фиксируем первые два вопроса
+    const rest = QUESTIONS.slice(2);
+    const shuffledRest = [...rest].sort(() => Math.random() - 0.5);
+    setShuffledQuestions([...firstTwo, ...shuffledRest]);
+
     if (!modalPortalRef.current) {
       const portalContainer = document.createElement('div');
       portalContainer.id = 'modal-portal';
@@ -326,6 +333,7 @@ const Home = () => {
       return sum;
     }, 0);
 
+    // Формируем factors в порядке исходных вопросов (3-10)
     const factors = [3, 4, 5, 6, 7, 8, 9, 10].map(id => {
       const answer = answers[id];
       if (answer === 'yes') return 1;
@@ -453,7 +461,7 @@ const Home = () => {
           isOpen={isSurveyModalOpen}
           onClose={handleCloseModal}
           onComplete={handleSurveyComplete}
-          questions={QUESTIONS}
+          questions={shuffledQuestions}
         />,
         modalPortalRef.current
       )}
