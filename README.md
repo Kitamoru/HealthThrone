@@ -455,7 +455,7 @@ console.log('WebApp state:', window.Telegram?.WebApp);
 - [🌐 Приложение](https://t.me/MoraleonBot)
 - [📖 Документация Telegram Mini Apps](https://core.telegram.org/bots/webapps)
 - [🗃️ Документация Supabase](https://supabase.com/docs)
-- [🎮 Октализис: Геймификация в бизнесе](https://yukaichou.com/octalysis-book/)
+- [🎮 Октализ: Геймификация в бизнесе](https://yukaichou.com/octalysis-book/)
 - [💬 Telegram канал обновлений](https://t.me/+CiYNPjJNjHswZDBi)
 
 ---
