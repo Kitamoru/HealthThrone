@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+const rqUID = crypto.randomUUID(); 
 
 // Типизация для данных Октализа
 export interface OctalysisStats {
