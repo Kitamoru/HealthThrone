@@ -107,29 +107,61 @@ const Home = () => {
   setAiAdvice(null);
 
   try {
-    const response = await fetch('/api', { // Путь верный, если файл src/app/api/route.ts
+    const response = await fetch('/api', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: String(user.id) }), // Убедись, что ID передается в нужном формате
+      body: JSON.stringify({ userId: String(user.id) }),
     });
 
-    // КРИТИЧЕСКИ ВАЖНО: проверка на статус 200-299
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Ошибка сервера:', errorText);
-      throw new Error('Server Side Error');
+    // Читаем ответ как текст
+    const responseText = await response.text();
+    
+    // Пытаемся распарсить JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      data = null;
     }
 
-    const data = await response.json();
-    
-    if (data && data.advice) {
-      setAiAdvice(data.advice);
-    } else {
-      setAiAdvice("Мудрец задумался и промолчал...");
+    if (!response.ok) {
+      // Формируем сообщение об ошибке
+      let errorMessage = `Ошибка ${response.status}`;
+      if (response.status === 400) errorMessage = 'Неверный запрос (400)';
+      else if (response.status === 404) errorMessage = 'Мудрец не найден (404)';
+      else if (response.status === 500) errorMessage = 'Ошибка сервера (500)';
+      else if (response.status === 502) errorMessage = 'Мудрец временно недоступен (502)';
+      
+      // Добавляем текст ошибки из ответа, если есть
+      if (data && data.error) {
+        errorMessage += `: ${data.error}`;
+      } else if (responseText) {
+        // Если не JSON, покажем начало ответа
+        errorMessage += `\nОтвет: ${responseText.substring(0, 200)}`;
+      }
+      
+      setAiAdvice(`❌ ${errorMessage}`);
+      return;
     }
+
+    // Если ответ успешный, но нет advice
+    if (!data || !data.advice) {
+      setAiAdvice("⚠️ Мудрец задумался и промолчал... (пустой ответ)");
+      return;
+    }
+
+    // Успех
+    setAiAdvice(`🔮 ${data.advice}`);
+    
   } catch (error) {
-    console.error("Ошибка запроса:", error);
-    setAiAdvice("Связь с Мудрецом прервалась.");
+    // Ошибка сети
+    let errorText = "Связь с Мудрецом прервалась.";
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      errorText = "🌐 Нет соединения с сервером.";
+    } else if (error instanceof Error) {
+      errorText += ` (${error.message})`;
+    }
+    setAiAdvice(`❌ ${errorText}`);
   } finally {
     setIsAiLoading(false);
   }
