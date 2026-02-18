@@ -17,13 +17,17 @@ export async function POST(req: Request) {
       );
     }
 
+    // Дополнительная проверка, что userId - число
+    if (isNaN(Number(userId))) {
+      return NextResponse.json(
+        { error: 'Некорректный ID пользователя' }, 
+        { status: 400 }
+      );
+    }
+
     // 2. Поиск профиля в БД
-    // Используем BigInt, так как в Prisma telegram_id обычно хранится в этом формате
     const profile = await prisma.users.findUnique({
       where: { telegram_id: BigInt(userId) },
-      if (!userId || isNaN(Number(userId))) {
-  return NextResponse.json({ error: 'Некорректный ID' }, { status: 400 });
-}
       include: { octalysis_factors: true }
     });
 
@@ -59,8 +63,6 @@ export async function POST(req: Request) {
     console.log(`[AI Advice] Отправка факторов в GigaChat для ${userId}...`);
 
     // 4. Запрос к ИИ
-    // Важно: убедись, что в getAiInterpretation стоит правильный таймаут, 
-    // так как GigaChat может отвечать долго.
     const advice = await getAiInterpretation(statsForAi);
 
     if (!advice) {
@@ -76,10 +78,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    // Логируем полную ошибку в консоль сервера
     console.error('[AI Advice CRITICAL ERROR]:', error);
-
-    // Возвращаем понятную ошибку на фронтенд
     return NextResponse.json(
       { 
         error: 'Ошибка сервера при получении совета', 
