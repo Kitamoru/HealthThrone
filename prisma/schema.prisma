@@ -6,3 +6,26 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// Таблица с пользователями (проверь название 'profiles' в Supabase)
+model users {
+  id               Int               @id @default(autoincrement())
+  telegram_id      BigInt            @unique
+  octalysis_factors octalysis_factors? // Связь с факторами
+}
+
+// Таблица с факторами Октализа
+model octalysis_factors {
+  user_id Int      @id
+  factor1 Int      @default(0)
+  factor2 Int      @default(0)
+  factor3 Int      @default(0)
+  factor4 Int      @default(0)
+  factor5 Int      @default(0)
+  factor6 Int      @default(0)
+  factor7 Int      @default(0)
+  factor8 Int      @default(0)
+
+  
+  user    users @relation(fields: [user_id], references: [id])
+}
