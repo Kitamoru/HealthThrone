@@ -22,6 +22,10 @@ interface Question {
   text: string;
   weight: number;
 }
+interface AiAdviceResponse {
+  advice: string;
+  success?: boolean;
+}
 
 const QUESTIONS: Question[] = [
   {
@@ -90,25 +94,43 @@ const Home = () => {
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
   const [octalysisFactors, setOctalysisFactors] = useState<number[] | null>(null);
   const [octagramSize, setOctagramSize] = useState(280);
-  const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   
+  const [aiAdvice, setAiAdvice] = useState<string | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
 // НОВЫЙ ОБРАБОТЧИК КНОПКИ "СОВЕТ МУДРЕЦА"
   const handleGetAiAdvice = useCallback(async () => {
   if (!user?.id) return;
 
+  setIsAiLoading(true);
+  setAiAdvice(null); // Очищаем старый совет перед новым запросом
+
   try {
-    const response = await fetch('/api', {
+    const response = await fetch('/api', { // Убедитесь, что путь в Next.js совпадает
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: user.id }),
     });
 
-    const data = await response.json();
-    setAiAdvice(data.advice);
+    if (!response.ok) {
+      throw new Error(`Ошибка сервера: ${response.status}`);
+    }
+
+    const data: AiAdviceResponse = await response.json();
+    
+    if (data && data.advice) {
+      setAiAdvice(data.advice);
+    } else {
+      setAiAdvice("Мудрец сегодня хранит молчание...");
+    }
   } catch (error) {
-    setAiAdvice("Ошибка связи с Мудрецом."); 
+    console.error("Ошибка при получении совета:", error);
+    setAiAdvice("Связь с Мудрецом прервалась. Попробуйте позже.");
+  } finally {
+    setIsAiLoading(false);
+  }
 }, [user?.id]);
+  
   // Адаптивный размер октаграммы
   useEffect(() => {
     const updateSize = () => {
@@ -465,14 +487,44 @@ const Home = () => {
                 Как работает карта мотивации?
               </button>
           {/* !!! ВОТ ЗДЕСЬ НУЖНО ВСТАВИТЬ КНОПКУ !!! */}
-          <button
-            className="octalysis-ai-button" // Добавьте этот класс в ваш CSS
-            onClick={handleGetAiAdvice}
-            disabled={!user?.id}
-            style={{ marginTop: '10px' }} // Добавляем отступ от верхней кнопки
-          >
-            📜 Совет мудреца
-          </button>
+          <div className="ai-advice-section" style={{ marginTop: '10px', width: '100%' }}>
+  <button
+    className="octalysis-ai-button"
+    onClick={handleGetAiAdvice}
+    disabled={!user?.id || isAiLoading} // Кнопка отключается, пока Мудрец "думает"
+    style={{ width: '100%' }}
+  >
+    {isAiLoading ? "🔮 Мудрец размышляет..." : "📜 Совет мудреца"}
+  </button>
+
+  {/* Отображение самого текста совета */}
+  <AnimatePresence>
+    {aiAdvice && !isAiLoading && (
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        style={{
+          marginTop: '12px',
+          padding: '12px 16px',
+          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          borderRadius: '12px',
+          borderLeft: '3px solid #ffd700', // Золотистая полоска сбоку
+          fontSize: '14px',
+          lineHeight: '1.5',
+          color: '#f0f0f0',
+          fontStyle: 'italic',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+        }}
+      >
+        <span style={{ display: 'block', marginBottom: '4px', fontSize: '12px', opacity: 0.7 }}>
+          Мудрец говорит:
+        </span>
+        «{aiAdvice}»
+      </motion.div>
+    )}
+  </AnimatePresence>
+</div>
             </div>
           </>
         )}
