@@ -11,14 +11,14 @@ export async function POST(req: Request) {
     // Ищем профиль и сразу подтягиваем факторы
     const profile = await prisma.users.findUnique({
       where: { telegram_id: BigInt(userId) },
-      include: { octalysis_factor: true }
+      include: { octalysis_factors: true }
     });
 
-    if (!profile || !profile.octalysis_factor) {
+    if (!profile || !profile.octalysis_factors) {
       return NextResponse.json({ error: 'Данные Октализа не найдены' }, { status: 404 });
     }
 
-    const stats = profile.octalysis_factor;
+    const stats = profile.octalysis_factors;
 
     // Мапим для ИИ (превращаем в числа)
     const statsForAi = {
