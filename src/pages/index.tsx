@@ -106,7 +106,7 @@ const Home = () => {
   setAiAdvice(null); // Очищаем старый совет перед новым запросом
 
   try {
-    const response = await fetch('/api', { // Убедитесь, что путь в Next.js совпадает
+    const response = await fetch('/api/route', { // Убедитесь, что путь в Next.js совпадает
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: user.id }),
