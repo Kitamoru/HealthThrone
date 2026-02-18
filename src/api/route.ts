@@ -21,6 +21,9 @@ export async function POST(req: Request) {
     // Используем BigInt, так как в Prisma telegram_id обычно хранится в этом формате
     const profile = await prisma.users.findUnique({
       where: { telegram_id: BigInt(userId) },
+      if (!userId || isNaN(Number(userId))) {
+  return NextResponse.json({ error: 'Некорректный ID' }, { status: 400 });
+}
       include: { octalysis_factors: true }
     });
 
