@@ -16,6 +16,7 @@ import BottomMenu from '../components/BottomMenu';
 import CharacterSprite from '../components/CharacterSprite';
 import BurnoutBlock from '../components/BurnoutBlock';
 import { getClassDescription } from '../lib/characterHelper';
+import { api } from '../api'; 
 
 interface Question {
   id: number;
@@ -80,7 +81,6 @@ const Home = () => {
   const router = useRouter();
   const { user, initData } = useTelegram();
   const queryClient = useQueryClient();
-
   const [questions] = useState<Question[]>(QUESTIONS);
   const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>(QUESTIONS);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
@@ -91,9 +91,39 @@ const Home = () => {
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
   const [octalysisFactors, setOctalysisFactors] = useState<number[] | null>(null);
   const [octagramSize, setOctagramSize] = useState(280);
+  const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
+// НОВЫЙ ОБРАБОТЧИК КНОПКИ "СОВЕТ МУДРЕЦА"
+  const handleGetAiAdvice = useCallback(async () => {
+    if (!user?.id) return;
+    setAiAdvice("Мудрец обдумывает ответ...");
+    window.Telegram.WebApp.MainButton.showProgress();
 
+    try {
+      // Вызываем наш API роут /api/interpret
+      const response = await fetch('/api/interpret', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      const data = await response.json();
+      if (data.advice) {
+        setAiAdvice(data.advice);
+        // Показываем ответ в модальном окне Telegram для лучшего UX
+        window.Telegram.WebApp.showAlert(data.advice);
+      } else {
+        setAiAdvice(data.error || "Ошибка: нет совета");
+      }
+    } catch (error) {
+      console.error("AI Advice Error:", error);
+      window.Telegram.WebApp.showAlert("Не удалось связаться с Мудрецом. Попробуйте позже.");
+      setAiAdvice("Ошибка связи.");
+    } finally {
+      window.Telegram.WebApp.MainButton.hideProgress();
+    }
+  }, [user?.id]);
   // Адаптивный размер октаграммы
   useEffect(() => {
     const updateSize = () => {
@@ -449,6 +479,15 @@ const Home = () => {
               >
                 Как работает карта мотивации?
               </button>
+          {/* !!! ВОТ ЗДЕСЬ НУЖНО ВСТАВИТЬ КНОПКУ !!! */}
+          <button
+            className="octalysis-ai-button" // Добавьте этот класс в ваш CSS
+            onClick={handleGetAiAdvice}
+            disabled={!user?.id}
+            style={{ marginTop: '10px' }} // Добавляем отступ от верхней кнопки
+          >
+            📜 Совет мудреца
+          </button>
             </div>
           </>
         )}
