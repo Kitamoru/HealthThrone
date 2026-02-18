@@ -97,7 +97,7 @@ const Home = () => {
   const handleGetAiAdvice = useCallback(async () => {
     if (!user?.id) return;
     setAiAdvice("Мудрец обдумывает ответ...");
-    window.Telegram.WebApp.MainButton.showProgress();
+    window.Telegram?.WebApp?.MainButton?.showProgress();
 
     try {
       // Вызываем наш API роут /api/interpret
