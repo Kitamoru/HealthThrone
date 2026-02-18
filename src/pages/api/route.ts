@@ -1,53 +1,37 @@
-import { NextResponse } from 'next/server';
+import { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 import { getAiInterpretation } from '@/lib/gigachat';
 
-export async function POST(req: Request) {
-  try {
-    // 1. Проверка входящих данных
-    const body = await req.json().catch(() => ({}));
-    const { userId } = body;
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Только POST
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-    console.log(`[AI Advice] Запрос для userId: ${userId}`);
+  try {
+    const { userId } = req.body;
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'ID пользователя не предоставлен' }, 
-        { status: 400 }
-      );
+      return res.status(400).json({ error: 'ID пользователя не предоставлен' });
     }
 
-    // Дополнительная проверка, что userId - число
     if (isNaN(Number(userId))) {
-      return NextResponse.json(
-        { error: 'Некорректный ID пользователя' }, 
-        { status: 400 }
-      );
+      return res.status(400).json({ error: 'Некорректный ID пользователя' });
     }
 
-    // 2. Поиск профиля в БД
     const profile = await prisma.users.findUnique({
       where: { telegram_id: BigInt(userId) },
       include: { octalysis_factors: true }
     });
 
     if (!profile) {
-      console.warn(`[AI Advice] Пользователь ${userId} не найден в базе`);
-      return NextResponse.json(
-        { error: 'Профиль героя не найден. Сначала зарегистрируйтесь!' }, 
-        { status: 404 }
-      );
+      return res.status(404).json({ error: 'Профиль героя не найден. Сначала зарегистрируйтесь!' });
     }
 
     if (!profile.octalysis_factors) {
-      console.warn(`[AI Advice] У пользователя ${userId} отсутствуют факторы Октализа`);
-      return NextResponse.json(
-        { error: 'Данные мотивации не найдены. Пройдите ежедневное испытание!' }, 
-        { status: 400 }
-      );
+      return res.status(400).json({ error: 'Данные мотивации не найдены. Пройдите ежедневное испытание!' });
     }
 
-    // 3. Подготовка данных для GigaChat
     const stats = profile.octalysis_factors;
     const statsForAi = {
       factor1: Number(stats.factor1),
@@ -60,31 +44,15 @@ export async function POST(req: Request) {
       factor8: Number(stats.factor8),
     };
 
-    console.log(`[AI Advice] Отправка факторов в GigaChat для ${userId}...`);
-
-    // 4. Запрос к ИИ
     const advice = await getAiInterpretation(statsForAi);
 
     if (!advice) {
       throw new Error('GigaChat вернул пустой ответ');
     }
 
-    console.log(`[AI Advice] Совет успешно сгенерирован для ${userId}`);
-
-    // 5. Успешный ответ
-    return NextResponse.json({ 
-      success: true,
-      advice: advice 
-    });
-
+    return res.status(200).json({ success: true, advice });
   } catch (error: any) {
-    console.error('[AI Advice CRITICAL ERROR]:', error);
-    return NextResponse.json(
-      { 
-        error: 'Ошибка сервера при получении совета', 
-        details: error.message 
-      }, 
-      { status: 500 }
-    );
+    console.error('[API ERROR]', error);
+    return res.status(500).json({ error: 'Ошибка сервера', details: error.message });
   }
 }
