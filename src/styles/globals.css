@@ -1851,4 +1851,27 @@ outline: none; /* Убираем контур при фокусе */
   .survey-card-text {
     font-size: 22px;
   }
+  /* В вашем глобальном CSS файле (например, globals.css или index.css) */
+.octalysis-ai-button {
+  /* Скопируйте стили из .octalysis-info-button или используйте Tailwind */
+  background-color: #4f46e5; /* Пример: Фиолетовый */
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px; /* Отступ */
+  width: 100%; /* Занимает всю ширину контейнера */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s;
+}
+
+.octalysis-ai-button:hover {
+    background-color: #4338ca;
+}
+
+.octalysis-ai-button:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+}
 }
