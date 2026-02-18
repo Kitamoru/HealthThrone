@@ -107,10 +107,7 @@ const Home = () => {
     const data = await response.json();
     setAiAdvice(data.advice);
   } catch (error) {
-    setAiAdvice("Ошибка связи с Мудрецом.");
-  } finally {
-    setIsAiLoading(false);
-  }
+    setAiAdvice("Ошибка связи с Мудрецом."); 
 }, [user?.id]);
   // Адаптивный размер октаграммы
   useEffect(() => {
