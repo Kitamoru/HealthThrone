@@ -97,11 +97,8 @@ const Home = () => {
   const handleGetAiAdvice = useCallback(async () => {
   if (!user?.id) return;
 
-  setIsAiLoading(true);
-  setAiAdvice(null);
-
   try {
-    const response = await fetch('/api/interpret', {
+    const response = await fetch('/api', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: user.id }),
