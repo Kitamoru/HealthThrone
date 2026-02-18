@@ -98,34 +98,38 @@ const Home = () => {
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
-// НОВЫЙ ОБРАБОТЧИК КНОПКИ "СОВЕТ МУДРЕЦА"
+
+  // НОВЫЙ ОБРАБОТЧИК КНОПКИ "СОВЕТ МУДРЕЦА"
   const handleGetAiAdvice = useCallback(async () => {
   if (!user?.id) return;
 
   setIsAiLoading(true);
-  setAiAdvice(null); // Очищаем старый совет перед новым запросом
+  setAiAdvice(null);
 
   try {
-    const response = await fetch('/api/route', { // Убедитесь, что путь в Next.js совпадает
+    const response = await fetch('/api', { // Путь верный, если файл src/app/api/route.ts
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id }),
+      body: JSON.stringify({ userId: String(user.id) }), // Убедись, что ID передается в нужном формате
     });
 
+    // КРИТИЧЕСКИ ВАЖНО: проверка на статус 200-299
     if (!response.ok) {
-      throw new Error(`Ошибка сервера: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Ошибка сервера:', errorText);
+      throw new Error('Server Side Error');
     }
 
-    const data: AiAdviceResponse = await response.json();
+    const data = await response.json();
     
     if (data && data.advice) {
       setAiAdvice(data.advice);
     } else {
-      setAiAdvice("Мудрец сегодня хранит молчание...");
+      setAiAdvice("Мудрец задумался и промолчал...");
     }
   } catch (error) {
-    console.error("Ошибка при получении совета:", error);
-    setAiAdvice("Связь с Мудрецом прервалась. Попробуйте позже.");
+    console.error("Ошибка запроса:", error);
+    setAiAdvice("Связь с Мудрецом прервалась.");
   } finally {
     setIsAiLoading(false);
   }
