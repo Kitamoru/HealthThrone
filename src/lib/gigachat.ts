@@ -31,7 +31,7 @@ async function getAccessToken(): Promise<string> {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Accept': 'application/json',
       'Authorization': `Basic ${AUTH_DATA}`,
-      'RqUID': uuidv4(),
+      'RqUID': crypto.randomUUID(),
     },
     body: new URLSearchParams({ scope: SCOPE }),
   });
