@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     if (!userId) return NextResponse.json({ error: 'No userId' }, { status: 400 });
 
     // Ищем профиль и сразу подтягиваем факторы
-    const profile = await prisma.profiles.findUnique({
+    const profile = await prisma.users.findUnique({
       where: { telegram_id: BigInt(userId) },
       include: { octalysis_factor: true }
     });
