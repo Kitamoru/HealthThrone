@@ -16,7 +16,6 @@ import BottomMenu from '../components/BottomMenu';
 import CharacterSprite from '../components/CharacterSprite';
 import BurnoutBlock from '../components/BurnoutBlock';
 import { getClassDescription } from '../lib/characterHelper';
-import { api } from '../api'; 
 
 interface Question {
   id: number;
@@ -102,7 +101,7 @@ const Home = () => {
 
     try {
       // Вызываем наш API роут /api/interpret
-      const response = await fetch('/api/interpret', {
+      const response = await fetch('/api/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id }),
