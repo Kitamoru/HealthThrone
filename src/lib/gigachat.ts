@@ -25,7 +25,7 @@ async function getAccessToken(): Promise<string> {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
   }
 
-  const response = await fetch('https://ngw.devices.sberbank.ru', {
+  const response = await fetch('https://ngw.devices.sberbank.ru:9443/api/v2/oauth', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -81,7 +81,7 @@ export async function getAiInterpretation(stats: OctalysisStats): Promise<string
 3. Используй игровую терминологию (артефакты, уровни, дебаффы).
 Отвечай на русском языке, будь лаконичен.`;
 
-  const response = await fetch('https://gigachat.devices.sberbank.ru', {
+  const response = await fetch('https://gigachat.devices.sberbank.ru/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
