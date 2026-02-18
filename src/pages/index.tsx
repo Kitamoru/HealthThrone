@@ -107,7 +107,7 @@ const Home = () => {
   setAiAdvice(null);
 
   try {
-    const response = await fetch('/api', {
+    const response = await fetch('/api/route', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: String(user.id) }),
