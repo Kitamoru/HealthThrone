@@ -95,34 +95,26 @@ const Home = () => {
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
 // НОВЫЙ ОБРАБОТЧИК КНОПКИ "СОВЕТ МУДРЕЦА"
   const handleGetAiAdvice = useCallback(async () => {
-    if (!user?.id) return;
-    setAiAdvice("Мудрец обдумывает ответ...");
-    window.Telegram?.WebApp?.MainButton?.showProgress();
+  if (!user?.id) return;
 
-    try {
-      // Вызываем наш API роут /api/interpret
-      const response = await fetch('/api/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
-      });
+  setIsAiLoading(true);
+  setAiAdvice(null);
 
-      const data = await response.json();
-      if (data.advice) {
-        setAiAdvice(data.advice);
-        // Показываем ответ в модальном окне Telegram для лучшего UX
-        window.Telegram.WebApp.showAlert(data.advice);
-      } else {
-        setAiAdvice(data.error || "Ошибка: нет совета");
-      }
-    } catch (error) {
-      console.error("AI Advice Error:", error);
-      window.Telegram.WebApp.showAlert("Не удалось связаться с Мудрецом. Попробуйте позже.");
-      setAiAdvice("Ошибка связи.");
-    } finally {
-      window.Telegram.WebApp.MainButton.hideProgress();
-    }
-  }, [user?.id]);
+  try {
+    const response = await fetch('/api/interpret', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id }),
+    });
+
+    const data = await response.json();
+    setAiAdvice(data.advice);
+  } catch (error) {
+    setAiAdvice("Ошибка связи с Мудрецом.");
+  } finally {
+    setIsAiLoading(false);
+  }
+}, [user?.id]);
   // Адаптивный размер октаграммы
   useEffect(() => {
     const updateSize = () => {
