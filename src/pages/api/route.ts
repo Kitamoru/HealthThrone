@@ -44,7 +44,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       factor8: Number(stats.factor8),
     };
 
-    const advice = await getAiInterpretation(statsForAi);
+    // Получаем класс персонажа (если отсутствует, передаём пустую строку)
+    const characterClass = profile.character_class || '';
+
+    // Вызываем функцию с двумя аргументами
+    const advice = await getAiInterpretation(statsForAi, characterClass);
 
     if (!advice) {
       throw new Error('GigaChat вернул пустой ответ');
