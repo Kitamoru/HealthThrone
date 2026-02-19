@@ -514,7 +514,7 @@ const Home = () => {
               {/* Блок с кнопкой Совета Мудреца (без фона и курсора) */}
               <div className="ai-advice-section" style={{ marginTop: '10px', width: '100%' }}>
                 <button
-                  className="octalysis-ai-button"
+                  className="accept-button"
                   onClick={handleGetAiAdvice}
                   disabled={!user?.id || isAiLoading}
                   style={{ width: '100%' }}
@@ -546,7 +546,7 @@ const Home = () => {
                         remarkPlugins={[remarkGfm]}
                         components={{
                           p: ({ children }) => <p style={{ margin: '0 0 8px 0' }}>{children}</p>,
-                          strong: ({ children }) => <strong style={{ color: '#ffd700' }}>{children}</strong>,
+                          strong: ({ children }) => <strong style={{ color: '#0FEE9E' }}>{children}</strong>,
                         }}
                       >
                         {aiAdvice}
