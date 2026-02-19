@@ -270,8 +270,8 @@ export async function getAiInterpretation(
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Вот мои показатели Октализа:\n${statsSummary}` }
       ],
-      temperature: 0.8,
-      max_tokens: 1000,
+      temperature: 0.7,
+      max_tokens: 600,
     }),
   });
 
