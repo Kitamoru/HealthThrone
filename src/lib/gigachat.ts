@@ -318,13 +318,13 @@ export async function getAiInterpretation(
       'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify({
-      model: 'GigaChat',
+      model: 'GigaChat-2-Pro',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Вот мои показатели Октализа:\n${statsSummary}` }
       ],
       temperature: 0.7,
-      max_tokens: 600,
+      max_tokens: 550,
     }),
   });
 
