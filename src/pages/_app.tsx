@@ -2,7 +2,6 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Script from 'next/script';
 import dynamic from 'next/dynamic';
-import { Press_Start_2P } from 'next/font/google'; // добавлен импорт шрифта
 import { useEffect, useState } from 'react';
 import Router from 'next/router';
 import { useTelegram } from '../hooks/useTelegram';
@@ -10,13 +9,6 @@ import { api } from '../lib/api';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import '../styles/globals.css';
-
-// Настройка пиксельного шрифта для ретро-стиля
-const pressStart2P = Press_Start_2P({
-  weight: '400',
-  subsets: ['latin', 'cyrillic'], // поддержка кириллицы
-  variable: '--font-press-start', // CSS-переменная для использования в стилях
-});
 
 const prefetchShopData = (initData?: string) => {
   queryClient.prefetchQuery({
@@ -110,39 +102,36 @@ function App({ Component, pageProps }: AppProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Добавляем класс с переменной шрифта для всего приложения */}
-      <div className={pressStart2P.variable}>
-        <Head>
-          <title>Burnout Tracker - Отслеживание выгорания</title>
-          <meta name="description" content="Telegram Mini App для отслеживания уровня выгорания" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-          <meta name="theme-color" content="#18222d" />
-        </Head>
+      <Head>
+        <title>Burnout Tracker - Отслеживание выгорания</title>
+        <meta name="description" content="Telegram Mini App для отслеживания уровня выгорания" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta name="theme-color" content="#18222d" />
+      </Head>
 
-        <Script 
-          src="https://telegram.org/js/telegram-web-app.js" 
-          strategy="beforeInteractive" 
-          onLoad={() => {
-            if (window.Telegram?.WebApp) {
-              window.dispatchEvent(new Event('telegram-ready'));
-            }
-          }}
-        />
+      <Script 
+        src="https://telegram.org/js/telegram-web-app.js" 
+        strategy="beforeInteractive" 
+        onLoad={() => {
+          if (window.Telegram?.WebApp) {
+            window.dispatchEvent(new Event('telegram-ready'));
+          }
+        }}
+      />
 
-        {error ? (
-          <div className="error-container">
-            <h2>Ошибка запуска</h2>
-            <p>{error}</p>
-            <p>Пожалуйста, откройте приложение через Telegram</p>
-          </div>
-        ) : userInitialized ? (
-          <div className="page-transition">
-            <Component {...pageProps} />
-          </div>
-        ) : (
-          <Loader />
-        )}
-      </div>
+      {error ? (
+        <div className="error-container">
+          <h2>Ошибка запуска</h2>
+          <p>{error}</p>
+          <p>Пожалуйста, откройте приложение через Telegram</p>
+        </div>
+      ) : userInitialized ? (
+        <div className="page-transition">
+          <Component {...pageProps} />
+        </div>
+      ) : (
+        <Loader />
+      )}
     </QueryClientProvider>
   );
 }
