@@ -540,7 +540,7 @@ const Home = () => {
                       }}
                     >
                       <span style={{ display: 'block', marginBottom: '4px', fontSize: '12px', opacity: 0.7 }}>
-                        Мудрец говорит:
+                        Мудрец отвечает:
                       </span>
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
