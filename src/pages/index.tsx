@@ -101,73 +101,65 @@ const Home = () => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
 
-  // НОВЫЙ ОБРАБОТЧИК КНОПКИ "СОВЕТ МУДРЕЦА"
+  // Обработчик кнопки "Совет мудреца"
   const handleGetAiAdvice = useCallback(async () => {
-  if (!user?.id) return;
+    if (!user?.id) return;
 
-  setIsAiLoading(true);
-  setAiAdvice(null);
+    setIsAiLoading(true);
+    setAiAdvice(null);
 
-  try {
-    const response = await fetch('/api/route', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: String(user.id) }),
-    });
-
-    // Читаем ответ как текст
-    const responseText = await response.text();
-    
-    // Пытаемся распарсить JSON
-    let data;
     try {
-      data = JSON.parse(responseText);
-    } catch {
-      data = null;
-    }
+      const response = await fetch('/api/route', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: String(user.id) }),
+      });
 
-    if (!response.ok) {
-      // Формируем сообщение об ошибке
-      let errorMessage = `Ошибка ${response.status}`;
-      if (response.status === 400) errorMessage = 'Неверный запрос (400)';
-      else if (response.status === 404) errorMessage = 'Мудрец не найден (404)';
-      else if (response.status === 500) errorMessage = 'Ошибка сервера (500)';
-      else if (response.status === 502) errorMessage = 'Мудрец временно недоступен (502)';
+      const responseText = await response.text();
       
-      // Добавляем текст ошибки из ответа, если есть
-      if (data && data.error) {
-        errorMessage += `: ${data.error}`;
-      } else if (responseText) {
-        // Если не JSON, покажем начало ответа
-        errorMessage += `\nОтвет: ${responseText.substring(0, 200)}`;
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        data = null;
       }
+
+      if (!response.ok) {
+        let errorMessage = `Ошибка ${response.status}`;
+        if (response.status === 400) errorMessage = 'Неверный запрос (400)';
+        else if (response.status === 404) errorMessage = 'Мудрец не найден (404)';
+        else if (response.status === 500) errorMessage = 'Ошибка сервера (500)';
+        else if (response.status === 502) errorMessage = 'Мудрец временно недоступен (502)';
+        
+        if (data && data.error) {
+          errorMessage += `: ${data.error}`;
+        } else if (responseText) {
+          errorMessage += `\nОтвет: ${responseText.substring(0, 200)}`;
+        }
+        
+        setAiAdvice(`❌ ${errorMessage}`);
+        return;
+      }
+
+      if (!data || !data.advice) {
+        setAiAdvice("⚠️ Мудрец задумался и промолчал... (пустой ответ)");
+        return;
+      }
+
+      setAiAdvice(data.advice);
       
-      setAiAdvice(`❌ ${errorMessage}`);
-      return;
+    } catch (error) {
+      let errorText = "Связь с Мудрецом прервалась.";
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        errorText = "🌐 Нет соединения с сервером.";
+      } else if (error instanceof Error) {
+        errorText += ` (${error.message})`;
+      }
+      setAiAdvice(`❌ ${errorText}`);
+    } finally {
+      setIsAiLoading(false);
     }
-
-    // Если ответ успешный, но нет advice
-    if (!data || !data.advice) {
-      setAiAdvice("⚠️ Мудрец задумался и промолчал... (пустой ответ)");
-      return;
-    }
-
-    // Успех
-    setAiAdvice(data.advice); // убираем префикс "🔮", он теперь в UI отдельно
-    
-  } catch (error) {
-    // Ошибка сети
-    let errorText = "Связь с Мудрецом прервалась.";
-    if (error instanceof TypeError && error.message === 'Failed to fetch') {
-      errorText = "🌐 Нет соединения с сервером.";
-    } else if (error instanceof Error) {
-      errorText += ` (${error.message})`;
-    }
-    setAiAdvice(`❌ ${errorText}`);
-  } finally {
-    setIsAiLoading(false);
-  }
-}, [user?.id]);
+  }, [user?.id]);
   
   // Адаптивный размер октаграммы
   useEffect(() => {
@@ -187,8 +179,7 @@ const Home = () => {
   }, []);
 
   const handleOpenSurveyModal = useCallback(() => {
-    // Генерируем новый порядок вопросов при каждом открытии
-    const firstTwo = QUESTIONS.slice(0, 2); // Фиксируем первые два вопроса
+    const firstTwo = QUESTIONS.slice(0, 2);
     const rest = QUESTIONS.slice(2);
     const shuffledRest = [...rest].sort(() => Math.random() - 0.5);
     setShuffledQuestions([...firstTwo, ...shuffledRest]);
@@ -269,7 +260,6 @@ const Home = () => {
     refetchOnWindowFocus: true,
   });
 
-  // ОБРАБОТЧИК КЛИКА ПО КЛАССУ ПЕРСОНАЖА (ПЕРЕМЕЩЕН ПОСЛЕ useQuery)
   const handleClassClick = useCallback(() => {
     if (userData?.character_class) {
       const description = getClassDescription(userData.character_class);
@@ -305,7 +295,6 @@ const Home = () => {
     }
   }, [userData?.current_sprite_url]);
 
-  // Загрузка факторов для октаграммы
   useEffect(() => {
     if (userData?.id) {
       const fetchFactors = async () => {
@@ -352,7 +341,6 @@ const Home = () => {
       setSurveyCompleted(true);
       setAnswers({});
       
-      // Обновляем факторы после успешного прохождения опроса
       if (userData?.id) {
         const fetchFactors = async () => {
           const response = await api.getOctalysisFactors(userData.id, initData);
@@ -379,7 +367,6 @@ const Home = () => {
       return userData.burnout_level;
     }
 
-    // Рассчитываем только по вопросам 1 и 2
     const answeredDelta = [1, 2].reduce((sum, id) => {
       const answer = answers[id];
       if (answer === true) return sum + 2;
@@ -408,7 +395,6 @@ const Home = () => {
       return sum;
     }, 0);
 
-    // Формируем factors в порядке исходных вопросов (3-10)
     const factors = [3, 4, 5, 6, 7, 8, 9, 10].map(id => {
       const answer = answers[id];
       if (answer === 'yes') return 1;
@@ -483,8 +469,8 @@ const Home = () => {
                       Герой, сегодня ты прошел испытание. Возвращайся завтра.
                     </div>
                   </div>
-             ) : surveyCompleted ? (
-                 <div className="time-message">
+                ) : surveyCompleted ? (
+                  <div className="time-message">
                     <div className="info-message">
                       Испытание завершено! Ваш уровень здоровья: {burnoutLevel}%
                     </div>
@@ -504,19 +490,19 @@ const Home = () => {
               </div>
             </div>
 
-        <div className="octagram-container">
-          <div className="octagram-wrapper">
-            <AnimatePresence>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-                className="w-full h-full flex justify-center items-center"
-              >
-                <Octagram values={octagramValues} />
-              </motion.div>
-            </AnimatePresence>
-          </div>
+            <div className="octagram-container">
+              <div className="octagram-wrapper">
+                <AnimatePresence>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
+                    className="w-full h-full flex justify-center items-center"
+                  >
+                    <Octagram values={octagramValues} />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
               
               <button 
                 className="octalysis-info-button"
@@ -525,55 +511,42 @@ const Home = () => {
                 Как работает карта мотивации?
               </button>
 
-          {/* Блок с кнопкой Совета Мудреца и выводом Markdown */}
-          <div className="ai-advice-section" style={{ marginTop: '10px', width: '100%' }}>
-            <button
-              className="octalysis-ai-button"
-              onClick={handleGetAiAdvice}
-              disabled={!user?.id || isAiLoading}
-              style={{ width: '100%' }}
-            >
-              {isAiLoading ? "🔮 Мудрец размышляет..." : "📜 Совет мудреца"}
-            </button>
-
-            <AnimatePresence>
-              {aiAdvice && !isAiLoading && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="ai-advice-markdown"
-                  style={{
-                    marginTop: '12px',
-                    padding: '12px 16px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: '12px',
-                    borderLeft: '3px solid #ffd700',
-                    fontSize: '14px',
-                    lineHeight: '1.5',
-                    color: '#f0f0f0',
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
-                  }}
+              {/* Блок с кнопкой Совета Мудреца и ретро-выводом */}
+              <div className="ai-advice-section" style={{ marginTop: '10px', width: '100%' }}>
+                <button
+                  className="octalysis-ai-button"
+                  onClick={handleGetAiAdvice}
+                  disabled={!user?.id || isAiLoading}
+                  style={{ width: '100%' }}
                 >
-                  <span style={{ display: 'block', marginBottom: '4px', fontSize: '12px', opacity: 0.7 }}>
-                    Мудрец говорит:
-                  </span>
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      p: ({ children }) => <p style={{ margin: '0 0 8px 0' }}>{children}</p>,
-                      ul: ({ children }) => <ul style={{ margin: '4px 0 8px 20px', paddingLeft: 0 }}>{children}</ul>,
-                      li: ({ children }) => <li style={{ marginBottom: '4px' }}>{children}</li>,
-                      strong: ({ children }) => <strong style={{ color: '#ffd700' }}>{children}</strong>,
-                      em: ({ children }) => <em style={{ fontStyle: 'italic' }}>{children}</em>,
-                    }}
-                  >
-                    {aiAdvice}
-                  </ReactMarkdown>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                  {isAiLoading ? "🔮 Мудрец размышляет..." : "📜 Совет мудреца"}
+                </button>
+
+                <AnimatePresence>
+                  {aiAdvice && !isAiLoading && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.4 }}
+                      className="retro-advice"
+                    >
+                      <span style={{ display: 'block', marginBottom: '8px', fontSize: '10px', opacity: 0.7 }}>
+                        ⚔️ Мудрец изрёк:
+                      </span>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          p: ({ children }) => <p>{children}</p>,
+                          strong: ({ children }) => <strong>{children}</strong>,
+                        }}
+                      >
+                        {aiAdvice}
+                      </ReactMarkdown>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </>
         )}
