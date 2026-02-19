@@ -7,14 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Таблица с пользователями (проверь название 'profiles' в Supabase)
 model users {
   id               Int               @id @default(autoincrement())
   telegram_id      BigInt            @unique
-  octalysis_factors octalysis_factors? // Связь с факторами
+  character_class  String?           // Класс персонажа (например, "Мастер алгоритмов")
+  octalysis_factors octalysis_factors?
 }
 
-// Таблица с факторами Октализа
 model octalysis_factors {
   user_id Int      @id
   factor1 Int      @default(0)
@@ -26,6 +25,5 @@ model octalysis_factors {
   factor7 Int      @default(0)
   factor8 Int      @default(0)
 
-  
-  user    users @relation(fields: [user_id], references: [id])
+  user    users    @relation(fields: [user_id], references: [id])
 }
