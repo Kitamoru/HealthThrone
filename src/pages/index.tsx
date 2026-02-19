@@ -511,7 +511,7 @@ const Home = () => {
                 Как работает карта мотивации?
               </button>
 
-              {/* Блок с кнопкой Совета Мудреца и анимированным выводом */}
+              {/* Блок с кнопкой Совета Мудреца (без фона и курсора) */}
               <div className="ai-advice-section" style={{ marginTop: '10px', width: '100%' }}>
                 <button
                   className="octalysis-ai-button"
@@ -529,11 +529,9 @@ const Home = () => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                      className="ai-advice-markdown"
                       style={{
                         marginTop: '12px',
                         padding: '12px 16px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
                         borderRadius: '12px',
                         fontSize: '14px',
                         lineHeight: '1.5',
@@ -542,7 +540,7 @@ const Home = () => {
                       }}
                     >
                       <span style={{ display: 'block', marginBottom: '4px', fontSize: '12px', opacity: 0.7 }}>
-                        Мудрец отвечает:
+                        Мудрец говорит:
                       </span>
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
@@ -553,7 +551,6 @@ const Home = () => {
                       >
                         {aiAdvice}
                       </ReactMarkdown>
-                      <span className="cursor" />
                     </motion.div>
                   )}
                 </AnimatePresence>
