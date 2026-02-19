@@ -512,7 +512,7 @@ const Home = () => {
               </button>
 
               {/* Блок с кнопкой Совета Мудреца (без фона и курсора) */}
-              <div className="ai-advice-section" style={{ marginTop: '10px', width: '100%' }}>
+              <div className="ai-advice-section" style={{ width: '100%' }}>
                 <button
                   className="accept-button"
                   onClick={handleGetAiAdvice}
