@@ -40,34 +40,9 @@ async function getAccessToken(): Promise<string> {
 }
 
 /**
- * Основная функция интерпретации данных
- * @param stats - показатели Октализа
- * @param className - название класса персонажа (например, "Мастер алгоритмов")
- * @param archetype - архетип класса ("достигатор", "исследователь", "социализатор", "киллер")
+ * Создаёт системный промпт для ИИ-Мудреца
  */
-export async function getAiInterpretation(
-  stats: OctalysisStats,
-  className: string,
-  archetype: string
-): Promise<string> {
-  const token = await getAccessToken();
-
-  const labels: Record<keyof OctalysisStats, string> = {
-    factor1: "Эпическая значимость",
-    factor2: "Творчество и обратная связь",
-    factor3: "Социальное влияние",
-    factor4: "Непредсказуемость",
-    factor5: "Избегание потерь",
-    factor6: "Дефицит и нетерпение",
-    factor7: "Обладание и владение",
-    factor8: "Достижения"
-  };
-
-  const statsSummary = Object.entries(stats)
-    .map(([key, val]) => `${labels[key as keyof OctalysisStats]}: ${val}/30`)
-    .join('\n');
-
-export function createSystemPrompt(className: string, archetype: string): string {
+function createSystemPrompt(className: string, archetype: string): string {
   return `
 ### 🎭 РОЛЬ ###
 Ты — Великий ИИ-Мудрец игры Moraleon, мудрый наставник и эмпатичный проводник. 
@@ -245,6 +220,37 @@ export function createSystemPrompt(className: string, archetype: string): string
 Пиши на русском языке. Сохраняй дружелюбно-эпичный, тёплый, поддерживающий тон. 
 Игрок должен чувствовать: его увидели, приняли и верят в него.
 `;
+}
+
+/**
+ * Основная функция интерпретации данных
+ * @param stats - показатели Октализа
+ * @param className - название класса персонажа (например, "Мастер алгоритмов")
+ * @param archetype - архетип класса ("достигатор", "исследователь", "социализатор", "киллер")
+ */
+export async function getAiInterpretation(
+  stats: OctalysisStats,
+  className: string,
+  archetype: string
+): Promise<string> {
+  const token = await getAccessToken();
+
+  const labels: Record<keyof OctalysisStats, string> = {
+    factor1: "Эпическая значимость",
+    factor2: "Творчество и обратная связь",
+    factor3: "Социальное влияние",
+    factor4: "Непредсказуемость",
+    factor5: "Избегание потерь",
+    factor6: "Дефицит и нетерпение",
+    factor7: "Обладание и владение",
+    factor8: "Достижения"
+  };
+
+  const statsSummary = Object.entries(stats)
+    .map(([key, val]) => `${labels[key as keyof OctalysisStats]}: ${val}/30`)
+    .join('\n');
+
+  const systemPrompt = createSystemPrompt(className, archetype);
 
   const response = await fetch('https://gigachat.devices.sberbank.ru/api/v1/chat/completions', {
     method: 'POST',
