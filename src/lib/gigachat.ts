@@ -53,14 +53,14 @@ export async function getAiInterpretation(
   const token = await getAccessToken();
 
   const labels: Record<keyof OctalysisStats, string> = {
-    factor1: "Эпическая значимость (Meaning)",
-    factor2: "Творчество и обратная связь (Empowerment)",
-    factor3: "Социальное влияние (Social Influence)",
-    factor4: "Непредсказуемость (Unpredictability)",
-    factor5: "Избегание потерь (Avoidance)",
-    factor6: "Дефицит и нетерпение (Scarcity)",
-    factor7: "Обладание и владение (Ownership)",
-    factor8: "Достижения (Accomplishment)"
+    factor1: "Эпическая значимость",
+    factor2: "Творчество и обратная связь",
+    factor3: "Социальное влияние",
+    factor4: "Непредсказуемость",
+    factor5: "Избегание потерь",
+    factor6: "Дефицит и нетерпение",
+    factor7: "Обладание и владение",
+    factor8: "Достижения"
   };
 
   const statsSummary = Object.entries(stats)
