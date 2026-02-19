@@ -312,11 +312,14 @@ export async function getAiInterpretation(
     factor5: "Тень неудачи",
     factor6: "Пламя срочности",
     factor7: "Власть над судьбой",
-    factor8: "Путь триумфа"
-  };
+    factor8: "Путь триумфа",
+  }; // Добавлена точка с запятой
 
+  // Исправлено: явный блок стрелочной функции для улучшения парсинга
   const statsSummary = Object.entries(stats)
-    .map(([key, val]) => `${labels[key as keyof OctalysisStats]}: ${val}/30`)
+    .map(([key, val]) => {
+      return `${labels[key as keyof OctalysisStats]}: ${val}/30`;
+    })
     .join('\n');
 
   const systemPrompt = createSystemPrompt(className, archetype);
@@ -331,7 +334,7 @@ export async function getAiInterpretation(
       model: 'GigaChat',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Вот мои показатели Октализа:\n${statsSummary}` }
+        { role: 'user', content: `Вот мои показатели Октализа:\n${statsSummary}` },
       ],
       temperature: 0.7,
       max_tokens: 600,
