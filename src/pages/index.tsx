@@ -16,6 +16,8 @@ import BottomMenu from '../components/BottomMenu';
 import CharacterSprite from '../components/CharacterSprite';
 import BurnoutBlock from '../components/BurnoutBlock';
 import { getClassDescription } from '../lib/characterHelper';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Question {
   id: number;
@@ -151,7 +153,7 @@ const Home = () => {
     }
 
     // Успех
-    setAiAdvice(`🔮 ${data.advice}`);
+    setAiAdvice(data.advice); // убираем префикс "🔮", он теперь в UI отдельно
     
   } catch (error) {
     // Ошибка сети
@@ -522,45 +524,56 @@ const Home = () => {
               >
                 Как работает карта мотивации?
               </button>
-          {/* !!! ВОТ ЗДЕСЬ НУЖНО ВСТАВИТЬ КНОПКУ !!! */}
-          <div className="ai-advice-section" style={{ marginTop: '10px', width: '100%' }}>
-  <button
-    className="octalysis-ai-button"
-    onClick={handleGetAiAdvice}
-    disabled={!user?.id || isAiLoading} // Кнопка отключается, пока Мудрец "думает"
-    style={{ width: '100%' }}
-  >
-    {isAiLoading ? "🔮 Мудрец размышляет..." : "📜 Совет мудреца"}
-  </button>
 
-  {/* Отображение самого текста совета */}
-  <AnimatePresence>
-    {aiAdvice && !isAiLoading && (
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0 }}
-        style={{
-          marginTop: '12px',
-          padding: '12px 16px',
-          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          borderRadius: '12px',
-          borderLeft: '3px solid #ffd700', // Золотистая полоска сбоку
-          fontSize: '14px',
-          lineHeight: '1.5',
-          color: '#f0f0f0',
-          fontStyle: 'italic',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
-        }}
-      >
-        <span style={{ display: 'block', marginBottom: '4px', fontSize: '12px', opacity: 0.7 }}>
-          Мудрец говорит:
-        </span>
-        «{aiAdvice}»
-      </motion.div>
-    )}
-  </AnimatePresence>
-</div>
+          {/* Блок с кнопкой Совета Мудреца и выводом Markdown */}
+          <div className="ai-advice-section" style={{ marginTop: '10px', width: '100%' }}>
+            <button
+              className="octalysis-ai-button"
+              onClick={handleGetAiAdvice}
+              disabled={!user?.id || isAiLoading}
+              style={{ width: '100%' }}
+            >
+              {isAiLoading ? "🔮 Мудрец размышляет..." : "📜 Совет мудреца"}
+            </button>
+
+            <AnimatePresence>
+              {aiAdvice && !isAiLoading && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="ai-advice-markdown"
+                  style={{
+                    marginTop: '12px',
+                    padding: '12px 16px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '12px',
+                    borderLeft: '3px solid #ffd700',
+                    fontSize: '14px',
+                    lineHeight: '1.5',
+                    color: '#f0f0f0',
+                    boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+                  }}
+                >
+                  <span style={{ display: 'block', marginBottom: '4px', fontSize: '12px', opacity: 0.7 }}>
+                    Мудрец говорит:
+                  </span>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      p: ({ children }) => <p style={{ margin: '0 0 8px 0' }}>{children}</p>,
+                      ul: ({ children }) => <ul style={{ margin: '4px 0 8px 20px', paddingLeft: 0 }}>{children}</ul>,
+                      li: ({ children }) => <li style={{ marginBottom: '4px' }}>{children}</li>,
+                      strong: ({ children }) => <strong style={{ color: '#ffd700' }}>{children}</strong>,
+                      em: ({ children }) => <em style={{ fontStyle: 'italic' }}>{children}</em>,
+                    }}
+                  >
+                    {aiAdvice}
+                  </ReactMarkdown>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
             </div>
           </>
         )}
