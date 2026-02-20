@@ -377,7 +377,7 @@ export async function getAiInterpretation(
       'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify({
-      model: 'GigaChat-2-Pro',
+      model: 'GigaChat-2-max',
       messages: [
         { role: 'system', content: systemPrompt },
         {
