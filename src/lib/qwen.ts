@@ -320,7 +320,7 @@ export async function getAiInterpretation(
     : '';
 
   const response = await groqClient.chat.completions.create({
-    model: 'qwen/qwen3-32b',
+    model: 'llama-3.3-70b-versatile',
     messages: [
       {
         role: 'system',
@@ -328,11 +328,11 @@ export async function getAiInterpretation(
       },
       {
         role: 'user',
-        content: `/no_think\n\Вот мои показатели Октализа:\n${statsSummary}${previousStatsSummary}${contextSummary}`,
+        content: `Вот мои показатели Октализа:\n${statsSummary}${previousStatsSummary}${contextSummary}`,
       },
     ],
-    temperature: 0.7,  // оптимально для non-thinking mode Qwen3
-    top_p: 0.8,        // рекомендовано для non-thinking mode
+    temperature: 0.8,  // оптимально для non-thinking mode Qwen3
+    top_p: 0.9,        // рекомендовано для non-thinking mode
     max_tokens: 1500,  // достаточно для полного структурированного ответа
   });
 
