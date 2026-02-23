@@ -320,7 +320,7 @@ export async function getAiInterpretation(
     : '';
 
   const response = await groqClient.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
+    model: 'moonshotai/kimi-k2-instruct',
     messages: [
       {
         role: 'system',
