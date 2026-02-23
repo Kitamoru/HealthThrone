@@ -328,7 +328,7 @@ export async function getAiInterpretation(
       },
       {
         role: 'user',
-        content: `Вот мои показатели Октализа:\n${statsSummary}${previousStatsSummary}${contextSummary}`,
+        content: `/no_think\n\Вот мои показатели Октализа:\n${statsSummary}${previousStatsSummary}${contextSummary}`,
       },
     ],
     temperature: 0.7,  // оптимально для non-thinking mode Qwen3
