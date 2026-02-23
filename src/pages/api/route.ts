@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
-import { getAiInterpretation } from '@/lib/qwen';
+import { getAiInterpretation } from '@/lib/groq';
 
 // Маппинг классов на архетипы Бартла
 const CLASS_ARCHETYPES: Record<string, string> = {
