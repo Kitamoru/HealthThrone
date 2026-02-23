@@ -355,7 +355,6 @@ export async function getAiInterpretation(
     ],
     temperature: 0.7,  // оптимально для non-thinking mode Qwen3
     top_p: 0.8,        // рекомендовано для non-thinking mode
-    top_k: 20,         // рекомендовано для non-thinking mode
     max_tokens: 1500,  // достаточно для полного структурированного ответа
   });
 
