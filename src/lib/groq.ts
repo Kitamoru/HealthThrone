@@ -1,7 +1,6 @@
 import Groq from 'groq-sdk';
-import { OctalysisAnalysis } from './octalysis';
 
-interface OctalysisAnalysis {
+export interface OctalysisAnalysis {
   turbulence: boolean;
   hatBalance: string;
   dominantArchetype: string;
