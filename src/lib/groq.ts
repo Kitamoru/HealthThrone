@@ -318,7 +318,7 @@ export async function getAiInterpretation(
     : '';
 
   const response = await groqClient.chat.completions.create({
-    model: 'qwen/qwen3-32b',
+    model: 'mixtral-8x7b-32768',
     messages: [
       {
         role: 'system',
