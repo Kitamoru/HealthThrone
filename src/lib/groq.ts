@@ -358,7 +358,7 @@ export async function getAiInterpretation(
     messages: [
       {
         role: 'system',
-        content: createSystemPrompt(className, archetype),
+        content: createSystemPrompt(className, archetype, analysis),
       },
       {
         role: 'user',
