@@ -349,7 +349,7 @@ export async function getAiInterpretation(
         content: `Вот мои показатели Октализа:\n${statsSummary}${previousStatsSummary}${contextSummary}`,
       },
     ],
-    temperature: 0.65,  // оптимально для non-thinking mode 
+    temperature: 0.625,  // оптимально для non-thinking mode 
     top_p: 0.9,        // рекомендовано для non-thinking mode
     max_tokens: 1500,  // достаточно для полного структурированного ответа
   });
