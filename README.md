@@ -1,8 +1,8 @@
-```markdown
 # Moraleon - Telegram Mini App для отслеживания мотивации и выгорания в стиле фэнтези
 
 <div align="center">
 
+![Moraleon Logo](https://via.placeholder.com/150x150/18222d/0FEE9E?text=🎮)
 ![Telegram Mini App](https://img.shields.io/badge/Telegram-Mini%20App-2AABEE?logo=telegram)
 ![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)
