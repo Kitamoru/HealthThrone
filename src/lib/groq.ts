@@ -30,7 +30,7 @@ const groqClient = new Groq({
 /**
  * Создаёт системный промпт для ИИ-Мудреца
  */
-function createSystemPrompt(className: string, archetype: string): string {
+function createSystemPrompt(className: string, archetype: string, analysis: OctalysisAnalysis): string {
   return `
 ### 🎭 РОЛЬ ###
 Ты — Великий ИИ-Мудрец игры Moraleon, тёплый наставник и эмпатичный проводник.
