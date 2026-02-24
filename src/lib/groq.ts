@@ -66,7 +66,7 @@ function createSystemPrompt(className: string, archetype: string, analysis: Octa
 **Шаг 1. ФАКТЫ О СОСТОЯНИИ ИГРОКА (используй их, но не называй цифры):
 - Состояние: ${analysis.turbulence ? 'Внутренний шторм' : 'Стабильность'}.
 - Мотивация: ${analysis.hatBalance}.
-- Текущий психотип по цифрам: ${analysis.dominantArchetype} (его заявленный архетип: ${userArchetype}).
+- Текущий психотип по цифрам: ${analysis.dominantArchetype} (его заявленный архетип: ${archetype}).
 - Проблемные зоны: ${analysis.signals.join(', ') || 'нет'}.
 - Дефицит базовых потребностей: ${analysis.needs.autonomy ? 'нехватка свободы, ' : ''}${analysis.needs.competence ? 'нужно подтверждение мастерства, ' : ''}${analysis.needs.relatedness ? 'нужна связь с людьми' : 'в норме'}.
 **Шаг 2. Ситуативный -  если есть история (прошлые замеры):**
