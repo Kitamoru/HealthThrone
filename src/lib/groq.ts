@@ -1,4 +1,5 @@
 import Groq from 'groq-sdk';
+import { OctalysisAnalysis } from './octalysis';
 
 export interface OctalysisStats {
   factor1: number; // Эпическая значимость (Meaning)
