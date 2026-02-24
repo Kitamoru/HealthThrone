@@ -318,7 +318,7 @@ export async function getAiInterpretation(
     : '';
 
   const response = await groqClient.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
+    model: 'moonshotai/kimi-k2-instruct',
     messages: [
       {
         role: 'system',
@@ -329,8 +329,8 @@ export async function getAiInterpretation(
         content: `Вот мои показатели Октализа:\n${statsSummary}${previousStatsSummary}${contextSummary}`,
       },
     ],
-    temperature: 0.85,  // оптимально для non-thinking mode Qwen3
-    top_p: 0.8,        // рекомендовано для non-thinking mode
+    temperature: 0.6,  // оптимально для non-thinking mode Qwen3
+    top_p: 0.95,        // рекомендовано для non-thinking mode
     max_tokens: 1500,  // достаточно для полного структурированного ответа
   });
 
