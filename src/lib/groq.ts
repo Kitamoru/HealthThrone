@@ -1,6 +1,18 @@
 import Groq from 'groq-sdk';
 import { OctalysisAnalysis } from './octalysis';
 
+interface OctalysisAnalysis {
+  turbulence: boolean;
+  hatBalance: string;
+  dominantArchetype: string;
+  needs: {
+    autonomy: boolean;
+    competence: boolean;
+    relatedness: boolean;
+  };
+  signals: string[];
+}
+
 export interface OctalysisStats {
   factor1: number; // Эпическая значимость (Meaning)
   factor2: number; // Творчество и обратная связь (Empowerment)
