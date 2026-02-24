@@ -1,16 +1,5 @@
 import Groq from 'groq-sdk';
 
-export interface OctalysisAnalysis {
-  turbulence: boolean;
-  hatBalance: string;
-  dominantArchetype: string;
-  needs: {
-    autonomy: boolean;
-    competence: boolean;
-    relatedness: boolean;
-  };
-  signals: string[];
-}
 
 export interface OctalysisStats {
   factor1: number; // Эпическая значимость (Meaning)
@@ -21,6 +10,18 @@ export interface OctalysisStats {
   factor6: number; // Дефицит и нетерпение (Scarcity)
   factor7: number; // Обладание и владение (Ownership)
   factor8: number; // Достижения (Accomplishment)
+}
+
+export interface OctalysisAnalysis {
+  turbulence: boolean;
+  hatBalance: string;
+  dominantArchetype: string;
+  needs: {
+    autonomy: boolean;
+    competence: boolean;
+    relatedness: boolean;
+  };
+  signals: string[];
 }
 
 const groqClient = new Groq({
