@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
+import { computeInsights, insightsToPromptText } from '@/lib/octalysis';
 import { getAiInterpretation } from '@/lib/groq';
 
 // Маппинг классов на архетипы.
@@ -178,11 +179,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const className = profile.character_class || '';
     const archetype = getClassArchetype(className);
 
+    // 1. Математика — octalysis.ts считает всё детерминированно
+    const insights = computeInsights(statsForAi, archetype, previousStatsForAi);
+    // 2. Готовый текст с директивами для агента
+    const analysisContext = insightsToPromptText(insights, archetype);
+    // 3. Передаём в groq.ts — только интерпретация и промпт
     const advice = await getAiInterpretation(
-      statsForAi,
+      analysisContext,
       className,
       archetype,
-      previousStatsForAi,
       userContext,
     );
 
