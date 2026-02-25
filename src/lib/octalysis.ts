@@ -19,70 +19,71 @@ export interface Insights {
   min: number;
   dominantFactors: Array<{ key: string; value: number; label: string }>;
   laggingFactors: Array<{ key: string; value: number; label: string }>;
-  turbulence: number; // max - min
-  whiteHatSum: number; // f1+f2+f3
-  blackHatSum: number; // f4+f5+f6
-  whiteHatDominant: boolean; // whiteHatSum > blackHatSum + 20%?
-  blackHatDominant: boolean; // blackHatSum > whiteHatSum + 20%?
-  determinedArchetype: Archetype; // на основе доминирующих факторов
-  autonomy: number; // среднее f1,f2
-  competence: number; // среднее f8,f2
-  relatedness: number; // f3
-  // специальные сигналы
-  isolationRisk: boolean; // f3 < avg*0.7
-  hoardingRisk: boolean; // f7 > avg*1.4
-  harmony: boolean; // все факторы в пределах ±2 от avg
-  oneFactorTooHigh: boolean; // какой-то фактор >25 при остальных низких
-  // динамика (если есть предыдущие)
-  changes?: Record<string, number>; // рост/падение
+  turbulence: number;
+  whiteHatSum: number;
+  blackHatSum: number;
+  whiteHatDominant: boolean;
+  blackHatDominant: boolean;
+  burnoutScore: number; 
+  burnoutStatus: 'stable' | 'alert' | 'critical';
+  determinedArchetype: Archetype;
+  autonomy: number;
+  competence: number;
+  relatedness: number;
+  isolationRisk: boolean;
+  hoardingRisk: boolean;
+  harmony: boolean;
+  oneFactorTooHigh: boolean;
+  changes?: Record<string, number>;
 }
 
+const FACTOR_LABELS: Record<keyof OctalysisStats, string> = {
+  factor1: 'Эпическая значимость',
+  factor2: 'Творчество и обратная связь',
+  factor3: 'Социальное влияние',
+  factor4: 'Непредсказуемость',
+  factor5: 'Избегание потерь',
+  factor6: 'Дефицит и нетерпение',
+  factor7: 'Обладание и владение',
+  factor8: 'Достижения',
+};
+
 /**
- * Детерминированный анализ показателей Октализа.
- * @param stats – текущие показатели
- * @param previousStats – опционально, предыдущий замер для динамики
+ * Глубинный анализ показателей Октализа.
  */
 export function computeInsights(
   stats: OctalysisStats,
   previousStats?: OctalysisStats
 ): Insights {
-  const values = [
-    stats.factor1,
-    stats.factor2,
-    stats.factor3,
-    stats.factor4,
-    stats.factor5,
-    stats.factor6,
-    stats.factor7,
-    stats.factor8,
-  ];
+  const values = Object.values(stats);
   const avg = values.reduce((a, b) => a + b, 0) / values.length;
   const max = Math.max(...values);
   const min = Math.min(...values);
   const turbulence = max - min;
 
-  // Факторы с метками
-  const labeled = [
-    { key: 'factor1', value: stats.factor1, label: 'Эпическая значимость' },
-    { key: 'factor2', value: stats.factor2, label: 'Творчество и обратная связь' },
-    { key: 'factor3', value: stats.factor3, label: 'Социальное влияние' },
-    { key: 'factor4', value: stats.factor4, label: 'Непредсказуемость' },
-    { key: 'factor5', value: stats.factor5, label: 'Избегание потерь' },
-    { key: 'factor6', value: stats.factor6, label: 'Дефицит и нетерпение' },
-    { key: 'factor7', value: stats.factor7, label: 'Обладание и владение' },
-    { key: 'factor8', value: stats.factor8, label: 'Достижения' },
-  ];
+  const labeled = (Object.keys(stats) as Array<keyof OctalysisStats>).map((key) => ({
+    key,
+    value: stats[key],
+    label: FACTOR_LABELS[key],
+  }));
 
   const dominantFactors = labeled.filter((f) => f.value > avg).sort((a, b) => b.value - a.value);
   const laggingFactors = labeled.filter((f) => f.value < avg).sort((a, b) => a.value - b.value);
 
+  // Группировка по "Шляпам"
   const whiteHatSum = stats.factor1 + stats.factor2 + stats.factor3;
   const blackHatSum = stats.factor4 + stats.factor5 + stats.factor6;
-
   const whiteHatDominant = whiteHatSum > blackHatSum * 1.2;
   const blackHatDominant = blackHatSum > whiteHatSum * 1.2;
 
-  // Определяем архетип по доминирующим факторам
+  // Индекс выгорания (Burnout Score)
+  const totalHatSum = whiteHatSum + blackHatSum;
+  const burnoutScore = totalHatSum > 0 ? Math.round((blackHatSum / totalHatSum) * 100) : 0;
+  let burnoutStatus: 'stable' | 'alert' | 'critical' = 'stable';
+  if (burnoutScore > 65) burnoutStatus = 'critical';
+  else if (burnoutScore > 40) burnoutStatus = 'alert';
+
+  // Определение архетипа
   let determinedArchetype: Archetype = 'Достигатор';
   const topFactors = dominantFactors.slice(0, 2).map((f) => f.key);
   if (topFactors.includes('factor2') || topFactors.includes('factor4')) {
@@ -91,22 +92,20 @@ export function computeInsights(
     determinedArchetype = 'Социализатор';
   } else if (topFactors.includes('factor5') || topFactors.includes('factor6')) {
     determinedArchetype = 'Завоеватель';
-  } else {
-    determinedArchetype = 'Достигатор';
   }
 
-  // Базовые потребности (SDT)
+  // Базовые психологические потребности (Self-Determination Theory)
   const autonomy = (stats.factor1 + stats.factor2) / 2;
   const competence = (stats.factor8 + stats.factor2) / 2;
   const relatedness = stats.factor3;
 
-  // Специальные сигналы
+  // Поведенческие сигналы
   const isolationRisk = stats.factor3 < avg * 0.7;
   const hoardingRisk = stats.factor7 > avg * 1.4;
-  const harmony = values.every((v) => Math.abs(v - avg) <= 2);
+  const harmony = values.every((v) => Math.abs(v - avg) <= 5);
   const oneFactorTooHigh = values.some((v) => v > 25) && values.filter((v) => v < 15).length >= 5;
 
-  // Динамика (вычисляем безопасно для TypeScript)
+  // Динамика
   const changes = previousStats
     ? (() => {
         const delta: Record<string, number> = {};
@@ -118,122 +117,91 @@ export function computeInsights(
     : undefined;
 
   return {
-    avg,
-    max,
-    min,
-    dominantFactors,
-    laggingFactors,
-    turbulence,
-    whiteHatSum,
-    blackHatSum,
-    whiteHatDominant,
-    blackHatDominant,
-    determinedArchetype,
-    autonomy,
-    competence,
-    relatedness,
-    isolationRisk,
-    hoardingRisk,
-    harmony,
-    oneFactorTooHigh,
-    changes,
+    avg, max, min, dominantFactors, laggingFactors, turbulence,
+    whiteHatSum, blackHatSum, whiteHatDominant, blackHatDominant,
+    burnoutScore, burnoutStatus, determinedArchetype, 
+    autonomy, competence, relatedness,
+    isolationRisk, hoardingRisk, harmony, oneFactorTooHigh, changes,
   };
 }
 
 /**
- * Преобразует инсайты в текст для системного промпта (без чисел, с метафорами).
- * Этот текст будет передан AI как контекст.
+ * Преобразует инсайты в психологическую сводку для системного промпта AI.
  */
 export function buildAIAnalysisContext(
   insights: Insights,
   className: string,
-  archetypeFromClass: string, // архетип, закреплённый за классом
+  archetypeFromClass: string,
   userContext?: string
 ): string {
   const lines: string[] = [];
 
-  // Класс и архетип
-  lines.push(`Класс игрока: **${className}**.`);
-  lines.push(`Архетип по данным: **${insights.determinedArchetype}**.`);
-  if (insights.determinedArchetype !== archetypeFromClass) {
-    lines.push(
-      `(Интересно: по закреплению класса ты идёшь как **${archetypeFromClass}**, но сейчас твои цифры ближе к **${insights.determinedArchetype}**.)`
-    );
+  // 1. Идентичность
+  lines.push(`### ПРОФИЛЬ ГЕРОЯ: ${className.toUpperCase()}`);
+  const identityMatch = insights.determinedArchetype === archetypeFromClass
+    ? `гармоничен в роли **${archetypeFromClass}**`
+    : `выбрал роль **${archetypeFromClass}**, но сейчас проявляет черты **${insights.determinedArchetype}**`;
+  lines.push(`Текущее проявление: Игрок ${identityMatch}.`);
+
+  // 2. Драйверы и состояние выгорания
+  const mainDrivers = insights.dominantFactors.slice(0, 2).map(f => f.label).join(' и ');
+  lines.push(`Мотивация: **${mainDrivers}**.`);
+
+  lines.push(`### ЭНЕРГЕТИЧЕСКИЙ РЕСУРС`);
+  if (insights.burnoutStatus === 'critical') {
+    lines.push(`СОСТОЯНИЕ: **Критическое выгорание** (${insights.burnoutScore}% темной энергии). Игрок истощен давлением, страхом или дефицитом. Срочно нужна эмоциональная разгрузка.`);
+  } else if (insights.burnoutStatus === 'alert') {
+    lines.push(`СОСТОЯНИЕ: **Тревожный звонок** (${insights.burnoutScore}%). Мотивация держится на стрессе. Есть риск сорваться в апатию.`);
   } else {
-    lines.push(`Твой текущий архетип совпадает с закреплённым — **${archetypeFromClass}**.`);
+    lines.push(`СОСТОЯНИЕ: **Ясное пламя**. Мотивация здоровая, идет от внутренних смыслов.`);
   }
 
-  // Доминирующие факторы (образно)
-  if (insights.dominantFactors.length > 0) {
-    const domLabels = insights.dominantFactors.map((f) => f.label).join(', ');
-    lines.push(`Доминирующие факторы: **${domLabels}**.`);
-  }
-  if (insights.laggingFactors.length > 0) {
-    const lagLabels = insights.laggingFactors.map((f) => f.label).join(', ');
-    lines.push(`Отстающие факторы: **${lagLabels}**.`);
-  }
-
-  // Турбулентность
-  if (insights.turbulence > 15) {
-    lines.push('Турбулентность: высокая — внутри тебя настоящий шторм.');
-  } else {
-    lines.push('Турбулентность: умеренная.');
-  }
-
-  // Баланс шляп
+  // 3. Анализ Шляп
   if (insights.blackHatDominant) {
-    lines.push('Баланс мотивации: преобладает **чёрная шляпа** — срочность и давление.');
+    lines.push(`Мотивационный фон: Преобладает  напряжение, спешка, страх упущенной выгоды. Тон общения должен быть обволакивающим и успокаивающим.`);
   } else if (insights.whiteHatDominant) {
-    lines.push('Баланс мотивации: преобладает **белая шляпа** — устойчивая, питающая мотивация.');
-  } else {
-    lines.push('Баланс мотивации: гармоничный.');
+    lines.push(`Мотивационный фон: Преобладает радость, смысл, творчество. Тон общения: воодушевляющий, партнерский.`);
   }
 
-  // Базовые потребности (какая недополучена)
-  const lowAutonomy = insights.autonomy < insights.avg * 0.8;
-  const lowCompetence = insights.competence < insights.avg * 0.8;
-  const lowRelatedness = insights.relatedness < insights.avg * 0.8;
-
-  if (lowAutonomy || lowCompetence || lowRelatedness) {
-    const missing: string[] = [];
-    if (lowAutonomy) missing.push('автономия (выбор, смысл)');
-    if (lowCompetence) missing.push('компетентность (рост, мастерство)');
-    if (lowRelatedness) missing.push('связанность (принадлежность)');
-    lines.push(`Недополученные базовые потребности: **${missing.join(', ')}**.`);
+  // 4. Психологические дефициты
+  const deficits: string[] = [];
+  if (insights.autonomy < insights.avg * 0.8) deficits.push("потеря  способности к саморегуляции и принятию решений (чувствует себя марионеткой)");
+  if (insights.competence < insights.avg * 0.8) deficits.push("неуверенность в своем мастерстве (синдром самозванца)");
+  if (insights.relatedness < insights.avg * 0.8) deficits.push("жажда общения (нехватка сопричастности)");
+  
+  if (deficits.length > 0) {
+    lines.push(`Скрытые боли: Игрок транслирует **${deficits.join(', ')}**.`);
   }
 
-  // Специальные сигналы
-  if (insights.isolationRisk) {
-    lines.push('Сигнал: возможная изоляция (социальная связь сильно ниже среднего).');
-  }
-  if (insights.hoardingRisk) {
-    lines.push('Сигнал: риск накопительства (обладание сильно выше среднего).');
-  }
-  if (insights.harmony) {
-    lines.push('Сигнал: гармония — все факторы сбалансированы.');
-  }
-  if (insights.oneFactorTooHigh) {
-    lines.push('Сигнал: один фактор сильно выбивается, остальные низкие — риск однобокости.');
-  }
+  // 5. Поведенческие маркеры
+  if (insights.turbulence > 15) lines.push(`Сигнал: "Внутренний шторм" (высокая турбулентность). Игрока кидает из крайности в крайность.`);
+  if (insights.isolationRisk) lines.push(`Сигнал: "Одинокий маяк". Связь с миром критически ослаблена.`);
+  if (insights.hoardingRisk) lines.push(`Сигнал: "Ловушка дракона". Чрезмерная фиксация на накоплении ресурсов.`);
 
-  // Динамика (если есть)
+  // 6. Динамика изменений
   if (insights.changes) {
-    const changesDesc = Object.entries(insights.changes)
-      .filter(([_, delta]) => Math.abs(delta) >= 3) // только значимые изменения
-      .map(([key, delta]) => {
-        const dir = delta > 0 ? 'вырос' : 'упал';
-        return `${key.replace('factor', 'Фактор ')} ${dir} на ${Math.abs(delta)}`;
-      })
-      .join(', ');
-    if (changesDesc) {
-      lines.push(`Динамика с прошлого раза: **${changesDesc}**.`);
+    const significant = Object.entries(insights.changes).filter(([_, d]) => Math.abs(d) >= 5);
+    if (significant.length > 0) {
+      lines.push(`Динамика духа:`);
+      significant.forEach(([key, delta]) => {
+        const name = FACTOR_LABELS[key as keyof OctalysisStats] || key;
+        const trend = delta > 0 ? "усиливается" : "угасает";
+        lines.push(`- ${name}: ${trend}.`);
+      });
     }
   }
 
-  // Контекст от игрока
-  if (userContext) {
-    lines.push(`Контекст от игрока: "${userContext}".`);
+  // 7. Стратегия для Мудреца
+  lines.push(`\n### ТВОЯ СТРАТЕГИЯ:`);
+  if (insights.burnoutStatus === 'critical') {
+    lines.push(`- НЕ предлагай достижений. Сфокусируйся на квестах-отдыхах и смысле.\n- Будь максимально эмпатичным наставником.`);
+  } else if (insights.oneFactorTooHigh) {
+    lines.push(`- Подсвети игроку его однобокость. Помоги увидеть красоту в других направлениях.`);
+  } else {
+    lines.push(`- Брось вызов. Игрок в хорошей форме для того, чтобы покорить новую вершину.`);
   }
+
+  if (userContext) lines.push(`\nКонтекст игрока: "${userContext}"`);
 
   return lines.join('\n');
 }
