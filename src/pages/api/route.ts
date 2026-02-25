@@ -160,7 +160,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const archetype = getClassArchetype(className);
 
     // 1. Математика — octalysis.ts считает всё детерминированно
-    const insights = computeInsights(statsForAi, archetype, previousStatsForAi);
+    const insights = computeInsights(statsForAi, archetype);
     // 2. Готовый текст с директивами для агента
     const analysisContext = insightsToPromptText(insights, archetype);
     // 3. Передаём в groq.ts — только интерпретация и промпт
