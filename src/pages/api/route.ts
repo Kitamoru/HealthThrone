@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { computeInsights, buildAIAnalysisContext, OctalysisStats } from '@/lib/octalysis';
 import { getAiInterpretation } from '@/lib/groq';
 
-// Маппинг классов на архетипы (как было)
+// Маппинг классов на архетипы
 const CLASS_ARCHETYPES: Record<string, string> = {
   // Разработчик
   'Мастер алгоритмов':      'Достигатор',
@@ -152,14 +152,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const className = profile.character_class || '';
     const archetypeFromClass = getClassArchetype(className);
 
-    // (Опционально) получить предыдущий замер для динамики
-    // const previousFactors = await prisma.octalysis_factors_history.findFirst(...)
     const previousStats = undefined; // пока без истории
 
     // 1. Детерминированный анализ
     const insights = computeInsights(stats, previousStats);
 
-    // 2. Подготовка контекста для AI (текст без чисел)
+    // 2. Подготовка текстового контекста для AI
     const analysisContext = buildAIAnalysisContext(
       insights,
       className,
@@ -167,11 +165,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       userContext
     );
 
-    // 3. Запрос к AI (groq.ts использует облегчённый промпт)
+    // 3. Запрос к AI — insights передаём отдельно для точного подбора примеров
     const advice = await getAiInterpretation(
-      analysisContext,   // теперь это строка с выводами, а не сырые цифры
+      analysisContext,
       className,
-      insights.determinedArchetype, // передаём определённый архетип
+      insights.determinedArchetype,
+      insights,      // ← обязательный параметр для selectExampleIndices
       userContext
     );
 
