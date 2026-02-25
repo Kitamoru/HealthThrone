@@ -1,6 +1,15 @@
-import { OctalysisStats } from './groq'; // fix: было ./qroq
-
 // ─── Типы ─────────────────────────────────────────────────────────────────────
+
+export interface OctalysisStats {
+  factor1: number; // Эпическая значимость
+  factor2: number; // Творчество и обратная связь
+  factor3: number; // Социальное влияние
+  factor4: number; // Непредсказуемость
+  factor5: number; // Избегание потерь
+  factor6: number; // Дефицит и нетерпение
+  factor7: number; // Обладание и владение
+  factor8: number; // Достижения
+}
 
 export type Archetype = 'Достигатор' | 'Исследователь' | 'Социализатор' | 'Завоеватель';
 
