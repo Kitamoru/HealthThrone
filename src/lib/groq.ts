@@ -460,7 +460,7 @@ export async function getAiInterpretation(
     ],
     temperature: 0.6,
     top_p: 0.95,
-    max_tokens: 1500,
+    max_tokens: 2000,
   });
 
   if (!response.choices[0].message.content) {
