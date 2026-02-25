@@ -156,26 +156,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       factor8: Number(stats.factor8),
     };
 
-    // Предыдущий замер — для анализа динамики.
-    // Замени 'octalysis_factors_history' на реальное имя таблицы/связи в твоей схеме.
-    const previousRecord = await prisma.octalysis_factors_history.findFirst({
-      where: { user_id: profile.id },
-      orderBy: { created_at: 'desc' },
-    });
-
-    const previousStatsForAi = previousRecord
-      ? {
-          factor1: Number(previousRecord.factor1),
-          factor2: Number(previousRecord.factor2),
-          factor3: Number(previousRecord.factor3),
-          factor4: Number(previousRecord.factor4),
-          factor5: Number(previousRecord.factor5),
-          factor6: Number(previousRecord.factor6),
-          factor7: Number(previousRecord.factor7),
-          factor8: Number(previousRecord.factor8),
-        }
-      : undefined;
-
     const className = profile.character_class || '';
     const archetype = getClassArchetype(className);
 
