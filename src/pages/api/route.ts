@@ -1,12 +1,11 @@
+// pages/api/interpretation.ts
+
 import { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
-import { computeInsights, insightsToPromptText } from '@/lib/octalysis';
+import { computeInsights, buildAIAnalysisContext, OctalysisStats } from '@/lib/octalysis';
 import { getAiInterpretation } from '@/lib/groq';
 
-// Маппинг классов на архетипы.
-// Важно: значения должны совпадать с типом Archetype из octalysis.ts
-// ('Достигатор' | 'Исследователь' | 'Социализатор' | 'Завоеватель')
-// чтобы archetypeMatches в computeInsights работал корректно.
+// Маппинг классов на архетипы (как было)
 const CLASS_ARCHETYPES: Record<string, string> = {
   // Разработчик
   'Мастер алгоритмов':      'Достигатор',
@@ -127,10 +126,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'ID пользователя не предоставлен' });
     }
 
-    if (isNaN(Number(userId))) {
-      return res.status(400).json({ error: 'Некорректный ID пользователя' });
-    }
-
     const profile = await prisma.users.findUnique({
       where: { telegram_id: BigInt(userId) },
       include: { octalysis_factors: true },
@@ -139,41 +134,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!profile) {
       return res.status(404).json({ error: 'Профиль героя не найден. Сначала зарегистрируйтесь!' });
     }
-
     if (!profile.octalysis_factors) {
       return res.status(400).json({ error: 'Данные мотивации не найдены. Пройдите ежедневное испытание!' });
     }
 
-    const stats = profile.octalysis_factors;
-    const statsForAi = {
-      factor1: Number(stats.factor1),
-      factor2: Number(stats.factor2),
-      factor3: Number(stats.factor3),
-      factor4: Number(stats.factor4),
-      factor5: Number(stats.factor5),
-      factor6: Number(stats.factor6),
-      factor7: Number(stats.factor7),
-      factor8: Number(stats.factor8),
+    const stats: OctalysisStats = {
+      factor1: Number(profile.octalysis_factors.factor1),
+      factor2: Number(profile.octalysis_factors.factor2),
+      factor3: Number(profile.octalysis_factors.factor3),
+      factor4: Number(profile.octalysis_factors.factor4),
+      factor5: Number(profile.octalysis_factors.factor5),
+      factor6: Number(profile.octalysis_factors.factor6),
+      factor7: Number(profile.octalysis_factors.factor7),
+      factor8: Number(profile.octalysis_factors.factor8),
     };
 
     const className = profile.character_class || '';
-    const archetype = getClassArchetype(className);
+    const archetypeFromClass = getClassArchetype(className);
 
-    // 1. Математика — octalysis.ts считает всё детерминированно
-    const insights = computeInsights(statsForAi, archetype);
-    // 2. Готовый текст с директивами для агента
-    const analysisContext = insightsToPromptText(insights, archetype);
-    // 3. Передаём в groq.ts — только интерпретация и промпт
-    const advice = await getAiInterpretation(
-      analysisContext,
+    // (Опционально) получить предыдущий замер для динамики
+    // const previousFactors = await prisma.octalysis_factors_history.findFirst(...)
+    const previousStats = undefined; // пока без истории
+
+    // 1. Детерминированный анализ
+    const insights = computeInsights(stats, previousStats);
+
+    // 2. Подготовка контекста для AI (текст без чисел)
+    const analysisContext = buildAIAnalysisContext(
+      insights,
       className,
-      archetype,
-      userContext,
+      archetypeFromClass,
+      userContext
     );
 
-    if (!advice) {
-      throw new Error('Groq вернул пустой ответ');
-    }
+    // 3. Запрос к AI (groq.ts использует облегчённый промпт)
+    const advice = await getAiInterpretation(
+      analysisContext,   // теперь это строка с выводами, а не сырые цифры
+      className,
+      insights.determinedArchetype, // передаём определённый архетип
+      userContext
+    );
 
     return res.status(200).json({ success: true, advice });
   } catch (error: any) {
