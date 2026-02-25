@@ -1,7 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 import { getAiInterpretation } from '@/lib/groq';
-import { analyzeStats } from '@/lib/octalysis'; // Импортируем
 
 // Маппинг классов на архетипы Бартла
 const CLASS_ARCHETYPES: Record<string, string> = {
@@ -156,11 +155,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const className = profile.character_class || '';
     const archetype = getClassArchetype(className);
 
-    // 1. Сначала считаем сами
-    const analysis = analyzeStats(statsForAi);
 
     // 2. Передаем в ИИ готовую аналитику
-    const advice = await getAiInterpretation(statsForAi, className, archetype, analysis);
+    const advice = await getAiInterpretation(statsForAi, className, archetype);
 
     if (!advice) {
       throw new Error('GigaChat вернул пустой ответ');
