@@ -1,3 +1,31 @@
+// ─── Типы ─────────────────────────────────────────────────────────────────────
+
+export type Archetype = 'Достигатор' | 'Исследователь' | 'Социализатор' | 'Завоеватель';
+
+export interface OctalysisInsights {
+  /** Доминирующие факторы (выше среднего) — текстовые названия */
+  dominantFactors: string[];
+  /** Теневые факторы (ниже среднего) — текстовые названия */
+  shadowFactors: string[];
+  /** Есть ли внутренний шторм (разброс max–min > 15) */
+  hasTurbulence: boolean;
+  /** Режим мотивации */
+  hatBalance: 'black_hat_dominant' | 'white_hat_dominant' | 'balanced';
+  /** Архетип, вычисленный из цифр */
+  computedArchetype: Archetype;
+  /** Совпадает ли вычисленный архетип с переданным */
+  archetypeMatches: boolean;
+  /** Недополученные базовые потребности (SDT) */
+  unmetNeeds: Array<'autonomy' | 'competence' | 'relatedness'>;
+  /** Специальные сигналы для квестов */
+  signals: string[];
+  /** Динамика по сравнению с прошлым замером */
+  dynamics?: {
+    improved: string[];
+    declined: string[];
+  };
+}
+
 export function insightsToPromptText(
   insights: OctalysisInsights,
   passedArchetype: string
