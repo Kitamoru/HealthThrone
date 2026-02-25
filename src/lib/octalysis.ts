@@ -1,4 +1,4 @@
-// lib/octalysis.ts
+// src/lib/octalysis.ts
 
 export interface OctalysisStats {
   factor1: number; // Эпическая значимость
@@ -106,14 +106,16 @@ export function computeInsights(
   const harmony = values.every((v) => Math.abs(v - avg) <= 2);
   const oneFactorTooHigh = values.some((v) => v > 25) && values.filter((v) => v < 15).length >= 5;
 
-  // Динамика
-  let changes: Record<string, number> | undefined;
-  if (previousStats) {
-    changes = {};
-    (Object.keys(stats) as Array<keyof OctalysisStats>).forEach((key) => {
-      changes[key] = stats[key] - previousStats[key];
-    });
-  }
+  // Динамика (вычисляем безопасно для TypeScript)
+  const changes = previousStats
+    ? (() => {
+        const delta: Record<string, number> = {};
+        (Object.keys(stats) as Array<keyof OctalysisStats>).forEach((key) => {
+          delta[key] = stats[key] - previousStats[key];
+        });
+        return delta;
+      })()
+    : undefined;
 
   return {
     avg,
