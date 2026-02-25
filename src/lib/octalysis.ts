@@ -1,5 +1,8 @@
-export function insightsToPromptText(insights: OctalysisInsights, passedArchetype: string): string {
-  const lines: string[] = ['=== АНАЛИЗ ОКТАЛИЗА ===\n'];
+export function insightsToPromptText(
+  insights: OctalysisInsights,
+  passedArchetype: string
+): string {
+  const sections: string[] = ['=== АНАЛИЗ ОКТАЛИЗА ===\n'];
 
   // ---- ОБЩАЯ КАРТИНА ----
   const general = [];
@@ -16,30 +19,30 @@ export function insightsToPromptText(insights: OctalysisInsights, passedArchetyp
     balanced: 'шляпы сбалансированы'
   };
   general.push(`Режим мотивации: ${hatMap[insights.hatBalance]}`);
-  lines.push('ОБЩАЯ КАРТИНА:');
-  general.forEach(g => lines.push(`- ${g}`));
-  lines.push('');
+  sections.push('ОБЩАЯ КАРТИНА:');
+  general.forEach(g => sections.push(`- ${g}`));
+  sections.push('');
 
   // ---- АРХЕТИП ----
-  lines.push('АРХЕТИП:');
-  lines.push(`- Вычисленный архетип: ${insights.computedArchetype}`);
-  lines.push(`- Переданный архетип: ${passedArchetype}`);
-  lines.push(`- Совпадение: ${insights.archetypeMatches ? 'да' : 'нет'}`);
-  lines.push('');
+  sections.push('АРХЕТИП:');
+  sections.push(`- Вычисленный архетип: ${insights.computedArchetype}`);
+  sections.push(`- Переданный архетип: ${passedArchetype}`);
+  sections.push(`- Совпадение: ${insights.archetypeMatches ? 'да' : 'нет'}`);
+  sections.push('');
 
   // ---- БАЗОВЫЕ ПОТРЕБНОСТИ ----
-  lines.push('БАЗОВЫЕ ПОТРЕБНОСТИ:');
+  sections.push('БАЗОВЫЕ ПОТРЕБНОСТИ:');
   if (insights.unmetNeeds.length) {
     const needNames = {
       autonomy: 'автономия',
       competence: 'компетентность',
       relatedness: 'связанность'
     };
-    lines.push(`- Недополученные: ${insights.unmetNeeds.map(n => needNames[n]).join(', ')}`);
+    sections.push(`- Недополученные: ${insights.unmetNeeds.map(n => needNames[n]).join(', ')}`);
   } else {
-    lines.push('- Все потребности в норме.');
+    sections.push('- Все потребности в норме.');
   }
-  lines.push('');
+  sections.push('');
 
   // ---- ПОДСКАЗКИ ДЛЯ КВЕСТОВ ----
   const hints: string[] = [];
@@ -58,11 +61,11 @@ export function insightsToPromptText(insights: OctalysisInsights, passedArchetyp
     }
   }
   if (hints.length) {
-    lines.push('ПОДСКАЗКИ ДЛЯ КВЕСТОВ:');
-    hints.forEach(h => lines.push(`- ${h}`));
-    lines.push('');
+    sections.push('ПОДСКАЗКИ ДЛЯ КВЕСТОВ:');
+    hints.forEach(h => sections.push(`- ${h}`));
+    sections.push('');
   }
 
-  lines.push('=== КОНЕЦ АНАЛИЗА ===');
-  return lines.join('\n');
+  sections.push('=== КОНЕЦ АНАЛИЗА ===');
+  return sections.join('\n');
 }
