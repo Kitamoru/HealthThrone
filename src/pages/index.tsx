@@ -514,7 +514,7 @@ const Home = () => {
               {/* Блок с кнопкой Совета Мудреца (без фона и курсора) */}
               <div className="ai-advice-section" style={{ width: '100%' }}>
                 <button
-                  className="accept-button"
+                  className="octalysis-ai-button"
                   onClick={handleGetAiAdvice}
                   disabled={!user?.id || isAiLoading}
                   style={{ width: '100%' }}
