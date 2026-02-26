@@ -110,6 +110,16 @@ function selectExampleIndices(
     candidates.push({ index: 8, score: 60, reason: 'developed + very low avg' });
   }
 
+  // ── Пример 10 (индекс 9): Оборванная струна (один фактор критически низкий) ─
+  // Срабатывает когда профиль в целом сильный, но один фактор сильно отстаёт
+  const hasCriticalLag = laggingFactors.some((f) => f.percentage < 5);
+  const hasStrongProfile = avg > 12;
+  if (hasCriticalLag && hasStrongProfile) {
+    candidates.push({ index: 9, score: 85, reason: 'critical single lag + strong profile' });
+  } else if (laggingFactors.length >= 2 && hasStrongProfile) {
+    candidates.push({ index: 9, score: 55, reason: 'multiple lags + strong profile' });
+  }
+
   // ── Гармония (поддержка примера 2 / индекс 1) ────────────────────────────
   if (harmony) {
     candidates.push({ index: 1, score: 70, reason: 'harmony=true' });
