@@ -1851,4 +1851,12 @@ outline: none; /* Убираем контур при фокусе */
   .survey-card-text {
     font-size: 22px;
   }
+
+  .ai-advice-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* центрирует дочерние элементы по горизонтали */
+  width: 100%;
+  margin-top: 16px;    /* отступ сверху, если нужно */
+  }
 }
