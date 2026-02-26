@@ -1855,8 +1855,7 @@ outline: none; /* Убираем контур при фокусе */
   .ai-advice-section {
   display: flex;
   flex-direction: column;
-  align-items: center; /* центрирует дочерние элементы по горизонтали */
-  width: 100%;
-  margin-top: 16px;    /* отступ сверху, если нужно */
+  align-items: center;
+  width: calc(100% - 48px);
   }
 }
