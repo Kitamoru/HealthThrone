@@ -1858,25 +1858,15 @@ outline: none; /* Убираем контур при фокусе */
   color: white;
   border: none;
   border-radius: 12px;
-  padding: 12px 20px;
+  margin: 0 24px 24px 24px;
   cursor: pointer;
   font-weight: 500;
-  width: 100%;
+  width: calc(100% - 48px);
   font-size: 16px;
   outline: none;
   transition: background-color 0.3s;
 }
-  /* Мигающий курсор в стиле ретро */
-.cursor {
-  display: inline-block;
-  width: 2px;
-  height: 1em;
-  background-color: #f0f0f0;
-  margin-left: 2px;
-  vertical-align: middle;
-  animation: blink 1s step-end infinite;
-}
-
+ 
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
