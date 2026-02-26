@@ -517,6 +517,7 @@ const Home = () => {
                   className="accept-button"
                   onClick={handleGetAiAdvice}
                   disabled={!user?.id || isAiLoading}
+                  style={{ width: '80%', margin: '0 auto' }}
                 >
                   {isAiLoading ? "🔮 Мудрец размышляет..." : "📜 Совет мудреца"}
                 </button>
