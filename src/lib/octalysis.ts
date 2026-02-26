@@ -68,7 +68,7 @@ const FACTOR_LABELS: Record<keyof OctalysisStats, string> = {
 function normalizeProfile(stats: OctalysisStats): NormalizedStats {
   const sum = Object.values(stats).reduce((a, b) => a + b, 0);
   if (sum === 0) return { factor1: 12.5, factor2: 12.5, factor3: 12.5, factor4: 12.5, factor5: 12.5, factor6: 12.5, factor7: 12.5, factor8: 12.5 };
-  
+
   const res: any = {};
   (Object.keys(stats) as Array<keyof OctalysisStats>).forEach(key => {
     res[key] = (stats[key] / sum) * 100;
@@ -130,8 +130,13 @@ export function computeInsights(stats: OctalysisStats, previousStats?: Octalysis
   }
 
   // Архетип
+  // Фикс: если dominantFactors пуст (harmony-профиль) — берём топ-1 из всех факторов,
+  // чтобы не возвращать 'Достигатор' по умолчанию без оснований.
   let determinedArchetype: Archetype = 'Достигатор';
-  const topKeys = dominantFactors.slice(0, 2).map(f => f.key);
+  const topKeys = dominantFactors.length > 0
+    ? dominantFactors.slice(0, 2).map(f => f.key)
+    : [labeled.slice().sort((a, b) => b.value - a.value)[0].key];
+
   if (topKeys.includes('factor2') || topKeys.includes('factor4')) determinedArchetype = 'Исследователь';
   else if (topKeys.includes('factor3') || topKeys.includes('factor1')) determinedArchetype = 'Социализатор';
   else if (topKeys.includes('factor5') || topKeys.includes('factor6')) determinedArchetype = 'Завоеватель';
@@ -161,14 +166,14 @@ export function computeInsights(stats: OctalysisStats, previousStats?: Octalysis
  */
 export function buildAIAnalysisContext(insights: Insights, className: string, archetypeFromClass: string, userContext?: string): string {
   const lines: string[] = [];
-  
+
   // 1. Идентичность и Путь
-  const identityMatch = insights.determinedArchetype === archetypeFromClass 
-    ? `гармоничен в роли **${archetypeFromClass}**` 
+  const identityMatch = insights.determinedArchetype === archetypeFromClass
+    ? `гармоничен в роли **${archetypeFromClass}**`
     : `носит имя **${archetypeFromClass}**, но душа его сейчас — **${insights.determinedArchetype}**`;
-  
+
   const maturityMap = { nascent: 'чистый лист', emerging: 'первые всходы', developed: 'крепкое древо', mature: 'мудрый дуб' };
-  
+
   lines.push(`Перед тобой герой класса **${className}**, который ${identityMatch}. Его опыт сейчас — это "${maturityMap[insights.profileMaturity]}".`);
 
   // 2. Драйверы
@@ -184,9 +189,9 @@ export function buildAIAnalysisContext(insights: Insights, className: string, ar
   lines.push('\n### СОСТОЯНИЕ ДУХА');
   const burnoutMap = {
     critical: `**ВНИМАНИЕ:** Герой истощен. Тёмная энергия поглотила его. Он бежит, чтобы не упасть. Твоя роль — тихая гавань. Никаких подвигов, только покой.`,
-    high: `**ТРЕВОГА:** Тень перевешивает свет. Он действует из страха или нужды. Помоги ему вспомнить "зачем" он начал путь.`,
-    moderate: `**НАПРЯЖЕНИЕ:** Равновесие шатко. Герой устал, но еще держится. Будь чутким, не дави.`,
-    low: `**ГАРМОНИЯ:** Пламя чистое. Он готов к великим делам. Бросай вызов!`
+    high:     `**ТРЕВОГА:** Тень перевешивает свет. Он действует из страха или нужды. Помоги ему вспомнить "зачем" он начал путь.`,
+    moderate: `**НАПРЯЖЕНИЕ:** Равновесие шатко. Герой устал, но ещё держится. Будь чутким, не дави.`,
+    low:      `**ГАРМОНИЯ:** Пламя чистое. Он готов к великим делам. Бросай вызов!`,
   };
   lines.push(burnoutMap[insights.burnoutRisk]);
 
@@ -207,9 +212,15 @@ export function buildAIAnalysisContext(insights: Insights, className: string, ar
   if (signals.length) lines.push(`\n**МАРКЕРЫ ПОВЕДЕНИЯ:** ${signals.join('. ')}.`);
 
   // 6. Стратегия
+  // Фикс: high и moderate теперь получают свои инструкции, а не попадают
+  // в общий "амбициозный квест" вместе с low.
   lines.push('\n### ТВОЯ СТРАТЕГИЯ');
   if (insights.burnoutRisk === 'critical') {
     lines.push(`- ТОЛЬКО квесты на отдых, тишину и самопознание.\n- Тон: предельно мягкий, обволакивающий.`);
+  } else if (insights.burnoutRisk === 'high') {
+    lines.push(`- Квесты на восстановление смысла, без давления на результат.\n- Тон: бережный, поддерживающий.`);
+  } else if (insights.burnoutRisk === 'moderate') {
+    lines.push(`- Квесты на баланс: один на достижение, два на восстановление.\n- Тон: чуткий, не давящий.`);
   } else if (insights.harmony) {
     lines.push(`- Квесты на углубление мастерства и наставничество.\n- Тон: уважительный, как к мастеру.`);
   } else {
