@@ -88,13 +88,13 @@ function selectExampleIndices(
   }
 
   // ── Пример 5 (индекс 4): Позитивная динамика, угасает Ф4 ─────────────────
-  const hasPositiveChanges =
-    changes && Object.values(changes).some((delta) => delta > 0);
-  if (hasPositiveChanges && laggingKeys.includes('factor4')) {
-    candidates.push({ index: 4, score: 85, reason: 'positive changes + lagging Ф4' });
-  } else if (hasPositiveChanges && normalized.factor4 < 8) {
-    candidates.push({ index: 4, score: 55, reason: 'positive changes + weak Ф4' });
-  }
+  // TODO: раскомментировать когда будет реализована octalysis_factors_history
+  // const hasPositiveChanges = changes && Object.values(changes).some((delta) => delta > 0);
+  // if (hasPositiveChanges && laggingKeys.includes('factor4')) {
+  //   candidates.push({ index: 4, score: 85, reason: 'positive changes + lagging Ф4' });
+  // } else if (hasPositiveChanges && normalized.factor4 < 8) {
+  //   candidates.push({ index: 4, score: 55, reason: 'positive changes + weak Ф4' });
+  // }
 
   // ── Пример 7 (индекс 6): Новичок ─────────────────────────────────────────
   if (profileMaturity === 'nascent') {
@@ -111,13 +111,22 @@ function selectExampleIndices(
   }
 
   // ── Пример 10 (индекс 9): Оборванная струна (один фактор критически низкий) ─
-  // Срабатывает когда профиль в целом сильный, но один фактор сильно отстаёт
+  // Срабатывает когда профиль в целом сильный, но один фактор сильно отстаёт.
+  // polarization — крайняя форма: один фактор >25% и четыре+ факторов <10%.
   const hasCriticalLag = laggingFactors.some((f) => f.percentage < 5);
   const hasStrongProfile = avg > 12;
-  if (hasCriticalLag && hasStrongProfile) {
+  if (insights.polarization) {
+    candidates.push({ index: 9, score: 95, reason: 'polarization=true' });
+  } else if (hasCriticalLag && hasStrongProfile) {
     candidates.push({ index: 9, score: 85, reason: 'critical single lag + strong profile' });
   } else if (laggingFactors.length >= 2 && hasStrongProfile) {
     candidates.push({ index: 9, score: 55, reason: 'multiple lags + strong profile' });
+  }
+
+  // ── Amplifier-профиль (высокий Ф7+Ф8, изоляция) → Созидатель без гильдии ──
+  // amplifierPercentage вычисляется в octalysis, но раньше не использовался
+  if (insights.amplifierPercentage > 40 && isolationRisk) {
+    candidates.push({ index: 3, score: 65, reason: 'amplifier dominant + isolationRisk' });
   }
 
   // ── Гармония (поддержка примера 2 / индекс 1) ────────────────────────────
@@ -144,7 +153,7 @@ function selectExampleIndices(
     .slice(0, 2)
     .map(([index]) => index);
 
-  // Фолбэк до 2 примеров
+  // Фолбэк: добираем до 2 если совпадений мало
   for (const fi of [0, 1]) {
     if (sorted.length >= 2) break;
     if (!sorted.includes(fi)) sorted.push(fi);
