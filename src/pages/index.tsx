@@ -535,7 +535,7 @@ const Home = () => {
                         fontSize: '14px',
                         lineHeight: '1.5',
                         color: '#f0f0f0',
-                        boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+                        backgroundColor: '#161616'
                       }}
                     >
                       <span style={{ display: 'block', marginBottom: '4px', fontSize: '12px', opacity: 0.7 }}>
