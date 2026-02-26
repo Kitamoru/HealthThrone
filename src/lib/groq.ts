@@ -45,12 +45,16 @@ function selectExampleIndices(
     candidates.push({ index: 7, score: 60, reason: 'burnoutRisk=high' });
   }
 
-  // ── Пример 6 (индекс 5): Тёмное доминирование / давление ─────────────────
+  // ── Пример 6 (индекс 5): Тёмное доминирование / давление / moderate burnout ─
   if (blackHatDominant) {
     candidates.push({ index: 5, score: 80, reason: 'blackHatDominant' });
   }
   if (dominantKeys.includes('factor5') || dominantKeys.includes('factor6')) {
     candidates.push({ index: 5, score: 60, reason: 'dominant Ф5/Ф6' });
+  }
+  if (burnoutRisk === 'moderate') {
+    // Пример 6 ближе всего по духу к состоянию умеренного напряжения
+    candidates.push({ index: 5, score: 50, reason: 'burnoutRisk=moderate' });
   }
 
   // ── Пример 1 (индекс 0): Турбулентность / несовпадение архетипов ──────────
@@ -103,24 +107,28 @@ function selectExampleIndices(
     candidates.push({ index: 6, score: 40, reason: 'profileMaturity=emerging' });
   }
 
-  // ── Пример 9 (индекс 8): Застой (опытный + низкая мотивация) ─────────────
-  if (profileMaturity === 'mature' && avg < 15) {
-    candidates.push({ index: 8, score: 90, reason: 'mature + low avg' });
-  } else if (profileMaturity === 'developed' && avg < 12) {
-    candidates.push({ index: 8, score: 60, reason: 'developed + very low avg' });
+  // ── Пример 9 (индекс 8): Застой (опытный + всё тихо) ───────────────────────
+  // Фикс: avg для mature всегда >= 20, для developed >= 12.5 — пороги avg были
+  // математически недостижимы. Застой определяем через зрелость + тишину.
+  if (profileMaturity === 'mature' && burnoutRisk === 'low' && turbulenceScore < 20) {
+    candidates.push({ index: 8, score: 90, reason: 'mature + low burnout + calm' });
+  } else if (profileMaturity === 'developed' && burnoutRisk === 'low' && turbulenceScore < 15) {
+    candidates.push({ index: 8, score: 60, reason: 'developed + low burnout + calm' });
   }
 
   // ── Пример 10 (индекс 9): Оборванная струна (один фактор критически низкий) ─
-  // Срабатывает когда профиль в целом сильный, но один фактор сильно отстаёт.
-  // polarization — крайняя форма: один фактор >25% и четыре+ факторов <10%.
-  const hasCriticalLag = laggingFactors.some((f) => f.percentage < 5);
+  // laggingFactors в octalysis: percentage < 7.5 (ниже половины среднего 12.5).
+  // hasStrongProfile: avg > 12 — профиль в целом активный, не nascent.
   const hasStrongProfile = avg > 12;
   if (insights.polarization) {
+    // Крайний случай: один фактор >25% и четыре+ <10% одновременно
     candidates.push({ index: 9, score: 95, reason: 'polarization=true' });
-  } else if (hasCriticalLag && hasStrongProfile) {
-    candidates.push({ index: 9, score: 85, reason: 'critical single lag + strong profile' });
+  } else if (laggingFactors.length === 1 && hasStrongProfile) {
+    // Ровно один фактор заметно отстаёт — классическая "оборванная струна"
+    candidates.push({ index: 9, score: 85, reason: 'single lagging factor + strong profile' });
   } else if (laggingFactors.length >= 2 && hasStrongProfile) {
-    candidates.push({ index: 9, score: 55, reason: 'multiple lags + strong profile' });
+    // Несколько факторов просели — менее специфично, но всё равно релевантно
+    candidates.push({ index: 9, score: 60, reason: 'multiple lags + strong profile' });
   }
 
   // ── Amplifier-профиль (высокий Ф7+Ф8, изоляция) → Созидатель без гильдии ──
