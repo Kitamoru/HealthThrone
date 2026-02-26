@@ -127,9 +127,9 @@ const Home = () => {
       if (!response.ok) {
         let errorMessage = `Ошибка ${response.status}`;
         if (response.status === 400) errorMessage = 'Неверный запрос (400)';
-        else if (response.status === 404) errorMessage = 'Мудрец не найден (404)';
-        else if (response.status === 500) errorMessage = 'Ошибка сервера (500)';
-        else if (response.status === 502) errorMessage = 'Мудрец временно недоступен (502)';
+        else if (response.status === 404) errorMessage = 'Мудрец не найден...';
+        else if (response.status === 500) errorMessage = 'Связь с астральным миром прервана...';
+        else if (response.status === 502) errorMessage = 'Мудрец временно недоступен...';
         
         if (data && data.error) {
           errorMessage += `: ${data.error}`;
