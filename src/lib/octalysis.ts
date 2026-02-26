@@ -195,14 +195,32 @@ export function buildAIAnalysisContext(insights: Insights, className: string, ar
   };
   lines.push(burnoutMap[insights.burnoutRisk]);
 
-  // 4. Скрытые дефициты (SDT)
+  // 4. Лагающие факторы — передаём явно, чтобы модель знала "оборванную струну"
+  if (insights.laggingFactors.length > 0) {
+    const lagImages: Record<string, string> = {
+      factor1: 'зов смысла угас',
+      factor2: 'пламя созидания притухло',
+      factor3: 'нити связи истончились',
+      factor4: 'жажда новизны иссякла',
+      factor5: 'страх утраты отступил в тень',
+      factor6: 'ощущение срочности пропало',
+      factor7: 'чувство владения ослабло',
+      factor8: 'вкус победы поблек',
+    };
+    const lagDesc = insights.laggingFactors
+      .map(f => lagImages[f.key] || f.label)
+      .join(', ');
+    lines.push(`\n**ОБОРВАННЫЕ СТРУНЫ (факторы, которые почти молчат):** ${lagDesc}.`);
+  }
+
+  // 5. Скрытые дефициты (SDT)
   const pains = [];
   if (insights.autonomy < 10) pains.push("потеря контроля");
   if (insights.competence < 10) pains.push("неверие в свои силы");
   if (insights.relatedness < 8) pains.push("одиночество среди людей");
   if (pains.length) lines.push(`\n**СКРЫТЫЕ БОЛИ (учитывай их):** ${pains.join(', ')}.`);
 
-  // 5. Поведенческие маркеры
+  // 6. Поведенческие маркеры
   const signals = [];
   if (insights.isolationRisk) signals.push("Одинокий маяк");
   if (insights.hoardingRisk) signals.push("Ловушка дракона");
