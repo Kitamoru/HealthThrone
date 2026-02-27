@@ -29,7 +29,8 @@ interface AiAdviceResponse {
   success?: boolean;
 }
 
-const QUESTIONS: Question[] = [
+// Статические вопросы как fallback
+const STATIC_QUESTIONS: Question[] = [
   {
     id: 1,
     text: "Сумели ли вы сегодня удержаться на ногах под натиском тёмных сил?",
@@ -86,8 +87,9 @@ const Home = () => {
   const router = useRouter();
   const { user, initData } = useTelegram();
   const queryClient = useQueryClient();
-  const [questions] = useState<Question[]>(QUESTIONS);
-  const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>(QUESTIONS);
+  // Вместо локального состояния questions используем STATIC_QUESTIONS как fallback, 
+  // а для динамических вопросов будем хранить их в shuffledQuestions
+  const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>(STATIC_QUESTIONS);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -100,6 +102,16 @@ const Home = () => {
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
+
+  // Новые состояния для генерации вопросов
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+  const CACHE_KEY_PREFIX = 'dailyQuestions_';
+
+  // Вспомогательная функция для получения текущей даты в UTC в формате YYYY-MM-DD
+  const getCurrentDateUTC = useCallback(() => {
+    const now = new Date();
+    return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+  }, []);
 
   // Обработчик кнопки "Совет мудреца"
   const handleGetAiAdvice = useCallback(async () => {
@@ -178,12 +190,93 @@ const Home = () => {
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  const handleOpenSurveyModal = useCallback(() => {
-    const firstTwo = QUESTIONS.slice(0, 2);
-    const rest = QUESTIONS.slice(2);
-    const shuffledRest = [...rest].sort(() => Math.random() - 0.5);
-    setShuffledQuestions([...firstTwo, ...shuffledRest]);
+  // Модифицированный обработчик открытия модалки с генерацией вопросов
+  const handleOpenSurveyModal = useCallback(async () => {
+    // Проверяем, не проходил ли пользователь опрос сегодня (используем уже существующую переменную alreadyAttemptedToday)
+    if (alreadyAttemptedToday) return; // Кнопка и так заблокирована, но на всякий случай
 
+    setIsGeneratingQuestions(true);
+
+    try {
+      const cacheKey = CACHE_KEY_PREFIX + user?.id;
+      const cachedRaw = sessionStorage.getItem(cacheKey);
+      let questionsToUse: Question[] | null = null;
+
+      // Пытаемся получить из кэша
+      if (cachedRaw) {
+        try {
+          const cached = JSON.parse(cachedRaw);
+          if (cached.date === getCurrentDateUTC() && Array.isArray(cached.questions) && cached.questions.length === 10) {
+            // Проверим, что все вопросы имеют корректные id
+            const valid = cached.questions.every((q: any) => q.id >= 1 && q.id <= 10 && q.text);
+            if (valid) {
+              questionsToUse = cached.questions;
+            }
+          }
+        } catch (e) {
+          console.warn('Invalid cache, ignoring', e);
+        }
+      }
+
+      // Если кэш не подошёл, запрашиваем у API
+      if (!questionsToUse) {
+        const response = await fetch('/api/generate-questions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user?.id, initData }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
+        }
+
+        const { questions } = await response.json();
+        if (!Array.isArray(questions) || questions.length !== 10) {
+          throw new Error('Invalid response format');
+        }
+
+        // Дополнительная валидация
+        const validQuestions = questions.filter((q: any) => q.id >= 1 && q.id <= 10 && q.text);
+        if (validQuestions.length !== 10) {
+          throw new Error('Invalid question data');
+        }
+
+        // Сохраняем в кэш
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          questions: validQuestions,
+          date: getCurrentDateUTC(),
+        }));
+
+        questionsToUse = validQuestions;
+      }
+
+      // Разделяем на первые два (id 1,2) и остальные, перемешиваем остальные
+      const firstTwo = questionsToUse.filter(q => q.id === 1 || q.id === 2);
+      const rest = questionsToUse.filter(q => q.id > 2);
+      const shuffledRest = [...rest].sort(() => Math.random() - 0.5);
+      setShuffledQuestions([...firstTwo, ...shuffledRest]);
+
+      // Открываем модалку
+      setIsSurveyModalOpen(true);
+    } catch (error) {
+      console.error('Failed to generate questions, using static fallback:', error);
+      // При ошибке используем статические вопросы
+      const firstTwo = STATIC_QUESTIONS.filter(q => q.id === 1 || q.id === 2);
+      const rest = STATIC_QUESTIONS.filter(q => q.id > 2);
+      const shuffledRest = [...rest].sort(() => Math.random() - 0.5);
+      setShuffledQuestions([...firstTwo, ...shuffledRest]);
+      setIsSurveyModalOpen(true);
+    } finally {
+      setIsGeneratingQuestions(false);
+    }
+  }, [alreadyAttemptedToday, user?.id, initData, getCurrentDateUTC]);
+
+  const handleOctalysisInfo = useCallback(() => {
+    alert("Добро пожаловать, герой!\n\nТы вступаешь в мир, где каждая задача — это квест, а твоя воля и страсть определят судьбу великих свершений.\nВосемь путеводных звёзд вдохновят тебя на подвиги. Если звезда тускнеет, следуй их советам, чтобы вновь зажечь пламя!\n\nИди вперёд, герой, и пусть звёзды карты мотивации освещают твой путь к величию!");
+  }, []);
+
+  useEffect(() => {
+    // Создаём портал для модалки при первом рендере, если его нет
     if (!modalPortalRef.current) {
       const portalContainer = document.createElement('div');
       portalContainer.id = 'modal-portal';
@@ -191,14 +284,7 @@ const Home = () => {
       document.body.appendChild(portalContainer);
       modalPortalRef.current = portalContainer;
     }
-    setIsSurveyModalOpen(true);
-  }, []);
 
-  const handleOctalysisInfo = useCallback(() => {
-    alert("Добро пожаловать, герой!\n\nТы вступаешь в мир, где каждая задача — это квест, а твоя воля и страсть определят судьбу великих свершений.\nВосемь путеводных звёзд вдохновят тебя на подвиги. Если звезда тускнеет, следуй их советам, чтобы вновь зажечь пламя!\n\nИди вперёд, герой, и пусть звёзды карты мотивации освещают твой путь к величию!");
-  }, []);
-
-  useEffect(() => {
     return () => {
       if (modalPortalRef.current) {
         document.body.removeChild(modalPortalRef.current);
@@ -341,6 +427,11 @@ const Home = () => {
       setSurveyCompleted(true);
       setAnswers({});
       
+      // Удаляем кэш вопросов после успешного прохождения, чтобы на следующий день сгенерировать новые
+      if (user?.id) {
+        sessionStorage.removeItem(CACHE_KEY_PREFIX + user.id);
+      }
+      
       if (userData?.id) {
         const fetchFactors = async () => {
           const response = await api.getOctalysisFactors(userData.id, initData);
@@ -481,9 +572,10 @@ const Home = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}    
                       className="accept-button"
-                      onClick={handleOpenSurveyModal}        
+                      onClick={handleOpenSurveyModal}
+                      disabled={isGeneratingQuestions || alreadyAttemptedToday}
                     >
-                      Пройти ежедневное испытание
+                      {isGeneratingQuestions ? 'Готовим испытание...' : 'Пройти ежедневное испытание'}
                     </motion.button>
                   </div>
                 )}
