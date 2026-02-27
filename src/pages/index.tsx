@@ -94,6 +94,7 @@ const Home = () => {
   const [spriteLoaded, setSpriteLoaded] = useState(false);
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
+  const [isQuestionsLoading, setIsQuestionsLoading] = useState(false);
   const [octalysisFactors, setOctalysisFactors] = useState<number[] | null>(null);
   const [octagramSize, setOctagramSize] = useState(280);
   
@@ -178,12 +179,7 @@ const Home = () => {
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  const handleOpenSurveyModal = useCallback(() => {
-    const firstTwo = QUESTIONS.slice(0, 2);
-    const rest = QUESTIONS.slice(2);
-    const shuffledRest = [...rest].sort(() => Math.random() - 0.5);
-    setShuffledQuestions([...firstTwo, ...shuffledRest]);
-
+  const handleOpenSurveyModal = useCallback(async () => {
     if (!modalPortalRef.current) {
       const portalContainer = document.createElement('div');
       portalContainer.id = 'modal-portal';
@@ -191,11 +187,57 @@ const Home = () => {
       document.body.appendChild(portalContainer);
       modalPortalRef.current = portalContainer;
     }
+
+    setIsQuestionsLoading(true);
+
+    try {
+      const response = await fetch('/api/generate-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: String(user?.id) }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // API не возвращает weight — восстанавливаем из статического массива
+        const weightMap: Record<number, number> = Object.fromEntries(
+          QUESTIONS.map(q => [q.id, q.weight])
+        );
+        const generated: Question[] = data.questions.map(
+          (q: { id: number; text: string }) => ({
+            ...q,
+            weight: weightMap[q.id] ?? 1,
+          })
+        );
+
+        // Вопросы 1 и 2 всегда идут первыми (они влияют на burnout)
+        const firstTwo = generated
+          .filter(q => q.id === 1 || q.id === 2)
+          .sort((a, b) => a.id - b.id);
+        const rest = generated
+          .filter(q => q.id !== 1 && q.id !== 2)
+          .sort(() => Math.random() - 0.5);
+
+        setShuffledQuestions([...firstTwo, ...rest]);
+      } else {
+        throw new Error(`HTTP ${response.status}`);
+      }
+    } catch (err) {
+      console.warn('Question generation failed, using static fallback:', err);
+      // Фолбек: статические вопросы с шаффлом
+      const firstTwo = QUESTIONS.slice(0, 2);
+      const rest = [...QUESTIONS.slice(2)].sort(() => Math.random() - 0.5);
+      setShuffledQuestions([...firstTwo, ...rest]);
+    } finally {
+      setIsQuestionsLoading(false);
+    }
+
     setIsSurveyModalOpen(true);
-  }, []);
+  }, [user?.id]);
 
   const handleOctalysisInfo = useCallback(() => {
-    alert("Добро пожаловать, герой!\n\nТы вступаешь в мир, где каждая задача — это квест, а твоя воля и страсть определят судьбу великих свершений.\nВосемь путеводных звёзд вдохновят тебя на подвиги. Если звезда тускнеет, следуй их советам, чтобы вновь зажечь пламя!\n\nИди вперёд, герой, и пусть звёзды карты мотивации освещают твой путь к величию!");
+    alert("Добро пожаловать, герой!\n\nТы вступаешь в мир, где каждая задача — это квест, а твоя воля и страсть определят судьбу великих свершений.\nВосемь путеводных звёзд вдохновят тебя на подвиги. Если звезда тускнеет, следуй их советам, чтобы вновь зажечь пламя!\n\nИди вперёд, герой, и пусть звёзды карты мотивации освещают твой путь к величию!");
   }, []);
 
   useEffect(() => {
@@ -478,12 +520,15 @@ const Home = () => {
                 ) : (
                   <div className="flex justify-center w-full">
                     <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}    
+                      whileHover={{ scale: isQuestionsLoading ? 1 : 1.05 }}
+                      whileTap={{ scale: isQuestionsLoading ? 1 : 0.95 }}
                       className="accept-button"
-                      onClick={handleOpenSurveyModal}        
+                      onClick={handleOpenSurveyModal}
+                      disabled={isQuestionsLoading}
                     >
-                      Пройти ежедневное испытание
+                      {isQuestionsLoading
+                        ? "⚔️ Мудрец готовит испытание..."
+                        : "Пройти ежедневное испытание"}
                     </motion.button>
                   </div>
                 )}
@@ -511,7 +556,7 @@ const Home = () => {
                 Как работает карта мотивации?
               </button>
 
-              {/* Блок с кнопкой Совета Мудреца (без фона и курсора) */}
+              {/* Блок с кнопкой Совета Мудреца */}
               <div className="ai-advice-section">
                 <button
                   className="accept-button"
