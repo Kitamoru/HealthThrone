@@ -1,3 +1,4 @@
+// pages/api/generate-questions.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { Groq } from 'groq-sdk';
 
@@ -84,7 +85,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       messages: [{ role: 'user', content: prompt }],
       model: 'llama-3.3-70b-versatile',
       temperature: 0.7,
-      top_p: 0.9,
       max_tokens: 1024,
       response_format: { type: 'json_object' },
     });
@@ -103,4 +103,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ questions: STATIC_QUESTIONS });
   }
 }
-```
