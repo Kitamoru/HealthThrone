@@ -1,3 +1,4 @@
+```typescript
 // pages/api/generate-questions.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { Groq } from 'groq-sdk';
@@ -79,13 +80,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 9. Владение — герой добыл новый трофей, артефакт или знание.
 10. Развитие — продвижение в мастерстве или признание от других героев.
 
-Верни строго JSON-объект с ключом "questions", содержащий массив из 10 объектов с полями "id" (число от 1 до 10) и "text". Никакого дополнительного текста, только JSON.`
-  ;}
+Верни строго JSON-объект с ключом "questions", содержащий массив из 10 объектов с полями "id" (число от 1 до 10) и "text". Никакого дополнительного текста, только JSON.`;
 
     const completion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: prompt }],
       model: 'llama-3.3-70b-versatile',
-      temperature: 0.65,
+      temperature: 0.7,
+      top_p: 0.9,
       max_tokens: 1024,
       response_format: { type: 'json_object' },
     });
@@ -104,3 +105,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ questions: STATIC_QUESTIONS });
   }
 }
+```
