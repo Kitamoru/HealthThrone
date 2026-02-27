@@ -2,6 +2,7 @@
 
 <div align="center">
 
+![Moraleon Logo](./public/logo.png)
 ![Telegram Mini App](https://img.shields.io/badge/Telegram-Mini%20App-2AABEE?logo=telegram)
 ![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)
