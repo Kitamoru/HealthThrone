@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,14 +24,12 @@ interface Question {
   text: string;
   weight: number;
 }
-
 interface AiAdviceResponse {
   advice: string;
   success?: boolean;
 }
 
-// Статические вопросы как fallback
-const STATIC_QUESTIONS: Question[] = [
+const QUESTIONS: Question[] = [
   {
     id: 1,
     text: "Сумели ли вы сегодня удержаться на ногах под натиском тёмных сил?",
@@ -86,9 +86,8 @@ const Home = () => {
   const router = useRouter();
   const { user, initData } = useTelegram();
   const queryClient = useQueryClient();
-
-  // Состояния
-  const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>(STATIC_QUESTIONS);
+  const [questions] = useState<Question[]>(QUESTIONS);
+  const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>(QUESTIONS);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -97,22 +96,136 @@ const Home = () => {
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
   const [octalysisFactors, setOctalysisFactors] = useState<number[] | null>(null);
   const [octagramSize, setOctagramSize] = useState(280);
-
+  
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
 
-  // Состояние для генерации вопросов
-  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+  // Обработчик кнопки "Совет мудреца"
+  const handleGetAiAdvice = useCallback(async () => {
+    if (!user?.id) return;
 
-  // Вспомогательная функция для проверки даты
+    setIsAiLoading(true);
+    setAiAdvice(null);
+
+    try {
+      const response = await fetch('/api/route', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: String(user.id) }),
+      });
+
+      const responseText = await response.text();
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        data = null;
+      }
+
+      if (!response.ok) {
+        let errorMessage = `Ошибка ${response.status}`;
+        if (response.status === 400) errorMessage = 'Неверный запрос (400)';
+        else if (response.status === 404) errorMessage = 'Мудрец не найден...';
+        else if (response.status === 500) errorMessage = 'Связь с астральным миром прервана...';
+        else if (response.status === 502) errorMessage = 'Мудрец временно недоступен...';
+        
+        if (data && data.error) {
+          errorMessage += `: ${data.error}`;
+        } else if (responseText) {
+          errorMessage += `\nОтвет: ${responseText.substring(0, 200)}`;
+        }
+        
+        setAiAdvice(`❌ ${errorMessage}`);
+        return;
+      }
+
+      if (!data || !data.advice) {
+        setAiAdvice("⚠️ Мудрец задумался и промолчал... (пустой ответ)");
+        return;
+      }
+
+      setAiAdvice(data.advice);
+      
+    } catch (error) {
+      let errorText = "Связь с Мудрецом прервалась.";
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        errorText = "🌐 Нет соединения с сервером.";
+      } else if (error instanceof Error) {
+        errorText += ` (${error.message})`;
+      }
+      setAiAdvice(`❌ ${errorText}`);
+    } finally {
+      setIsAiLoading(false);
+    }
+  }, [user?.id]);
+  
+  // Адаптивный размер октаграммы
+  useEffect(() => {
+    const updateSize = () => {
+      if (window.innerWidth < 400) {
+        setOctagramSize(220);
+      } else if (window.innerWidth < 768) {
+        setOctagramSize(250);
+      } else {
+        setOctagramSize(280);
+      }
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  const handleOpenSurveyModal = useCallback(() => {
+    const firstTwo = QUESTIONS.slice(0, 2);
+    const rest = QUESTIONS.slice(2);
+    const shuffledRest = [...rest].sort(() => Math.random() - 0.5);
+    setShuffledQuestions([...firstTwo, ...shuffledRest]);
+
+    if (!modalPortalRef.current) {
+      const portalContainer = document.createElement('div');
+      portalContainer.id = 'modal-portal';
+      portalContainer.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4';
+      document.body.appendChild(portalContainer);
+      modalPortalRef.current = portalContainer;
+    }
+    setIsSurveyModalOpen(true);
+  }, []);
+
+  const handleOctalysisInfo = useCallback(() => {
+    alert("Добро пожаловать, герой!\n\nТы вступаешь в мир, где каждая задача — это квест, а твоя воля и страсть определят судьбу великих свершений.\nВосемь путеводных звёзд вдохновят тебя на подвиги. Если звезда тускнеет, следуй их советам, чтобы вновь зажечь пламя!\n\nИди вперёд, герой, и пусть звёзды карты мотивации освещают твой путь к величию!");
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (modalPortalRef.current) {
+        document.body.removeChild(modalPortalRef.current);
+        modalPortalRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isSurveyModalOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [isSurveyModalOpen]);
+
   const isTodayUTC = useCallback((dateStr: string) => {
     if (!dateStr) return false;
-
+    
     try {
       const date = new Date(dateStr);
       const now = new Date();
-
+      
       return (
         date.getUTCFullYear() === now.getUTCFullYear() &&
         date.getUTCMonth() === now.getUTCMonth() &&
@@ -124,10 +237,9 @@ const Home = () => {
     }
   }, []);
 
-  // Запрос данных пользователя
-  const {
-    data: userData,
-    isLoading,
+  const { 
+    data: userData, 
+    isLoading, 
     isError,
     error: queryError,
     refetch: refetchUserData
@@ -135,29 +247,19 @@ const Home = () => {
     queryKey: ['userData', user?.id],
     queryFn: async (): Promise<UserProfile | null> => {
       if (!user?.id) return null;
-
+      
       const response = await api.getUserData(Number(user.id), initData);
-
+      
       if (!response.success) {
         throw new Error(response.error || "Ошибка загрузки данных");
       }
-
+      
       return response.data as UserProfile;
     },
     enabled: !!user?.id,
     refetchOnWindowFocus: true,
   });
 
-  // Вычисляем, проходил ли пользователь опрос сегодня
-  const alreadyAttemptedToday = userData?.last_attempt_date
-    ? isTodayUTC(userData.last_attempt_date)
-    : false;
-
-  const initialBurnoutLevel = userData?.burnout_level ?? 100;
-  const spriteUrl = userData?.current_sprite_url || '/IMG_0476.png';
-  const needsOnboarding = userData?.character_class === null;
-
-  // Обработчик клика по классу
   const handleClassClick = useCallback(() => {
     if (userData?.character_class) {
       const description = getClassDescription(userData.character_class);
@@ -165,7 +267,8 @@ const Home = () => {
     }
   }, [userData?.character_class]);
 
-  // Эффекты
+  const needsOnboarding = userData?.character_class === null;
+
   useEffect(() => {
     if (queryError) {
       setApiError((queryError as Error).message);
@@ -207,175 +310,10 @@ const Home = () => {
     }
   }, [userData?.id, initData]);
 
-  // Адаптивный размер октаграммы
-  useEffect(() => {
-    const updateSize = () => {
-      if (window.innerWidth < 400) {
-        setOctagramSize(220);
-      } else if (window.innerWidth < 768) {
-        setOctagramSize(250);
-      } else {
-        setOctagramSize(280);
-      }
-    };
-
-    updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
-  }, []);
-
-  // Создание портала для модалки
-  useEffect(() => {
-    if (!modalPortalRef.current) {
-      const portalContainer = document.createElement('div');
-      portalContainer.id = 'modal-portal';
-      portalContainer.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4';
-      document.body.appendChild(portalContainer);
-      modalPortalRef.current = portalContainer;
-    }
-
-    return () => {
-      if (modalPortalRef.current) {
-        document.body.removeChild(modalPortalRef.current);
-        modalPortalRef.current = null;
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isSurveyModalOpen) {
-      document.body.classList.add('modal-open');
-    } else {
-      document.body.classList.remove('modal-open');
-    }
-
-    return () => {
-      document.body.classList.remove('modal-open');
-    };
-  }, [isSurveyModalOpen]);
-
-  // Обработчик открытия модалки с генерацией вопросов (без кэширования)
-  const handleOpenSurveyModal = useCallback(async () => {
-    if (alreadyAttemptedToday || isGeneratingQuestions) return;
-
-    setIsGeneratingQuestions(true);
-
-    try {
-      // Запрашиваем свежие вопросы у API
-      const response = await fetch('/api/generate-questions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user?.id, initData }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
-      }
-
-      const { questions } = await response.json();
-      if (!Array.isArray(questions) || questions.length !== 10) {
-        throw new Error('Invalid response format');
-      }
-
-      // Валидация наличия всех id и текста
-      const validQuestions = questions.filter((q: any) => q.id >= 1 && q.id <= 10 && q.text);
-      if (validQuestions.length !== 10) {
-        throw new Error('Invalid question data');
-      }
-
-      // Разделяем на первые два (id 1,2) и остальные, перемешиваем остальные
-      const firstTwo = validQuestions.filter((q: any) => q.id === 1 || q.id === 2);
-      const rest = validQuestions.filter((q: any) => q.id > 2);
-      const shuffledRest = [...rest].sort(() => Math.random() - 0.5);
-      setShuffledQuestions([...firstTwo, ...shuffledRest]);
-
-      // Открываем модалку
-      setIsSurveyModalOpen(true);
-    } catch (error) {
-      console.error('Failed to generate questions, using static fallback:', error);
-      // При ошибке используем статические вопросы
-      const firstTwo = STATIC_QUESTIONS.filter(q => q.id === 1 || q.id === 2);
-      const rest = STATIC_QUESTIONS.filter(q => q.id > 2);
-      const shuffledRest = [...rest].sort(() => Math.random() - 0.5);
-      setShuffledQuestions([...firstTwo, ...shuffledRest]);
-      setIsSurveyModalOpen(true);
-    } finally {
-      setIsGeneratingQuestions(false);
-    }
-  }, [alreadyAttemptedToday, user?.id, initData]);
-
-  // Остальные обработчики
-  const handleGetAiAdvice = useCallback(async () => {
-    if (!user?.id) return;
-
-    setIsAiLoading(true);
-    setAiAdvice(null);
-
-    try {
-      const response = await fetch('/api/route', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: String(user.id) }),
-      });
-
-      const responseText = await response.text();
-
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch {
-        data = null;
-      }
-
-      if (!response.ok) {
-        let errorMessage = `Ошибка ${response.status}`;
-        if (response.status === 400) errorMessage = 'Неверный запрос (400)';
-        else if (response.status === 404) errorMessage = 'Мудрец не найден...';
-        else if (response.status === 500) errorMessage = 'Связь с астральным миром прервана...';
-        else if (response.status === 502) errorMessage = 'Мудрец временно недоступен...';
-
-        if (data && data.error) {
-          errorMessage += `: ${data.error}`;
-        } else if (responseText) {
-          errorMessage += `\nОтвет: ${responseText.substring(0, 200)}`;
-        }
-
-        setAiAdvice(`❌ ${errorMessage}`);
-        return;
-      }
-
-      if (!data || !data.advice) {
-        setAiAdvice("⚠️ Мудрец задумался и промолчал... (пустой ответ)");
-        return;
-      }
-
-      setAiAdvice(data.advice);
-    } catch (error) {
-      let errorText = "Связь с Мудрецом прервалась.";
-      if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        errorText = "🌐 Нет соединения с сервером.";
-      } else if (error instanceof Error) {
-        errorText += ` (${error.message})`;
-      }
-      setAiAdvice(`❌ ${errorText}`);
-    } finally {
-      setIsAiLoading(false);
-    }
-  }, [user?.id]);
-
-  const handleOctalysisInfo = useCallback(() => {
-    alert("Добро пожаловать, герой!\n\nТы вступаешь в мир, где каждая задача — это квест, а твоя воля и страсть определят судьбу великих свершений.\nВосемь путеводных звёзд вдохновят тебя на подвиги. Если звезда тускнеет, следуй их советам, чтобы вновь зажечь пламя!\n\nИди вперёд, герой, и пусть звёзды карты мотивации освещают твой путь к величию!");
-  }, []);
-
-  const handleCloseModal = useCallback(() => {
-    setIsSurveyModalOpen(false);
-  }, []);
-
-  // Мутация отправки опроса
   const submitSurveyMutation = useMutation({
     mutationFn: async (data: { burnoutDelta: number; factors: number[] }) => {
       if (!user?.id) throw new Error("Пользователь не определен");
-
+      
       const response = await api.submitSurvey({
         telegramId: Number(user.id),
         burnoutDelta: data.burnoutDelta,
@@ -386,23 +324,23 @@ const Home = () => {
       if (!response.success) {
         throw new Error(response.error || 'Ошибка сохранения результатов');
       }
-
+      
       return response.data;
     },
     onSuccess: (data) => {
       queryClient.setQueryData(['userData', user?.id], (oldData: any) => {
         if (!oldData) return data;
-
+        
         return {
           ...oldData,
           ...data,
           current_sprite_url: oldData.current_sprite_url
         };
       });
-
+      
       setSurveyCompleted(true);
       setAnswers({});
-
+      
       if (userData?.id) {
         const fetchFactors = async () => {
           const response = await api.getOctalysisFactors(userData.id, initData);
@@ -417,6 +355,37 @@ const Home = () => {
       setApiError(error.message);
     }
   });
+
+  const initialBurnoutLevel = userData?.burnout_level ?? 100;
+  const spriteUrl = userData?.current_sprite_url || '/IMG_0476.png';
+  const alreadyAttemptedToday = userData?.last_attempt_date 
+    ? isTodayUTC(userData.last_attempt_date) 
+    : false;
+
+  const burnoutLevel = useMemo(() => {
+    if (surveyCompleted && userData) {
+      return userData.burnout_level;
+    }
+
+    const answeredDelta = [1, 2].reduce((sum, id) => {
+      const answer = answers[id];
+      if (answer === true) return sum + 2;
+      if (answer === false) return sum - 2;
+      return sum;
+    }, 0);
+
+    return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
+  }, [answers, initialBurnoutLevel, surveyCompleted, userData]);
+
+  const octagramValues = useMemo(() => {
+    if (!octalysisFactors) {
+      return [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
+    }
+    return octalysisFactors.map(factor => {
+      const normalized = factor / 30;
+      return Math.max(0, Math.min(1, normalized));
+    });
+  }, [octalysisFactors]);
 
   const handleSurveyComplete = useCallback((answers: Record<number, 'yes' | 'no' | 'skip'>) => {
     const burnoutDelta = [1, 2].reduce((sum, id) => {
@@ -443,41 +412,18 @@ const Home = () => {
     });
   }, [refetchUserData]);
 
-  // Мемоизированные значения
-  const burnoutLevel = useMemo(() => {
-    if (surveyCompleted && userData) {
-      return userData.burnout_level;
-    }
+  const handleCloseModal = useCallback(() => {
+    setIsSurveyModalOpen(false);
+  }, []);
 
-    const answeredDelta = [1, 2].reduce((sum, id) => {
-      const answer = answers[id];
-      if (answer === true) return sum + 2;
-      if (answer === false) return sum - 2;
-      return sum;
-    }, 0);
-
-    return Math.max(0, Math.min(100, initialBurnoutLevel + answeredDelta));
-  }, [answers, initialBurnoutLevel, surveyCompleted, userData]);
-
-  const octagramValues = useMemo(() => {
-    if (!octalysisFactors) {
-      return [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0];
-    }
-    return octalysisFactors.map(factor => {
-      const normalized = factor / 30;
-      return Math.max(0, Math.min(1, normalized));
-    });
-  }, [octalysisFactors]);
-
-  // Рендер
   if (isGlobalLoading) {
     return <Loader />;
   }
 
   if (needsOnboarding) {
     return (
-      <Onboarding
-        onComplete={handleOnboardingComplete}
+      <Onboarding 
+        onComplete={handleOnboardingComplete} 
         userId={user?.id ? parseInt(user.id) : undefined}
         initData={initData}
       />
@@ -492,7 +438,7 @@ const Home = () => {
     <div className="container">
       <div className="scrollable-content">
         <div className="new-header">
-          <div
+          <div 
             className="header-content"
             onClick={handleClassClick}
             style={{ cursor: userData?.character_class ? 'pointer' : 'default' }}
@@ -508,10 +454,10 @@ const Home = () => {
         ) : (
           <>
             <CharacterSprite spriteUrl={spriteUrl} />
-
+            
             <div className="burnout-and-button-container">
               <BurnoutBlock level={burnoutLevel} />
-
+              
               <div className="content">
                 {apiError && !alreadyAttemptedToday && (
                   <div className="error-message">{apiError}</div>
@@ -533,12 +479,11 @@ const Home = () => {
                   <div className="flex justify-center w-full">
                     <motion.button
                       whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={{ scale: 0.95 }}    
                       className="accept-button"
-                      onClick={handleOpenSurveyModal}
-                      disabled={isGeneratingQuestions || alreadyAttemptedToday}
+                      onClick={handleOpenSurveyModal}        
                     >
-                      {isGeneratingQuestions ? 'Генерируем вопросы...' : 'Пройти ежедневное испытание'}
+                      Пройти ежедневное испытание
                     </motion.button>
                   </div>
                 )}
@@ -558,15 +503,15 @@ const Home = () => {
                   </motion.div>
                 </AnimatePresence>
               </div>
-
-              <button
+              
+              <button 
                 className="octalysis-info-button"
                 onClick={handleOctalysisInfo}
               >
                 Как работает карта мотивации?
               </button>
 
-              {/* Блок с кнопкой Совета Мудреца */}
+              {/* Блок с кнопкой Совета Мудреца (без фона и курсора) */}
               <div className="ai-advice-section">
                 <button
                   className="accept-button"
