@@ -15,6 +15,33 @@ const STATIC_QUESTIONS = [
   { id: 10, text: "Смогли ли вы сегодня продвинуться в мастерстве или заслужить признание от других героев?" },
 ];
 
+type Question = { id: number; text: string };
+
+/**
+ * Нормализует и сортирует массив вопросов:
+ * 1. Гарантирует, что у каждого элемента есть числовой id и непустой text.
+ * 2. Сортирует по возрастанию id.
+ * 3. Если после фильтрации вопросов не осталось — возвращает статический список.
+ */
+function normalizeAndSort(raw: unknown): Question[] {
+  if (!Array.isArray(raw)) return STATIC_QUESTIONS;
+
+  const valid: Question[] = raw
+    .map((item: unknown) => {
+      if (typeof item !== 'object' || item === null) return null;
+      const q = item as Record<string, unknown>;
+      const id = typeof q.id === 'number' ? q.id : Number(q.id);
+      const text = typeof q.text === 'string' ? q.text.trim() : '';
+      if (!Number.isFinite(id) || !text) return null;
+      return { id, text };
+    })
+    .filter((q): q is Question => q !== null);
+
+  if (valid.length === 0) return STATIC_QUESTIONS;
+
+  return valid.sort((a, b) => a.id - b.id);
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -26,11 +53,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const questions = await generateDailyQuestions();
+    const raw = await generateDailyQuestions();
+    const questions = normalizeAndSort(raw);
     return res.status(200).json({ questions });
   } catch (error) {
     console.error('[generate-questions] Groq error:', error);
-    // Фолбек на статические вопросы — клиент не заметит разницы
     return res.status(200).json({ questions: STATIC_QUESTIONS });
   }
 }
