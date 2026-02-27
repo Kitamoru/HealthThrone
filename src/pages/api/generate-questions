@@ -4,16 +4,17 @@ import { Groq } from 'groq-sdk';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// Описание каждого фактора для промпта (можно расширить)
-const factorDescriptions = [
-  { id: 1, desc: 'Эпическое предназначение (Calling) – ощущение, что ты часть чего-то великого' },
-  { id: 2, desc: 'Развитие и достижение (Development & Accomplishment) – чувство прогресса, мастерства' },
-  { id: 3, desc: 'Расширение творчества (Empowerment of Creativity) – возможность влиять, творить' },
-  { id: 4, desc: 'Владение и обладание (Ownership & Possession) – накопление ресурсов, артефактов' },
-  { id: 5, desc: 'Социальное влияние (Social Influence) – взаимодействие, признание' },
-  { id: 6, desc: 'Дефицит и нетерпение (Scarcity & Impatience) – ограниченность, срочность' },
-  { id: 7, desc: 'Непредсказуемость и любопытство (Unpredictability & Curiosity) – сюрпризы, открытия' },
-  { id: 8, desc: 'Потеря и избегание (Loss & Avoidance) – страх потери, упущенных возможностей' },
+const STATIC_QUESTIONS = [
+  { id: 1, text: "Сумели ли вы сегодня удержаться на ногах под натиском тёмных сил?" },
+  { id: 2, text: "Чувствовали ли вы сегодня, что пламя в вашей душе горит ярко, а свершения наполняют вас радостью?" },
+  { id: 3, text: "Ощущали ли вы сегодня, что служите великой цели гильдии, а не просто выполняете команды гильдмастера?" },
+  { id: 4, text: "Чувствовали ли вы сегодня, что сами держите штурвал своего корабля, а не ведомы чужой волей?" },
+  { id: 5, text: "Чувствовали ли вы сегодня, что ваш голос или действия повлияли на решения или дух отряда?" },
+  { id: 6, text: "Преподнес ли сегодняшний день неожиданную встречу, загадку или событие, что пробудило Ваш интерес?" },
+  { id: 7, text: "Помогло ли вам сегодня ощущение, что промедление может стоить вам важного шанса или артефакта?" },
+  { id: 8, text: "Придавали ли вам энергии сегодня редкие ресурсы или срочные вызовы?" },
+  { id: 9, text: "Удалось ли вам сегодня завладеть новым ценным трофеем, артефактом, или знанием, усиливающим вашу мощь?" },
+  { id: 10, text: "Смогли ли вы сегодня продвинуться в мастерстве или заслужить признание от других героев?" },
 ];
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -21,15 +22,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { userId, initData } = req.body;
+  const { userId } = req.body;
   if (!userId) {
     return res.status(400).json({ error: 'Missing userId' });
   }
 
-  // Здесь можно добавить проверку initData (Telegram WebApp)
-
   try {
-    // Формируем промпт для генерации 10 вопросов
     const prompt = `Ты — мастер подземелий в игре, где игроки ежедневно отвечают на вопросы о своей мотивации. 
     Нужно сгенерировать 10 вопросов на русском языке, каждый из которых соответствует одному из факторов геймификации Octalysis.
     Каждый вопрос должен быть сформулирован иначе, чем в предыдущие разы, но сохранять связь с фактором.
@@ -46,17 +44,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     Важно: вопросы 1 и 2 будут влиять на уровень "выгорания" (burnout). Они должны отражать: первый — способность противостоять трудностям, второй — ощущение радости и энергии.
     Остальные вопросы (3–10) соответствуют восьми факторам в том же порядке, что и выше.
 
-    Верни строго JSON-массив из 10 объектов, каждый с полями "id" (число от 1 до 10) и "text" (строка с вопросом). Никакого дополнительного текста.
+    Верни строго JSON-объект с ключом "questions", содержащий массив из 10 объектов, каждый с полями "id" (число от 1 до 10) и "text" (строка с вопросом). Никакого дополнительного текста.
     Пример формата:
-    [
-      {"id": 1, "text": "Сумели ли вы сегодня удержаться на ногах под натиском тёмных сил?"},
-      {"id": 2, "text": "Чувствовали ли вы сегодня, что пламя в вашей душе горит ярко, а свершения наполняют вас радостью?"},
-      ...
-    ]`;
+    {
+      "questions": [
+        {"id": 1, "text": "Сумели ли вы сегодня удержаться на ногах под натиском тёмных сил?"},
+        {"id": 2, "text": "Чувствовали ли вы сегодня, что пламя в вашей душе горит ярко, а свершения наполняют вас радостью?"}
+      ]
+    }`;
 
     const completion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: prompt }],
-      model: 'llama-3.3-70b-versatile', // или другая модель
+      model: 'llama-3.3-70b-versatile',
       temperature: 0.65,
       max_tokens: 1024,
       response_format: { type: 'json_object' },
@@ -65,17 +64,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const content = completion.choices[0]?.message?.content;
     if (!content) throw new Error('Empty response from Groq');
 
-    // Парсим JSON
-    const questions = JSON.parse(content);
+    const parsed = JSON.parse(content);
+
+    // Groq с json_object всегда возвращает объект — достаём массив из него
+    const questions = Array.isArray(parsed) ? parsed : parsed.questions;
+
     if (!Array.isArray(questions) || questions.length !== 10) {
       throw new Error('Invalid response format');
     }
 
-    // Можно добавить валидацию: все ли id присутствуют, текст не пустой
-    return res.status(200).json({ questions });
+    const validQuestions = questions.filter(
+      (q: any) => typeof q.id === 'number' && q.id >= 1 && q.id <= 10 && typeof q.text === 'string' && q.text.trim()
+    );
+
+    if (validQuestions.length !== 10) {
+      throw new Error('Questions failed validation');
+    }
+
+    return res.status(200).json({ questions: validQuestions });
   } catch (error) {
     console.error('Question generation error:', error);
-    // В случае ошибки возвращаем статические вопросы как запасной вариант
-    return res.status(200).json({ questions: QUESTIONS }); // QUESTIONS импортировать из статики
+    // Фолбек на статические вопросы
+    return res.status(200).json({ questions: STATIC_QUESTIONS });
   }
 }
