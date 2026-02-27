@@ -1,6 +1,4 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,6 +22,7 @@ interface Question {
   text: string;
   weight: number;
 }
+
 interface AiAdviceResponse {
   advice: string;
   success?: boolean;
@@ -87,7 +86,7 @@ const Home = () => {
   const router = useRouter();
   const { user, initData } = useTelegram();
   const queryClient = useQueryClient();
-  
+
   // Состояния
   const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>(STATIC_QUESTIONS);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
@@ -98,28 +97,22 @@ const Home = () => {
   const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
   const [octalysisFactors, setOctalysisFactors] = useState<number[] | null>(null);
   const [octagramSize, setOctagramSize] = useState(280);
-  
+
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
 
-  // Состояния для генерации вопросов
+  // Состояние для генерации вопросов
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
-  const CACHE_KEY_PREFIX = 'dailyQuestions_';
 
-  // Вспомогательные функции (не зависят от userData)
-  const getCurrentDateUTC = useCallback(() => {
-    const now = new Date();
-    return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
-  }, []);
-
+  // Вспомогательная функция для проверки даты
   const isTodayUTC = useCallback((dateStr: string) => {
     if (!dateStr) return false;
-    
+
     try {
       const date = new Date(dateStr);
       const now = new Date();
-      
+
       return (
         date.getUTCFullYear() === now.getUTCFullYear() &&
         date.getUTCMonth() === now.getUTCMonth() &&
@@ -132,9 +125,9 @@ const Home = () => {
   }, []);
 
   // Запрос данных пользователя
-  const { 
-    data: userData, 
-    isLoading, 
+  const {
+    data: userData,
+    isLoading,
     isError,
     error: queryError,
     refetch: refetchUserData
@@ -142,22 +135,22 @@ const Home = () => {
     queryKey: ['userData', user?.id],
     queryFn: async (): Promise<UserProfile | null> => {
       if (!user?.id) return null;
-      
+
       const response = await api.getUserData(Number(user.id), initData);
-      
+
       if (!response.success) {
         throw new Error(response.error || "Ошибка загрузки данных");
       }
-      
+
       return response.data as UserProfile;
     },
     enabled: !!user?.id,
     refetchOnWindowFocus: true,
   });
 
-  // Вычисляем, проходил ли пользователь опрос сегодня (используем исходную логику)
-  const alreadyAttemptedToday = userData?.last_attempt_date 
-    ? isTodayUTC(userData.last_attempt_date) 
+  // Вычисляем, проходил ли пользователь опрос сегодня
+  const alreadyAttemptedToday = userData?.last_attempt_date
+    ? isTodayUTC(userData.last_attempt_date)
     : false;
 
   const initialBurnoutLevel = userData?.burnout_level ?? 100;
@@ -255,75 +248,44 @@ const Home = () => {
     } else {
       document.body.classList.remove('modal-open');
     }
-    
+
     return () => {
       document.body.classList.remove('modal-open');
     };
   }, [isSurveyModalOpen]);
 
-  // Обработчик открытия модалки с генерацией вопросов
+  // Обработчик открытия модалки с генерацией вопросов (без кэширования)
   const handleOpenSurveyModal = useCallback(async () => {
-    // Проверяем, не проходил ли пользователь опрос сегодня
-    if (alreadyAttemptedToday) return;
+    if (alreadyAttemptedToday || isGeneratingQuestions) return;
 
     setIsGeneratingQuestions(true);
 
     try {
-      const cacheKey = CACHE_KEY_PREFIX + user?.id;
-      const cachedRaw = sessionStorage.getItem(cacheKey);
-      let questionsToUse: Question[] | null = null;
+      // Запрашиваем свежие вопросы у API
+      const response = await fetch('/api/generate-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user?.id, initData }),
+      });
 
-      // Пытаемся получить из кэша
-      if (cachedRaw) {
-        try {
-          const cached = JSON.parse(cachedRaw);
-          if (cached.date === getCurrentDateUTC() && Array.isArray(cached.questions) && cached.questions.length === 10) {
-            // Проверим, что все вопросы имеют корректные id
-            const valid = cached.questions.every((q: any) => q.id >= 1 && q.id <= 10 && q.text);
-            if (valid) {
-              questionsToUse = cached.questions;
-            }
-          }
-        } catch (e) {
-          console.warn('Invalid cache, ignoring', e);
-        }
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
       }
 
-      // Если кэш не подошёл, запрашиваем у API
-      if (!questionsToUse) {
-        const response = await fetch('/api/generate-questions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user?.id, initData }),
-        });
+      const { questions } = await response.json();
+      if (!Array.isArray(questions) || questions.length !== 10) {
+        throw new Error('Invalid response format');
+      }
 
-        if (!response.ok) {
-          throw new Error(`HTTP error ${response.status}`);
-        }
-
-        const { questions } = await response.json();
-        if (!Array.isArray(questions) || questions.length !== 10) {
-          throw new Error('Invalid response format');
-        }
-
-        // Дополнительная валидация
-        const validQuestions = questions.filter((q: any) => q.id >= 1 && q.id <= 10 && q.text);
-        if (validQuestions.length !== 10) {
-          throw new Error('Invalid question data');
-        }
-
-        // Сохраняем в кэш
-        sessionStorage.setItem(cacheKey, JSON.stringify({
-          questions: validQuestions,
-          date: getCurrentDateUTC(),
-        }));
-
-        questionsToUse = validQuestions;
+      // Валидация наличия всех id и текста
+      const validQuestions = questions.filter((q: any) => q.id >= 1 && q.id <= 10 && q.text);
+      if (validQuestions.length !== 10) {
+        throw new Error('Invalid question data');
       }
 
       // Разделяем на первые два (id 1,2) и остальные, перемешиваем остальные
-      const firstTwo = questionsToUse.filter(q => q.id === 1 || q.id === 2);
-      const rest = questionsToUse.filter(q => q.id > 2);
+      const firstTwo = validQuestions.filter((q: any) => q.id === 1 || q.id === 2);
+      const rest = validQuestions.filter((q: any) => q.id > 2);
       const shuffledRest = [...rest].sort(() => Math.random() - 0.5);
       setShuffledQuestions([...firstTwo, ...shuffledRest]);
 
@@ -340,7 +302,7 @@ const Home = () => {
     } finally {
       setIsGeneratingQuestions(false);
     }
-  }, [alreadyAttemptedToday, user?.id, initData, getCurrentDateUTC]);
+  }, [alreadyAttemptedToday, user?.id, initData]);
 
   // Остальные обработчики
   const handleGetAiAdvice = useCallback(async () => {
@@ -357,7 +319,7 @@ const Home = () => {
       });
 
       const responseText = await response.text();
-      
+
       let data;
       try {
         data = JSON.parse(responseText);
@@ -371,13 +333,13 @@ const Home = () => {
         else if (response.status === 404) errorMessage = 'Мудрец не найден...';
         else if (response.status === 500) errorMessage = 'Связь с астральным миром прервана...';
         else if (response.status === 502) errorMessage = 'Мудрец временно недоступен...';
-        
+
         if (data && data.error) {
           errorMessage += `: ${data.error}`;
         } else if (responseText) {
           errorMessage += `\nОтвет: ${responseText.substring(0, 200)}`;
         }
-        
+
         setAiAdvice(`❌ ${errorMessage}`);
         return;
       }
@@ -388,7 +350,6 @@ const Home = () => {
       }
 
       setAiAdvice(data.advice);
-      
     } catch (error) {
       let errorText = "Связь с Мудрецом прервалась.";
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
@@ -414,7 +375,7 @@ const Home = () => {
   const submitSurveyMutation = useMutation({
     mutationFn: async (data: { burnoutDelta: number; factors: number[] }) => {
       if (!user?.id) throw new Error("Пользователь не определен");
-      
+
       const response = await api.submitSurvey({
         telegramId: Number(user.id),
         burnoutDelta: data.burnoutDelta,
@@ -425,28 +386,23 @@ const Home = () => {
       if (!response.success) {
         throw new Error(response.error || 'Ошибка сохранения результатов');
       }
-      
+
       return response.data;
     },
     onSuccess: (data) => {
       queryClient.setQueryData(['userData', user?.id], (oldData: any) => {
         if (!oldData) return data;
-        
+
         return {
           ...oldData,
           ...data,
           current_sprite_url: oldData.current_sprite_url
         };
       });
-      
+
       setSurveyCompleted(true);
       setAnswers({});
-      
-      // Удаляем кэш вопросов после успешного прохождения
-      if (user?.id) {
-        sessionStorage.removeItem(CACHE_KEY_PREFIX + user.id);
-      }
-      
+
       if (userData?.id) {
         const fetchFactors = async () => {
           const response = await api.getOctalysisFactors(userData.id, initData);
@@ -520,8 +476,8 @@ const Home = () => {
 
   if (needsOnboarding) {
     return (
-      <Onboarding 
-        onComplete={handleOnboardingComplete} 
+      <Onboarding
+        onComplete={handleOnboardingComplete}
         userId={user?.id ? parseInt(user.id) : undefined}
         initData={initData}
       />
@@ -536,7 +492,7 @@ const Home = () => {
     <div className="container">
       <div className="scrollable-content">
         <div className="new-header">
-          <div 
+          <div
             className="header-content"
             onClick={handleClassClick}
             style={{ cursor: userData?.character_class ? 'pointer' : 'default' }}
@@ -552,10 +508,10 @@ const Home = () => {
         ) : (
           <>
             <CharacterSprite spriteUrl={spriteUrl} />
-            
+
             <div className="burnout-and-button-container">
               <BurnoutBlock level={burnoutLevel} />
-              
+
               <div className="content">
                 {apiError && !alreadyAttemptedToday && (
                   <div className="error-message">{apiError}</div>
@@ -577,7 +533,7 @@ const Home = () => {
                   <div className="flex justify-center w-full">
                     <motion.button
                       whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}    
+                      whileTap={{ scale: 0.95 }}
                       className="accept-button"
                       onClick={handleOpenSurveyModal}
                       disabled={isGeneratingQuestions || alreadyAttemptedToday}
@@ -602,8 +558,8 @@ const Home = () => {
                   </motion.div>
                 </AnimatePresence>
               </div>
-              
-              <button 
+
+              <button
                 className="octalysis-info-button"
                 onClick={handleOctalysisInfo}
               >
