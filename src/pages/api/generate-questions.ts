@@ -1,5 +1,3 @@
-```typescript
-// pages/api/generate-questions.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { Groq } from 'groq-sdk';
 
