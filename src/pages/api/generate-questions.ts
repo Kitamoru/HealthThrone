@@ -84,7 +84,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const completion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: prompt }],
       model: 'llama-3.3-70b-versatile',
-      temperature: 0.7,
+      temperature: 0.75,
+      top_p: 0.9,
       max_tokens: 1024,
       response_format: { type: 'json_object' },
     });
