@@ -1,6 +1,8 @@
 // pages/api/generate-questions.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { generateDailyQuestions } from '@/lib/groq';
+import { Groq } from 'groq-sdk';
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const STATIC_QUESTIONS = [
   { id: 1,  text: "Сумели ли вы сегодня удержаться на ногах под натиском тёмных сил?" },
@@ -17,12 +19,6 @@ const STATIC_QUESTIONS = [
 
 type Question = { id: number; text: string };
 
-/**
- * Нормализует и сортирует массив вопросов:
- * 1. Гарантирует, что у каждого элемента есть числовой id и непустой text.
- * 2. Сортирует по возрастанию id.
- * 3. Если после фильтрации вопросов не осталось — возвращает статический список.
- */
 function normalizeAndSort(raw: unknown): Question[] {
   if (!Array.isArray(raw)) return STATIC_QUESTIONS;
 
@@ -32,12 +28,12 @@ function normalizeAndSort(raw: unknown): Question[] {
       const q = item as Record<string, unknown>;
       const id = typeof q.id === 'number' ? q.id : Number(q.id);
       const text = typeof q.text === 'string' ? q.text.trim() : '';
-      if (!Number.isFinite(id) || !text) return null;
+      if (!Number.isFinite(id) || id < 1 || id > 10 || !text) return null;
       return { id, text };
     })
     .filter((q): q is Question => q !== null);
 
-  if (valid.length === 0) return STATIC_QUESTIONS;
+  if (valid.length !== 10) return STATIC_QUESTIONS;
 
   return valid.sort((a, b) => a.id - b.id);
 }
@@ -53,11 +49,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const raw = await generateDailyQuestions();
+    const prompt = `Ты — мастер подземелий в игре, где игроки ежедневно отвечают на вопросы о своей мотивации. 
+    Нужно сгенерировать 10 вопросов на русском языке, каждый из которых соответствует одному из факторов геймификации Octalysis.
+    Каждый вопрос должен быть сформулирован иначе, чем в предыдущие разы, но сохранять связь с фактором.
+    Вот факторы и их краткое описание:
+    1. Эпическое предназначение (Calling) — вопросы о служении великой цели, вере в миссию.
+    2. Развитие и достижение — вопросы о прогрессе, росте навыков, получении наград.
+    3. Расширение творчества — вопросы о возможности влиять, принимать решения, выражать себя.
+    4. Владение и обладание — вопросы о накоплении ресурсов, артефактов, знаний.
+    5. Социальное влияние — вопросы о взаимодействии, помощи другим, признании.
+    6. Дефицит и нетерпение — вопросы о срочности, ограниченности во времени, редких шансах.
+    7. Непредсказуемость и любопытство — вопросы о неожиданностях, открытиях, тайнах.
+    8. Потеря и избегание — вопросы о страхе упустить возможность, потерять достигнутое.
+
+    Важно: вопросы 1 и 2 будут влиять на уровень "выгорания" (burnout). Они должны отражать: первый — способность противостоять трудностям, второй — ощущение радости и энергии.
+    Остальные вопросы (3–10) соответствуют восьми факторам в том же порядке, что и выше.
+
+    Верни строго JSON-объект с ключом "questions", содержащий массив из 10 объектов, каждый с полями "id" (число от 1 до 10) и "text" (строка с вопросом). Никакого дополнительного текста.
+    Пример формата:
+    {
+      "questions": [
+        {"id": 1, "text": "Сумели ли вы сегодня удержаться на ногах под натиском тёмных сил?"},
+        {"id": 2, "text": "Чувствовали ли вы сегодня, что пламя в вашей душе горит ярко, а свершения наполняют вас радостью?"}
+      ]
+    }`;
+
+    const completion = await groq.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      model: 'llama-3.3-70b-versatile',
+      temperature: 0.65,
+      max_tokens: 1024,
+      response_format: { type: 'json_object' },
+    });
+
+    const content = completion.choices[0]?.message?.content;
+    if (!content) throw new Error('Empty response from Groq');
+
+    const parsed = JSON.parse(content);
+    const raw = Array.isArray(parsed) ? parsed : parsed.questions;
+
     const questions = normalizeAndSort(raw);
+
     return res.status(200).json({ questions });
   } catch (error) {
-    console.error('[generate-questions] Groq error:', error);
+    console.error('Question generation error:', error);
     return res.status(200).json({ questions: STATIC_QUESTIONS });
   }
 }
