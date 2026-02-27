@@ -74,12 +74,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const validQuestions = questions.filter(
-      (q: any) => typeof q.id === 'number' && q.id >= 1 && q.id <= 10 && typeof q.text === 'string' && q.text.trim()
+      (q: any) =>
+        typeof q.id === 'number' &&
+        q.id >= 1 &&
+        q.id <= 10 &&
+        typeof q.text === 'string' &&
+        q.text.trim()
     );
 
     if (validQuestions.length !== 10) {
       throw new Error('Questions failed validation');
     }
+
+    // Сортируем по id, чтобы порядок всегда был корректным
+    // (защита от случаев, когда LLM возвращает вопросы не по порядку)
+    validQuestions.sort((a: any, b: any) => a.id - b.id);
 
     return res.status(200).json({ questions: validQuestions });
   } catch (error) {
