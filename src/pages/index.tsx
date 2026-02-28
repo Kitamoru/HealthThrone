@@ -566,7 +566,7 @@ const Home = () => {
                 </motion.button>
               </div>
 
-              <div className="ai-advice-section">
+              <div className="game-section">
                 <button
                   className="accept-button"
                   onClick={handleGetAiAdvice}
