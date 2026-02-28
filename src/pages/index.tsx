@@ -546,7 +546,6 @@ const Home = () => {
                       >
                       ⚔️ Отправиться в подземелье
                      </motion.button>
-                    </div>
                   </div>
                 )}
               </div>
