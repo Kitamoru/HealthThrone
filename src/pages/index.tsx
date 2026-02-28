@@ -62,13 +62,13 @@ const Home = () => {
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
 
   const handleOpenGame = useCallback(() => {
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.openMiniApp({ app_link: 'https://t.me/MoraleonBot/dungeonrun' });
-    } else {
-      window.open('https://dnd-runner.vercel.app', '_blank');
-    }
-  }, []);
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.openTelegramLink('https://t.me/MoraleonBot/dungeonrun');
+  } else {
+    window.open('https://t.me/MoraleonBot/dungeonrun', '_blank');
+  }
+}, []);
 
   const handleGetAiAdvice = useCallback(async () => {
     if (!user?.id) return;
