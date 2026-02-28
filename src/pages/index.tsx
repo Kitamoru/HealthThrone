@@ -530,25 +530,25 @@ const Home = () => {
                         ? "⚔️ Мудрец готовит испытание..."
                         : "Пройти ежедневное испытание"}
                     </motion.button>
-
-                    <motion.button
-                       whileHover={{ scale: 1.05 }}
-                       whileTap={{ scale: 0.95 }}
-                       className="accept-button"
-                       onClick={() => {
-                       const tg = window.Telegram?.WebApp;
-                       if (tg) { 
-                       tg.openLink('https://dnd-runner.vercel.app');
-                       } else {
-                       window.open('https://dnd-runner.vercel.app', '_blank');
-                       }
-                        }}
-                      >
+                    </div>
+          
+                    <div className="flex justify-center w-full">
+                     <motion.button
+                     whileHover={{ scale: 1.05 }}
+                     whileTap={{ scale: 0.95 }}
+                     className="accept-button"
+                     onClick={() => {
+                    const tg = window.Telegram?.WebApp; 
+                    if (tg) {
+                    tg.openLink('https://dnd-runner.vercel.app');
+                    } else {
+                    window.open('https://dnd-runner.vercel.app', '_blank');
+                    }
+                     }}
                       ⚔️ Отправиться в подземелье
                      </motion.button>
                   </div>
                 )}
-              </div>
             </div>
 
             <div className="octagram-container">
