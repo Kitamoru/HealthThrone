@@ -554,7 +554,8 @@ const Home = () => {
               >
                 Как работает карта мотивации?
               </button>
-
+              
+              <div className="ai-advice-section">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -564,7 +565,7 @@ const Home = () => {
                 ⚔️ Отправиться в подземелье
               </motion.button>
 
-              <div className="ai-advice-section">
+              
                 <button
                   className="accept-button"
                   onClick={handleGetAiAdvice}
