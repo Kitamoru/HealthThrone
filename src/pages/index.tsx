@@ -555,18 +555,16 @@ const Home = () => {
                 Как работает карта мотивации?
               </button>
 
-              <div className="flex justify-center w-full">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="accept-button"
-                  onClick={() => setIsGameOpen(true)}
-                >
-                  ⚔️ Отправиться в подземелье
-                </motion.button>
-              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="accept-button"
+                onClick={() => setIsGameOpen(true)}
+              >
+                ⚔️ Отправиться в подземелье
+              </motion.button>
 
-              <div className="game-section">
+              <div className="ai-advice-section">
                 <button
                   className="accept-button"
                   onClick={handleGetAiAdvice}
