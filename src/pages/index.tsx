@@ -18,6 +18,7 @@ import BurnoutBlock from '../components/BurnoutBlock';
 import { getClassDescription } from '../lib/characterHelper';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { GameModal } from '../components/GameModal';
 
 interface Question {
   id: number;
@@ -100,6 +101,7 @@ const Home = () => {
   
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isGameOpen, setIsGameOpen] = useState(false);
   const modalPortalRef = useRef<HTMLDivElement | null>(null);
 
   const handleGetAiAdvice = useCallback(async () => {
@@ -552,24 +554,17 @@ const Home = () => {
               >
                 Как работает карта мотивации?
               </button>
-              
-                    <div className="flex justify-center w-full">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="accept-button"
-                        onClick={() => {
-                          const tg = window.Telegram?.WebApp;
-                          if (tg) {
-                            tg.openLink('https://dnd-runner.vercel.app');
-                          } else {
-                            window.open('https://dnd-runner.vercel.app', '_blank');
-                          }
-                        }}
-                      >
-                        ⚔️ Отправиться в подземелье
-                      </motion.button>
-                    </div>
+
+              <div className="flex justify-center w-full">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="accept-button"
+                  onClick={() => setIsGameOpen(true)}
+                >
+                  ⚔️ Отправиться в подземелье
+                </motion.button>
+              </div>
 
               <div className="ai-advice-section">
                 <button
@@ -629,6 +624,14 @@ const Home = () => {
         />,
         modalPortalRef.current
       )}
+
+      <GameModal
+        isOpen={isGameOpen}
+        onClose={() => setIsGameOpen(false)}
+        telegramId={user?.id ?? ''}
+        username={user?.username}
+        firstName={user?.first_name}
+      />
     </div>
   );
 };
