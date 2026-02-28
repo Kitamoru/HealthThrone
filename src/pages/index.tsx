@@ -545,11 +545,12 @@ const Home = () => {
                     window.open('https://dnd-runner.vercel.app', '_blank');
                     }
                      }}
+                       >
                       ⚔️ Отправиться в подземелье
                      </motion.button>
                   </div>
-                 </div>
                 )}
+               </div>
             </div>
 
             <div className="octagram-container">
