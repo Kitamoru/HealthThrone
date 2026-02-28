@@ -561,14 +561,13 @@ const Home = () => {
                 whileTap={{ scale: 0.95 }}
                 className="accept-button"
                 onClick={() => setIsGameOpen(true)}
-                style={{ marginTop: '16px' }}
               >
                 ⚔️ Отправиться в подземелье
               </motion.button>
 
               
                 <button
-                  className="accept-button"
+                  className="accept-button" style={{ marginTop: '16px' }}>
                   onClick={handleGetAiAdvice}
                   disabled={!user?.id || isAiLoading}
                 >
