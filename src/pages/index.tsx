@@ -514,7 +514,7 @@ const Home = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="flex justify-center w-full">
+                    <div className="flex justify-center w-full gap-6">
                       <motion.button
                         whileHover={{ scale: isQuestionsLoading ? 1 : 1.05 }}
                         whileTap={{ scale: isQuestionsLoading ? 1 : 0.95 }}
