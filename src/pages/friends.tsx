@@ -102,18 +102,39 @@ export default function Friends() {
   const referralCode = `ref_${userId || 'default'}`;
   const referralLink = `https://t.me/${botUsername}/Moraleon?startapp=${referralCode}`;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(referralLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  // Fallback для Android WebView, где navigator.clipboard недоступен
+  const fallbackCopy = (text: string) => {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) {
+      console.error('Fallback copy failed', e);
+    }
+    document.body.removeChild(textarea);
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // navigator.clipboard недоступен или выбросил ошибку — используем fallback
+      fallbackCopy(referralLink);
+    }
   };
 
   const handleShare = () => {
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('✨ Твоя мотивация — искра. Вместе мы — пламя!🔥\nПрисоединяйся к команде в MORALEON!⚔️')}`;
     if (webApp?.openTelegramLink) {
       webApp.openTelegramLink(shareUrl);
-    } else if (webApp?.openLink) {
-      webApp.openLink(shareUrl);
     } else {
       window.open(shareUrl, '_blank');
     }
@@ -299,7 +320,7 @@ export default function Friends() {
           </div>
         )}
 
-        {/* Универсальное модальное окно для подтверждения действий */}
+        {/* Модальное окно для подтверждения удаления */}
         {showDeleteModal && (
           <div className="modal-overlay">
             <div className="modal-card">
