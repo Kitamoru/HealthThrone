@@ -59,7 +59,6 @@ export default async function handler(
       });
     }
 
-    // Простой способ получения текущей даты в формате YYYY-MM-DD (UTC)
     const now = new Date();
     const today = now.toISOString().split('T')[0];
     console.log(`[Init API] Current UTC date: ${today}`);
@@ -111,7 +110,6 @@ export default async function handler(
 
       if (upsertError) throw upsertError;
 
-      // Всегда получаем обновленные данные после upsert
       const { data: updatedUser, error: selectError } = await supabase
         .from('users')
         .select(`
@@ -128,18 +126,16 @@ export default async function handler(
       // Обработка реферальной системы
       if (ref && typeof ref === 'string' && ref.startsWith('ref_')) {
         try {
-          // Безопасное извлечение реферера
           const cleanRef = ref.replace('ref_', '');
           const referrerTelegramId = parseInt(cleanRef, 10);
           
           if (!isNaN(referrerTelegramId)) {
-            // Проверка на самоссылку
             if (referrerTelegramId === telegramId) {
               console.log('[Referral] Self-referral attempt blocked');
             } else {
               console.log(`[Referral] Processing referral: ${referrerTelegramId} for user: ${telegramId}`);
               
-              // Атомарное обновление баланса реферера
+              // Начисляем бонусные монеты рефереру
               const { error: referralError } = await supabase.rpc('handle_referral', {
                 new_user_id: updatedUser.id,
                 referrer_tg_id: referrerTelegramId,
@@ -150,6 +146,43 @@ export default async function handler(
                 console.error('[Referral] Referral processing error:', referralError);
               } else {
                 console.log('[Referral] Referral processed successfully');
+
+                // Создаём двустороннюю дружбу
+                const { data: referrerUser } = await supabase
+                  .from('users')
+                  .select('id')
+                  .eq('telegram_id', referrerTelegramId)
+                  .single();
+
+                if (referrerUser) {
+                  // Проверяем что дружба ещё не существует
+                  const { count } = await supabase
+                    .from('friends')
+                    .select('*', { count: 'exact' })
+                    .or(
+                      `and(user_id.eq.${updatedUser.id},friend_id.eq.${referrerUser.id}),` +
+                      `and(user_id.eq.${referrerUser.id},friend_id.eq.${updatedUser.id})`
+                    );
+
+                  if (!count || count === 0) {
+                    const { error: friendsError } = await supabase
+                      .from('friends')
+                      .insert([
+                        { user_id: updatedUser.id,  friend_id: referrerUser.id },
+                        { user_id: referrerUser.id, friend_id: updatedUser.id  }
+                      ]);
+
+                    if (friendsError) {
+                      console.error('[Referral] Failed to create friendship:', friendsError);
+                    } else {
+                      console.log('[Referral] Friendship created successfully');
+                    }
+                  } else {
+                    console.log('[Referral] Already friends, skipping');
+                  }
+                } else {
+                  console.log('[Referral] Referrer user not found in DB');
+                }
               }
             }
           } else {
