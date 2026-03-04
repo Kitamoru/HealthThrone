@@ -132,7 +132,7 @@ export default function Friends() {
   };
 
   const handleShare = () => {
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('✨ Твоя мотивация — искра. Вместе мы — пламя!🔥\nПрисоединяйся к команде в MORALEON!⚔️')}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('✨ Твоя мотивация — искра. Вместе мы — пламя!🔥\nПрисоединяйся ко мне в MORALEON!⚔️')}`;
     if (webApp?.openTelegramLink) {
       webApp.openTelegramLink(shareUrl);
     } else {
