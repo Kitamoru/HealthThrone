@@ -148,7 +148,7 @@ export default async function handler(
                 console.log('[Referral] Referral bonus processed successfully');
               }
 
-              // Создаём дружбу независимо от результата начисления бонуса
+              // Находим реферера
               const { data: referrerUser } = await supabase
                 .from('users')
                 .select('id')
@@ -156,27 +156,17 @@ export default async function handler(
                 .single();
 
               if (referrerUser) {
-                const { count } = await supabase
-                  .from('friends')
-                  .select('*', { count: 'exact' })
-                  .or(
-                    `and(user_id.eq.${updatedUser.id},friend_id.eq.${referrerUser.id}),` +
-                    `and(user_id.eq.${referrerUser.id},friend_id.eq.${updatedUser.id})`
-                  );
+                // Создаём двустороннюю дружбу — ON CONFLICT DO NOTHING в функции
+                // защищает от дубликатов, count-проверка не нужна
+                const { error: friendsError } = await supabase.rpc('create_friendship', {
+                  user_a_id: updatedUser.id,
+                  user_b_id: referrerUser.id
+                });
 
-                if (!count || count === 0) {
-                  const { error: friendsError } = await supabase.rpc('create_friendship', {
-                    user_a_id: updatedUser.id,
-                    user_b_id: referrerUser.id
-                  });
-
-                  if (friendsError) {
-                    console.error('[Referral] Failed to create friendship:', friendsError);
-                  } else {
-                    console.log('[Referral] Friendship created successfully');
-                  }
+                if (friendsError) {
+                  console.error('[Referral] Failed to create friendship:', friendsError);
                 } else {
-                  console.log('[Referral] Already friends, skipping');
+                  console.log('[Referral] Friendship created successfully');
                 }
               } else {
                 console.log('[Referral] Referrer user not found in DB');
