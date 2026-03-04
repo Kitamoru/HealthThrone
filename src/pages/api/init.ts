@@ -135,7 +135,7 @@ export default async function handler(
             } else {
               console.log(`[Referral] Processing referral: ${referrerTelegramId} for user: ${telegramId}`);
               
-              // Начисляем бонусные монеты рефереру
+              // Начисляем бонусные монеты рефереру — независимо от дружбы
               const { error: referralError } = await supabase.rpc('handle_referral', {
                 new_user_id: updatedUser.id,
                 referrer_tg_id: referrerTelegramId,
@@ -143,44 +143,43 @@ export default async function handler(
               });
 
               if (referralError) {
-                console.error('[Referral] Referral processing error:', referralError);
+                console.error('[Referral] Referral bonus error (non-critical):', referralError);
               } else {
-                console.log('[Referral] Referral processed successfully');
+                console.log('[Referral] Referral bonus processed successfully');
+              }
 
-                // Создаём двустороннюю дружбу
-                const { data: referrerUser } = await supabase
-                  .from('users')
-                  .select('id')
-                  .eq('telegram_id', referrerTelegramId)
-                  .single();
+              // Создаём дружбу независимо от результата начисления бонуса
+              const { data: referrerUser } = await supabase
+                .from('users')
+                .select('id')
+                .eq('telegram_id', referrerTelegramId)
+                .single();
 
-                if (referrerUser) {
-                  // Проверяем что дружба ещё не существует
-                  const { count } = await supabase
-                    .from('friends')
-                    .select('*', { count: 'exact' })
-                    .or(
-                      `and(user_id.eq.${updatedUser.id},friend_id.eq.${referrerUser.id}),` +
-                      `and(user_id.eq.${referrerUser.id},friend_id.eq.${updatedUser.id})`
-                    );
+              if (referrerUser) {
+                const { count } = await supabase
+                  .from('friends')
+                  .select('*', { count: 'exact' })
+                  .or(
+                    `and(user_id.eq.${updatedUser.id},friend_id.eq.${referrerUser.id}),` +
+                    `and(user_id.eq.${referrerUser.id},friend_id.eq.${updatedUser.id})`
+                  );
 
-                  if (!count || count === 0) {
-                    const { error: friendsError } = await supabase.rpc('create_friendship', {
-                      user_a_id: updatedUser.id,
-                      user_b_id: referrerUser.id
-                    }); 
+                if (!count || count === 0) {
+                  const { error: friendsError } = await supabase.rpc('create_friendship', {
+                    user_a_id: updatedUser.id,
+                    user_b_id: referrerUser.id
+                  });
 
-                    if (friendsError) {
-                      console.error('[Referral] Failed to create friendship:', friendsError);
-                    } else {
-                      console.log('[Referral] Friendship created successfully');
-                    }
+                  if (friendsError) {
+                    console.error('[Referral] Failed to create friendship:', friendsError);
                   } else {
-                    console.log('[Referral] Already friends, skipping');
+                    console.log('[Referral] Friendship created successfully');
                   }
                 } else {
-                  console.log('[Referral] Referrer user not found in DB');
+                  console.log('[Referral] Already friends, skipping');
                 }
+              } else {
+                console.log('[Referral] Referrer user not found in DB');
               }
             }
           } else {
