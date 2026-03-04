@@ -8,7 +8,6 @@ interface DeleteFriendResponse {
   error?: string;
 }
 
-// Функция для извлечения пользователя Telegram из initData
 function extractTelegramUser(initData: string) {
   try {
     const params = new URLSearchParams(initData);
@@ -56,7 +55,7 @@ export default async function handler(
   }
 
   try {
-    // Получаем внутренний ID пользователя
+    // Получаем внутренний ID текущего пользователя
     const { data: currentUser, error: userError } = await supabase
       .from('users')
       .select('id')
@@ -69,7 +68,7 @@ export default async function handler(
         error: 'User not found in database' 
       });
     }
-    
+
     const userId = currentUser.id;
     const friendId = parseInt(req.query.id as string, 10);
     
@@ -80,10 +79,10 @@ export default async function handler(
       });
     }
 
-    // Проверяем что друг принадлежит пользователю
+    // Проверяем что запись дружбы принадлежит пользователю
     const { data: friendship, error: fetchError } = await supabase
       .from('friends')
-      .select('id')
+      .select('id, user_id, friend_id')
       .eq('id', friendId)
       .eq('user_id', userId)
       .single();
@@ -95,7 +94,7 @@ export default async function handler(
         error: 'Database error' 
       });
     }
-    
+
     if (!friendship) {
       return res.status(404).json({ 
         success: false,
@@ -103,11 +102,11 @@ export default async function handler(
       });
     }
 
-    // Удаляем друга
-    const { error: deleteError } = await supabase
-      .from('friends')
-      .delete()
-      .eq('id', friendId);
+    // Удаляем дружбу с обеих сторон через RPC
+    const { error: deleteError } = await supabase.rpc('delete_friendship', {
+      user_a_id: friendship.user_id,
+      user_b_id: friendship.friend_id
+    });
 
     if (deleteError) {
       console.error('Delete friendship error:', deleteError);
@@ -121,6 +120,7 @@ export default async function handler(
       success: true, 
       data: null 
     });
+
   } catch (error) {
     console.error('Unhandled error:', error);
     return res.status(500).json({ 
