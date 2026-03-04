@@ -165,12 +165,10 @@ export default async function handler(
                     );
 
                   if (!count || count === 0) {
-                    const { error: friendsError } = await supabase
-                      .from('friends')
-                      .insert([
-                        { user_id: updatedUser.id,  friend_id: referrerUser.id },
-                        { user_id: referrerUser.id, friend_id: updatedUser.id  }
-                      ]);
+                    const { error: friendsError } = await supabase.rpc('create_friendship', {
+                      user_a_id: updatedUser.id,
+                      user_b_id: referrerUser.id
+                    }); 
 
                     if (friendsError) {
                       console.error('[Referral] Failed to create friendship:', friendsError);
