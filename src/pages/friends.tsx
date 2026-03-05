@@ -99,9 +99,10 @@ export default function Friends() {
   };
 
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
-  const referralCode = `ref_${userId || 'default'}`;
+  // Передаём просто telegram_id без префикса ref_ — корректно работает на iOS и Android
+  const referralCode = `${userId || ''}`;
   const referralLink = `https://t.me/${botUsername}/Moraleon?startapp=${referralCode}`;
-  
+
   // Fallback для Android WebView, где navigator.clipboard недоступен
   const fallbackCopy = (text: string) => {
     const textarea = document.createElement('textarea');
@@ -132,7 +133,7 @@ export default function Friends() {
   };
 
   const handleShare = () => {
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('✨ Твоя мотивация — искра. Вместе мы — пламя!🔥\nПрисоединяйся ко мне в MORALEON!⚔️')}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('✨ Твоя мотивация — искра. Вместе мы — пламя!🔥\nПрисоединяйся к команде в MORALEON!⚔️')}`;
     if (webApp?.openTelegramLink) {
       webApp.openTelegramLink(shareUrl);
     } else {
