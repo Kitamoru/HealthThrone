@@ -100,7 +100,7 @@ export default function Friends() {
 
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'your_bot_username';
   const referralCode = `ref_${userId || 'default'}`;
-  const referralLink = `https://t.me/${botUsername}/Moraleon?startapp=${referralCode}`;
+  const referralLink = `https://t.me/${botUsername}/MoraleonBot?startapp=${referralCode}`;
 
   // Fallback для Android WebView, где navigator.clipboard недоступен
   const fallbackCopy = (text: string) => {
