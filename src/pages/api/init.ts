@@ -123,11 +123,10 @@ export default async function handler(
 
       console.log('[Init API] User upsert successful:', JSON.stringify(updatedUser, null, 2));
 
-      // Обработка реферальной системы
-      if (ref && typeof ref === 'string' && ref.startsWith('ref_')) {
+      // Обработка реферальной системы — принимаем просто telegram_id без префикса
+      if (ref && typeof ref === 'string' && ref.length > 0) {
         try {
-          const cleanRef = ref.replace('ref_', '');
-          const referrerTelegramId = parseInt(cleanRef, 10);
+          const referrerTelegramId = parseInt(ref, 10);
           
           if (!isNaN(referrerTelegramId)) {
             if (referrerTelegramId === telegramId) {
@@ -156,8 +155,7 @@ export default async function handler(
                 .single();
 
               if (referrerUser) {
-                // Создаём двустороннюю дружбу — ON CONFLICT DO NOTHING в функции
-                // защищает от дубликатов, count-проверка не нужна
+                // Создаём двустороннюю дружбу
                 const { error: friendsError } = await supabase.rpc('create_friendship', {
                   user_a_id: updatedUser.id,
                   user_b_id: referrerUser.id
