@@ -347,8 +347,6 @@ const Home = () => {
                   <>
                     <div className="flex justify-center w-full">
                       <motion.button
-                        whileHover={{ scale: isQuestionsLoading ? 1 : 1.05 }}
-                        whileTap={{ scale: isQuestionsLoading ? 1 : 0.95 }}
                         className="accept-button"
                         onClick={handleOpenSurveyModal}
                         disabled={isQuestionsLoading}
@@ -384,8 +382,6 @@ const Home = () => {
 
               <div className="ai-advice-section" style={{ marginTop: '16px' }}>
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 className="accept-button"
                 style={{ marginTop: '16px' }}
                 onClick={handleOpenGame}
