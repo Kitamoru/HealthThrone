@@ -7,7 +7,7 @@ const nextConfig = {
         : []
       ),
       'supabase.co'
-    ].filter(Boolean), // Фильтруем пустые значения
+    ].filter(Boolean),
     unoptimized: true
   },
   async headers() {
@@ -28,10 +28,12 @@ const nextConfig = {
         ]
       }
     ];
-  }
-}; // Фикс: добавили закрывающую фигурную скобку для nextConfig
+  },
+  compiler: {
+    removeConsole: true,
+  },
+};
 
-// Проверяем наличие анализатора
 if (process.env.ANALYZE) {
   const withBundleAnalyzer = require('@next/bundle-analyzer')({
     enabled: process.env.ANALYZE === 'true',
