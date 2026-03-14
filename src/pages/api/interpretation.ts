@@ -1,9 +1,9 @@
 // pages/api/interpretation.ts
-
 import { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 import { computeInsights, buildAIAnalysisContext, OctalysisStats } from '@/lib/octalysis';
 import { getAiInterpretation } from '@/lib/groq';
+import { validateInterpretation } from '@/lib/aiValidator'; // ← добавлен импорт
 
 // Маппинг классов на архетипы
 const CLASS_ARCHETYPES: Record<string, string> = {
@@ -110,6 +110,18 @@ const CLASS_ARCHETYPES: Record<string, string> = {
   'Охотник за головами':    'Завоеватель',
 };
 
+// Fallback если ИИ-Мудрец вернул невалидный ответ
+const FALLBACK_ADVICE = `🎭 **Титул:** Страж равновесия
+
+💫 **Состояние духа:** Мудрец сейчас в глубоком трансе и не может ответить. Но твой путь продолжается — пройди ежедневное испытание, и он обретёт голос.
+
+⚔️ **Квесты для гармонии:**
+1. **«Минута тишины»** — найди 60 секунд без экранов и просто подыши.
+2. **«Один шаг»** — сделай самое маленькое дело из тех, что откладывал.
+3. **«Благодарность отряду»** — скажи кому-то одно доброе слово сегодня.
+
+🌙 **Напутствие:** Даже когда оракул молчит — твой огонь не гаснет.`;
+
 function getClassArchetype(className: string): string {
   return CLASS_ARCHETYPES[className] ?? 'Достигатор';
 }
@@ -151,13 +163,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const className = profile.character_class || '';
     const archetypeFromClass = getClassArchetype(className);
+    const previousStats = undefined;
 
-    const previousStats = undefined; // пока без истории
-
-    // 1. Детерминированный анализ
     const insights = computeInsights(stats, previousStats);
-
-    // 2. Подготовка текстового контекста для AI
     const analysisContext = buildAIAnalysisContext(
       insights,
       className,
@@ -165,18 +173,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       userContext
     );
 
-    // 3. Запрос к AI — insights передаём отдельно для точного подбора примеров
     const advice = await getAiInterpretation(
       analysisContext,
       className,
       insights.determinedArchetype,
-      insights,      // ← обязательный параметр для selectExampleIndices
+      insights,
       userContext
     );
 
+    // ── Валидация ответа ИИ-Мудреца ──────────────────────────────────────────
+    const validation = validateInterpretation(advice);
+
+    if (!validation.ok) {
+      console.error('[interpretation] Validation failed:', validation.reason);
+      // Отдаём fallback — пользователь не видит ошибку
+      return res.status(200).json({ success: true, advice: FALLBACK_ADVICE });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     return res.status(200).json({ success: true, advice });
-  } catch (error: any) {
-    console.error('[API ERROR]', error);
-    return res.status(500).json({ error: 'Ошибка сервера', details: error.message });
+
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[interpretation]', error);
+    return res.status(500).json({ error: 'Ошибка сервера', details: message });
   }
 }
