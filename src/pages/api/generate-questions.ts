@@ -1,10 +1,11 @@
 // pages/api/generate-questions.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { Groq } from 'groq-sdk';
+import { validateQuestions, type Question } from '@/lib/aiValidator'; // ← добавлен импорт
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-const STATIC_QUESTIONS = [
+const STATIC_QUESTIONS: Question[] = [
   { id: 1,  text: "Сумели ли вы сегодня удержаться на ногах под натиском тёмных сил?" },
   { id: 2,  text: "Чувствовали ли вы сегодня, что пламя в вашей душе горит ярко, а свершения наполняют вас радостью?" },
   { id: 3,  text: "Ощущали ли вы сегодня, что служите великой цели гильдии, а не просто выполняете команды гильдмастера?" },
@@ -17,10 +18,8 @@ const STATIC_QUESTIONS = [
   { id: 10, text: "Смогли ли вы сегодня продвинуться в мастерстве или заслужить признание от других героев?" },
 ];
 
-type Question = { id: number; text: string };
-
-function normalizeAndSort(raw: unknown): Question[] {
-  if (!Array.isArray(raw)) return STATIC_QUESTIONS;
+function normalizeAndSort(raw: unknown): Question[] | null { // ← возвращает null вместо fallback
+  if (!Array.isArray(raw)) return null;
 
   const valid: Question[] = raw
     .map((item: unknown) => {
@@ -33,7 +32,7 @@ function normalizeAndSort(raw: unknown): Question[] {
     })
     .filter((q): q is Question => q !== null);
 
-  if (valid.length !== 10) return STATIC_QUESTIONS;
+  if (valid.length !== 10) return null;
 
   return valid.sort((a, b) => a.id - b.id);
 }
@@ -110,11 +109,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const parsed = JSON.parse(content);
     const raw = Array.isArray(parsed) ? parsed : parsed.questions;
 
-    const questions = normalizeAndSort(raw);
+    // ── Валидация ─────────────────────────────────────────────────────────────
+    const normalized = normalizeAndSort(raw);
 
-    return res.status(200).json({ questions });
+    if (normalized) {
+      const validation = validateQuestions(normalized);
+
+      if (!validation.ok) {
+        // Логируем для мониторинга — важно знать как часто валидация не проходит
+        console.error('[generate-questions] Validation failed:', validation.reason);
+        return res.status(200).json({ questions: STATIC_QUESTIONS });
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
+    return res.status(200).json({ questions: normalized ?? STATIC_QUESTIONS });
+
   } catch (error) {
-    console.error('Question generation error:', error);
+    console.error('[generate-questions] Error:', error);
     return res.status(200).json({ questions: STATIC_QUESTIONS });
   }
 }
