@@ -1,4 +1,4 @@
-// pages/api/interpretation.ts
+// pages/api/route.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 import { computeInsights, buildAIAnalysisContext, OctalysisStats } from '@/lib/octalysis';
