@@ -274,7 +274,7 @@ export async function getAiInterpretation(
 
   try {
     const response = await groqClient.chat.completions.create({
-      model: 'moonshotai/kimi-k2-instruct',
+      model: 'openai/gpt-oss-120b',
       messages: [
         {
           role: 'system',
@@ -285,7 +285,7 @@ export async function getAiInterpretation(
           content: `Вот мой текущий психологический профиль, Мудрец:\n${finalUserContent}`,
         },
       ],
-      temperature: 0.55,
+      temperature: 0.8,
       max_tokens: 3000,
       top_p: 0.9,
     });
