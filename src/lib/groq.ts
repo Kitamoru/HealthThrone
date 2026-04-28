@@ -1,9 +1,11 @@
-import Groq from 'groq-sdk';
+import OpenAI from 'openai';
 import { FEW_SHOT_EXAMPLES } from './prompts/examples';
 import type { Insights, Archetype } from './octalysis';
 
-const groqClient = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
+// OpenRouter — kimi-k2:free (то же семейство MoE, что использовалось на Groq)
+const advisorClient = new OpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -53,7 +55,6 @@ function selectExampleIndices(
     candidates.push({ index: 5, score: 60, reason: 'dominant Ф5/Ф6' });
   }
   if (burnoutRisk === 'moderate') {
-    // Пример 6 ближе всего по духу к состоянию умеренного напряжения
     candidates.push({ index: 5, score: 50, reason: 'burnoutRisk=moderate' });
   }
 
@@ -107,32 +108,24 @@ function selectExampleIndices(
     candidates.push({ index: 6, score: 40, reason: 'profileMaturity=emerging' });
   }
 
-  // ── Пример 9 (индекс 8): Застой (опытный + всё тихо) ───────────────────────
-  // Фикс: avg для mature всегда >= 20, для developed >= 12.5 — пороги avg были
-  // математически недостижимы. Застой определяем через зрелость + тишину.
+  // ── Пример 9 (индекс 8): Застой (опытный + всё тихо) ─────────────────────
   if (profileMaturity === 'mature' && burnoutRisk === 'low' && turbulenceScore < 20) {
     candidates.push({ index: 8, score: 90, reason: 'mature + low burnout + calm' });
   } else if (profileMaturity === 'developed' && burnoutRisk === 'low' && turbulenceScore < 15) {
     candidates.push({ index: 8, score: 60, reason: 'developed + low burnout + calm' });
   }
 
-  // ── Пример 10 (индекс 9): Оборванная струна (один фактор критически низкий) ─
-  // laggingFactors в octalysis: percentage < 7.5 (ниже половины среднего 12.5).
-  // hasStrongProfile: avg > 12 — профиль в целом активный, не nascent.
+  // ── Пример 10 (индекс 9): Оборванная струна ──────────────────────────────
   const hasStrongProfile = avg > 12;
   if (insights.polarization) {
-    // Крайний случай: один фактор >25% и четыре+ <10% одновременно
     candidates.push({ index: 9, score: 95, reason: 'polarization=true' });
   } else if (laggingFactors.length === 1 && hasStrongProfile) {
-    // Ровно один фактор заметно отстаёт — классическая "оборванная струна"
     candidates.push({ index: 9, score: 85, reason: 'single lagging factor + strong profile' });
   } else if (laggingFactors.length >= 2 && hasStrongProfile) {
-    // Несколько факторов просели — менее специфично, но всё равно релевантно
     candidates.push({ index: 9, score: 60, reason: 'multiple lags + strong profile' });
   }
 
   // ── Amplifier-профиль (высокий Ф7+Ф8, изоляция) → Созидатель без гильдии ──
-  // amplifierPercentage вычисляется в octalysis, но раньше не использовался
   if (insights.amplifierPercentage > 40 && isolationRisk) {
     candidates.push({ index: 3, score: 65, reason: 'amplifier dominant + isolationRisk' });
   }
@@ -273,8 +266,8 @@ export async function getAiInterpretation(
     : analysisContext;
 
   try {
-    const response = await groqClient.chat.completions.create({
-      model: 'openai/gpt-oss-120b',
+    const response = await advisorClient.chat.completions.create({
+      model: 'moonshotai/kimi-k2:free',
       messages: [
         {
           role: 'system',
@@ -285,17 +278,9 @@ export async function getAiInterpretation(
           content: `Вот мой текущий психологический профиль, Мудрец:\n${finalUserContent}`,
         },
       ],
-      // gpt-oss-120b — reasoning model.
-      // OpenAI рекомендует temperature=1.0 / top_p=1.0: разнообразие
-      // обеспечивается через внутренние thinking-токены, а не через sampling.
-      // Управление глубиной ответа — через reasoning_effort.
-      temperature: 1.0,
-      top_p: 1.0,
+      temperature: 0.55,
+      top_p: 0.9,
       max_tokens: 3000,
-      // @ts-expect-error — Groq SDK types пока не включают reasoning_effort,
-      // но параметр поддерживается на уровне API для gpt-oss моделей.
-      // "medium" = баланс качества и скорости; для сложных запросов можно "high".
-      reasoning_effort: 'medium',
     });
 
     const content = response.choices[0]?.message?.content;
