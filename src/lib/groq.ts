@@ -285,9 +285,9 @@ export async function getAiInterpretation(
           content: `Вот мой текущий психологический профиль, Мудрец:\n${finalUserContent}`,
         },
       ],
-      temperature: 0.6,
+      temperature: 0.55,
       max_tokens: 3000,
-      top_p: 0.9,
+      top_p: 0.8,
     });
 
     const content = response.choices[0]?.message?.content;
