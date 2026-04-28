@@ -285,9 +285,17 @@ export async function getAiInterpretation(
           content: `Вот мой текущий психологический профиль, Мудрец:\n${finalUserContent}`,
         },
       ],
-      temperature: 0.55,
-      max_tokens: 3000,
-      top_p: 0.8,
+      // gpt-oss-120b — reasoning model.
+      // OpenAI рекомендует temperature=1.0 / top_p=1.0: разнообразие
+      // обеспечивается через внутренние thinking-токены, а не через sampling.
+      // Управление глубиной ответа — через reasoning_effort.
+      temperature: 1.0,
+      top_p: 1.0,
+      max_tokens: 1024,
+      // @ts-expect-error — Groq SDK types пока не включают reasoning_effort,
+      // но параметр поддерживается на уровне API для gpt-oss моделей.
+      // "medium" = баланс качества и скорости; для сложных запросов можно "high".
+      reasoning_effort: 'medium',
     });
 
     const content = response.choices[0]?.message?.content;
