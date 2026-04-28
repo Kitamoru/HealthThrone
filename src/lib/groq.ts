@@ -267,7 +267,7 @@ export async function getAiInterpretation(
 
   try {
     const response = await advisorClient.chat.completions.create({
-      model: 'moonshotai/kimi-k2:free',
+      model: 'moonshotai/kimi-k2-0905',
       messages: [
         {
           role: 'system',
