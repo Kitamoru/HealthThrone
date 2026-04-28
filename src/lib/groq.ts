@@ -1,10 +1,9 @@
-import Groq from 'groq-sdk';
+import OpenAI from 'openai';
 import { FEW_SHOT_EXAMPLES } from './prompts/examples';
 import type { Insights, Archetype } from './octalysis';
- 
+
 // OpenRouter — kimi-k2:free (то же семейство MoE, что использовалось на Groq)
-// Groq SDK наследует OpenAI SDK и поддерживает кастомный baseURL
-const advisorClient = new Groq({
+const advisorClient = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
   apiKey: process.env.OPENROUTER_API_KEY,
 });
