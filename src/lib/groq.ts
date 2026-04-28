@@ -291,7 +291,7 @@ export async function getAiInterpretation(
       // Управление глубиной ответа — через reasoning_effort.
       temperature: 1.0,
       top_p: 1.0,
-      max_tokens: 1024,
+      max_tokens: 3000,
       // @ts-expect-error — Groq SDK types пока не включают reasoning_effort,
       // но параметр поддерживается на уровне API для gpt-oss моделей.
       // "medium" = баланс качества и скорости; для сложных запросов можно "high".
